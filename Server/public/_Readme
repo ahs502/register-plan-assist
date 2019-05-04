@@ -1,0 +1,3 @@
+Changes on this folder will not be watched during development.
+If you change any public content, you have to restart the process manually.
+All client side assets must be merged into this folder.

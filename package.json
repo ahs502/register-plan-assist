@@ -1,0 +1,28 @@
+{
+  "name": "planassist",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Intelligent Flight Scheduler",
+  "scripts": {
+    "postinstall": "gulp install-server && gulp install-client",
+    "prebuild": "npm install",
+    "build": "gulp build",
+    "dev": "concurrently -k -p \"[{index}] [{time}] [{name}]\" -n \"Server,Client\" -c \"blue,green\" \"npm:dev-server\" \"npm:dev-client\"",
+    "dev-server": "gulp dev-server",
+    "dev-client": "gulp dev-client",
+    "test": "npm --prefix Client test && npm --prefix Server test",
+    "gulp": "gulp"
+  },
+  "repository": {
+    "type": "git",
+    "url": "TODO"
+  },
+  "author": "Mahan Air",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^4.1.0",
+    "del": "^4.1.0",
+    "gulp": "^4.0.1",
+    "gulp-run-command": "0.0.9"
+  }
+}

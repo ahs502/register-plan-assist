@@ -1,0 +1,127 @@
+# See http://help.github.com/ignore-files/ for more about ignoring files.
+
+
+# temporary
+/_Client
+
+
+########################################################################
+### Main Project #######################################################
+########################################################################
+
+# compiled output
+/dist
+
+# dependencies
+/node_modules
+
+# IDEs and editors
+/.idea
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# misc
+/.sass-cache
+/connect.lock
+/coverage
+/libpeerconnection.log
+npm-debug.log
+yarn-error.log
+testem.log
+/typings
+
+# System Files
+.DS_Store
+Thumbs.db
+
+########################################################################
+### Server Project #####################################################
+########################################################################
+
+# compiled output
+/Server/dist
+
+# dependencies
+/Server/node_modules
+
+# IDEs and editors
+/Server/.idea
+/Server/.project
+/Server/.classpath
+/Server/.c9/
+/Server/*.launch
+/Server/.settings/
+/Server/*.sublime-workspace
+
+# IDE - VSCode
+/Server/.vscode/*
+!/Server/.vscode/settings.json
+!/Server/.vscode/tasks.json
+!/Server/.vscode/launch.json
+!/Server/.vscode/extensions.json
+
+# misc
+/Server/.sass-cache
+/Server/connect.lock
+/Server/coverage
+/Server/libpeerconnection.log
+/Server/npm-debug.log
+/Server/yarn-error.log
+/Server/testem.log
+/Server/typings
+
+# System Files
+/Server/.DS_Store
+/Server/Thumbs.db
+
+########################################################################
+### Client Project #####################################################
+########################################################################
+
+# compiled output
+/Client/build
+/Client/temp
+
+# dependencies
+/Client/node_modules
+
+# IDEs and editors
+/Client/.idea
+/Client/.project
+/Client/.classpath
+/Client/.c9/
+/Client/*.launch
+/Client/.settings/
+/Client/*.sublime-workspace
+
+# IDE - VSCode
+/Client/.vscode/*
+!/Client/.vscode/settings.json
+!/Client/.vscode/tasks.json
+!/Client/.vscode/launch.json
+!/Client/.vscode/extensions.json
+
+# misc
+/Client/.sass-cache
+/Client/connect.lock
+/Client/coverage
+/Client/libpeerconnection.log
+/Client/npm-debug.log
+/Client/yarn-error.log
+/Client/testem.log
+/Client/typings
+
+# System Files
+/Client/.DS_Store
+/Client/Thumbs.db

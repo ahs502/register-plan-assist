@@ -1,27 +1,15 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import 'typeface-roboto';
-import { MuiThemeProvider, createMuiTheme } from '@material-ui/core/styles';
-import purple from '@material-ui/core/colors/purple';
 import CssBaseline from '@material-ui/core/CssBaseline';
 import * as serviceWorker from './serviceWorker';
-
 import App from './App';
 
-const theme = createMuiTheme({
-  palette: {
-    primary: { main: '#596BEC' },
-    secondary: purple
-  }
-});
-
 ReactDOM.render(
-  <MuiThemeProvider theme={theme}>
-    <React.Fragment>
-      <CssBaseline />
-      <App />
-    </React.Fragment>
-  </MuiThemeProvider>,
+  <React.Fragment>
+    <CssBaseline />
+    <App />
+  </React.Fragment>,
   document.getElementById('root')
 );
 

@@ -1,10 +1,10 @@
-import { Router } from "express";
+import { Router } from 'express';
 
 const router = Router();
 export default router;
 
-router.get("/", (req, res, next) => {
+router.get('/', (req, res, next) => {
   res.json({
-    data: req.app.get("env")
+    data: req.app.get('env')
   });
 });

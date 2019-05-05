@@ -1,6 +1,10 @@
 {
   "files.exclude": {
-    "**/node_modules": true
+    "**/node_modules": true,
+    "dist": true,
+    "Server/dist": true,
+    "Client/build": true
   },
-  "prettier.singleQuote": true
+  "prettier.singleQuote": true,
+  "prettier.printWidth": 160
 }

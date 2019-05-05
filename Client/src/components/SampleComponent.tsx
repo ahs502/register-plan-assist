@@ -1,10 +1,8 @@
+// This is a sample component. It's only purpose is
+// to show how to use styles and other available features.
+
 import React, { FunctionComponent } from 'react';
-import {
-  WithStyles,
-  createStyles,
-  withStyles,
-  Theme
-} from '@material-ui/core/styles';
+import { WithStyles, createStyles, withStyles, Theme } from '@material-ui/core/styles';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -18,10 +16,12 @@ const styles = (theme: Theme) =>
       color: theme.palette.text.primary
     }
   });
+
 interface Props extends WithStyles<typeof styles> {}
 
 const SampleComponent: FunctionComponent<Props> = (props: Props) => {
-  return <div className={props.classes.root}>Some Button</div>;
+  const { classes } = props;
+  return <div className={classes.root}>Some Button</div>;
 };
 
 export default withStyles(styles)(SampleComponent);

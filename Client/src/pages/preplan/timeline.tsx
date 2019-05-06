@@ -6,12 +6,12 @@ const styles = (theme: Theme) => createStyles({});
 
 interface Props extends WithStyles<typeof styles>, RouteComponentProps<{ id?: string }> {}
 
-class Proposal extends PureComponent<Props> {
+class Timeline extends PureComponent<Props> {
   getId = (): number => Number(this.props.match.params.id);
 
   render() {
-    return <div>Pre Plan {this.getId()} Reports Proposal</div>;
+    return <div>Pre Plan {this.getId()} Timeline</div>;
   }
 }
 
-export default withStyles(styles)(Proposal);
+export default withStyles(styles)(Timeline);

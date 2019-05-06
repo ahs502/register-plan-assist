@@ -1,6 +1,6 @@
 import React, { PureComponent } from 'react';
 import { Theme, createStyles, WithStyles, withStyles } from '@material-ui/core/styles';
-import { RouteComponentProps } from 'react-router-dom';
+import { RouteComponentProps, Switch, Route, Redirect } from 'react-router-dom';
 
 const styles = (theme: Theme) => createStyles({});
 
@@ -10,7 +10,19 @@ class Reports extends PureComponent<Props> {
   getId = (): number => Number(this.props.match.params.id);
 
   render() {
-    return <div>Pre Plan {this.getId()} Reports</div>;
+    const { match } = this.props;
+
+    return (
+      <React.Fragment>
+        <div>Pre Plan {this.getId()} Reports</div>
+        <Switch>
+          <Route exact path={match.path} render={() => <div>Pre Plan {this.getId()} Reports [Selection]</div>} />
+          <Route exact path={match.path + '/proposal'} render={() => <div>Pre Plan {this.getId()} Reports Proposal</div>} />
+          <Route exact path={match.path + '/connections'} render={() => <div>Pre Plan {this.getId()} Reports Connections</div>} />
+          <Redirect to={match.url} />
+        </Switch>
+      </React.Fragment>
+    );
   }
 }
 

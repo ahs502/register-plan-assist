@@ -15,6 +15,11 @@
     "jsx": "preserve",
     "isolatedModules": true
   },
+  "baseUrl": ".",
   "include": ["src"],
-  "exclude": ["src/setupProxy.js"]
+  "exclude": ["src/setupProxy.js"],
+  "paths": {
+    "@pages": ["src/pages"],
+    "@components": ["src/components"]
+  }
 }

@@ -1,6 +1,7 @@
 import React, { PureComponent } from 'react';
 import { WithStyles, createStyles, withStyles, Theme } from '@material-ui/core/styles';
 import { RouteComponentProps, Switch, Route, Redirect } from 'react-router-dom';
+import NavBar from '../components/NavBar';
 
 const styles = (theme: Theme) => createStyles({});
 
@@ -12,7 +13,7 @@ class MasterData extends PureComponent<Props> {
 
     return (
       <React.Fragment>
-        <div>Master Data</div>
+        <NavBar>Master Data</NavBar>
         <Switch>
           <Route exact path={match.path} render={() => <div>Master Data [Selection]</div>} />
           <Route exact path={match.path + '/aircraft-groups'} render={() => <div>Master Data Aircraft Groups</div>} />

@@ -6,6 +6,8 @@ import Timeline from './preplan/timeline';
 import FlightRequirements from './preplan/flight-requirements';
 import Reports from './preplan/reports';
 
+import NavBar from '../components/NavBar';
+
 const styles = (theme: Theme) => createStyles({});
 
 interface Props extends WithStyles<typeof styles>, RouteComponentProps<{ id?: string }> {}
@@ -18,7 +20,7 @@ class Preplan extends PureComponent<Props> {
 
     return (
       <React.Fragment>
-        <div>Pre Plan {this.getId()}</div>
+        <NavBar>Pre Plan {this.getId()}</NavBar>
         <Switch>
           <Redirect exact from={match.url} to={match.url + '/timeline'} />
           <Route exact path={match.path + '/timeline'} component={Timeline} />

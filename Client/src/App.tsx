@@ -8,13 +8,15 @@ import PreplanList from './pages/preplan-list';
 import Preplan from './pages/preplan';
 import MasterData from './pages/master-data';
 
+import AppBar from './components/AppBar';
+
 class App extends PureComponent {
   render() {
     return (
       <MuiThemeProvider theme={theme}>
         <Router>
+          <AppBar />
           <Switch>
-            {/* App Bar */}
             <Redirect exact from="/" to="/preplan-list" />
             <Route exact path="/preplan-list" component={PreplanList} />
             <Route path="/preplan/:id" component={Preplan} />

@@ -1,11 +1,12 @@
 import React, { PureComponent, ChangeEvent } from 'react';
 import { Theme, createStyles, WithStyles, withStyles } from '@material-ui/core/styles';
-import TextField from '@material-ui/core/TextField';
-import Grid from '@material-ui/core/Grid';
+import { Grid, TextField, InputAdornment } from '@material-ui/core';
+import { Search as SearchIcon } from '@material-ui/icons';
 
 const styles = (theme: Theme) => createStyles({});
 
 interface Props extends WithStyles<typeof styles> {
+  outlined?: boolean;
   initialValue?: string;
   onQueryChange?: (query: string[]) => void;
 }
@@ -39,17 +40,43 @@ class Search extends PureComponent<Props, State> {
   };
 
   render() {
+    const { outlined } = this.props;
     const { value } = this.state;
 
     return (
-      <Grid spacing={8} alignItems="flex-end">
-        <Grid item>
-          <i className="icon-search" />
-        </Grid>
-        <Grid item>
-          <TextField label="Search" value={value} onChange={this.onChangeHandler} />
-        </Grid>
-      </Grid>
+      <React.Fragment>
+        <span>
+          {outlined || (
+            <Grid spacing={8} alignItems="flex-end" container>
+              <Grid item>
+                {/* <i className="icon-search" /> */}
+                <SearchIcon />
+              </Grid>
+              <Grid item>
+                <TextField label="Search" value={value} onChange={this.onChangeHandler} />
+              </Grid>
+            </Grid>
+          )}
+        </span>
+        <span>
+          {outlined && (
+            <TextField
+              placeholder="Search"
+              variant="outlined"
+              margin="dense"
+              value={value}
+              onChange={this.onChangeHandler}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon />
+                  </InputAdornment>
+                )
+              }}
+            />
+          )}
+        </span>
+      </React.Fragment>
     );
   }
 }

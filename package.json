@@ -24,5 +24,8 @@
     "del": "^4.1.0",
     "gulp": "^4.0.1",
     "gulp-run-command": "0.0.9"
+  },
+  "dependencies": {
+    "@material-ui/icons": "^3.0.2"
   }
 }

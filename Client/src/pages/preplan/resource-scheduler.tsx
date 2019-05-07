@@ -6,12 +6,12 @@ const styles = (theme: Theme) => createStyles({});
 
 interface Props extends WithStyles<typeof styles>, RouteComponentProps<{ id?: string }> {}
 
-class Timeline extends PureComponent<Props> {
+class ResourceScheduler extends PureComponent<Props> {
   getId = (): number => Number(this.props.match.params.id);
 
   render() {
-    return <div>Pre Plan {this.getId()} Timeline</div>;
+    return <div>Pre Plan {this.getId()} Resource Scheduler</div>;
   }
 }
 
-export default withStyles(styles)(Timeline);
+export default withStyles(styles)(ResourceScheduler);

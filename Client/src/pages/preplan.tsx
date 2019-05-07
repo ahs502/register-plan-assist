@@ -2,7 +2,7 @@ import React, { PureComponent } from 'react';
 import { WithStyles, createStyles, withStyles, Theme } from '@material-ui/core/styles';
 
 import { RouteComponentProps, Switch, Redirect, Route } from 'react-router-dom';
-import Timeline from './preplan/timeline';
+import ResourceScheduler from './preplan/resource-scheduler';
 import FlightRequirements from './preplan/flight-requirements';
 import Reports from './preplan/reports';
 
@@ -22,8 +22,8 @@ class Preplan extends PureComponent<Props> {
       <React.Fragment>
         <NavBar>Pre Plan {this.getId()}</NavBar>
         <Switch>
-          <Redirect exact from={match.url} to={match.url + '/timeline'} />
-          <Route exact path={match.path + '/timeline'} component={Timeline} />
+          <Redirect exact from={match.url} to={match.url + '/resource-scheduler'} />
+          <Route exact path={match.path + '/resource-scheduler'} component={ResourceScheduler} />
           <Route exact path={match.path + '/flight-requirements'} component={FlightRequirements} />
           <Route path={match.path + '/reports'} component={Reports} />
           <Redirect to={match.url} />

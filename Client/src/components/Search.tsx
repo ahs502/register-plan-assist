@@ -7,7 +7,7 @@ const styles = (theme: Theme) => createStyles({});
 
 interface Props extends WithStyles<typeof styles> {
   outlined?: boolean;
-  initialValue?: string;
+  initialSearch?: string;
   onQueryChange?: (query: string[]) => void;
 }
 interface State {
@@ -18,7 +18,7 @@ class Search extends PureComponent<Props, State> {
   constructor(props: Props) {
     super(props);
     this.state = {
-      value: props.initialValue || ''
+      value: props.initialSearch || ''
     };
     this.changeQuery();
   }
@@ -82,3 +82,7 @@ class Search extends PureComponent<Props, State> {
 }
 
 export default withStyles(styles)(Search);
+
+export function filterOnProperties<T>(items: T[], query: string[], properties: string[]): T[] {
+  return items; //TODO: Filter objections by query
+}

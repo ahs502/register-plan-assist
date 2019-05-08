@@ -12,6 +12,7 @@ interface Props extends WithStyles<typeof styles>, RouteComponentProps<{ id?: st
 interface PreplanReport extends SectionItem {
   path: string;
 }
+
 const preplanReportProposal: PreplanReport = {
   title: 'Proposal',
   description: 'The list of all flights',

@@ -1,25 +1,70 @@
-import React, { PureComponent } from 'react';
+import React, { Component } from 'react';
 import { WithStyles, createStyles, withStyles, Theme } from '@material-ui/core/styles';
-import { RouteComponentProps, Switch, Route, Redirect } from 'react-router-dom';
+import { RouteComponentProps } from 'react-router-dom';
 import NavBar from '../components/NavBar';
+import SectionList, { SectionItem } from '../components/SectionList';
+import AircraftGroupsMasterData from '../components/master-data/AircraftGroupsMasterData';
+import ConstraintsMasterData from '../components/master-data/ConstraintsMasterData';
 
 const styles = (theme: Theme) => createStyles({});
 
-interface Props extends WithStyles<typeof styles>, RouteComponentProps {}
+interface Props extends WithStyles<typeof styles>, RouteComponentProps<{ table?: string }> {}
 
-class MasterData extends PureComponent<Props> {
+interface MasterDataTable extends SectionItem {
+  path: string;
+}
+
+const aircraftGroupsMasterDataTable: MasterDataTable = {
+  title: 'Aircraft Groups',
+  description: 'All defined groups of aircrafts',
+  path: 'aircraft-groups'
+};
+const constraintsMasterDataTable = {
+  title: 'Constraints',
+  description: 'All existing constraints in the organization',
+  path: 'constraints'
+};
+const masterDataTables = [aircraftGroupsMasterDataTable, constraintsMasterDataTable];
+
+class MasterData extends Component<Props> {
+  componentDidMount() {
+    this.checkUrlAcceptance(this.props);
+  }
+  shouldComponentUpdate(nextProps: Props) {
+    if (!this.checkUrlAcceptance(nextProps)) return false;
+    //TODO: update master data table in state from next props
+    return true;
+  }
+
+  private checkUrlAcceptance(props: Props): boolean {
+    const table = this.getMasterDataTable(props);
+    if (!table && props.match.params.table) {
+      props.history.push(props.match.url.slice(0, -props.match.params.table.length));
+      return false;
+    }
+    return true;
+  }
+
+  getMasterDataTable = (props?: Props): MasterDataTable | undefined => {
+    const tableParam = (props || this.props).match.params.table;
+    return masterDataTables.find(t => t.path === tableParam);
+  };
+
+  sectionSelectHandler = (selectedSection: SectionItem) => {
+    const selectedMasterDataTable = selectedSection as MasterDataTable;
+    this.props.history.push(`/master-data/${selectedMasterDataTable.path}`);
+  };
+
   render() {
-    const { match } = this.props;
+    const selectedMasterDataTable = this.getMasterDataTable();
 
     return (
       <React.Fragment>
         <NavBar>Master Data</NavBar>
-        <Switch>
-          <Route exact path={match.path} render={() => <div>Master Data [Selection]</div>} />
-          <Route exact path={match.path + '/aircraft-groups'} render={() => <div>Master Data Aircraft Groups</div>} />
-          <Route exact path={match.path + '/constraints'} render={() => <div>Master Data Constraints</div>} />
-          <Redirect to={match.url} />
-        </Switch>
+        <SectionList sections={masterDataTables} selectedSection={selectedMasterDataTable} onSectionSelect={this.sectionSelectHandler}>
+          {selectedMasterDataTable === aircraftGroupsMasterDataTable && <AircraftGroupsMasterData />}
+          {selectedMasterDataTable === constraintsMasterDataTable && <ConstraintsMasterData />}
+        </SectionList>
       </React.Fragment>
     );
   }

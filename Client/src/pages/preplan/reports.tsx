@@ -1,27 +1,65 @@
-import React, { PureComponent } from 'react';
+import React, { Component } from 'react';
 import { Theme, createStyles, WithStyles, withStyles } from '@material-ui/core/styles';
-import { RouteComponentProps, Switch, Route, Redirect } from 'react-router-dom';
+import { RouteComponentProps } from 'react-router-dom';
+import SectionList, { SectionItem } from '../../components/SectionList';
+import ProposalReport from '../../components/preplan/reports/ProposalReport';
+import ConnectionsReport from '../../components/preplan/reports/ConnectionsReport';
 
 const styles = (theme: Theme) => createStyles({});
 
-interface Props extends WithStyles<typeof styles>, RouteComponentProps<{ id?: string }> {}
+interface Props extends WithStyles<typeof styles>, RouteComponentProps<{ id?: string; report?: string }> {}
 
-class Reports extends PureComponent<Props> {
-  getId = (): number => Number(this.props.match.params.id);
+interface PreplanReport extends SectionItem {
+  path: string;
+}
+const preplanReportProposal: PreplanReport = {
+  title: 'Proposal',
+  description: 'The list of all flights',
+  path: 'proposal'
+};
+const preplanReportConnections: PreplanReport = {
+  title: 'Connections',
+  description: 'All existing connections between flights',
+  path: 'connections'
+};
+const preplanReports = [preplanReportProposal, preplanReportConnections];
+
+class Reports extends Component<Props> {
+  componentDidMount() {
+    this.checkUrlAcceptance(this.props);
+  }
+  shouldComponentUpdate(nextProps: Props) {
+    return this.checkUrlAcceptance(nextProps);
+  }
+
+  private checkUrlAcceptance(props: Props): boolean {
+    const report = this.getPreplanReport(props);
+    if (!report && props.match.params.report) {
+      props.history.push(props.match.url.slice(0, -props.match.params.report.length));
+      return false;
+    }
+    return true;
+  }
+
+  getId = (props?: Props): number => Number((props || this.props).match.params.id);
+  getPreplanReport = (props?: Props): PreplanReport | undefined => {
+    const reportParam = (props || this.props).match.params.report;
+    return preplanReports.find(p => p.path === reportParam);
+  };
+
+  sectionSelectHandler = (selectedSection: SectionItem) => {
+    const selectedPreplanReport = selectedSection as PreplanReport;
+    this.props.history.push(`/preplan/${this.props.match.params.id}/reports/${selectedPreplanReport.path}`);
+  };
 
   render() {
-    const { match } = this.props;
+    const selectedPreplanReport = this.getPreplanReport();
 
     return (
-      <React.Fragment>
-        <div>Pre Plan {this.getId()} Reports</div>
-        <Switch>
-          <Route exact path={match.path} render={() => <div>Pre Plan {this.getId()} Reports [Selection]</div>} />
-          <Route exact path={match.path + '/proposal'} render={() => <div>Pre Plan {this.getId()} Reports Proposal</div>} />
-          <Route exact path={match.path + '/connections'} render={() => <div>Pre Plan {this.getId()} Reports Connections</div>} />
-          <Redirect to={match.url} />
-        </Switch>
-      </React.Fragment>
+      <SectionList sections={preplanReports} selectedSection={selectedPreplanReport} onSectionSelect={this.sectionSelectHandler}>
+        {selectedPreplanReport === preplanReportProposal && <ProposalReport />}
+        {selectedPreplanReport === preplanReportConnections && <ConnectionsReport />}
+      </SectionList>
     );
   }
 }

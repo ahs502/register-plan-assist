@@ -39,7 +39,8 @@ const styles = (theme: Theme) =>
       border: '1px solid black',
       margin: theme.spacing.unit * 4,
       padding: theme.spacing.unit * 3,
-      width: theme.spacing.unit * 40
+      width: theme.spacing.unit * 40,
+      cursor: 'pointer'
     },
     cardTitle: {
       fontSize: '120%'
@@ -84,7 +85,7 @@ const SectionList: FunctionComponent<Props> = props => {
         ) : (
           <div>
             {sections.map(section => (
-              <div key={section.title} className={classes.card}>
+              <div key={section.title} className={classes.card} onClick={() => sectionSelectHandler(section)}>
                 <div className={classes.cardTitle}>{section.title}</div>
                 <div className={classes.cardDescription}>{section.description}</div>
               </div>

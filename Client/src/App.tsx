@@ -20,7 +20,7 @@ class App extends PureComponent {
             <Redirect exact from="/" to="/preplan-list" />
             <Route exact path="/preplan-list" component={PreplanList} />
             <Route path="/preplan/:id" component={Preplan} />
-            <Route path="/master-data" component={MasterData} />
+            <Route exact path="/master-data/:table?" component={MasterData} />
             <Redirect to="/" />
           </Switch>
         </Router>

@@ -4,12 +4,14 @@ import SideBarContainer from './SideBarContainer';
 
 const styles = (theme: Theme) => createStyles({});
 
-interface Props extends WithStyles<typeof styles> {}
+interface Props extends WithStyles<typeof styles> {
+  initialSearch?: string;
+}
 interface State {}
 
 class SearchFlightsSideBar extends PureComponent<Props, State> {
   render() {
-    return <SideBarContainer label="Search Flights">logs...</SideBarContainer>;
+    return <SideBarContainer label="Search Flights">flights...</SideBarContainer>;
   }
 }
 

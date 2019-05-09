@@ -4,7 +4,9 @@ import SideBarContainer from './SideBarContainer';
 
 const styles = (theme: Theme) => createStyles({});
 
-interface Props extends WithStyles<typeof styles> {}
+interface Props extends WithStyles<typeof styles> {
+  initialSearch?: string;
+}
 interface State {}
 
 class SelectAircraftRegistersSideBar extends PureComponent<Props, State> {

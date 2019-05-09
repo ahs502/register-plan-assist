@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { Component, Fragment } from 'react';
 import { WithStyles, createStyles, withStyles, Theme } from '@material-ui/core/styles';
 import { RouteComponentProps } from 'react-router-dom';
 import NavBar from '../components/NavBar';
@@ -59,13 +59,15 @@ class MasterData extends Component<Props> {
     const selectedMasterDataTable = this.getMasterDataTable();
 
     return (
-      <React.Fragment>
-        <NavBar>Master Data</NavBar>
+      <Fragment>
+        <NavBar backLink="/preplan-list" navBarLinks={[{ title: 'Master Data' }]}>
+          Master Data Tools
+        </NavBar>
         <SectionList sections={masterDataTables} selectedSection={selectedMasterDataTable} onSectionSelect={this.sectionSelectHandler}>
           {selectedMasterDataTable === aircraftGroupsMasterDataTable && <AircraftGroupsMasterData />}
           {selectedMasterDataTable === constraintsMasterDataTable && <ConstraintsMasterData />}
         </SectionList>
-      </React.Fragment>
+      </Fragment>
     );
   }
 }

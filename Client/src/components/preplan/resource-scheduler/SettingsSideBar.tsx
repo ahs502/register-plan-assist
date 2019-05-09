@@ -9,7 +9,7 @@ interface State {}
 
 class SettingsSideBar extends PureComponent<Props, State> {
   render() {
-    return <SideBarContainer label="Auto-Arranger Options">logs...</SideBarContainer>;
+    return <SideBarContainer label="Auto-Arranger Options">options...</SideBarContainer>;
   }
 }
 

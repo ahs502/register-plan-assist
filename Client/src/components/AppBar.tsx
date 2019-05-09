@@ -17,7 +17,11 @@ class AppBar extends PureComponent<Props> {
   render() {
     const { classes } = this.props;
 
-    return <div className={classes.root}>App Bar</div>;
+    return (
+      <div>
+        <div className={classes.root}>App Bar</div>
+      </div>
+    );
   }
 }
 

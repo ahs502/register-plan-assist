@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import { Theme, createStyles, WithStyles, withStyles } from '@material-ui/core/styles';
 import { RouteComponentProps } from 'react-router-dom';
+import NavBar from '../../components/NavBar';
 import SectionList, { SectionItem } from '../../components/SectionList';
 import ProposalReport from '../../components/preplan/reports/ProposalReport';
 import ConnectionsReport from '../../components/preplan/reports/ConnectionsReport';
@@ -57,10 +58,22 @@ class Reports extends Component<Props> {
     const selectedPreplanReport = this.getPreplanReport();
 
     return (
-      <SectionList sections={preplanReports} selectedSection={selectedPreplanReport} onSectionSelect={this.sectionSelectHandler}>
-        {selectedPreplanReport === preplanReportProposal && <ProposalReport />}
-        {selectedPreplanReport === preplanReportConnections && <ConnectionsReport />}
-      </SectionList>
+      <React.Fragment>
+        <NavBar
+          navBarLinks={[
+            {
+              title: 'Pre Plan ' + this.getId(),
+              link: '/preplan/' + this.getId()
+            }
+          ]}
+        >
+          Preplan {this.getId()} Reports
+        </NavBar>
+        <SectionList sections={preplanReports} selectedSection={selectedPreplanReport} onSectionSelect={this.sectionSelectHandler}>
+          {selectedPreplanReport === preplanReportProposal && <ProposalReport />}
+          {selectedPreplanReport === preplanReportConnections && <ConnectionsReport />}
+        </SectionList>
+      </React.Fragment>
     );
   }
 }

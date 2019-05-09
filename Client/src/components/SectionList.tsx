@@ -9,7 +9,8 @@ const styles = (theme: Theme) =>
       alignItems: 'stretch',
       border: '1px solid brown',
       margin: 0,
-      padding: 0
+      padding: 0,
+      height: 'calc(100vh - 104px)'
     },
     list: {
       width: 256,
@@ -17,6 +18,7 @@ const styles = (theme: Theme) =>
       borderRight: '1px solid grey',
       margin: 0,
       padding: 0,
+      paddingTop: theme.spacing.unit * 3,
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'flex-start',

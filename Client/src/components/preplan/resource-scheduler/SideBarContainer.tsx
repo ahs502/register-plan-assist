@@ -4,7 +4,8 @@ import { WithStyles, Theme, createStyles, withStyles } from '@material-ui/core/s
 const styles = (theme: Theme) =>
   createStyles({
     root: {
-      margin: 0
+      margin: 0,
+      width: theme.spacing.unit * 60
     },
     label: {
       border: '1px solid black',

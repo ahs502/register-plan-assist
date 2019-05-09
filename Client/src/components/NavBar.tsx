@@ -8,18 +8,38 @@ const styles = (theme: Theme) =>
       backgroundColor: theme.palette.grey[300],
       margin: 0,
       padding: theme.spacing.unit * 2
+    },
+    tools: {
+      float: 'right'
     }
   });
 
-interface Props extends WithStyles<typeof styles> {}
+export interface NavBarLink {
+  title: string;
+  link?: string;
+}
+
+interface Props extends WithStyles<typeof styles> {
+  backLink?: string;
+  navBarLinks: NavBarLink[];
+}
 
 class NavBar extends PureComponent<Props> {
   render() {
-    const { classes, children } = this.props;
+    const { classes, children, backLink, navBarLinks } = this.props;
 
     return (
       <div className={classes.root}>
-        Nav Bar&nbsp;&nbsp;<strong>{children}</strong>
+        {backLink && <strong title={backLink}>[Back]</strong>}
+        {navBarLinks.map((navBarLink, index) => (
+          <React.Fragment key={index}>
+            {index > 0 && <strong>&gt;</strong>}
+            <span title={navBarLink.link}>{navBarLink.title}</span>
+          </React.Fragment>
+        ))}
+        <span className={classes.tools}>
+          Nav Bar&nbsp;&nbsp;<strong>{children}</strong>
+        </span>
       </div>
     );
   }

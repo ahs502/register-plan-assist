@@ -84,5 +84,12 @@ class Search extends PureComponent<Props, State> {
 export default withStyles(styles)(Search);
 
 export function filterOnProperties<T>(items: T[], query: string[], properties: string[]): T[] {
-  return items; //TODO: Filter objections by query
+  return items.filter(item => {
+    for (let i = 0; i < properties.length; ++i) {
+      for (let j = 0; j < query.length; ++j) {
+        if (query[j].includes(((item as any)[properties[i]] as string).toLowerCase())) return true;
+      }
+    }
+    return false;
+  });
 }

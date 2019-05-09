@@ -6,8 +6,6 @@ import ResourceScheduler from './preplan/resource-scheduler';
 import FlightRequirements from './preplan/flight-requirements';
 import Reports from './preplan/reports';
 
-import NavBar from '../components/NavBar';
-
 const styles = (theme: Theme) => createStyles({});
 
 interface Props extends WithStyles<typeof styles>, RouteComponentProps<{ id?: string }> {}
@@ -38,16 +36,13 @@ class Preplan extends Component<Props, State> {
     const { match } = this.props;
 
     return (
-      <React.Fragment>
-        <NavBar>Pre Plan {this.getId()}</NavBar>
-        <Switch>
-          <Redirect exact from={match.url} to={match.url + '/resource-scheduler'} />
-          <Route exact path={match.path + '/resource-scheduler'} component={ResourceScheduler} />
-          <Route exact path={match.path + '/flight-requirements'} component={FlightRequirements} />
-          <Route exact path={match.path + '/reports/:report?'} component={Reports} />
-          <Redirect to={match.url} />
-        </Switch>
-      </React.Fragment>
+      <Switch>
+        <Redirect exact from={match.url} to={match.url + '/resource-scheduler'} />
+        <Route exact path={match.path + '/resource-scheduler'} component={ResourceScheduler} />
+        <Route exact path={match.path + '/flight-requirements'} component={FlightRequirements} />
+        <Route exact path={match.path + '/reports/:report?'} component={Reports} />
+        <Redirect to={match.url} />
+      </Switch>
     );
   }
 }

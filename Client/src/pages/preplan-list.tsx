@@ -8,7 +8,17 @@ interface Props extends WithStyles<typeof styles> {}
 
 class PreplanList extends PureComponent<Props> {
   render() {
-    return <NavBar>Pre Plan List</NavBar>;
+    return (
+      <NavBar
+        navBarLinks={[
+          {
+            title: 'Pre Plans'
+          }
+        ]}
+      >
+        Pre Plan List
+      </NavBar>
+    );
   }
 }
 

@@ -1,4 +1,4 @@
-import React, { PureComponent, Fragment, RefObject } from 'react';
+import React, { PureComponent, Fragment } from 'react';
 import { Theme, createStyles, WithStyles, withStyles } from '@material-ui/core/styles';
 import { RouteComponentProps } from 'react-router-dom';
 import NavBar from '../../components/NavBar';
@@ -9,6 +9,8 @@ import ErrorsAndWarningsSideBar from '../../components/preplan/resource-schedule
 import SelectAircraftRegistersSideBar from '../../components/preplan/resource-scheduler/SelectAircraftRegistersSideBar';
 import SettingsSideBar from '../../components/preplan/resource-scheduler/SettingsSideBar';
 import ResourceSchedulerView from '../../components/preplan/resource-scheduler/ResourceSchedulerView';
+import FlightRequirementDialog from '../../components/preplan/FlightRequirementDialog';
+import FlightRequirement from '../../business/FlightRequirement';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -18,12 +20,6 @@ const styles = (theme: Theme) =>
     sideBarPaper: {
       top: 104
     },
-    // sideBarTopSpace: {
-    //   height: 104
-    // },
-    // sideBarContainer: {
-    //   position: 'relative'
-    // },
     statusBar: {
       height: 54,
       border: '1px solid orange',
@@ -46,21 +42,19 @@ interface State {
   isSideBarOpen: boolean;
   sideBarType?: SideBarType;
   initialSideBarSearch?: string;
+  isFlightRequirementDialogOpen: boolean;
 }
 
 class ResourceScheduler extends PureComponent<Props, State> {
-  // private sideBarContainerRef: RefObject<HTMLDivElement>;
-
   constructor(props: Props) {
     super(props);
 
     this.state = {
       isSideBarOpen: false,
       sideBarType: undefined,
-      initialSideBarSearch: undefined
+      initialSideBarSearch: undefined,
+      isFlightRequirementDialogOpen: false
     };
-
-    // this.sideBarContainerRef = React.createRef();
   }
 
   getId = (): number => Number(this.props.match.params.id);
@@ -84,9 +78,20 @@ class ResourceScheduler extends PureComponent<Props, State> {
     this.setState((previousState: State) => ({ ...previousState, isSideBarOpen: false }));
   };
 
+  openFlightRequirementDialog = () => {
+    this.setState({ ...this.state, isFlightRequirementDialogOpen: true });
+  };
+
+  flightRequirementDialogSubmitHandler = (flightRequirement: FlightRequirement) => {
+    this.setState({ ...this.state, isFlightRequirementDialogOpen: false });
+  };
+  flightRequirementDialogDismissHandler = () => {
+    this.setState({ ...this.state, isFlightRequirementDialogOpen: false });
+  };
+
   render() {
     const { classes } = this.props;
-    const { isSideBarOpen, sideBarType, initialSideBarSearch } = this.state;
+    const { isSideBarOpen, sideBarType, initialSideBarSearch, isFlightRequirementDialogOpen } = this.state;
 
     return (
       <Fragment>
@@ -104,19 +109,15 @@ class ResourceScheduler extends PureComponent<Props, State> {
           <button onClick={() => this.openErrorsAndWarningsSideBar('something')}>E&amp;W</button>
           <button onClick={() => this.openSelectAircraftRegistersSideBar('something')}>SAR</button>
           <button onClick={this.openSettingsSideBar}>S</button>
+          <button onClick={this.openFlightRequirementDialog}>FRD</button>
         </NavBar>
-        {/* <div className={classes.sideBarContainer} ref={this.sideBarContainerRef}> */}
         <Drawer
           anchor="right"
           open={isSideBarOpen}
           onClose={this.sideBarCloseHandler}
-          ModalProps={{
-            // ...(this.sideBarContainerRef.current ? { container: this.sideBarContainerRef.current } : {}),
-            BackdropProps: { classes: { root: classes.sideBarBackdrop } }
-          }}
+          ModalProps={{ BackdropProps: { classes: { root: classes.sideBarBackdrop } } }}
           classes={{ paper: classes.sideBarPaper }}
         >
-          {/* <div className={classes.sideBarTopSpace} /> */}
           {sideBarType === SideBarType.AutoArrangerChangeLog && <AutoArrangerChangeLogSideBar initialSearch={initialSideBarSearch} />}
           {sideBarType === SideBarType.SearchFlights && <SearchFlightsSideBar initialSearch={initialSideBarSearch} />}
           {sideBarType === SideBarType.ErrorsAndWarnings && <ErrorsAndWarningsSideBar initialSearch={initialSideBarSearch} objections={[]} />}
@@ -125,7 +126,12 @@ class ResourceScheduler extends PureComponent<Props, State> {
         </Drawer>
         <ResourceSchedulerView />
         <div className={classes.statusBar}>Status Bar</div>
-        {/* </div> */}
+        <FlightRequirementDialog
+          flightRequirement={undefined}
+          open={isFlightRequirementDialogOpen}
+          onSubmit={this.flightRequirementDialogSubmitHandler}
+          onDismiss={this.flightRequirementDialogDismissHandler}
+        />
       </Fragment>
     );
   }

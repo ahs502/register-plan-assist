@@ -34,7 +34,7 @@ const styles = (theme: Theme) =>
     contents: {
       flexGrow: 1,
       margin: 0,
-      padding: theme.spacing.unit * 2
+      padding: 0
     },
     card: {
       display: 'inline-block',

@@ -1,6 +1,6 @@
 import React, { PureComponent } from 'react';
 import { WithStyles, Theme, createStyles, withStyles } from '@material-ui/core/styles';
-import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Button, TextField } from '@material-ui/core';
+import { DialogActions, DialogContent, DialogContentText, DialogTitle, Button, TextField } from '@material-ui/core';
 import DraggableDialog from '../DraggableDialog';
 import FlightRequirement from '../../business/FlightRequirement';
 

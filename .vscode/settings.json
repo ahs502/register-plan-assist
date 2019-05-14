@@ -5,6 +5,17 @@
     "Server/dist": true,
     "Client/build": true
   },
+  "editor.formatOnSave": true,
   "prettier.singleQuote": true,
-  "prettier.printWidth": 200
+  "prettier.printWidth": 200,
+  "prettier.tabWidth": 2,
+  "prettier.useTabs": false,
+  "prettier.trailingComma": "none",
+  "prettier.bracketSpacing": true,
+  "prettier.jsxBracketSameLine": false,
+  "prettier.semi": true,
+  "prettier.arrowParens": "avoid",
+  "prettier.jsxSingleQuote": false,
+  "prettier.endOfLine": "crlf",
+  "prettier.quoteProps": "as-needed"
 }

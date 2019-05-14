@@ -1,6 +1,6 @@
 import MasterDataItem, { MasterDataItems } from './MasterDataItem';
 import AircraftType from './AircraftType';
-import masterData from './MasterData';
+import masterData from '.';
 
 export default class AircraftRegister implements MasterDataItem {
   id: string;

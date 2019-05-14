@@ -1,6 +1,6 @@
 import MasterDataItem, { MasterDataItems } from './MasterDataItem';
 import SeasonType from './SeasonType';
-import masterData from './MasterData';
+import masterData from '.';
 
 export default class Season implements MasterDataItem {
   id: string;

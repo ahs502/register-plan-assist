@@ -15,7 +15,7 @@ export class ErrorObjection implements Objection {
   priority: number;
 
   constructor(message: string) {
-    this.message = message || 'Error';
+    this.message = message || '(Error)';
     this.type = ObjectionType.Error;
     this.priority = 200;
   }
@@ -27,7 +27,7 @@ export class WarningObjection implements Objection {
   priority: number;
 
   constructor(message: string) {
-    this.message = message;
+    this.message = message || '(Warning)';
     this.type = ObjectionType.Warning;
     this.priority = 100;
   }

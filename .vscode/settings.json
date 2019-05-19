@@ -7,7 +7,7 @@
   },
   "editor.formatOnSave": true,
   "prettier.singleQuote": true,
-  "prettier.printWidth": 200,
+  "prettier.printWidth": 180,
   "prettier.tabWidth": 2,
   "prettier.useTabs": false,
   "prettier.trailingComma": "none",

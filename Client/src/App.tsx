@@ -15,7 +15,7 @@ class App extends PureComponent {
     return (
       <MuiThemeProvider theme={theme}>
         <Router>
-          <AppBar />
+          <AppBar user={{ displayName: 'Moradi' }} />
           <Switch>
             <Redirect exact from="/" to="/preplan-list" />
             <Route exact path="/preplan-list" component={PreplanList} />

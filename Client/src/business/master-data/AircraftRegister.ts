@@ -8,11 +8,15 @@ export default class AircraftRegister implements MasterDataItem {
 
   aircraftTypeId: string;
 
-  constructor(raw: any) {
-    this.id = String(raw['id']);
-    this.name = String(raw['name']);
+  constructor(id: string, name: string, aircraftTypeId: string) {
+    this.id = id;
+    this.name = name;
 
-    this.aircraftTypeId = String(raw['aircraftTypeId']);
+    this.aircraftTypeId = aircraftTypeId;
+  }
+
+  static parse(raw: any): AircraftRegister {
+    return new AircraftRegister(String(raw['id']), String(raw['name']), String(raw['aircraftTypeId']));
   }
 
   getAircraftType(): AircraftType {
@@ -24,4 +28,9 @@ export default class AircraftRegister implements MasterDataItem {
   }
 }
 
-export class AircraftRegisters extends MasterDataItems<AircraftRegister> {}
+export class AircraftRegisters extends MasterDataItems<AircraftRegister> {
+  static parse(raw: any): AircraftRegisters | undefined {
+    if (!raw) return undefined;
+    return new AircraftRegisters((<Array<any>>raw).map(AircraftRegister.parse));
+  }
+}

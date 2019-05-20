@@ -11,14 +11,18 @@ export default class Season implements MasterDataItem {
 
   seasonTypeId: string;
 
-  constructor(raw: any) {
-    this.id = String(raw['id']);
-    this.name = String(raw['id']);
+  constructor(id: string, name: string, startDate: Date, endDate: Date, seasonTypeId: string) {
+    this.id = id;
+    this.name = name;
 
-    this.startDate = new Date(raw['startDate']);
-    this.endDate = new Date(raw['endDate']);
+    this.startDate = startDate;
+    this.endDate = endDate;
 
-    this.seasonTypeId = String(raw['seasonTypeId']);
+    this.seasonTypeId = seasonTypeId;
+  }
+
+  static parse(raw: any): Season {
+    return new Season(String(raw['id']), String(raw['id']), new Date(raw['startDate']), new Date(raw['endDate']), String(raw['seasonTypeId']));
   }
 
   getSeasonType(): SeasonType {
@@ -26,4 +30,9 @@ export default class Season implements MasterDataItem {
   }
 }
 
-export class Seasons extends MasterDataItems<Season> {}
+export class Seasons extends MasterDataItems<Season> {
+  static parse(raw: any): Seasons | undefined {
+    if (!raw) return undefined;
+    return new Seasons((<Array<any>>raw).map(Season.parse));
+  }
+}

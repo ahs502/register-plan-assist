@@ -6,12 +6,21 @@ export default class Stc implements MasterDataItem {
 
   description: string;
 
-  constructor(raw: any) {
-    this.id = String(raw['id']);
-    this.name = String(raw['id']);
+  constructor(id: string, name: string, description: string) {
+    this.id = id;
+    this.name = name;
 
-    this.description = String(raw['description']);
+    this.description = description;
+  }
+
+  static parse(raw: any): Stc {
+    return new Stc(String(raw['id']), String(raw['id']), String(raw['description']));
   }
 }
 
-export class Stcs extends MasterDataItems<Stc> {}
+export class Stcs extends MasterDataItems<Stc> {
+  static parse(raw: any): Stcs | undefined {
+    if (!raw) return undefined;
+    return new Stcs((<Array<any>>raw).map(Stc.parse));
+  }
+}

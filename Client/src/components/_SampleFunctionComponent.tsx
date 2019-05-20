@@ -17,11 +17,20 @@ const styles = (theme: Theme) =>
     }
   });
 
+export interface SomeExternalDeclaration {}
+
+interface SomeInternalDeclaration {}
+
 interface Props extends WithStyles<typeof styles> {}
 
-const SampleComponent: FunctionComponent<Props> = (props: Props) => {
+const SampleFunctionComponent: FunctionComponent<Props> = (props: Props) => {
   const { classes } = props;
+
   return <div className={classes.root}>Some Button</div>;
 };
 
-export default withStyles(styles)(SampleComponent);
+SampleFunctionComponent.defaultProps = {};
+
+export default withStyles(styles)(SampleFunctionComponent);
+
+function someHelperMethod() {}

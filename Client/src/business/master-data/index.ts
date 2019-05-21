@@ -1,12 +1,15 @@
-import AircraftType, { AircraftTypes } from './AircraftType';
-import AircraftRegister, { AircraftRegisters } from './AircraftRegister';
-import Airport, { Airports } from './Airport';
-import SeasonType, { SeasonTypes } from './SeasonType';
-import Season, { Seasons } from './Season';
-import Stc, { Stcs } from './Stc';
-import AircraftGroup, { AircraftGroups } from './AircraftGroup';
-import Constraint, { Constraints } from './Constraint';
+import { AircraftTypes } from './AircraftType';
+import { AircraftRegisters } from './AircraftRegister';
+import { Airports } from './Airport';
+import { SeasonTypes } from './SeasonType';
+import { Seasons } from './Season';
+import { Stcs } from './Stc';
+import { AircraftGroups } from './AircraftGroup';
+import { Constraints } from './Constraint';
 
+/**
+ * The global master data collection object.
+ */
 var masterData = {
   aircraftTypes: new AircraftTypes([]),
   aircraftRegisters: new AircraftRegisters([]),
@@ -18,6 +21,10 @@ var masterData = {
   constraints: new Constraints([])
 };
 
+/**
+ * Parses the retrieved raw data for master data collections.
+ * @param data A JSON object containing the raw retrieved data for some/all master data collections.
+ */
 export function receive(data: any) {
   masterData.aircraftTypes = AircraftTypes.parse(data['aircraftTypes']) || masterData.aircraftTypes;
   masterData.aircraftRegisters = AircraftRegisters.parse(data['aircraftRegisters']) || masterData.aircraftRegisters;

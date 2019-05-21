@@ -1,8 +1,15 @@
+/**
+ * The minimum common contents of any master data item.
+ */
 export default interface MasterDataItem {
   id: string;
   name: string;
 }
 
+/**
+ * The base class for any master data collection,
+ * mimiking the most applicable aspects of Array.
+ */
 export class MasterDataItems<T extends MasterDataItem> {
   length: number;
   [index: number]: T;

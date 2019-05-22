@@ -9,6 +9,7 @@ const styles = (theme: Theme) =>
     root: {
       userSelect: 'none',
       fontSize: 24,
+      lineHeight: '24px',
       width: '1em',
       height: '1em',
       overflow: 'hidden',
@@ -33,13 +34,16 @@ const styles = (theme: Theme) =>
       color: theme.palette.action.disabled
     },
     fontSizeInherit: {
-      fontSize: 'inherit'
+      fontSize: 'inherit',
+      lineHeight: 'inherit'
     },
     fontSizeSmall: {
-      fontSize: 20
+      fontSize: 20,
+      lineHeight: '20px'
     },
     fontSizeLarge: {
-      fontSize: 36
+      fontSize: 36,
+      lineHeight: '36px'
     }
   });
 

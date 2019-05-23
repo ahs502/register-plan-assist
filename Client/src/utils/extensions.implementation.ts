@@ -53,6 +53,12 @@
     result.setUTCHours(0, 0, 0, 0);
     return result;
   };
+  Date.prototype.getTimePart = function Date_prototype_getTimePart(): Date {
+    if (!this.isValid()) return this;
+    let result = new Date(0);
+    result.setUTCHours(this.getUTCHours(), this.getUTCMinutes(), this.getUTCSeconds(), this.getUTCMilliseconds());
+    return result;
+  };
 
   Date.prototype.addYears = function Date_prototype_addYears(years: number): Date {
     this.isValid() && this.setUTCFullYear(this.getUTCFullYear() + years);

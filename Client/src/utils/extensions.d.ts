@@ -55,6 +55,11 @@ declare interface Date {
   getDatePart(): Date;
 
   /**
+   * Returns the time part of this and makes sure its date is 1970/01/01.
+   */
+  getTimePart(): Date;
+
+  /**
    * Adds (or subtracts) specific amount of years to this Date and returns this.
    * @param years The number of years to add.
    */

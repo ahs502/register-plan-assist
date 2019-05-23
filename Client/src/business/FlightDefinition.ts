@@ -2,6 +2,9 @@ import IClonable from '../utils/IClonable';
 import Airport from './master-data/Airport';
 import masterData from './master-data';
 
+/**
+ * Describes the headline definitions of a flight.
+ */
 export default class FlightDefinition implements IClonable<FlightDefinition> {
   label: string;
   flightNumber: string;

@@ -1,8 +1,8 @@
 import MasterDataItem, { MasterDataItems } from './MasterDataItem';
 
 export default class Constraint implements MasterDataItem {
-  id: string;
-  name: string;
+  readonly id: string;
+  readonly name: string;
 
   constructor(id: string, name: string) {
     this.id = id;

@@ -1,16 +1,14 @@
 import MasterDataItem, { MasterDataItems } from './MasterDataItem';
 
 export default class Airport implements MasterDataItem {
-  id: string;
-  name: string;
-
-  fullName: string;
-  international: boolean;
+  readonly id: string;
+  readonly name: string;
+  readonly fullName: string;
+  readonly international: boolean;
 
   constructor(id: string, name: string, fullName: string, international: boolean) {
     this.id = id;
     this.name = name;
-
     this.fullName = fullName;
     this.international = international;
   }

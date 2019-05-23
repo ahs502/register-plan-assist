@@ -8,32 +8,67 @@ import { AircraftGroups } from './AircraftGroup';
 import { Constraints } from './Constraint';
 
 /**
- * The global master data collection object.
+ * The global master data collection containter.
+ * It is a singleton class with a static property all.
  */
-var masterData = {
-  aircraftTypes: new AircraftTypes([]),
-  aircraftRegisters: new AircraftRegisters([]),
-  airports: new Airports([]),
-  seasonTypes: new SeasonTypes([]),
-  seasons: new Seasons([]),
-  stcs: new Stcs([]),
-  aircraftGroups: new AircraftGroups([]),
-  constraints: new Constraints([])
-};
+export default class MasterData {
+  readonly aircraftTypes: AircraftTypes;
+  readonly aircraftRegisters: AircraftRegisters;
+  readonly airports: Airports;
+  readonly seasonTypes: SeasonTypes;
+  readonly seasons: Seasons;
+  readonly stcs: Stcs;
+  readonly aircraftGroups: AircraftGroups;
+  readonly constraints: Constraints;
 
-/**
- * Parses the retrieved raw data for master data collections.
- * @param data A JSON object containing the raw retrieved data for some/all master data collections.
- */
-export function receive(data: any) {
-  masterData.aircraftTypes = AircraftTypes.parse(data['aircraftTypes']) || masterData.aircraftTypes;
-  masterData.aircraftRegisters = AircraftRegisters.parse(data['aircraftRegisters']) || masterData.aircraftRegisters;
-  masterData.airports = Airports.parse(data['airports']) || masterData.airports;
-  masterData.seasonTypes = SeasonTypes.parse(data['seasonTypes']) || masterData.seasonTypes;
-  masterData.seasons = Seasons.parse(data['seasons']) || masterData.seasons;
-  masterData.stcs = Stcs.parse(data['stcs']) || masterData.stcs;
-  masterData.aircraftGroups = AircraftGroups.parse(data['aircraftGroups']) || masterData.aircraftGroups;
-  masterData.constraints = Constraints.parse(data['constraints']) || masterData.constraints;
+  private constructor(
+    aircraftTypes: AircraftTypes,
+    aircraftRegisters: AircraftRegisters,
+    airports: Airports,
+    seasonTypes: SeasonTypes,
+    seasons: Seasons,
+    stcs: Stcs,
+    aircraftGroups: AircraftGroups,
+    constraints: Constraints
+  ) {
+    this.aircraftTypes = aircraftTypes;
+    this.aircraftRegisters = aircraftRegisters;
+    this.airports = airports;
+    this.seasonTypes = seasonTypes;
+    this.seasons = seasons;
+    this.stcs = stcs;
+    this.aircraftGroups = aircraftGroups;
+    this.constraints = constraints;
+  }
+
+  /**
+   * Parses the retrieved raw data for master data collections.
+   * @param data A JSON object containing partially the raw retrieved data for some/all master data collections.
+   */
+  static recieve(data: any) {
+    MasterData.all = new MasterData(
+      AircraftTypes.parse(data['aircraftTypes']) || MasterData.all.aircraftTypes,
+      AircraftRegisters.parse(data['aircraftRegisters']) || MasterData.all.aircraftRegisters,
+      Airports.parse(data['airports']) || MasterData.all.airports,
+      SeasonTypes.parse(data['seasonTypes']) || MasterData.all.seasonTypes,
+      Seasons.parse(data['seasons']) || MasterData.all.seasons,
+      Stcs.parse(data['stcs']) || MasterData.all.stcs,
+      AircraftGroups.parse(data['aircraftGroups']) || MasterData.all.aircraftGroups,
+      Constraints.parse(data['constraints']) || MasterData.all.constraints
+    );
+  }
+
+  /**
+   * The singleton object containing all master data collections data.
+   */
+  static all: MasterData = new MasterData(
+    AircraftTypes.parse([]) as AircraftTypes,
+    AircraftRegisters.parse([]) as AircraftRegisters,
+    Airports.parse([]) as Airports,
+    SeasonTypes.parse([]) as SeasonTypes,
+    Seasons.parse([]) as Seasons,
+    Stcs.parse([]) as Stcs,
+    AircraftGroups.parse([]) as AircraftGroups,
+    Constraints.parse([]) as Constraints
+  );
 }
-
-export default masterData;

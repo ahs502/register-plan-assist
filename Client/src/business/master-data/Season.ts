@@ -1,23 +1,19 @@
 import MasterDataItem, { MasterDataItems } from './MasterDataItem';
 import SeasonType from './SeasonType';
-import masterData from '.';
+import MasterData from '.';
 
 export default class Season implements MasterDataItem {
-  id: string;
-  name: string;
-
-  startDate: Date;
-  endDate: Date;
-
-  seasonTypeId: string;
+  readonly id: string;
+  readonly name: string;
+  readonly startDate: Date;
+  readonly endDate: Date;
+  readonly seasonTypeId: string;
 
   constructor(id: string, name: string, startDate: Date, endDate: Date, seasonTypeId: string) {
     this.id = id;
     this.name = name;
-
     this.startDate = startDate;
     this.endDate = endDate;
-
     this.seasonTypeId = seasonTypeId;
   }
 
@@ -26,7 +22,7 @@ export default class Season implements MasterDataItem {
   }
 
   getSeasonType(): SeasonType {
-    return masterData.seasonTypes.id[this.seasonTypeId];
+    return MasterData.all.seasonTypes.id[this.seasonTypeId];
   }
 }
 

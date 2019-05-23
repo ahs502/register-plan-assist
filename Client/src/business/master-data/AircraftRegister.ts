@@ -1,17 +1,15 @@
 import MasterDataItem, { MasterDataItems } from './MasterDataItem';
 import AircraftType from './AircraftType';
-import masterData from '.';
+import MasterData from '.';
 
 export default class AircraftRegister implements MasterDataItem {
-  id: string;
-  name: string;
-
-  aircraftTypeId: string;
+  readonly id: string;
+  readonly name: string;
+  readonly aircraftTypeId: string;
 
   constructor(id: string, name: string, aircraftTypeId: string) {
     this.id = id;
     this.name = name;
-
     this.aircraftTypeId = aircraftTypeId;
   }
 
@@ -20,11 +18,11 @@ export default class AircraftRegister implements MasterDataItem {
   }
 
   getAircraftType(): AircraftType {
-    return masterData.aircraftTypes.id[this.aircraftTypeId];
+    return MasterData.all.aircraftTypes.id[this.aircraftTypeId];
   }
 
-  getMinimumGroundTime(date: Date, isTransit: boolean, isInternational: boolean): number {
-    return this.getAircraftType().getMinimumGroundTime(date, isTransit, isInternational);
+  getMinimumGroundTime(date: Date, transit: boolean, international: boolean): number {
+    return this.getAircraftType().getMinimumGroundTime(date, transit, international);
   }
 }
 

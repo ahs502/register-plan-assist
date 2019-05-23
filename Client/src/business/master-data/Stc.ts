@@ -1,15 +1,13 @@
 import MasterDataItem, { MasterDataItems } from './MasterDataItem';
 
 export default class Stc implements MasterDataItem {
-  id: string;
-  name: string;
-
-  description: string;
+  readonly id: string;
+  readonly name: string;
+  readonly description: string;
 
   constructor(id: string, name: string, description: string) {
     this.id = id;
     this.name = name;
-
     this.description = description;
   }
 

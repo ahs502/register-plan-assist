@@ -14,19 +14,15 @@ export interface MinimumGroundTime {
 }
 
 export default class AircraftType implements MasterDataItem {
-  id: string;
-  name: string;
-
-  displayOrder: number;
-
-  turnrounds: Turnround[];
+  readonly id: string;
+  readonly name: string;
+  readonly displayOrder: number;
+  readonly turnrounds: Turnround[];
 
   constructor(id: string, name: string, displayOrder: number, turnrounds: Turnround[]) {
     this.id = id;
     this.name = name;
-
     this.displayOrder = displayOrder;
-
     this.turnrounds = turnrounds;
   }
 
@@ -48,15 +44,15 @@ export default class AircraftType implements MasterDataItem {
     );
   }
 
-  getMinimumGroundTime(date: Date, isTransit: boolean, isInternational: boolean): number {
+  getMinimumGroundTime(date: Date, transit: boolean, international: boolean): number {
     const result = this.turnrounds.find(t => t.startDate <= date && t.endDate >= date);
     if (!result) return 0;
     const turnround = result as Turnround;
-    return isTransit
-      ? isInternational
+    return transit
+      ? international
         ? turnround.minimumGroundTime.transitInternational
         : turnround.minimumGroundTime.transitDomestic
-      : isInternational
+      : international
       ? turnround.minimumGroundTime.departureInternational
       : turnround.minimumGroundTime.departureDomestic;
   }

@@ -10,7 +10,7 @@ export default interface MasterDataItem {
  * The base class for any master data collection,
  * mimiking the most applicable aspects of Array.
  */
-export class MasterDataItems<T extends MasterDataItem> {
+export abstract class MasterDataItems<T extends MasterDataItem> {
   length: number;
   [index: number]: T;
 
@@ -30,33 +30,33 @@ export class MasterDataItems<T extends MasterDataItem> {
     return result;
   }
 
-  forEach(task: (item: T) => void): void {
+  forEach(task: (value: T, index: number, array: ArrayLike<T>) => void): void {
     for (let i = 0; i < this.length; i++) {
-      task(this[i]);
+      task(this[i], i, this);
     }
   }
 
-  map<R>(task: (item: T) => R): R[] {
+  map<R>(task: (value: T, index: number, array: ArrayLike<T>) => R): R[] {
     let result = [] as R[];
     for (let i = 0; i < this.length; i++) {
-      result.push(task(this[i]));
+      result.push(task(this[i], i, this));
     }
     return result;
   }
 
-  filter(predicate: (item: T) => boolean): T[] {
+  filter(predicate: (value: T, index: number, array: ArrayLike<T>) => any): T[] {
     let result = [] as T[];
     for (let i = 0; i < this.length; i++) {
-      if (predicate(this[i])) {
+      if (predicate(this[i], i, this)) {
         result.push(this[i]);
       }
     }
     return result;
   }
 
-  find(predicate: (item: T) => boolean): T | undefined {
+  find(predicate: (value: T, index: number, array: ArrayLike<T>) => any): T | undefined {
     for (let i = 0; i < this.length; i++) {
-      if (predicate(this[i])) return this[i];
+      if (predicate(this[i], i, this)) return this[i];
     }
     return undefined;
   }

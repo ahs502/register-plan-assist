@@ -8,6 +8,14 @@ declare interface ArrayConstructor {
   range(start: number, end: number, step?: number): number[];
 }
 
+declare interface Array<T> {
+  /**
+   * Removes all occurance of the specified item and returns the number of removed items.
+   * @param item The item to be removed.
+   */
+  remove(item: T): number;
+}
+
 /**
   D: 1970-01-02 |
   D#: 19700102 |

@@ -19,6 +19,15 @@
     return result;
   };
 
+  Array.prototype.remove = function Array_prototype_remove<T>(item: T): number {
+    let result = 0;
+    let index = 0;
+    while (index < this.length) {
+      this[index] === item ? (this.splice(index, 1), result++) : ++index;
+    }
+    return result;
+  };
+
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];

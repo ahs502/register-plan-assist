@@ -1,4 +1,4 @@
-import { DummyAircraftRegister, AircraftRegisters } from './AircraftRegister';
+import { DummyAircraftRegister, AircraftRegisters, AircraftRegisterOptionsDictionary } from './AircraftRegister';
 import IClonable from './IClonable';
 
 export default class Preplan implements IClonable<Preplan> {
@@ -25,6 +25,7 @@ export default class Preplan implements IClonable<Preplan> {
   simulationName?: string;
 
   dummyAircraftRegisters: DummyAircraftRegister[];
+  aircraftRegisterOptionsDictionary: AircraftRegisterOptionsDictionary;
 
   // Calculated fields:
 
@@ -51,7 +52,8 @@ export default class Preplan implements IClonable<Preplan> {
     endDate: Date,
     simulationId: string | undefined,
     simulationName: string | undefined,
-    dummyAircraftRegisters: DummyAircraftRegister[]
+    dummyAircraftRegisters: DummyAircraftRegister[],
+    aircraftRegisterOptionsDictionary: AircraftRegisterOptionsDictionary
   ) {
     this.id = id;
 
@@ -76,8 +78,8 @@ export default class Preplan implements IClonable<Preplan> {
     this.simulationName = simulationName;
 
     this.dummyAircraftRegisters = dummyAircraftRegisters;
-
-    this.aircraftRegisters = new AircraftRegisters(dummyAircraftRegisters);
+    this.aircraftRegisters = new AircraftRegisters(dummyAircraftRegisters, aircraftRegisterOptionsDictionary);
+    this.aircraftRegisterOptionsDictionary = this.aircraftRegisters.extractAircraftRegisterOptionsDictionary();
   }
 
   clone(): Preplan {
@@ -97,7 +99,8 @@ export default class Preplan implements IClonable<Preplan> {
       this.endDate,
       this.simulationId,
       this.simulationName,
-      this.dummyAircraftRegisters.map(a => ({ ...a }))
+      this.dummyAircraftRegisters.map(a => ({ ...a })),
+      this.aircraftRegisters.extractAircraftRegisterOptionsDictionary()
     );
   }
 }

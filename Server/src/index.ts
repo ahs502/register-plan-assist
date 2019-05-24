@@ -2,11 +2,16 @@ import * as path from 'path';
 import * as http from 'http';
 import * as express from 'express';
 
-import app from './App';
+const app = express();
 
 const env = process.env.NODE_ENV || 'production';
 app.set('env', env);
 //TODO: Configure the project by the env variable. It will be either 'production', 'test' or 'development'.
+
+app.use(express.json());
+
+import apiRouter from './api';
+app.use('/api', apiRouter);
 
 app.use('/', express.static(path.join(__dirname, 'public')));
 

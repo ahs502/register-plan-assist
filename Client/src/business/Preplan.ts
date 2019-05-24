@@ -1,7 +1,7 @@
+import AutoArrangerOptions, { defaultAutoArrangerOptions } from './AutoArrangerOptions';
 import { DummyAircraftRegister, AircraftRegisters, AircraftRegisterOptionsDictionary } from './AircraftRegister';
-import IClonable from './IClonable';
 
-export default class Preplan implements IClonable<Preplan> {
+export default class Preplan {
   id: string;
 
   name: string;
@@ -23,6 +23,8 @@ export default class Preplan implements IClonable<Preplan> {
 
   simulationId?: string;
   simulationName?: string;
+
+  autoArrangerOptions: AutoArrangerOptions;
 
   dummyAircraftRegisters: DummyAircraftRegister[];
   aircraftRegisterOptionsDictionary: AircraftRegisterOptionsDictionary;
@@ -52,6 +54,7 @@ export default class Preplan implements IClonable<Preplan> {
     endDate: Date,
     simulationId: string | undefined,
     simulationName: string | undefined,
+    autoArrangerOptions: AutoArrangerOptions | undefined,
     dummyAircraftRegisters: DummyAircraftRegister[],
     aircraftRegisterOptionsDictionary: AircraftRegisterOptionsDictionary
   ) {
@@ -77,30 +80,10 @@ export default class Preplan implements IClonable<Preplan> {
     this.simulationId = simulationId;
     this.simulationName = simulationName;
 
+    this.autoArrangerOptions = autoArrangerOptions || defaultAutoArrangerOptions;
+
     this.dummyAircraftRegisters = dummyAircraftRegisters;
     this.aircraftRegisters = new AircraftRegisters(dummyAircraftRegisters, aircraftRegisterOptionsDictionary);
     this.aircraftRegisterOptionsDictionary = this.aircraftRegisters.extractAircraftRegisterOptionsDictionary();
-  }
-
-  clone(): Preplan {
-    return new Preplan(
-      this.id,
-      this.name,
-      this.published,
-      this.finalized,
-      this.userId,
-      this.userName,
-      this.userDisplayName,
-      this.parentPreplanId,
-      this.parentPreplanName,
-      this.creationDateTime,
-      this.lastEditDateTime,
-      this.startDate,
-      this.endDate,
-      this.simulationId,
-      this.simulationName,
-      this.dummyAircraftRegisters.map(a => ({ ...a })),
-      this.aircraftRegisters.extractAircraftRegisterOptionsDictionary()
-    );
   }
 }

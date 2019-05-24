@@ -1,3 +1,5 @@
+/*eslint no-extend-native: "off", no-self-compare: "off"*/
+
 (function() {
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -23,7 +25,12 @@
     let result = 0;
     let index = 0;
     while (index < this.length) {
-      this[index] === item ? (this.splice(index, 1), result++) : ++index;
+      if (this[index] === item) {
+        this.splice(index, 1);
+        result++;
+      } else {
+        ++index;
+      }
     }
     return result;
   };

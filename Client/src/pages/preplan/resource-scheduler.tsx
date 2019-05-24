@@ -10,7 +10,7 @@ import SelectAircraftRegistersSideBar from '../../components/preplan/resource-sc
 import SettingsSideBar from '../../components/preplan/resource-scheduler/SettingsSideBar';
 import ResourceSchedulerView from '../../components/preplan/resource-scheduler/ResourceSchedulerView';
 import FlightRequirementDialog from '../../components/preplan/FlightRequirementDialog';
-import FlightRequirement from '../../business/FlightRequirement';
+import { FlightRequirement } from '../../components/preplan/FlightRequirementDialog';
 
 const styles = (theme: Theme) =>
   createStyles({

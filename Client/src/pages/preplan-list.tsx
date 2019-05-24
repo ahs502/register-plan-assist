@@ -5,7 +5,7 @@ import NavBar from '../components/NavBar';
 import LinkButton from '../components/LinkButton';
 import { Waves as WavesIcon, DoneAll as FinilizedIcon, Add as AddIcon, Edit as EditIcon, Clear as ClearIcon } from '@material-ui/icons';
 import classNames from 'classnames';
-import Preplan from '../business/Preplan';
+import { PreplanHeader } from '../business/Preplan';
 import Search from '../components/Search';
 import LinkTypography from '../components/LinkTypography';
 import MahanIcon, { MahanIconType } from '../components/MahanIcon';
@@ -33,7 +33,7 @@ const styles = (theme: Theme) =>
 
 interface Props extends WithStyles<typeof styles> {}
 interface State {
-  preplans: Preplan[];
+  preplans: PreplanHeader[];
   tabNumber: Number;
   preplanType: PreplanType;
 }
@@ -62,13 +62,13 @@ class PreplanList extends PureComponent<Props, State> {
     });
   };
 
-  togglePreplanPublic = (preplan: Preplan) => (event: React.ChangeEvent<{}>, checked: boolean) => {
+  togglePreplanPublic = (preplan: PreplanHeader) => (event: React.ChangeEvent<{}>, checked: boolean) => {
     this.setState(prevState => {
       const newState = { ...prevState, preplans: [...prevState.preplans] };
       const tempPreplan = newState.preplans.find(p => p.id === preplan.id);
 
       if (tempPreplan) {
-        tempPreplan.public = checked;
+        //tempPreplan.public = checked;
       }
 
       return newState;
@@ -137,9 +137,9 @@ class PreplanList extends PureComponent<Props, State> {
                       <TableCell className={classes.preplanTableCell} align="center">
                         {preplan.finalized ? <FinilizedIcon /> : ''}
                       </TableCell>
-                      <TableCell className={classes.preplanTableCell}>{preplan.simulationTitle}</TableCell>
+                      <TableCell className={classes.preplanTableCell}>{preplan.simulationName}</TableCell>
                       <TableCell className={classes.preplanTableCell}>
-                        {preplanType === PreplanType.Public ? preplan.userDisplayName : <Switch checked={preplan.public} onChange={this.togglePreplanPublic(preplan)} />}
+                        {preplanType === PreplanType.Public ? preplan.userDisplayName : <Switch checked={preplan.published} onChange={this.togglePreplanPublic(preplan)} />}
                       </TableCell>
                       <TableCell className={classes.preplanTableCell}>
                         <IconButton>
@@ -169,12 +169,12 @@ class PreplanList extends PureComponent<Props, State> {
 
 export default withStyles(styles)(PreplanList);
 
-function getDummyPreplans(): Preplan[] {
+function getDummyPreplans(): PreplanHeader[] {
   return [
     {
       id: '123',
       name: 'S20 International Final',
-      public: true,
+      published: true,
       finalized: false,
       userId: '1001',
       userName: 'MAHANAIR961234',
@@ -186,12 +186,12 @@ function getDummyPreplans(): Preplan[] {
       startDate: new Date(2019, 1, 1),
       endDate: new Date(2019, 7, 1),
       simulationId: '32847321984',
-      simulationTitle: 'S19 International Simulation'
+      simulationName: 'S19 International Simulation'
     },
     {
       id: '124',
       name: 'S21 International Final',
-      public: false,
+      published: false,
       finalized: true,
       userId: '1001',
       userName: 'MAHANAIR961234',
@@ -203,12 +203,12 @@ function getDummyPreplans(): Preplan[] {
       startDate: new Date(2019, 1, 1),
       endDate: new Date(2019, 7, 1),
       simulationId: '32847321984',
-      simulationTitle: 'S19 International Simulation'
+      simulationName: 'S19 International Simulation'
     },
     {
       id: '125',
       name: 'S19 International Final',
-      public: true,
+      published: true,
       finalized: false,
       userId: '1002',
       userName: 'MAHANAIR961234',
@@ -220,12 +220,12 @@ function getDummyPreplans(): Preplan[] {
       startDate: new Date(2019, 1, 1),
       endDate: new Date(2019, 7, 1),
       simulationId: '32847321984',
-      simulationTitle: 'S19 International Simulation'
+      simulationName: 'S19 International Simulation'
     },
     {
       id: '126',
       name: 'S19 International Final',
-      public: true,
+      published: true,
       finalized: true,
       userId: '1002',
       userName: 'MAHANAIR961234',
@@ -237,12 +237,12 @@ function getDummyPreplans(): Preplan[] {
       startDate: new Date(2019, 1, 1),
       endDate: new Date(2019, 7, 1),
       simulationId: '32847321984',
-      simulationTitle: 'S19 International Simulation'
+      simulationName: 'S19 International Simulation'
     },
     {
       id: '127',
       name: 'S19 International Final',
-      public: true,
+      published: true,
       finalized: true,
       userId: '1003',
       userName: 'MAHANAIR961234',
@@ -254,12 +254,12 @@ function getDummyPreplans(): Preplan[] {
       startDate: new Date(2019, 1, 1),
       endDate: new Date(2019, 7, 1),
       simulationId: '32847321984',
-      simulationTitle: 'S19 International Simulation'
+      simulationName: 'S19 International Simulation'
     },
     {
       id: '128',
       name: 'S19 International Final',
-      public: true,
+      published: true,
       finalized: true,
       userId: '1003',
       userName: 'MAHANAIR961234',
@@ -271,7 +271,7 @@ function getDummyPreplans(): Preplan[] {
       startDate: new Date(2019, 1, 1),
       endDate: new Date(2019, 7, 1),
       simulationId: '32847321984',
-      simulationTitle: 'S19 International Simulation'
+      simulationName: 'S19 International Simulation'
     }
   ];
 }

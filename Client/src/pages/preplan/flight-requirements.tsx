@@ -3,7 +3,7 @@ import { Theme, createStyles, WithStyles, withStyles } from '@material-ui/core/s
 import { RouteComponentProps } from 'react-router-dom';
 import NavBar from '../../components/NavBar';
 import FlightRequirementDialog from '../../components/preplan/FlightRequirementDialog';
-import FlightRequirement from '../../business/FlightRequirement';
+import { FlightRequirement } from '../../components/preplan/FlightRequirementDialog';
 
 const styles = (theme: Theme) => createStyles({});
 

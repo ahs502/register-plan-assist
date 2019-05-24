@@ -1,7 +1,33 @@
 import AutoArrangerOptions, { defaultAutoArrangerOptions } from './AutoArrangerOptions';
 import { DummyAircraftRegister, AircraftRegisters, AircraftRegisterOptionsDictionary } from './AircraftRegister';
 
-export default class Preplan {
+export interface PreplanHeader {
+  readonly id: string;
+
+  readonly name: string;
+  readonly published: boolean;
+  readonly finalized: boolean;
+
+  readonly userId: string;
+  readonly userName: string;
+  readonly userDisplayName: string;
+
+  readonly parentPreplanId?: string;
+  readonly parentPreplanName?: string;
+
+  readonly creationDateTime: Date;
+  readonly lastEditDateTime: Date;
+
+  readonly startDate: Date;
+  readonly endDate: Date;
+
+  readonly simulationId?: string;
+  readonly simulationName?: string;
+}
+
+export default class Preplan implements PreplanHeader {
+  //TODO: Revise access modifiers.
+
   id: string;
 
   name: string;

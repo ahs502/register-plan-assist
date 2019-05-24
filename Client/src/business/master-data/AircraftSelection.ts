@@ -1,3 +1,5 @@
+import AircraftIdentity from './AircraftIdentity';
+
 /**
  * A data structure describing a range of aircraft registers.
  * An aircraft is within this range if and only if it is included

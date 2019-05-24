@@ -2,7 +2,11 @@ import React, { PureComponent } from 'react';
 import { WithStyles, Theme, createStyles, withStyles } from '@material-ui/core/styles';
 import { DialogActions, DialogContent, DialogContentText, DialogTitle, Button, TextField } from '@material-ui/core';
 import DraggableDialog from '../DraggableDialog';
-import FlightRequirement from '../../business/FlightRequirement';
+//import FlightRequirement from '../../business/FlightRequirement';
+
+export interface FlightRequirement {
+  label: string;
+}
 
 const styles = (theme: Theme) => createStyles({});
 

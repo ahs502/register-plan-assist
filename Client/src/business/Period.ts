@@ -1,4 +1,4 @@
-import IClonable from '../utils/IClonable';
+import IClonable from './IClonable';
 
 /**
  * A day mapper object for a periodic date interval.

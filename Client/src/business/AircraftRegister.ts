@@ -2,7 +2,6 @@ import MasterDataItem, { MasterDataItems } from './master-data/MasterDataItem';
 import AircraftType from './master-data/AircraftType';
 import AircraftIdentity from './master-data/AircraftIdentity';
 import AircraftSelection from './master-data/AircraftSelection';
-import MasterDataAircraftRegister from './master-data/AircraftRegister';
 import Airport from './master-data/Airport';
 import MasterData from './master-data';
 

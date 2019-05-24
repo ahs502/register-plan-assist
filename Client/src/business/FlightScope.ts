@@ -1,5 +1,5 @@
-import IClonable from '../utils/IClonable';
-import AircraftSelection from './AircraftSelection';
+import IClonable from './IClonable';
+import AircraftSelection from './master-data/AircraftSelection';
 import { Daytime } from './Daytime';
 
 /**
@@ -31,6 +31,13 @@ export default class FlightScope implements IClonable<FlightScope> {
   }
 
   clone(): FlightScope {
-    return new FlightScope(this.blockTime, this.times.map(t => ({ ...t })), this.aircraftSelection.clone(), this.slot, this.slotComments, this.required);
+    return new FlightScope(
+      this.blockTime,
+      this.times.map(t => ({ ...t })),
+      { allowedIdentities: { ...this.aircraftSelection.allowedIdentities }, forbiddenIdentities: { ...this.aircraftSelection.forbiddenIdentities } },
+      this.slot,
+      this.slotComments,
+      this.required
+    );
   }
 }

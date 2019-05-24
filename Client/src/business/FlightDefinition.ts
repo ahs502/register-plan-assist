@@ -1,6 +1,6 @@
-import IClonable from '../utils/IClonable';
+import IClonable from './IClonable';
 import Airport from './master-data/Airport';
-import masterData from './master-data';
+import MasterData from './master-data';
 
 /**
  * Describes the headline definitions of a flight.
@@ -23,9 +23,9 @@ export default class FlightDefinition implements IClonable<FlightDefinition> {
   }
 
   getDepartureAirport(): Airport {
-    return masterData.airports.id[this.departureAirportId];
+    return MasterData.all.airports.id[this.departureAirportId];
   }
   getArrivalAirport(): Airport {
-    return masterData.airports.id[this.arrivalAirportId];
+    return MasterData.all.airports.id[this.arrivalAirportId];
   }
 }

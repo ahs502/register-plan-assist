@@ -1,4 +1,4 @@
-import IClonable from '../utils/IClonable';
+import IClonable from './IClonable';
 import FlightDefinition from './FlightDefinition';
 import FlightScope from './FlightScope';
 import Period, { Weekday, Week } from './Period';
@@ -62,6 +62,8 @@ export abstract class DayFlightRequirement<P extends Period<DayFlightRequirement
   aircraftRegisterId: string;
 
   constructor(parent: PeriodFlightRequirement<P>, scope: FlightScope, notes: string, day: number, std?: Daytime, aircraftRegisterId?: string) {
+    if (!aircraftRegisterId) throw new Error('Not implemented.');
+
     this.parent = parent;
 
     this.scope = scope;
@@ -69,7 +71,7 @@ export abstract class DayFlightRequirement<P extends Period<DayFlightRequirement
     this.day = day;
 
     this.std = std || this.scope.times[0].stdLowerBound;
-    this.aircraftRegisterId = aircraftRegisterId || (this.scope.aircraftSelection.getAircraftRegisters()[0] || {}).id;
+    this.aircraftRegisterId = aircraftRegisterId || ''; //TODO: Not implemented.
   }
 
   abstract clone(): DayFlightRequirement<P>;

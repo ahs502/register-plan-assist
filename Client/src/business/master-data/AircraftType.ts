@@ -1,16 +1,16 @@
 import MasterDataItem, { MasterDataItems } from './MasterDataItem';
 
 export interface Turnround {
-  startDate: Date;
-  endDate: Date;
-  minimumGroundTime: MinimumGroundTime;
+  readonly startDate: Date;
+  readonly endDate: Date;
+  readonly minimumGroundTime: MinimumGroundTime;
 }
 
 export interface MinimumGroundTime {
-  departureDomestic: number;
-  departureInternational: number;
-  transitDomestic: number;
-  transitInternational: number;
+  readonly departureDomestic: number;
+  readonly departureInternational: number;
+  readonly transitDomestic: number;
+  readonly transitInternational: number;
 }
 
 export default class AircraftType implements MasterDataItem {

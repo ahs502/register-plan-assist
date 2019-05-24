@@ -7,6 +7,8 @@ import { Stcs } from './Stc';
 import { AircraftGroups } from './AircraftGroup';
 import { Constraints } from './Constraint';
 
+import AircraftIdentity from './AircraftIdentity';
+
 /**
  * The global master data collection containter.
  * It is a singleton class with a static property all.
@@ -20,6 +22,14 @@ export default class MasterData {
   readonly stcs: Stcs;
   readonly aircraftGroups: AircraftGroups;
   readonly constraints: Constraints;
+
+  /**
+   * All available aircraft identifiers for master data declarations,
+   * including all aircraft registers/types/groups by their names and
+   * all existing or dummy portion of each aircraft types by their names
+   * followed by a '&lowbar;EXISTING' or '&lowbar;DUMMY' postfix.
+   */
+  readonly aircraftIdentities: AircraftIdentity[];
 
   private constructor(
     aircraftTypes: AircraftTypes,
@@ -39,6 +49,13 @@ export default class MasterData {
     this.stcs = stcs;
     this.aircraftGroups = aircraftGroups;
     this.constraints = constraints;
+
+    this.aircraftIdentities = ([] as AircraftIdentity[])
+      .concat(this.aircraftRegisters.items.map(a => ({ type: 'register', name: a.name, entityId: a.id })))
+      .concat(this.aircraftTypes.items.map(a => ({ type: 'type', name: a.name, entityId: a.id })))
+      .concat(this.aircraftTypes.items.map(a => ({ type: 'type existing', name: a.name + '_EXISTING', entityId: a.id })))
+      .concat(this.aircraftTypes.items.map(a => ({ type: 'type dummy', name: a.name + '_DUMMY', entityId: a.id })))
+      .concat(this.aircraftGroups.items.map(a => ({ type: 'group', name: a.name, entityId: a.id })));
   }
 
   /**

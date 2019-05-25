@@ -26,7 +26,7 @@ export default class Season extends MasterDataItem implements SeasonModel {
 }
 
 export class Seasons extends MasterDataItems<Season> {
-  static parse(raw: SeasonModel[]): Seasons | undefined {
+  static parse(raw?: SeasonModel[]): Seasons | undefined {
     if (!raw) return undefined;
     return new Seasons(raw.map(x => new Season(x)));
   }

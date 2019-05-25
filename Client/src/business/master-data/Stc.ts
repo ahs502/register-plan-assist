@@ -14,7 +14,7 @@ export default class Stc extends MasterDataItem implements StcModel {
 }
 
 export class Stcs extends MasterDataItems<Stc> {
-  static parse(raw: StcModel[]): Stcs | undefined {
+  static parse(raw?: StcModel[]): Stcs | undefined {
     if (!raw) return undefined;
     return new Stcs(raw.map(x => new Stc(x)));
   }

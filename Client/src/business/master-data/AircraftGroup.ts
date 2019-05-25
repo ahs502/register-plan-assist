@@ -20,7 +20,7 @@ export default class AircraftGroup extends MasterDataItem implements AircraftGro
 }
 
 export class AircraftGroups extends MasterDataItems<AircraftGroup> {
-  static parse(raw: AircraftGroupModel[]): AircraftGroups | undefined {
+  static parse(raw?: AircraftGroupModel[]): AircraftGroups | undefined {
     if (!raw) return undefined;
     return new AircraftGroups(raw.map(x => new AircraftGroup(x)));
   }

@@ -47,7 +47,7 @@ export default class AircraftType extends MasterDataItem implements MasterDataIt
 }
 
 export class AircraftTypes extends MasterDataItems<AircraftType> {
-  static parse(raw: AircraftTypeModel[]): AircraftTypes | undefined {
+  static parse(raw?: AircraftTypeModel[]): AircraftTypes | undefined {
     if (!raw) return undefined;
     return new AircraftTypes(raw.map(x => new AircraftType(x)));
   }

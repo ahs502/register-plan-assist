@@ -9,7 +9,7 @@ export default class SeasonType extends MasterDataItem implements SeasonTypeMode
 }
 
 export class SeasonTypes extends MasterDataItems<SeasonType> {
-  static parse(raw: SeasonTypeModel[]): SeasonTypes | undefined {
+  static parse(raw?: SeasonTypeModel[]): SeasonTypes | undefined {
     if (!raw) return undefined;
     return new SeasonTypes(raw.map(x => new SeasonType(x)));
   }

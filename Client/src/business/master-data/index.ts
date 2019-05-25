@@ -1,13 +1,24 @@
-import { AircraftTypes } from './AircraftType';
-import { AircraftRegisters } from './AircraftRegister';
-import { Airports } from './Airport';
-import { SeasonTypes } from './SeasonType';
-import { Seasons } from './Season';
-import { Stcs } from './Stc';
-import { AircraftGroups } from './AircraftGroup';
-import { Constraints } from './Constraint';
+import { AircraftTypes, AircraftTypeModel } from './AircraftType';
+import { AircraftRegisters, AircraftRegisterModel } from './AircraftRegister';
+import { Airports, AirportModel } from './Airport';
+import { SeasonTypes, SeasonTypeModel } from './SeasonType';
+import { Seasons, SeasonModel } from './Season';
+import { Stcs, StcModel } from './Stc';
+import { AircraftGroups, AircraftGroupModel } from './AircraftGroup';
+import { Constraints, ConstraintModel } from './Constraint';
 
 import { AircraftIdentity } from './AircraftSelection';
+
+export interface MasterDataModel {
+  aircraftTypes: Readonly<AircraftTypeModel>[];
+  aircraftRegisters: Readonly<AircraftRegisterModel>[];
+  airports: Readonly<AirportModel>[];
+  seasonTypes: Readonly<SeasonTypeModel>[];
+  seasons: Readonly<SeasonModel>[];
+  stcs: Readonly<StcModel>[];
+  aircraftGroups: Readonly<AircraftGroupModel>[];
+  constraints: Readonly<ConstraintModel>[];
+}
 
 /**
  * The global master data collection containter.
@@ -29,7 +40,7 @@ export default class MasterData {
    * all existing or dummy portion of each aircraft types by their names
    * followed by a '&lowbar;EXISTING' or '&lowbar;DUMMY' postfix.
    */
-  readonly aircraftIdentities: AircraftIdentity[];
+  readonly aircraftIdentities: Readonly<AircraftIdentity>[];
 
   private constructor(
     aircraftTypes: AircraftTypes,
@@ -60,18 +71,18 @@ export default class MasterData {
 
   /**
    * Parses the retrieved raw data for master data collections.
-   * @param data A JSON object containing partially the raw retrieved data for some/all master data collections.
+   * @param raw A JSON object containing partially the raw retrieved data for some/all master data collections.
    */
-  static recieve(data: any) {
+  static recieve(raw: Partial<MasterDataModel>) {
     MasterData.all = new MasterData(
-      AircraftTypes.parse(data['aircraftTypes']) || MasterData.all.aircraftTypes,
-      AircraftRegisters.parse(data['aircraftRegisters']) || MasterData.all.aircraftRegisters,
-      Airports.parse(data['airports']) || MasterData.all.airports,
-      SeasonTypes.parse(data['seasonTypes']) || MasterData.all.seasonTypes,
-      Seasons.parse(data['seasons']) || MasterData.all.seasons,
-      Stcs.parse(data['stcs']) || MasterData.all.stcs,
-      AircraftGroups.parse(data['aircraftGroups']) || MasterData.all.aircraftGroups,
-      Constraints.parse(data['constraints']) || MasterData.all.constraints
+      AircraftTypes.parse(raw.aircraftTypes) || MasterData.all.aircraftTypes,
+      AircraftRegisters.parse(raw.aircraftRegisters) || MasterData.all.aircraftRegisters,
+      Airports.parse(raw.airports) || MasterData.all.airports,
+      SeasonTypes.parse(raw.seasonTypes) || MasterData.all.seasonTypes,
+      Seasons.parse(raw.seasons) || MasterData.all.seasons,
+      Stcs.parse(raw.stcs) || MasterData.all.stcs,
+      AircraftGroups.parse(raw.aircraftGroups) || MasterData.all.aircraftGroups,
+      Constraints.parse(raw.constraints) || MasterData.all.constraints
     );
   }
 

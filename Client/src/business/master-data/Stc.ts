@@ -1,6 +1,10 @@
 import MasterDataItem, { MasterDataItems } from './MasterDataItem';
 
-export default class Stc implements MasterDataItem {
+export interface StcModel extends MasterDataItem {
+  description: string;
+}
+
+export default class Stc implements StcModel {
   readonly id: string;
   readonly name: string;
   readonly description: string;
@@ -11,14 +15,14 @@ export default class Stc implements MasterDataItem {
     this.description = description;
   }
 
-  static parse(raw: any): Stc {
-    return new Stc(String(raw['id']), String(raw['id']), String(raw['description']));
+  static parse(raw: StcModel): Stc {
+    return new Stc(raw.id, raw.name, raw.description);
   }
 }
 
 export class Stcs extends MasterDataItems<Stc> {
-  static parse(raw: any): Stcs | undefined {
+  static parse(raw: StcModel[]): Stcs | undefined {
     if (!raw) return undefined;
-    return new Stcs((<Array<any>>raw).map(Stc.parse));
+    return new Stcs(raw.map(Stc.parse));
   }
 }

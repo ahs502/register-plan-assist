@@ -1,6 +1,11 @@
 import MasterDataItem, { MasterDataItems } from './MasterDataItem';
 
-export default class Airport implements MasterDataItem {
+export interface AirportModel extends MasterDataItem {
+  fullName: string;
+  international: boolean;
+}
+
+export default class Airport implements AirportModel {
   readonly id: string;
   readonly name: string;
   readonly fullName: string;
@@ -13,14 +18,14 @@ export default class Airport implements MasterDataItem {
     this.international = international;
   }
 
-  static parse(raw: any): Airport {
-    return new Airport(String(raw['id']), String(raw['id']), String(raw['fullName']), String(raw['international']) === 'true');
+  static parse(raw: AirportModel): Airport {
+    return new Airport(raw.id, raw.name, raw.fullName, raw.international);
   }
 }
 
 export class Airports extends MasterDataItems<Airport> {
-  static parse(raw: any): Airports | undefined {
+  static parse(raw: AirportModel[]): Airports | undefined {
     if (!raw) return undefined;
-    return new Airports((<Array<any>>raw).map(Airport.parse));
+    return new Airports(raw.map(Airport.parse));
   }
 }

@@ -7,7 +7,7 @@ import { Stcs } from './Stc';
 import { AircraftGroups } from './AircraftGroup';
 import { Constraints } from './Constraint';
 
-import AircraftIdentity from './AircraftIdentity';
+import { AircraftIdentity } from './AircraftSelection';
 
 /**
  * The global master data collection containter.

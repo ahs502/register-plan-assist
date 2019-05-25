@@ -2,8 +2,8 @@
  * The minimum common contents of any master data item.
  */
 export default interface MasterDataItem {
-  readonly id: string;
-  readonly name: string;
+  id: string;
+  name: string;
 }
 
 /**

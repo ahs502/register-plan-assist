@@ -2,7 +2,11 @@ import MasterDataItem, { MasterDataItems } from './MasterDataItem';
 import AircraftRegister from './AircraftRegister';
 import MasterData from '.';
 
-export default class AircraftGroup implements MasterDataItem {
+export interface AircraftGroupModel extends MasterDataItem {
+  aircraftRegisterIds: string[];
+}
+
+export default class AircraftGroup implements AircraftGroupModel {
   readonly id: string;
   readonly name: string;
   readonly aircraftRegisterIds: string[];
@@ -13,8 +17,8 @@ export default class AircraftGroup implements MasterDataItem {
     this.aircraftRegisterIds = aircraftRegisterIds;
   }
 
-  static parse(raw: any): AircraftGroup {
-    return new AircraftGroup(String(raw['id']), String(raw['name']), <Array<string>>raw['aircraftRegisterIds']);
+  static parse(raw: AircraftGroupModel): AircraftGroup {
+    return new AircraftGroup(raw.id, raw.name, raw.aircraftRegisterIds);
   }
 
   getAircraftRegisters(): AircraftRegister[] {
@@ -23,8 +27,8 @@ export default class AircraftGroup implements MasterDataItem {
 }
 
 export class AircraftGroups extends MasterDataItems<AircraftGroup> {
-  static parse(raw: any): AircraftGroups | undefined {
+  static parse(raw: AircraftGroupModel[]): AircraftGroups | undefined {
     if (!raw) return undefined;
-    return new AircraftGroups((<Array<any>>raw).map(AircraftGroup.parse));
+    return new AircraftGroups(raw.map(AircraftGroup.parse));
   }
 }

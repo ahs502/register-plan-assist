@@ -1,23 +1,28 @@
 import MasterDataItem, { MasterDataItems } from './MasterDataItem';
 
-export interface Turnround {
-  readonly startDate: Date;
-  readonly endDate: Date;
-  readonly minimumGroundTime: MinimumGroundTime;
+export interface MinimumGroundTime {
+  departureDomestic: number;
+  departureInternational: number;
+  transitDomestic: number;
+  transitInternational: number;
 }
 
-export interface MinimumGroundTime {
-  readonly departureDomestic: number;
-  readonly departureInternational: number;
-  readonly transitDomestic: number;
-  readonly transitInternational: number;
+export interface Turnround {
+  startDate: Date;
+  endDate: Date;
+  minimumGroundTime: Readonly<MinimumGroundTime>;
+}
+
+export interface AircraftTypeModel extends MasterDataItem {
+  displayOrder: number;
+  turnrounds: Readonly<Turnround>[];
 }
 
 export default class AircraftType implements MasterDataItem {
   readonly id: string;
   readonly name: string;
   readonly displayOrder: number;
-  readonly turnrounds: Turnround[];
+  readonly turnrounds: Readonly<Turnround>[];
 
   constructor(id: string, name: string, displayOrder: number, turnrounds: Turnround[]) {
     this.id = id;
@@ -26,20 +31,15 @@ export default class AircraftType implements MasterDataItem {
     this.turnrounds = turnrounds;
   }
 
-  static parse(raw: any): AircraftType {
+  static parse(raw: AircraftTypeModel): AircraftType {
     return new AircraftType(
-      String(raw['id']),
-      String(raw['name']),
-      Number(raw['displayOrder']),
-      (<Array<any>>raw['turnrounds']).map(rawTurnround => ({
-        startDate: new Date(rawTurnround['startData']),
-        endDate: new Date(rawTurnround['endDate']),
-        minimumGroundTime: {
-          departureDomestic: Number(rawTurnround['departureDomestic']),
-          departureInternational: Number(rawTurnround['departureInternational']),
-          transitDomestic: Number(rawTurnround['transitDomestic']),
-          transitInternational: Number(rawTurnround['transitInternational'])
-        }
+      raw.id,
+      raw.name,
+      raw.displayOrder,
+      raw.turnrounds.map(rawTurnround => ({
+        startDate: new Date(rawTurnround.startDate),
+        endDate: new Date(rawTurnround.endDate),
+        minimumGroundTime: rawTurnround.minimumGroundTime
       }))
     );
   }
@@ -59,8 +59,8 @@ export default class AircraftType implements MasterDataItem {
 }
 
 export class AircraftTypes extends MasterDataItems<AircraftType> {
-  static parse(raw: any): AircraftTypes | undefined {
+  static parse(raw: AircraftTypeModel[]): AircraftTypes | undefined {
     if (!raw) return undefined;
-    return new AircraftTypes((<Array<any>>raw).map(AircraftType.parse));
+    return new AircraftTypes(raw.map(AircraftType.parse));
   }
 }

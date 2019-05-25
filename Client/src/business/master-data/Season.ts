@@ -2,7 +2,13 @@ import MasterDataItem, { MasterDataItems } from './MasterDataItem';
 import SeasonType from './SeasonType';
 import MasterData from '.';
 
-export default class Season implements MasterDataItem {
+export interface SeasonModel extends MasterDataItem {
+  startDate: Date;
+  endDate: Date;
+  seasonTypeId: string;
+}
+
+export default class Season implements SeasonModel {
   readonly id: string;
   readonly name: string;
   readonly startDate: Date;
@@ -17,8 +23,8 @@ export default class Season implements MasterDataItem {
     this.seasonTypeId = seasonTypeId;
   }
 
-  static parse(raw: any): Season {
-    return new Season(String(raw['id']), String(raw['id']), new Date(raw['startDate']), new Date(raw['endDate']), String(raw['seasonTypeId']));
+  static parse(raw: SeasonModel): Season {
+    return new Season(raw.id, raw.name, new Date(raw.startDate), new Date(raw.endDate), raw.seasonTypeId);
   }
 
   getSeasonType(): SeasonType {
@@ -27,8 +33,8 @@ export default class Season implements MasterDataItem {
 }
 
 export class Seasons extends MasterDataItems<Season> {
-  static parse(raw: any): Seasons | undefined {
+  static parse(raw: SeasonModel[]): Seasons | undefined {
     if (!raw) return undefined;
-    return new Seasons((<Array<any>>raw).map(Season.parse));
+    return new Seasons(raw.map(Season.parse));
   }
 }

@@ -11,6 +11,29 @@ import SettingsSideBar from '../../components/preplan/resource-scheduler/Setting
 import ResourceSchedulerView from '../../components/preplan/resource-scheduler/ResourceSchedulerView';
 import FlightRequirementDialog from '../../components/preplan/FlightRequirementDialog';
 import FlightRequirement from '../../business/FlightRequirement';
+import {
+  Toolbar,
+  InputLabel,
+  IconButton,
+  FormControl,
+  Typography,
+  Paper,
+  Tab,
+  Tabs,
+  Fab,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  Switch,
+  Select,
+  OutlinedInput,
+  Badge
+} from '@material-ui/core';
+import { DoneAll as FinilizedIcon, LockOutlined as LockIcon, LockOpenOutlined as LockOpenIcon, Search as SearchIcon, SettingsOutlined as SettingsIcon } from '@material-ui/icons';
+import LinkTypography from '../../components/LinkTypography';
+import MahanIcon, { MahanIconType } from '../../components/MahanIcon';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -18,7 +41,7 @@ const styles = (theme: Theme) =>
       backgroundColor: 'transparent'
     },
     sideBarPaper: {
-      top: 104
+      top: 106
     },
     statusBar: {
       height: 54,
@@ -26,6 +49,15 @@ const styles = (theme: Theme) =>
       backgroundColor: theme.palette.extraColors.backupRegister,
       margin: 0,
       padding: theme.spacing.unit * 2
+    },
+    errorBadge: {
+      margin: theme.spacing.unit * 2
+    },
+    formDaysSelect: {
+      padding: `${theme.spacing.unit}px ${theme.spacing.unit * 2}px`
+    },
+    formDaysRoot: {
+      margin: `${theme.spacing.unit}px ${theme.spacing.unit * 2}px`
     }
   });
 
@@ -43,6 +75,11 @@ interface State {
   sideBarType?: SideBarType;
   initialSideBarSearch?: string;
   isFlightRequirementDialogOpen: boolean;
+  isRunAutoArrange: boolean;
+  isFreezAll: boolean;
+  numberOfDays: string;
+  numberOfErrorWarnning: number;
+  timer: number;
 }
 
 class ResourceScheduler extends PureComponent<Props, State> {
@@ -53,7 +90,12 @@ class ResourceScheduler extends PureComponent<Props, State> {
       isSideBarOpen: false,
       sideBarType: undefined,
       initialSideBarSearch: undefined,
-      isFlightRequirementDialogOpen: false
+      isFlightRequirementDialogOpen: false,
+      isRunAutoArrange: false,
+      isFreezAll: false,
+      numberOfDays: '7',
+      numberOfErrorWarnning: 5,
+      timer: 0
     };
   }
 
@@ -89,27 +131,108 @@ class ResourceScheduler extends PureComponent<Props, State> {
     this.setState({ ...this.state, isFlightRequirementDialogOpen: false });
   };
 
+  stopStartAutoArrange = () => {
+    this.setState({ ...this.state, isRunAutoArrange: !this.state.isRunAutoArrange }, this.showTimer);
+  };
+
+  showTimer = () => {
+    if (this.state.isRunAutoArrange) {
+      this.setState((previousState: State) => ({ ...previousState, timer: this.state.timer + 1 }));
+      setTimeout(this.showTimer, 1000);
+    } else {
+      this.setState((previousState: State) => ({ ...previousState, timer: 0 }));
+    }
+  };
+
+  formatTimer = (timer: number) => {
+    const hours = Math.floor(timer / 3600);
+    const totalSecound = timer % 3600;
+    const min = Math.floor(totalSecound / 60);
+    const sec = totalSecound % 60;
+    return <Fragment>{hours.toString().padStart(2, '0') + ':' + min.toString().padStart(2, '0') + ':' + sec.toString().padStart(2, '0')}</Fragment>;
+  };
+
+  freezReleaseAllFlights = () => {
+    this.setState({ ...this.state, isFreezAll: !this.state.isFreezAll });
+  };
+
+  handleChangeDays = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    event.preventDefault();
+    this.setState({ ...this.state, numberOfDays: event.target.value });
+  };
+
   render() {
     const { classes } = this.props;
-    const { isSideBarOpen, sideBarType, initialSideBarSearch, isFlightRequirementDialogOpen } = this.state;
+    const { timer, isSideBarOpen, sideBarType, initialSideBarSearch, isFlightRequirementDialogOpen, isFreezAll, isRunAutoArrange, numberOfErrorWarnning } = this.state;
 
     return (
       <Fragment>
         <NavBar
+          backLink="/preplan-list"
+          backTitle="Preplan List"
           navBarLinks={[
+            {
+              title: 'Pre Plans',
+              link: '/preplan-list'
+            },
             {
               title: 'Pre Plan ' + this.getId(),
               link: '/preplan/' + this.getId()
             }
           ]}
         >
-          Pre Plan {this.getId()} Resource Scheduler
-          <button onClick={() => this.openAutoArrangerChangeLogSideBar('something')}>AACL</button>
-          <button onClick={() => this.openSearchFlightsSideBar('something')}>SF</button>
-          <button onClick={() => this.openErrorsAndWarningsSideBar('something')}>E&amp;W</button>
-          <button onClick={() => this.openSelectAircraftRegistersSideBar('something')}>SAR</button>
-          <button onClick={this.openSettingsSideBar}>S</button>
-          <button onClick={this.openFlightRequirementDialog}>FRD</button>
+          <span>{this.formatTimer(timer)}</span>
+          <IconButton color="inherit" onClick={() => this.stopStartAutoArrange()}>
+            {isRunAutoArrange ? <MahanIcon type={MahanIconType.CheckBoxEmpty} /> : <MahanIcon type={MahanIconType.UsingChlorine} />}
+          </IconButton>
+          <IconButton color="inherit">
+            <FinilizedIcon />
+          </IconButton>
+          <IconButton color="inherit" onClick={() => this.freezReleaseAllFlights()}>
+            {isFreezAll ? <LockIcon /> : <LockOpenIcon />}
+          </IconButton>
+          <IconButton color="inherit" onClick={this.openFlightRequirementDialog}>
+            <MahanIcon type={MahanIconType.FlightIcon} />
+          </IconButton>
+          <IconButton color="inherit">
+            <MahanIcon type={MahanIconType.Chart} />
+          </IconButton>
+          <IconButton color="inherit">
+            <MahanIcon type={MahanIconType.TextFile} />
+          </IconButton>
+          <Select
+            classes={{ select: classes.formDaysSelect }}
+            native
+            value={this.state.numberOfDays}
+            onChange={this.handleChangeDays}
+            id="outlined-age-native-simple"
+            input={<OutlinedInput labelWidth={0} />}
+          >
+            <option value={1}>One Day</option>
+            <option value={2}>Two Days</option>
+            <option value={3}>Three Days</option>
+            <option value={7}>Seven Days</option>
+            <option value={8}>Eight Days</option>
+          </Select>
+          <IconButton color="inherit" onClick={() => this.openAutoArrangerChangeLogSideBar('something')}>
+            <MahanIcon type={MahanIconType.Change} />
+          </IconButton>
+          <IconButton color="inherit" onClick={() => this.openSearchFlightsSideBar('something')}>
+            <SearchIcon />
+          </IconButton>
+
+          <IconButton color="inherit" onClick={() => this.openErrorsAndWarningsSideBar('something')}>
+            <Badge badgeContent={numberOfErrorWarnning} color="secondary" invisible={numberOfErrorWarnning <= 0}>
+              <MahanIcon type={MahanIconType.Alert} fontSize="inherit" />
+            </Badge>
+          </IconButton>
+
+          <IconButton color="inherit" onClick={() => this.openSelectAircraftRegistersSideBar('something')}>
+            <MahanIcon type={MahanIconType.Flights} />
+          </IconButton>
+          <IconButton color="inherit" onClick={this.openSettingsSideBar}>
+            <SettingsIcon />
+          </IconButton>
         </NavBar>
         <Drawer
           anchor="right"

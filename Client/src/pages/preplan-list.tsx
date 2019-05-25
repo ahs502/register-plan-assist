@@ -3,7 +3,7 @@ import { WithStyles, createStyles, withStyles, Theme } from '@material-ui/core/s
 import { IconButton, Typography, Paper, Tab, Tabs, Fab, Table, TableBody, TableCell, TableHead, TableRow, Switch } from '@material-ui/core';
 import NavBar from '../components/NavBar';
 import LinkButton from '../components/LinkButton';
-import { Waves as WavesIcon, DoneAll as FinilizedIcon, Add as AddIcon, Edit as EditIcon, Clear as ClearIcon } from '@material-ui/icons';
+import { DoneAll as FinilizedIcon, Add as AddIcon, Edit as EditIcon, Clear as ClearIcon } from '@material-ui/icons';
 import classNames from 'classnames';
 import Preplan from '../business/Preplan';
 import Search from '../components/Search';

@@ -1,28 +1,21 @@
-import MasterDataItem, { MasterDataItems } from './MasterDataItem';
+import MasterDataItem, { MasterDataItems, MasterDataItemModel } from './MasterDataItem';
 
-export interface StcModel extends MasterDataItem {
+export interface StcModel extends MasterDataItemModel {
   description: string;
 }
 
-export default class Stc implements StcModel {
-  readonly id: string;
-  readonly name: string;
+export default class Stc extends MasterDataItem implements StcModel {
   readonly description: string;
 
-  constructor(id: string, name: string, description: string) {
-    this.id = id;
-    this.name = name;
-    this.description = description;
-  }
-
-  static parse(raw: StcModel): Stc {
-    return new Stc(raw.id, raw.name, raw.description);
+  constructor(raw: StcModel) {
+    super(raw);
+    this.description = raw.description;
   }
 }
 
 export class Stcs extends MasterDataItems<Stc> {
   static parse(raw: StcModel[]): Stcs | undefined {
     if (!raw) return undefined;
-    return new Stcs(raw.map(Stc.parse));
+    return new Stcs(raw.map(x => new Stc(x)));
   }
 }

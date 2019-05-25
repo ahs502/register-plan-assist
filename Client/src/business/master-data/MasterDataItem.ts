@@ -1,9 +1,22 @@
 /**
- * The minimum common contents of any master data item.
+ * The minimum common content model of any master data item.
  */
-export default interface MasterDataItem {
+export interface MasterDataItemModel {
   id: string;
   name: string;
+}
+
+/**
+ * The minimum common contents of any master data item.
+ */
+export default abstract class MasterDataItem implements MasterDataItemModel {
+  readonly id: string;
+  readonly name: string;
+
+  constructor(raw: MasterDataItemModel) {
+    this.id = raw.id;
+    this.name = raw.name;
+  }
 }
 
 /**

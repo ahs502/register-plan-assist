@@ -1,4 +1,4 @@
-import MasterDataItem, { MasterDataItems } from './MasterDataItem';
+import MasterDataItem, { MasterDataItems, MasterDataItemModel } from './MasterDataItem';
 
 export interface MinimumGroundTime {
   departureDomestic: number;
@@ -13,35 +13,23 @@ export interface Turnround {
   minimumGroundTime: Readonly<MinimumGroundTime>;
 }
 
-export interface AircraftTypeModel extends MasterDataItem {
+export interface AircraftTypeModel extends MasterDataItemModel {
   displayOrder: number;
   turnrounds: Readonly<Turnround>[];
 }
 
-export default class AircraftType implements MasterDataItem {
-  readonly id: string;
-  readonly name: string;
+export default class AircraftType extends MasterDataItem implements MasterDataItem {
   readonly displayOrder: number;
   readonly turnrounds: Readonly<Turnround>[];
 
-  constructor(id: string, name: string, displayOrder: number, turnrounds: Turnround[]) {
-    this.id = id;
-    this.name = name;
-    this.displayOrder = displayOrder;
-    this.turnrounds = turnrounds;
-  }
-
-  static parse(raw: AircraftTypeModel): AircraftType {
-    return new AircraftType(
-      raw.id,
-      raw.name,
-      raw.displayOrder,
-      raw.turnrounds.map(rawTurnround => ({
-        startDate: new Date(rawTurnround.startDate),
-        endDate: new Date(rawTurnround.endDate),
-        minimumGroundTime: rawTurnround.minimumGroundTime
-      }))
-    );
+  constructor(raw: AircraftTypeModel) {
+    super(raw);
+    this.displayOrder = raw.displayOrder;
+    this.turnrounds = raw.turnrounds.map(rawTurnround => ({
+      startDate: new Date(rawTurnround.startDate),
+      endDate: new Date(rawTurnround.endDate),
+      minimumGroundTime: rawTurnround.minimumGroundTime
+    }));
   }
 
   getMinimumGroundTime(date: Date, transit: boolean, international: boolean): number {
@@ -61,6 +49,6 @@ export default class AircraftType implements MasterDataItem {
 export class AircraftTypes extends MasterDataItems<AircraftType> {
   static parse(raw: AircraftTypeModel[]): AircraftTypes | undefined {
     if (!raw) return undefined;
-    return new AircraftTypes(raw.map(AircraftType.parse));
+    return new AircraftTypes(raw.map(x => new AircraftType(x)));
   }
 }

@@ -11,6 +11,7 @@ import SettingsSideBar from '../../components/preplan/resource-scheduler/Setting
 import ResourceSchedulerView from '../../components/preplan/resource-scheduler/ResourceSchedulerView';
 import FlightRequirementDialog from '../../components/preplan/FlightRequirementDialog';
 import FlightRequirement from '../../business/FlightRequirement';
+import LinkIconButton from '../../components/LinkIconButton';
 import {
   Toolbar,
   InputLabel,
@@ -54,10 +55,7 @@ const styles = (theme: Theme) =>
       margin: theme.spacing.unit * 2
     },
     formDaysSelect: {
-      padding: `${theme.spacing.unit}px ${theme.spacing.unit * 2}px`
-    },
-    formDaysRoot: {
-      margin: `${theme.spacing.unit}px ${theme.spacing.unit * 2}px`
+      padding: `${theme.spacing.unit}px ${theme.spacing.unit * 3}px`
     }
   });
 
@@ -78,7 +76,7 @@ interface State {
   isRunAutoArrange: boolean;
   isFreezAll: boolean;
   numberOfDays: string;
-  numberOfErrorWarnning: number;
+  numberOfErrorWarning: number;
   timer: number;
 }
 
@@ -94,7 +92,7 @@ class ResourceScheduler extends PureComponent<Props, State> {
       isRunAutoArrange: false,
       isFreezAll: false,
       numberOfDays: '7',
-      numberOfErrorWarnning: 5,
+      numberOfErrorWarning: 5,
       timer: 0
     };
   }
@@ -163,7 +161,7 @@ class ResourceScheduler extends PureComponent<Props, State> {
 
   render() {
     const { classes } = this.props;
-    const { timer, isSideBarOpen, sideBarType, initialSideBarSearch, isFlightRequirementDialogOpen, isFreezAll, isRunAutoArrange, numberOfErrorWarnning } = this.state;
+    const { timer, isSideBarOpen, sideBarType, initialSideBarSearch, isFlightRequirementDialogOpen, isFreezAll, isRunAutoArrange, numberOfErrorWarning } = this.state;
 
     return (
       <Fragment>
@@ -183,23 +181,27 @@ class ResourceScheduler extends PureComponent<Props, State> {
         >
           <span>{this.formatTimer(timer)}</span>
           <IconButton color="inherit" onClick={() => this.stopStartAutoArrange()}>
-            {isRunAutoArrange ? <MahanIcon type={MahanIconType.CheckBoxEmpty} /> : <MahanIcon type={MahanIconType.UsingChlorine} />}
+            {isRunAutoArrange ? (
+              <MahanIcon type={MahanIconType.CheckBoxEmpty} title="Stop Auto Arrange" />
+            ) : (
+              <MahanIcon type={MahanIconType.UsingChlorine} title="Start Auto Arrange" />
+            )}
           </IconButton>
-          <IconButton color="inherit">
+          <IconButton color="inherit" title="Finilize Preplan">
             <FinilizedIcon />
           </IconButton>
-          <IconButton color="inherit" onClick={() => this.freezReleaseAllFlights()}>
-            {isFreezAll ? <LockIcon /> : <LockOpenIcon />}
+          <IconButton color="inherit" onClick={() => this.freezReleaseAllFlights()} title={isFreezAll ? 'Unfreez All Flights' : 'Freez All Flights'}>
+            {isFreezAll ? <LockOpenIcon /> : <LockIcon />}
           </IconButton>
-          <IconButton color="inherit" onClick={this.openFlightRequirementDialog}>
+          <IconButton color="inherit" onClick={this.openFlightRequirementDialog} title="Flight Requirments">
             <MahanIcon type={MahanIconType.FlightIcon} />
           </IconButton>
-          <IconButton color="inherit">
+          <IconButton color="inherit" title="Reports">
             <MahanIcon type={MahanIconType.Chart} />
           </IconButton>
-          <IconButton color="inherit">
+          <LinkIconButton to="/master-data" color="inherit" title="Master Data">
             <MahanIcon type={MahanIconType.TextFile} />
-          </IconButton>
+          </LinkIconButton>
           <Select
             classes={{ select: classes.formDaysSelect }}
             native
@@ -207,6 +209,7 @@ class ResourceScheduler extends PureComponent<Props, State> {
             onChange={this.handleChangeDays}
             id="outlined-age-native-simple"
             input={<OutlinedInput labelWidth={0} />}
+            title="Zoom Level"
           >
             <option value={1}>One Day</option>
             <option value={2}>Two Days</option>
@@ -214,23 +217,23 @@ class ResourceScheduler extends PureComponent<Props, State> {
             <option value={7}>Seven Days</option>
             <option value={8}>Eight Days</option>
           </Select>
-          <IconButton color="inherit" onClick={() => this.openAutoArrangerChangeLogSideBar('something')}>
+          <IconButton color="inherit" onClick={() => this.openAutoArrangerChangeLogSideBar('something')} title="Auto Arrange Change Log">
             <MahanIcon type={MahanIconType.Change} />
           </IconButton>
-          <IconButton color="inherit" onClick={() => this.openSearchFlightsSideBar('something')}>
+          <IconButton color="inherit" onClick={() => this.openSearchFlightsSideBar('something')} title="Search Flights">
             <SearchIcon />
           </IconButton>
 
-          <IconButton color="inherit" onClick={() => this.openErrorsAndWarningsSideBar('something')}>
-            <Badge badgeContent={numberOfErrorWarnning} color="secondary" invisible={numberOfErrorWarnning <= 0}>
+          <IconButton color="inherit" onClick={() => this.openErrorsAndWarningsSideBar('something')} title="Errors and Warnings">
+            <Badge badgeContent={numberOfErrorWarning} color="secondary" invisible={numberOfErrorWarning <= 0}>
               <MahanIcon type={MahanIconType.Alert} fontSize="inherit" />
             </Badge>
           </IconButton>
 
-          <IconButton color="inherit" onClick={() => this.openSelectAircraftRegistersSideBar('something')}>
+          <IconButton color="inherit" onClick={() => this.openSelectAircraftRegistersSideBar('something')} title="Select Aircraft Register">
             <MahanIcon type={MahanIconType.Flights} />
           </IconButton>
-          <IconButton color="inherit" onClick={this.openSettingsSideBar}>
+          <IconButton color="inherit" onClick={this.openSettingsSideBar} title="Settings">
             <SettingsIcon />
           </IconButton>
         </NavBar>

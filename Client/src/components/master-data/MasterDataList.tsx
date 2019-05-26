@@ -54,8 +54,6 @@ interface Props extends WithStyles<typeof styles> {
   selectedItem?: MasterDataItem;
   onItemSelect?: (selectedItem: MasterDataItem) => void;
   onItemUnselect?: () => void;
-  onItemAdd?: () => void;
-  onItemDelete?: () =>
   masterDataTitle: string;
 }
 interface State {

@@ -89,7 +89,7 @@ class PreplanList extends PureComponent<Props, State> {
             }
           ]}
         >
-          <LinkButton to="/master-data" variant="text" color="inherit">
+          <LinkButton to="/master-data" variant="text" color="inherit" title="Master Data">
             Master Data
             <MahanIcon type={MahanIconType.TextFile} />
           </LinkButton>
@@ -100,7 +100,7 @@ class PreplanList extends PureComponent<Props, State> {
             <Tab label="Current User" />
             <Tab label="Public" />
             <Search outlined />
-            <IconButton color="primary">
+            <IconButton color="primary" title="Add Preplan">
               <AddIcon fontSize="large" />
             </IconButton>
           </Tabs>
@@ -139,18 +139,22 @@ class PreplanList extends PureComponent<Props, State> {
                       </TableCell>
                       <TableCell className={classes.preplanTableCell}>{preplan.simulationTitle}</TableCell>
                       <TableCell className={classes.preplanTableCell}>
-                        {preplanType === PreplanType.Public ? preplan.userDisplayName : <Switch checked={preplan.public} onChange={this.togglePreplanPublic(preplan)} />}
+                        {preplanType === PreplanType.Public ? (
+                          preplan.userDisplayName
+                        ) : (
+                          <Switch color="primary" checked={preplan.public} onChange={this.togglePreplanPublic(preplan)} />
+                        )}
                       </TableCell>
                       <TableCell className={classes.preplanTableCell}>
-                        <IconButton>
+                        <IconButton title="Copy Preplan">
                           <MahanIcon type={MahanIconType.CopyContent} />
                         </IconButton>
                         {preplanType !== PreplanType.Public && (
                           <Fragment>
-                            <IconButton>
+                            <IconButton title="Edit Preplan">
                               <EditIcon />
                             </IconButton>
-                            <IconButton>
+                            <IconButton title="Delete Preplan">
                               <ClearIcon />
                             </IconButton>
                           </Fragment>

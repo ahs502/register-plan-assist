@@ -1,5 +1,7 @@
-import React, { PureComponent } from 'react';
+import React, { PureComponent, Fragment } from 'react';
 import { WithStyles, withStyles, createStyles, Theme } from '@material-ui/core/styles';
+import { Typography, ListItem, List, ListItemText, ListItemSecondaryAction, IconButton, Grid } from '@material-ui/core';
+import { Clear as ClearIcon, Add as AddIcon } from '@material-ui/icons';
 import classNames from 'classnames';
 import Search, { filterOnProperties } from '../Search';
 
@@ -36,6 +38,9 @@ const styles = (theme: Theme) =>
       flexGrow: 1,
       margin: 0,
       padding: theme.spacing.unit * 2
+    },
+    header: {
+      padding: theme.spacing.unit * 2
     }
   });
 
@@ -49,6 +54,9 @@ interface Props extends WithStyles<typeof styles> {
   selectedItem?: MasterDataItem;
   onItemSelect?: (selectedItem: MasterDataItem) => void;
   onItemUnselect?: () => void;
+  onItemAdd?: () => void;
+  onItemDelete?: () =>
+  masterDataTitle: string;
 }
 interface State {
   filteredItems: MasterDataItem[];
@@ -71,7 +79,7 @@ class MasterDataList extends PureComponent<Props, State> {
   };
 
   render() {
-    const { classes, children, selectedItem, onItemSelect } = this.props;
+    const { classes, children, selectedItem, onItemSelect, masterDataTitle } = this.props;
     const { filteredItems } = this.state;
 
     function itemSelectHandler(item: MasterDataItem) {
@@ -83,14 +91,33 @@ class MasterDataList extends PureComponent<Props, State> {
     return (
       <div className={classes.root}>
         <div className={classes.list}>
+          <Grid className={classes.header} container direction="row" justify="space-between" alignItems="center">
+            <Grid item>
+              <Typography variant="caption">{masterDataTitle}</Typography>
+            </Grid>
+            <Grid item>
+              <IconButton color="primary" title="Add Preplan">
+                <AddIcon fontSize="large" />
+              </IconButton>
+            </Grid>
+          </Grid>
           <Search onQueryChange={this.queryChangeHandler} />
           <br />
-          {filteredItems.map(item => (
-            <div key={item.title} className={classNames(classes.item, { [classes.selectedItem]: item === selectedItem })}>
-              <button onClick={() => itemSelectHandler(item)}>{item.title}</button>
-              {item.description && <p>{item.description}</p>}
-            </div>
-          ))}
+          <List>
+            {filteredItems.map(item => (
+              <ListItem key={item.title} role={undefined} button onClick={() => itemSelectHandler(item)}>
+                <ListItemText
+                  primary={<Typography variant="subtitle2">{item.title}</Typography>}
+                  secondary={<Fragment>{item.description && <Typography component="span">{item.description}</Typography>}</Fragment>}
+                />
+                <ListItemSecondaryAction>
+                  <IconButton aria-label="Comments">
+                    <ClearIcon />
+                  </IconButton>
+                </ListItemSecondaryAction>
+              </ListItem>
+            ))}
+          </List>
         </div>
         <div className={classes.contents}>{children}</div>
       </div>

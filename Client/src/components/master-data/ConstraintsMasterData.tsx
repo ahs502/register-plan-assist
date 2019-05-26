@@ -36,7 +36,7 @@ class ConstraintsMasterData extends PureComponent<Props, State> {
     const { items, selectedItem } = this.state;
 
     return (
-      <MasterDataList items={items} selectedItem={selectedItem} onItemSelect={this.itemSelectHandler} onItemUnselect={this.itemUnselectHandler}>
+      <MasterDataList items={items} masterDataTitle="Constraints" selectedItem={selectedItem} onItemSelect={this.itemSelectHandler} onItemUnselect={this.itemUnselectHandler}>
         {selectedItem ? (
           <div>
             <strong>{(selectedItem as MasterDataItem).title}</strong>

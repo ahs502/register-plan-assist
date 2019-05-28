@@ -1,104 +1,100 @@
-import IClonable from './IClonable';
-import FlightDefinition from './FlightDefinition';
-import FlightScope from './FlightScope';
-import Period, { Weekday, Week } from './Period';
 import { Daytime } from './Daytime';
+import AircraftSelection from './master-data/AircraftSelection';
 
-export abstract class PeriodFlightRequirement<P extends Period<DayFlightRequirement<P>>> implements IClonable<PeriodFlightRequirement<P>> {
-  definition: FlightDefinition;
-  scope: FlightScope;
+/**
+ * Describes the headline definitions of a flight.
+ */
+export interface FlightDefinition {
+  label: string;
+  flightNumber: string;
+  departureAirportId: string;
+  arrivalAirportId: string;
+}
 
+/**
+ * A data structure describing the possible lower and upper bounds of the STD of some flight.
+ */
+export interface FlightTime {
+  stdLowerBound: Daytime;
+  stdUpperBound: Daytime;
+}
+
+/**
+ * Defines the scope of the time, the aircraft register and the slot of a flight.
+ */
+export interface FlightScope {
   /**
-   * The day flight requirements for this object.
-   * NOTE: Do not manipulate the day flight requirement directly from this.period object;
-   * use get() and set() methods instead.
+   * In minutes, greater than 0.
    */
-  period: P;
+  blockTime: number;
 
-  constructor(definition: FlightDefinition, scope: FlightScope, period: P) {
-    this.definition = definition;
-    this.scope = scope;
+  times: ReadonlyArray<Readonly<FlightTime>>;
+  aircraftSelection: Readonly<AircraftSelection>;
+  slot: boolean;
+  slotComments: string;
+  required: boolean;
+}
 
-    this.period = period;
+/**
+ * Data representation for an actual flight.
+ */
+export interface Flight {
+  std: Daytime;
+  aircraftRegisterId: string;
+}
+
+export interface WeekdayFlightRequirementModel {
+  id: string;
+  parentId: string;
+  scope: Readonly<FlightScope>;
+  notes: string;
+  day: number;
+  flight: Readonly<Flight>;
+}
+
+export interface WeekFlightRequirementModel {
+  id: string;
+  definition: Readonly<FlightDefinition>;
+  scope: Readonly<FlightScope>;
+  days: ReadonlyArray<Readonly<WeekdayFlightRequirementModel>>;
+}
+
+export class WeekdayFlightRequirement {
+  readonly id: string;
+  readonly parent: WeekFlightRequirement;
+  readonly scope: Readonly<FlightScope>;
+  readonly notes: string;
+  readonly day: number;
+  readonly flight: Readonly<Flight>;
+
+  constructor(raw: WeekdayFlightRequirementModel, parent: WeekFlightRequirement) {
+    this.id = raw.id;
+    this.parent = parent;
+    this.scope = raw.scope;
+    this.notes = raw.notes;
+    this.day = raw.day;
+    this.flight = raw.flight;
   }
+}
 
-  abstract clone(): PeriodFlightRequirement<P>;
+export class WeekFlightRequirement {
+  readonly id: string;
+  readonly definition: Readonly<FlightDefinition>;
+  readonly scope: Readonly<FlightScope>;
+  readonly days: ReadonlyArray<Readonly<WeekdayFlightRequirement>>;
 
-  /**
-   * Generates, sets and returns a new DayFlightRequirement from this for the specified day.
-   * @param day The specified day.
-   */
-  abstract generateForDay(day: number): DayFlightRequirement<P>;
+  constructor(raw: WeekFlightRequirementModel) {
+    this.id = raw.id;
+    this.definition = raw.definition;
+    this.scope = raw.scope;
+    this.days = raw.days.map(d => new WeekdayFlightRequirement(d, this)).sortBy(d => d.day);
+  }
 
   /**
    * Gets the day flight requirement of the specified day.
    * @param day The day of the period.
    */
-  get(day: number): DayFlightRequirement<P> | undefined {
-    return this.period.contents[day];
-  }
-
-  /**
-   * Sets (or clears) the day flight requirement of the specified day.
-   * @param day The day of the period.
-   * @param content The day flight requirement for the specified day. Empty by default.
-   */
-  set(day: number, content?: DayFlightRequirement<P>): void {
-    if (content) {
-      (content as DayFlightRequirement<P>).day = day;
-    }
-    this.period.contents[day] = content;
-  }
-}
-
-export abstract class DayFlightRequirement<P extends Period<DayFlightRequirement<P>>> implements IClonable<DayFlightRequirement<P>> {
-  parent: PeriodFlightRequirement<P>;
-
-  scope: FlightScope;
-  notes: string;
-  day: number;
-
-  std: Daytime;
-  aircraftRegisterId: string;
-
-  constructor(parent: PeriodFlightRequirement<P>, scope: FlightScope, notes: string, day: number, std?: Daytime, aircraftRegisterId?: string) {
-    if (!aircraftRegisterId) throw new Error('Not implemented.');
-
-    this.parent = parent;
-
-    this.scope = scope;
-    this.notes = notes;
-    this.day = day;
-
-    this.std = std || this.scope.times[0].stdLowerBound;
-    this.aircraftRegisterId = aircraftRegisterId || ''; //TODO: Not implemented.
-  }
-
-  abstract clone(): DayFlightRequirement<P>;
-}
-
-export class WeekFlightRequirement extends PeriodFlightRequirement<Week<WeekdayFlightRequirement>> {
-  constructor(definition: FlightDefinition, scope: FlightScope, period?: Week<WeekdayFlightRequirement>) {
-    super(definition, scope, period || new Week<WeekdayFlightRequirement>());
-  }
-
-  clone(): WeekFlightRequirement {
-    return new WeekFlightRequirement(this.definition.clone(), this.scope.clone(), this.period.clone());
-  }
-
-  generateForDay(day: number): WeekdayFlightRequirement {
-    let result = new WeekdayFlightRequirement(this, this.scope.clone(), '', day);
-    this.set(day, result);
-    return result;
-  }
-}
-
-export class WeekdayFlightRequirement extends DayFlightRequirement<Week<WeekdayFlightRequirement>> {
-  constructor(parent: WeekFlightRequirement, scope: FlightScope, notes: string, day: Weekday, std?: Daytime, aircraftRegisterId?: string) {
-    super(parent, scope, notes, day, std, aircraftRegisterId);
-  }
-
-  clone(): WeekdayFlightRequirement {
-    return new WeekdayFlightRequirement(this.parent, this.scope.clone(), this.notes, this.day, this.std, this.aircraftRegisterId);
+  get(day: number): WeekdayFlightRequirement | undefined {
+    return this.days.find(d => d.day === day);
   }
 }

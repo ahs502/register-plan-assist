@@ -40,6 +40,14 @@ export class Daytime {
   }
 
   /**
+   * Overrides the valueOf method of object and makes the instances of
+   * Daytime comparable to each other by <, >= and similar operators.
+   */
+  valueOf(): any {
+    return this.minutes;
+  }
+
+  /**
    * Returns the string with this format: 'hh:mm' or 'hhh:mm'.
    */
   toString(): string {
@@ -47,6 +55,14 @@ export class Daytime {
     let minutes = this.minutes % 60,
       hours = (this.minutes - minutes) / 60;
     return String(hours).padStart(2, '0') + ':' + String(minutes).padStart(2, '0');
+  }
+
+  /**
+   * Returns the core data value of this object,
+   * Used for serialization in JSON.stringify() method.
+   */
+  toJSON(): any {
+    return this.minutes;
   }
 
   /**

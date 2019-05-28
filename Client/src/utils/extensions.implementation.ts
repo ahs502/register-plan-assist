@@ -35,6 +35,20 @@
     return result;
   };
 
+  Array.prototype.sortBy = function Array_prototype_sortBy<T>(propertySelector: string | ((item: T) => any), descending?: boolean): T[] {
+    let generalPropertySelector = typeof propertySelector === 'function' ? propertySelector : (item: { [key: string]: any }) => item[propertySelector];
+    let direction = descending ? -1 : +1;
+    return this.sort((a, b) => {
+      let aValue = generalPropertySelector(a);
+      let bValue = generalPropertySelector(b);
+      return aValue > bValue ? +direction : aValue < bValue ? -direction : 0;
+    });
+  };
+
+  Array.prototype.orderBy = function Array_prototype_orderBy<T>(propertySelector: string | ((item: T) => any), descending?: boolean): T[] {
+    return this.slice().sortBy(propertySelector, descending);
+  };
+
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];

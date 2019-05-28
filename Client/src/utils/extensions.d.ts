@@ -14,6 +14,20 @@ declare interface Array<T> {
    * @param item The item to be removed.
    */
   remove(item: T): number;
+
+  /**
+   * Sorts this array and returns the array itself as a result (mutable).
+   * @param propertySelector The name of the property or a mapper function to sort on.
+   * @param descending Determines whether to sort descending or ascending (by default).
+   */
+  sortBy(propertySelector: string | ((item: T) => any), descending?: boolean): T[];
+
+  /**
+   * Returns a sorted copy of this array (immutable).
+   * @param propertySelector The name of the property or a mapper function to sort on.
+   * @param descending Determines whether to sort descending or ascending (by default).
+   */
+  orderBy(propertySelector: string | ((item: T) => any), descending?: boolean): T[];
 }
 
 /**

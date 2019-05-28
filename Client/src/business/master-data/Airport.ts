@@ -17,7 +17,7 @@ export default class Airport extends MasterDataItem implements AirportModel {
 }
 
 export class Airports extends MasterDataItems<Airport> {
-  static parse(raw?: AirportModel[]): Airports | undefined {
+  static parse(raw?: ReadonlyArray<AirportModel>): Airports | undefined {
     if (!raw) return undefined;
     return new Airports(raw.map(x => new Airport(x)));
   }

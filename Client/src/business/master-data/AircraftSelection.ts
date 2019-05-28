@@ -20,6 +20,6 @@ export interface AircraftIdentity {
  * included in any of the forbidden aircraft identities.
  */
 export default interface AircraftSelection {
-  allowedIdentities: Readonly<AircraftIdentity>[];
-  forbiddenIdentities: Readonly<AircraftIdentity>[];
+  allowedIdentities: ReadonlyArray<Readonly<AircraftIdentity>>;
+  forbiddenIdentities: ReadonlyArray<Readonly<AircraftIdentity>>;
 }

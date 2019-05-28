@@ -24,12 +24,12 @@ export default abstract class MasterDataItem implements MasterDataItemModel {
  * containing both the array and dictionary by id form of the collection items.
  */
 export abstract class MasterDataItems<T extends MasterDataItem> {
-  readonly items: T[];
-  readonly id: { [id: string]: T };
+  readonly items: ReadonlyArray<T>;
+  readonly id: { readonly [id: string]: T };
 
-  protected constructor(items: T[]) {
+  protected constructor(items: ReadonlyArray<T>) {
     this.items = items;
     this.id = {};
-    items.forEach(item => (this.id[item.id] = item));
+    items.forEach(item => ((this.id as { [id: string]: T })[item.id] = item));
   }
 }

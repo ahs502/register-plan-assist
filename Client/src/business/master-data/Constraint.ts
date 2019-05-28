@@ -9,8 +9,8 @@ export default class Constraint extends MasterDataItem implements ConstraintMode
 }
 
 export class Constraints extends MasterDataItems<Constraint> {
-  static parse(raw?: ConstraintModel[]): Constraints | undefined {
-    if (!raw?) return undefined;
+  static parse(raw?: ReadonlyArray<ConstraintModel>): Constraints | undefined {
+    if (!raw) return undefined;
     return new Constraints(raw.map(x => new Constraint(x)));
   }
 }

@@ -10,14 +10,14 @@ import { Constraints, ConstraintModel } from './Constraint';
 import { AircraftIdentity } from './AircraftSelection';
 
 export interface MasterDataModel {
-  aircraftTypes: Readonly<AircraftTypeModel>[];
-  aircraftRegisters: Readonly<AircraftRegisterModel>[];
-  airports: Readonly<AirportModel>[];
-  seasonTypes: Readonly<SeasonTypeModel>[];
-  seasons: Readonly<SeasonModel>[];
-  stcs: Readonly<StcModel>[];
-  aircraftGroups: Readonly<AircraftGroupModel>[];
-  constraints: Readonly<ConstraintModel>[];
+  aircraftTypes: ReadonlyArray<Readonly<AircraftTypeModel>>;
+  aircraftRegisters: ReadonlyArray<Readonly<AircraftRegisterModel>>;
+  airports: ReadonlyArray<Readonly<AirportModel>>;
+  seasonTypes: ReadonlyArray<Readonly<SeasonTypeModel>>;
+  seasons: ReadonlyArray<Readonly<SeasonModel>>;
+  stcs: ReadonlyArray<Readonly<StcModel>>;
+  aircraftGroups: ReadonlyArray<Readonly<AircraftGroupModel>>;
+  constraints: ReadonlyArray<Readonly<ConstraintModel>>;
 }
 
 /**
@@ -40,7 +40,7 @@ export default class MasterData {
    * all existing or dummy portion of each aircraft types by their names
    * followed by a '&lowbar;EXISTING' or '&lowbar;DUMMY' postfix.
    */
-  readonly aircraftIdentities: Readonly<AircraftIdentity>[];
+  readonly aircraftIdentities: ReadonlyArray<Readonly<AircraftIdentity>>;
 
   private constructor(
     aircraftTypes: AircraftTypes,

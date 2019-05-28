@@ -15,12 +15,12 @@ export interface Turnround {
 
 export interface AircraftTypeModel extends MasterDataItemModel {
   displayOrder: number;
-  turnrounds: Readonly<Turnround>[];
+  turnrounds: ReadonlyArray<Readonly<Turnround>>;
 }
 
 export default class AircraftType extends MasterDataItem implements MasterDataItem {
   readonly displayOrder: number;
-  readonly turnrounds: Readonly<Turnround>[];
+  readonly turnrounds: ReadonlyArray<Readonly<Turnround>>;
 
   constructor(raw: AircraftTypeModel) {
     super(raw);
@@ -47,7 +47,7 @@ export default class AircraftType extends MasterDataItem implements MasterDataIt
 }
 
 export class AircraftTypes extends MasterDataItems<AircraftType> {
-  static parse(raw?: AircraftTypeModel[]): AircraftTypes | undefined {
+  static parse(raw?: ReadonlyArray<AircraftTypeModel>): AircraftTypes | undefined {
     if (!raw) return undefined;
     return new AircraftTypes(raw.map(x => new AircraftType(x)));
   }

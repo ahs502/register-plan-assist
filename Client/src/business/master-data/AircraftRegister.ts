@@ -24,7 +24,7 @@ export default class AircraftRegister extends MasterDataItem implements Aircraft
 }
 
 export class AircraftRegisters extends MasterDataItems<AircraftRegister> {
-  static parse(raw?: AircraftRegisterModel[]): AircraftRegisters | undefined {
+  static parse(raw?: ReadonlyArray<AircraftRegisterModel>): AircraftRegisters | undefined {
     if (!raw) return undefined;
     return new AircraftRegisters(raw.map(x => new AircraftRegister(x)));
   }

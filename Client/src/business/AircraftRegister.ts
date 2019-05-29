@@ -1,21 +1,20 @@
 import MasterDataItem, { MasterDataItems } from './master-data/MasterDataItem';
 import AircraftType from './master-data/AircraftType';
-import AircraftIdentity from './master-data/AircraftIdentity';
-import AircraftSelection from './master-data/AircraftSelection';
+import AircraftSelection, { AircraftIdentity } from './master-data/AircraftSelection';
 import Airport from './master-data/Airport';
 import MasterData from './master-data';
 
 /**
  * A dummy aircraft register related to a specific preplan.
  */
-export interface DummyAircraftRegister {
+export interface DummyAircraftRegisterModel {
   /**
-   * The id of a dummy aircraft register starts with the 'dummy-' prefix.
+   * The id of a dummy aircraft register starts with a 'dummy-' prefix.
    */
-  readonly id: string;
+  id: string;
 
-  readonly name: string;
-  readonly aircraftTypeId: string;
+  name: string;
+  aircraftTypeId: string;
 }
 
 /**
@@ -35,15 +34,15 @@ export enum AircraftRegisterStatus {
  * The selected options for an aircraft register in a preplan.
  */
 export interface AircraftRegisterOptions {
-  readonly status: AircraftRegisterStatus;
-  readonly startingAirportId: string;
+  status: AircraftRegisterStatus;
+  startingAirportId: string;
 }
 
 /**
  * A dictionary of aircraft register options by their id values.
  */
 export interface AircraftRegisterOptionsDictionary {
-  readonly [id: string]: AircraftRegisterOptions;
+  [id: string]: Readonly<AircraftRegisterOptions>;
 }
 
 /**
@@ -52,7 +51,7 @@ export interface AircraftRegisterOptionsDictionary {
 export default class AircraftRegister implements MasterDataItem {
   /**
    * The id of the corresponding aircraft registrer in the master data or
-   * the prefix 'dummy-' followed by the id (no.) of the dummy aircraft register
+   * a prefix 'dummy-' followed by the id (no.) of the dummy aircraft register
    * within the loaded preplan.
    */
   readonly id: string;
@@ -65,71 +64,80 @@ export default class AircraftRegister implements MasterDataItem {
    */
   readonly dummy: boolean;
 
-  readonly status: AircraftRegisterStatus;
-  readonly startingAirportId: string;
+  readonly options: Readonly<AircraftRegisterOptions>;
 
-  constructor(id: string, name: string, aircraftTypeId: string, dummy: boolean, status?: AircraftRegisterStatus, startingAirportId?: string) {
+  constructor(id: string, name: string, aircraftTypeId: string, dummy: boolean, options?: Readonly<AircraftRegisterOptions>) {
     this.id = id;
     this.name = name;
     this.aircraftTypeId = aircraftTypeId;
     this.dummy = dummy;
-    this.status = status || AircraftRegisterStatus.Excluded;
-    this.startingAirportId = startingAirportId || AircraftRegister.defaultStartingAirport.id;
+    this.options = options || this.getDefaultOptions();
   }
 
   getAircraftType(): AircraftType {
     return MasterData.all.aircraftTypes.id[this.aircraftTypeId];
   }
-
   getMinimumGroundTime(date: Date, transit: boolean, international: boolean): number {
     return this.getAircraftType().getMinimumGroundTime(date, transit, international);
   }
 
-  static defaultStartingAirport: Airport = MasterData.all.airports.items.find(a => a.name === 'IKA') as Airport;
+  getDefaultStartingAirport(): Airport {
+    return MasterData.all.airports.items.find(a => a.name === 'IKA') as Airport; //TODO: Implement something better!
+  }
+  getDefaultOptions(): Readonly<AircraftRegisterOptions> {
+    return {
+      status: AircraftRegisterStatus.Excluded,
+      startingAirportId: this.getDefaultStartingAirport().id
+    };
+  }
 }
 
 /**
  * Encapsulates all master data and dummy aircraft registers as a single collection.
  */
 export class AircraftRegisters extends MasterDataItems<AircraftRegister> {
-  constructor(dummyAircraftRegisters: DummyAircraftRegister[], optionsDictionary: AircraftRegisterOptionsDictionary) {
-    let masterDataItems = MasterData.all.aircraftRegisters.items.map(a => {
-      let options = optionsDictionary[a.id];
-      return new AircraftRegister(a.id, a.name, a.aircraftTypeId, false, options && options.status, options && options.startingAirportId);
-    });
-    let dummyItems = dummyAircraftRegisters.map(a => {
-      let options = optionsDictionary[a.id];
-      return new AircraftRegister(a.id, a.name, a.aircraftTypeId, true, options && options.status, options && options.startingAirportId);
-    });
+  constructor(dummyAircraftRegisters: ReadonlyArray<DummyAircraftRegisterModel>, optionsDictionary: Readonly<AircraftRegisterOptionsDictionary>) {
+    let masterDataItems = MasterData.all.aircraftRegisters.items.map(a => new AircraftRegister(a.id, a.name, a.aircraftTypeId, false, optionsDictionary[a.id]));
+    let dummyItems = dummyAircraftRegisters.map(a => new AircraftRegister(a.id, a.name, a.aircraftTypeId, true, optionsDictionary[a.id]));
     super(masterDataItems.concat(dummyItems));
   }
 
-  extractAircraftRegisterOptionsDictionary(): AircraftRegisterOptionsDictionary {
-    let result: { [id: string]: AircraftRegisterOptions } = {};
-    this.items.forEach(a => (result[a.id] = { status: a.status, startingAirportId: a.startingAirportId }));
+  extractAircraftRegisterOptionsDictionary(): Readonly<AircraftRegisterOptionsDictionary> {
+    let result: { [id: string]: Readonly<AircraftRegisterOptions> } = {};
+    this.items.forEach(a => (result[a.id] = a.options));
     return result;
   }
 
-  resolveAircraftIdentity(aircraftIdentity: AircraftIdentity): AircraftRegister[] {
+  resolveAircraftIdentity(aircraftIdentity: AircraftIdentity): ReadonlyArray<AircraftRegister> {
+    let result: AircraftRegister[];
     switch (aircraftIdentity.type) {
       case 'register':
-        return [this.id[aircraftIdentity.entityId]];
+        result = [this.id[aircraftIdentity.entityId]];
+        break;
 
       case 'type':
-        return this.items.filter(a => a.aircraftTypeId === aircraftIdentity.entityId);
+        result = this.items.filter(a => a.aircraftTypeId === aircraftIdentity.entityId);
+        break;
 
       case 'type existing':
-        return this.items.filter(a => a.aircraftTypeId === aircraftIdentity.entityId && !a.dummy);
+        result = this.items.filter(a => a.aircraftTypeId === aircraftIdentity.entityId && !a.dummy);
+        break;
 
       case 'type dummy':
-        return this.items.filter(a => a.aircraftTypeId === aircraftIdentity.entityId && a.dummy);
+        result = this.items.filter(a => a.aircraftTypeId === aircraftIdentity.entityId && a.dummy);
+        break;
 
       case 'group':
-        return MasterData.all.aircraftGroups.id[aircraftIdentity.entityId].aircraftRegisterIds.map(id => this.id[id]);
+        result = MasterData.all.aircraftGroups.id[aircraftIdentity.entityId].aircraftRegisterIds.map(id => this.id[id]);
+        break;
+
+      default:
+        result = [];
     }
+    return result.filter(a => a.options.status === AircraftRegisterStatus.Included);
   }
 
-  resolveAircraftSelection(aircraftSelection: AircraftSelection): AircraftRegister[] {
+  resolveAircraftSelection(aircraftSelection: AircraftSelection): ReadonlyArray<AircraftRegister> {
     let result: AircraftRegister[] = [];
     aircraftSelection.allowedIdentities.forEach(i => this.resolveAircraftIdentity(i).forEach(a => result.includes(a) || result.push(a)));
     aircraftSelection.forbiddenIdentities.forEach(i => this.resolveAircraftIdentity(i).forEach(a => result.includes(a) && result.remove(a)));

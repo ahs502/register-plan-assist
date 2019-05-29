@@ -9,7 +9,7 @@ export enum MinimumGroundTimeMode {
   Average
 }
 
-export const defaultAutoArrangerOptions: AutoArrangerOptions = {
+export const defaultAutoArrangerOptions: Readonly<AutoArrangerOptions> = {
   minimumGroundTimeMode: MinimumGroundTimeMode.Minimum,
   minimumGroundTimeOffset: 0
 };

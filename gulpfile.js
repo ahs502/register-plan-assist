@@ -16,7 +16,7 @@ gulp.task('build', gulp.series('clean', 'build-server', 'build-client', 'dist'))
 
 gulp.task(
   'dev-server',
-  run('npm run dev', {
+  run('npm start', {
     cwd: './Server',
     env: {
       PORT: process.env.SERVER_PORT || 3000

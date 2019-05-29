@@ -13,12 +13,7 @@
     "resolveJsonModule": true,
     "noEmit": true,
     "jsx": "preserve",
-    "isolatedModules": true,
-    "baseUrl": ".",
-    "paths": {
-      "@pages": ["src/pages"],
-      "@components": ["src/components"]
-    }
+    "isolatedModules": true
   },
   "include": ["src"],
   "exclude": ["src/setupProxy.js"]

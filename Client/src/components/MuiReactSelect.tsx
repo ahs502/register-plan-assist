@@ -1,6 +1,5 @@
 import React, { FunctionComponent, CSSProperties, HTMLAttributes } from 'react';
-import { Theme, withTheme, WithTheme } from '@material-ui/core/styles';
-import { createStyles, makeStyles } from '@material-ui/styles';
+import { Theme, withTheme, WithTheme, createStyles, WithStyles, withStyles } from '@material-ui/core/styles';
 import { emphasize } from '@material-ui/core/styles/colorManipulator';
 import { Paper, Chip, MenuItem, Typography } from '@material-ui/core';
 import TextField, { BaseTextFieldProps } from '@material-ui/core/TextField';
@@ -21,11 +20,10 @@ export interface Suggestion {
   value: string;
 }
 
-const useStyles = makeStyles((theme: Theme) =>
+const styles = (theme: Theme) =>
   createStyles({
     root: {
-      flexGrow: 1,
-      height: 250
+      flexGrow: 1
     },
     input: {
       display: 'flex',
@@ -67,8 +65,7 @@ const useStyles = makeStyles((theme: Theme) =>
     divider: {
       height: theme.spacing.unit * 2
     }
-  })
-);
+  });
 
 type NoOptionsMessageComponentProps = NoticeProps<Suggestion>;
 const NoOptionsMessage: FunctionComponent<NoOptionsMessageComponentProps> = (props: NoOptionsMessageComponentProps) => (
@@ -162,7 +159,7 @@ const components = {
   ValueContainer
 };
 
-export interface MuiReactSelectProps extends WithTheme {
+export interface MuiReactSelectProps extends WithTheme, WithStyles<typeof styles> {
   label?: string;
   placeholder?: string;
   suggestions?: ReadonlyArray<Suggestion>;
@@ -171,9 +168,7 @@ export interface MuiReactSelectProps extends WithTheme {
   isMulti?: boolean;
 }
 
-const MuiReactSelect: FunctionComponent<MuiReactSelectProps> = ({ theme, label, placeholder, suggestions, value, onChange, isMulti }: MuiReactSelectProps) => {
-  const classes = useStyles();
-
+const MuiReactSelect: FunctionComponent<MuiReactSelectProps> = ({ theme, classes, label, placeholder, suggestions, value, onChange, isMulti }: MuiReactSelectProps) => {
   const selectStyles = {
     input: (base: CSSProperties) => ({
       ...base,
@@ -186,6 +181,7 @@ const MuiReactSelect: FunctionComponent<MuiReactSelectProps> = ({ theme, label, 
 
   return (
     <Select
+      className={classes.root}
       classes={classes}
       styles={selectStyles}
       TextFieldProps={isMulti ? { label, InputLabelProps: { shrink: true } } : { label }}
@@ -199,4 +195,4 @@ const MuiReactSelect: FunctionComponent<MuiReactSelectProps> = ({ theme, label, 
   );
 };
 
-export default withTheme()(MuiReactSelect);
+export default withStyles(styles)(withTheme()(MuiReactSelect));

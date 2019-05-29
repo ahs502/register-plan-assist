@@ -2,6 +2,8 @@ import React, { PureComponent, ChangeEvent, Fragment } from 'react';
 import { Theme, createStyles, WithStyles, withStyles } from '@material-ui/core/styles';
 import { TextField, InputAdornment } from '@material-ui/core';
 import { Search as SearchIcon } from '@material-ui/icons';
+import MahanIcon, { MahanIconType } from './MahanIcon';
+import classNames from 'classnames';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -11,7 +13,8 @@ const styles = (theme: Theme) =>
     },
     space: {
       width: theme.spacing.unit
-    }
+    },
+    root: {}
   });
 
 interface Props extends WithStyles<typeof styles> {
@@ -55,15 +58,17 @@ class Search extends PureComponent<Props, State> {
     return (
       <Fragment>
         {outlined || (
-          <div className={classes.wrapper}>
+          <div className={classNames(classes.wrapper, classes.root)}>
             {/* <i className="icon-search" /> */}
-            <SearchIcon />
+            <MahanIcon type={MahanIconType.Search} />
+
             <span className={classes.space} />
             <TextField label="Search" value={value} fullWidth onChange={this.onChangeHandler} />
           </div>
         )}
         {outlined && (
           <TextField
+            className={classes.root}
             placeholder="Search"
             variant="outlined"
             margin="dense"
@@ -73,7 +78,7 @@ class Search extends PureComponent<Props, State> {
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <SearchIcon />
+                  <MahanIcon type={MahanIconType.Search} />
                 </InputAdornment>
               )
             }}

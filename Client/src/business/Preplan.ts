@@ -1,33 +1,8 @@
-import AutoArrangerOptions, { defaultAutoArrangerOptions } from './AutoArrangerOptions';
-import { DummyAircraftRegister, AircraftRegisters, AircraftRegisterOptionsDictionary } from './AircraftRegister';
+import AutoArrangerOptions from './AutoArrangerOptions';
+import { DummyAircraftRegisterModel, AircraftRegisters, AircraftRegisterOptionsDictionary } from './AircraftRegister';
+import { WeekFlightRequirementModel, WeekFlightRequirement } from './FlightRequirement';
 
-export interface PreplanHeader {
-  readonly id: string;
-
-  readonly name: string;
-  readonly published: boolean;
-  readonly finalized: boolean;
-
-  readonly userId: string;
-  readonly userName: string;
-  readonly userDisplayName: string;
-
-  readonly parentPreplanId?: string;
-  readonly parentPreplanName?: string;
-
-  readonly creationDateTime: Date;
-  readonly lastEditDateTime: Date;
-
-  readonly startDate: Date;
-  readonly endDate: Date;
-
-  readonly simulationId?: string;
-  readonly simulationName?: string;
-}
-
-export default class Preplan implements PreplanHeader {
-  //TODO: Revise access modifiers.
-
+export interface PreplanHeaderModel {
   id: string;
 
   name: string;
@@ -49,67 +24,69 @@ export default class Preplan implements PreplanHeader {
 
   simulationId?: string;
   simulationName?: string;
+}
 
-  autoArrangerOptions: AutoArrangerOptions;
+export interface PreplanModel extends PreplanHeaderModel {
+  autoArrangerOptions: Readonly<AutoArrangerOptions>;
 
-  dummyAircraftRegisters: DummyAircraftRegister[];
-  aircraftRegisterOptionsDictionary: AircraftRegisterOptionsDictionary;
+  dummyAircraftRegisters: ReadonlyArray<Readonly<DummyAircraftRegisterModel>>;
+  aircraftRegisterOptionsDictionary: Readonly<AircraftRegisterOptionsDictionary>;
 
-  // Calculated fields:
+  flightRequirements: ReadonlyArray<Readonly<WeekFlightRequirementModel>>;
+}
+
+export default class Preplan implements PreplanHeaderModel {
+  readonly id: string;
+
+  readonly name: string;
+  readonly published: boolean;
+  readonly finalized: boolean;
+
+  readonly userId: string;
+  readonly userName: string;
+  readonly userDisplayName: string;
+
+  readonly parentPreplanId?: string;
+  readonly parentPreplanName?: string;
+
+  readonly creationDateTime: Date;
+  readonly lastEditDateTime: Date;
+
+  readonly startDate: Date;
+  readonly endDate: Date;
+
+  readonly simulationId?: string;
+  readonly simulationName?: string;
+
+  readonly autoArrangerOptions: Readonly<AutoArrangerOptions>;
 
   /**
    * The enhanced aircraft registers for this preplan.
    * It must be used instead of the similar collection within MasterData.
    * @see MasterData.aircraftRegisters as the general (not preplan specific) collection.
    */
-  aircraftRegisters: AircraftRegisters;
+  readonly aircraftRegisters: AircraftRegisters;
 
-  constructor(
-    id: string,
-    name: string,
-    published: boolean,
-    finalized: boolean,
-    userId: string,
-    userName: string,
-    userDisplayName: string,
-    parentPreplanId: string | undefined,
-    parentPreplanName: string | undefined,
-    creationDateTime: Date,
-    lastEditDateTime: Date,
-    startDate: Date,
-    endDate: Date,
-    simulationId: string | undefined,
-    simulationName: string | undefined,
-    autoArrangerOptions: AutoArrangerOptions | undefined,
-    dummyAircraftRegisters: DummyAircraftRegister[],
-    aircraftRegisterOptionsDictionary: AircraftRegisterOptionsDictionary
-  ) {
-    this.id = id;
+  readonly flightRequirements: WeekFlightRequirement[];
 
-    this.name = name;
-    this.published = published;
-    this.finalized = finalized;
-
-    this.userId = userId;
-    this.userName = userName;
-    this.userDisplayName = userDisplayName;
-
-    this.parentPreplanId = parentPreplanId;
-    this.parentPreplanName = parentPreplanName;
-
-    this.creationDateTime = creationDateTime;
-    this.lastEditDateTime = lastEditDateTime;
-
-    this.startDate = startDate;
-    this.endDate = endDate;
-
-    this.simulationId = simulationId;
-    this.simulationName = simulationName;
-
-    this.autoArrangerOptions = autoArrangerOptions || defaultAutoArrangerOptions;
-
-    this.dummyAircraftRegisters = dummyAircraftRegisters;
-    this.aircraftRegisters = new AircraftRegisters(dummyAircraftRegisters, aircraftRegisterOptionsDictionary);
-    this.aircraftRegisterOptionsDictionary = this.aircraftRegisters.extractAircraftRegisterOptionsDictionary();
+  constructor(raw: PreplanModel) {
+    this.id = raw.id;
+    this.name = raw.name;
+    this.published = raw.published;
+    this.finalized = raw.finalized;
+    this.userId = raw.userId;
+    this.userName = raw.userName;
+    this.userDisplayName = raw.userDisplayName;
+    this.parentPreplanId = raw.parentPreplanId;
+    this.parentPreplanName = raw.parentPreplanName;
+    this.creationDateTime = raw.creationDateTime;
+    this.lastEditDateTime = raw.lastEditDateTime;
+    this.startDate = raw.startDate;
+    this.endDate = raw.endDate;
+    this.simulationId = raw.simulationId;
+    this.simulationName = raw.simulationName;
+    this.autoArrangerOptions = raw.autoArrangerOptions;
+    this.aircraftRegisters = new AircraftRegisters(raw.dummyAircraftRegisters, raw.aircraftRegisterOptionsDictionary);
+    this.flightRequirements = raw.flightRequirements.map(f => new WeekFlightRequirement(f));
   }
 }

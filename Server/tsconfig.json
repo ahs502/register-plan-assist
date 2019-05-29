@@ -2,10 +2,10 @@
   "compilerOptions": {
     "target": "es6",
     "module": "commonjs",
-    "types": ["node", "express"],
-    "outDir": "dist",
-    "sourceMap": true
+    "baseUrl": ".",
+    "paths": {
+      "@business/*": ["../Client/src/business/*"]
+    }
   },
-  "include": ["src/index.ts", "src/**/*.ts"],
-  "exclude": ["node_modules"]
+  "include": ["src/index.ts", "src/**/*.ts", "../Client/src/business/**/*.ts"]
 }

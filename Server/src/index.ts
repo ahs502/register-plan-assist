@@ -28,5 +28,5 @@ server.on('error', error => {
 });
 
 server.on('listening', () => {
-  console.log(`Server is listening on port ${port}.`);
+  console.log(`Server is listening on port ${port}...`);
 });

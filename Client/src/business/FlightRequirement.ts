@@ -40,54 +40,68 @@ export interface FlightScope {
  */
 export interface Flight {
   std: Daytime;
-  aircraftRegisterId: string;
+  aircraftRegisterId?: string;
 }
 
 export interface WeekdayFlightRequirementModel {
-  id: string;
-  parentId: string;
   scope: Readonly<FlightScope>;
   notes: string;
   day: number;
   flight: Readonly<Flight>;
 }
 
-export interface WeekFlightRequirementModel {
+export interface FlightRequirementModel {
   id: string;
   definition: Readonly<FlightDefinition>;
   scope: Readonly<FlightScope>;
   days: ReadonlyArray<Readonly<WeekdayFlightRequirementModel>>;
+  ignored: boolean;
 }
 
 export class WeekdayFlightRequirement {
-  readonly id: string;
-  readonly parent: WeekFlightRequirement;
+  readonly parent: FlightRequirement;
   readonly scope: Readonly<FlightScope>;
   readonly notes: string;
   readonly day: number;
   readonly flight: Readonly<Flight>;
 
-  constructor(raw: WeekdayFlightRequirementModel, parent: WeekFlightRequirement) {
-    this.id = raw.id;
+  constructor(raw: WeekdayFlightRequirementModel, parent: FlightRequirement) {
     this.parent = parent;
-    this.scope = raw.scope;
+    this.scope = {
+      ...raw.scope,
+      times: raw.scope.times.map(t => ({
+        stdLowerBound: new Daytime(t.stdLowerBound),
+        stdUpperBound: new Daytime(t.stdUpperBound)
+      }))
+    };
     this.notes = raw.notes;
     this.day = raw.day;
-    this.flight = raw.flight;
+    this.flight = {
+      ...raw.flight,
+      std: new Daytime(raw.flight.std)
+    };
   }
 }
 
-export class WeekFlightRequirement {
+export default class FlightRequirement {
   readonly id: string;
   readonly definition: Readonly<FlightDefinition>;
   readonly scope: Readonly<FlightScope>;
   readonly days: ReadonlyArray<Readonly<WeekdayFlightRequirement>>;
+  readonly ignored: boolean;
 
-  constructor(raw: WeekFlightRequirementModel) {
+  constructor(raw: FlightRequirementModel) {
     this.id = raw.id;
     this.definition = raw.definition;
-    this.scope = raw.scope;
+    this.scope = {
+      ...raw.scope,
+      times: raw.scope.times.map(t => ({
+        stdLowerBound: new Daytime(t.stdLowerBound),
+        stdUpperBound: new Daytime(t.stdUpperBound)
+      }))
+    };
     this.days = raw.days.map(d => new WeekdayFlightRequirement(d, this)).sortBy(d => d.day);
+    this.ignored = raw.ignored;
   }
 
   /**

@@ -96,9 +96,9 @@ export default class AircraftRegister implements MasterDataItem {
  * Encapsulates all master data and dummy aircraft registers as a single collection.
  */
 export class AircraftRegisters extends MasterDataItems<AircraftRegister> {
-  constructor(dummyAircraftRegisters: ReadonlyArray<DummyAircraftRegisterModel>, optionsDictionary: Readonly<AircraftRegisterOptionsDictionary>) {
-    let masterDataItems = MasterData.all.aircraftRegisters.items.map(a => new AircraftRegister(a.id, a.name, a.aircraftTypeId, false, optionsDictionary[a.id]));
-    let dummyItems = dummyAircraftRegisters.map(a => new AircraftRegister(a.id, a.name, a.aircraftTypeId, true, optionsDictionary[a.id]));
+  constructor(dummyAircraftRegisters: ReadonlyArray<DummyAircraftRegisterModel>, aircraftRegisterOptionsDictionary: Readonly<AircraftRegisterOptionsDictionary>) {
+    let masterDataItems = MasterData.all.aircraftRegisters.items.map(a => new AircraftRegister(a.id, a.name, a.aircraftTypeId, false, aircraftRegisterOptionsDictionary[a.id]));
+    let dummyItems = dummyAircraftRegisters.map(a => new AircraftRegister(a.id, a.name, a.aircraftTypeId, true, aircraftRegisterOptionsDictionary[a.id]));
     super(masterDataItems.concat(dummyItems));
   }
 

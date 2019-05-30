@@ -1,6 +1,6 @@
 import AutoArrangerOptions from './AutoArrangerOptions';
 import { DummyAircraftRegisterModel, AircraftRegisters, AircraftRegisterOptionsDictionary } from './AircraftRegister';
-import { WeekFlightRequirementModel, WeekFlightRequirement } from './FlightRequirement';
+import FlightRequirement, { FlightRequirementModel } from './FlightRequirement';
 
 export interface PreplanHeaderModel {
   id: string;
@@ -32,7 +32,7 @@ export interface PreplanModel extends PreplanHeaderModel {
   dummyAircraftRegisters: ReadonlyArray<Readonly<DummyAircraftRegisterModel>>;
   aircraftRegisterOptionsDictionary: Readonly<AircraftRegisterOptionsDictionary>;
 
-  flightRequirements: ReadonlyArray<Readonly<WeekFlightRequirementModel>>;
+  flightRequirements: ReadonlyArray<Readonly<FlightRequirementModel>>;
 }
 
 export default class Preplan implements PreplanHeaderModel {
@@ -58,7 +58,7 @@ export default class Preplan implements PreplanHeaderModel {
   readonly simulationId?: string;
   readonly simulationName?: string;
 
-  readonly autoArrangerOptions: Readonly<AutoArrangerOptions>;
+  autoArrangerOptions: Readonly<AutoArrangerOptions>;
 
   /**
    * The enhanced aircraft registers for this preplan.
@@ -67,7 +67,7 @@ export default class Preplan implements PreplanHeaderModel {
    */
   readonly aircraftRegisters: AircraftRegisters;
 
-  readonly flightRequirements: WeekFlightRequirement[];
+  readonly flightRequirements: FlightRequirement[];
 
   constructor(raw: PreplanModel) {
     this.id = raw.id;
@@ -79,14 +79,14 @@ export default class Preplan implements PreplanHeaderModel {
     this.userDisplayName = raw.userDisplayName;
     this.parentPreplanId = raw.parentPreplanId;
     this.parentPreplanName = raw.parentPreplanName;
-    this.creationDateTime = raw.creationDateTime;
-    this.lastEditDateTime = raw.lastEditDateTime;
-    this.startDate = raw.startDate;
-    this.endDate = raw.endDate;
+    this.creationDateTime = new Date(raw.creationDateTime);
+    this.lastEditDateTime = new Date(raw.lastEditDateTime);
+    this.startDate = new Date(raw.startDate);
+    this.endDate = new Date(raw.endDate);
     this.simulationId = raw.simulationId;
     this.simulationName = raw.simulationName;
     this.autoArrangerOptions = raw.autoArrangerOptions;
     this.aircraftRegisters = new AircraftRegisters(raw.dummyAircraftRegisters, raw.aircraftRegisterOptionsDictionary);
-    this.flightRequirements = raw.flightRequirements.map(f => new WeekFlightRequirement(f));
+    this.flightRequirements = raw.flightRequirements.map(f => new FlightRequirement(f));
   }
 }

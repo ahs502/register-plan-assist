@@ -15,8 +15,8 @@ export default class Season extends MasterDataItem implements SeasonModel {
 
   constructor(raw: SeasonModel) {
     super(raw);
-    this.startDate = raw.startDate;
-    this.endDate = raw.endDate;
+    this.startDate = new Date(raw.startDate);
+    this.endDate = new Date(raw.endDate);
     this.seasonTypeId = raw.seasonTypeId;
   }
 

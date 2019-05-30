@@ -10,8 +10,8 @@ app.set('env', env);
 
 app.use(express.json());
 
-import apiRouter from './api';
-app.use('/api', apiRouter);
+import apiService from './api-service';
+app.use('/api', apiService);
 
 app.use('/', express.static(path.join(__dirname, 'public')));
 

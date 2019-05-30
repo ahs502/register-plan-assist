@@ -5,7 +5,7 @@ import NavBar from '../components/NavBar';
 import LinkButton from '../components/LinkButton';
 import { Waves as WavesIcon, DoneAll as FinilizedIcon, Add as AddIcon, Edit as EditIcon, Clear as ClearIcon } from '@material-ui/icons';
 import classNames from 'classnames';
-import { PreplanHeader } from '../business/Preplan';
+import { PreplanHeaderModel } from '../business/Preplan';
 import Search from '../components/Search';
 import LinkTypography from '../components/LinkTypography';
 import MahanIcon, { MahanIconType } from '../components/MahanIcon';
@@ -33,7 +33,7 @@ const styles = (theme: Theme) =>
 
 interface Props extends WithStyles<typeof styles> {}
 interface State {
-  preplans: PreplanHeader[];
+  preplans: PreplanHeaderModel[];
   tabNumber: Number;
   preplanType: PreplanType;
 }
@@ -62,7 +62,7 @@ class PreplanList extends PureComponent<Props, State> {
     });
   };
 
-  togglePreplanPublic = (preplan: PreplanHeader) => (event: React.ChangeEvent<{}>, checked: boolean) => {
+  togglePreplanPublic = (preplan: PreplanHeaderModel) => (event: React.ChangeEvent<{}>, checked: boolean) => {
     this.setState(prevState => {
       const newState = { ...prevState, preplans: [...prevState.preplans] };
       const tempPreplan = newState.preplans.find(p => p.id === preplan.id);
@@ -169,7 +169,7 @@ class PreplanList extends PureComponent<Props, State> {
 
 export default withStyles(styles)(PreplanList);
 
-function getDummyPreplans(): PreplanHeader[] {
+function getDummyPreplans(): PreplanHeaderModel[] {
   return [
     {
       id: '123',

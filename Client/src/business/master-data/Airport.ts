@@ -1,28 +1,24 @@
-import MasterDataItem, { MasterDataItems } from './MasterDataItem';
+import MasterDataItem, { MasterDataItems, MasterDataItemModel } from './MasterDataItem';
 
-export default class Airport implements MasterDataItem {
-  id: string;
-  name: string;
-
+export interface AirportModel extends MasterDataItemModel {
   fullName: string;
   international: boolean;
+}
 
-  constructor(id: string, name: string, fullName: string, international: boolean) {
-    this.id = id;
-    this.name = name;
+export default class Airport extends MasterDataItem implements AirportModel {
+  readonly fullName: string;
+  readonly international: boolean;
 
-    this.fullName = fullName;
-    this.international = international;
-  }
-
-  static parse(raw: any): Airport {
-    return new Airport(String(raw['id']), String(raw['id']), String(raw['fullName']), String(raw['international']) === 'true');
+  constructor(raw: AirportModel) {
+    super(raw);
+    this.fullName = raw.fullName;
+    this.international = raw.international;
   }
 }
 
 export class Airports extends MasterDataItems<Airport> {
-  static parse(raw: any): Airports | undefined {
+  static parse(raw?: ReadonlyArray<AirportModel>): Airports | undefined {
     if (!raw) return undefined;
-    return new Airports((<Array<any>>raw).map(Airport.parse));
+    return new Airports(raw.map(x => new Airport(x)));
   }
 }

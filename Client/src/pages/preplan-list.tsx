@@ -5,7 +5,7 @@ import NavBar from '../components/NavBar';
 import LinkButton from '../components/LinkButton';
 import { DoneAll as FinilizedIcon, Add as AddIcon, Edit as EditIcon, Clear as ClearIcon } from '@material-ui/icons';
 import classNames from 'classnames';
-import Preplan from '../business/Preplan';
+import { PreplanHeaderModel } from '../business/Preplan';
 import Search from '../components/Search';
 import LinkTypography from '../components/LinkTypography';
 import MahanIcon, { MahanIconType } from '../components/MahanIcon';
@@ -33,7 +33,7 @@ const styles = (theme: Theme) =>
 
 interface Props extends WithStyles<typeof styles> {}
 interface State {
-  preplans: Preplan[];
+  preplans: PreplanHeaderModel[];
   tabNumber: Number;
   preplanType: PreplanType;
 }
@@ -62,13 +62,13 @@ class PreplanList extends PureComponent<Props, State> {
     });
   };
 
-  togglePreplanPublic = (preplan: Preplan) => (event: React.ChangeEvent<{}>, checked: boolean) => {
+  togglePreplanPublic = (preplan: PreplanHeaderModel) => (event: React.ChangeEvent<{}>, checked: boolean) => {
     this.setState(prevState => {
       const newState = { ...prevState, preplans: [...prevState.preplans] };
       const tempPreplan = newState.preplans.find(p => p.id === preplan.id);
 
       if (tempPreplan) {
-        tempPreplan.public = checked;
+        //tempPreplan.public = checked;
       }
 
       return newState;
@@ -173,12 +173,12 @@ class PreplanList extends PureComponent<Props, State> {
 
 export default withStyles(styles)(PreplanList);
 
-function getDummyPreplans(): Preplan[] {
+function getDummyPreplans(): PreplanHeaderModel[] {
   return [
     {
       id: '123',
       name: 'S20 International Final',
-      public: true,
+      published: true,
       finalized: false,
       userId: '1001',
       userName: 'MAHANAIR961234',
@@ -190,12 +190,12 @@ function getDummyPreplans(): Preplan[] {
       startDate: new Date(2019, 1, 1),
       endDate: new Date(2019, 7, 1),
       simulationId: '32847321984',
-      simulationTitle: 'S19 International Simulation'
+      simulationName: 'S19 International Simulation'
     },
     {
       id: '124',
       name: 'S21 International Final',
-      public: false,
+      published: false,
       finalized: true,
       userId: '1001',
       userName: 'MAHANAIR961234',
@@ -207,12 +207,12 @@ function getDummyPreplans(): Preplan[] {
       startDate: new Date(2019, 1, 1),
       endDate: new Date(2019, 7, 1),
       simulationId: '32847321984',
-      simulationTitle: 'S19 International Simulation'
+      simulationName: 'S19 International Simulation'
     },
     {
       id: '125',
       name: 'S19 International Final',
-      public: true,
+      published: true,
       finalized: false,
       userId: '1002',
       userName: 'MAHANAIR961234',
@@ -224,12 +224,12 @@ function getDummyPreplans(): Preplan[] {
       startDate: new Date(2019, 1, 1),
       endDate: new Date(2019, 7, 1),
       simulationId: '32847321984',
-      simulationTitle: 'S19 International Simulation'
+      simulationName: 'S19 International Simulation'
     },
     {
       id: '126',
       name: 'S19 International Final',
-      public: true,
+      published: true,
       finalized: true,
       userId: '1002',
       userName: 'MAHANAIR961234',
@@ -241,12 +241,12 @@ function getDummyPreplans(): Preplan[] {
       startDate: new Date(2019, 1, 1),
       endDate: new Date(2019, 7, 1),
       simulationId: '32847321984',
-      simulationTitle: 'S19 International Simulation'
+      simulationName: 'S19 International Simulation'
     },
     {
       id: '127',
       name: 'S19 International Final',
-      public: true,
+      published: true,
       finalized: true,
       userId: '1003',
       userName: 'MAHANAIR961234',
@@ -258,12 +258,12 @@ function getDummyPreplans(): Preplan[] {
       startDate: new Date(2019, 1, 1),
       endDate: new Date(2019, 7, 1),
       simulationId: '32847321984',
-      simulationTitle: 'S19 International Simulation'
+      simulationName: 'S19 International Simulation'
     },
     {
       id: '128',
       name: 'S19 International Final',
-      public: true,
+      published: true,
       finalized: true,
       userId: '1003',
       userName: 'MAHANAIR961234',
@@ -275,7 +275,7 @@ function getDummyPreplans(): Preplan[] {
       startDate: new Date(2019, 1, 1),
       endDate: new Date(2019, 7, 1),
       simulationId: '32847321984',
-      simulationTitle: 'S19 International Simulation'
+      simulationName: 'S19 International Simulation'
     }
   ];
 }

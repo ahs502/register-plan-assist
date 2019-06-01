@@ -2,11 +2,16 @@ import * as path from 'path';
 import * as http from 'http';
 import * as express from 'express';
 
-import app from './App';
+const app = express();
 
 const env = process.env.NODE_ENV || 'production';
 app.set('env', env);
 //TODO: Configure the project by the env variable. It will be either 'production', 'test' or 'development'.
+
+app.use(express.json());
+
+import apiService from './api-service';
+app.use('/api', apiService);
 
 app.use('/', express.static(path.join(__dirname, 'public')));
 
@@ -23,5 +28,5 @@ server.on('error', error => {
 });
 
 server.on('listening', () => {
-  console.log(`Server is listening on port ${port}.`);
+  console.log(`Server is listening on port ${port}...`);
 });

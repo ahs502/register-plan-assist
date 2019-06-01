@@ -1,6 +1,7 @@
-import IClonable from '../utils/IClonable';
-
-enum Weekday {
+/**
+ * The days of a week starting from Saturday.
+ */
+export enum Weekday {
   Saturday,
   Sunday,
   Monday,
@@ -8,25 +9,4 @@ enum Weekday {
   Wednesday,
   Thursday,
   Friday
-}
-
-export default Weekday;
-
-export class Week<T> implements IClonable<Week<T>> {
-  private days: T[];
-
-  constructor(days?: T[]) {
-    this.days = (days || []).slice();
-  }
-
-  clone(): Week<T> {
-    return new Week<T>(this.days);
-  }
-
-  toArray(): T[] {
-    return this.days.slice();
-  }
-  // set(weekday:Weekday,value:T){
-  //   this.days[]
-  // }
 }

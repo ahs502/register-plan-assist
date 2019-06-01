@@ -1,38 +1,33 @@
-import MasterDataItem, { MasterDataItems } from './MasterDataItem';
+import MasterDataItem, { MasterDataItems, MasterDataItemModel } from './MasterDataItem';
 import SeasonType from './SeasonType';
-import masterData from '.';
+import MasterData from '.';
 
-export default class Season implements MasterDataItem {
-  id: string;
-  name: string;
-
+export interface SeasonModel extends MasterDataItemModel {
   startDate: Date;
   endDate: Date;
-
   seasonTypeId: string;
+}
 
-  constructor(id: string, name: string, startDate: Date, endDate: Date, seasonTypeId: string) {
-    this.id = id;
-    this.name = name;
+export default class Season extends MasterDataItem implements SeasonModel {
+  readonly startDate: Date;
+  readonly endDate: Date;
+  readonly seasonTypeId: string;
 
-    this.startDate = startDate;
-    this.endDate = endDate;
-
-    this.seasonTypeId = seasonTypeId;
-  }
-
-  static parse(raw: any): Season {
-    return new Season(String(raw['id']), String(raw['id']), new Date(raw['startDate']), new Date(raw['endDate']), String(raw['seasonTypeId']));
+  constructor(raw: SeasonModel) {
+    super(raw);
+    this.startDate = new Date(raw.startDate);
+    this.endDate = new Date(raw.endDate);
+    this.seasonTypeId = raw.seasonTypeId;
   }
 
   getSeasonType(): SeasonType {
-    return masterData.seasonTypes.id[this.seasonTypeId];
+    return MasterData.all.seasonTypes.id[this.seasonTypeId];
   }
 }
 
 export class Seasons extends MasterDataItems<Season> {
-  static parse(raw: any): Seasons | undefined {
+  static parse(raw?: ReadonlyArray<SeasonModel>): Seasons | undefined {
     if (!raw) return undefined;
-    return new Seasons((<Array<any>>raw).map(Season.parse));
+    return new Seasons(raw.map(x => new Season(x)));
   }
 }

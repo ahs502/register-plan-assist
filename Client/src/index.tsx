@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom';
 import 'typeface-roboto';
 import CssBaseline from '@material-ui/core/CssBaseline';
 import * as serviceWorker from './serviceWorker';
+import './utils/extensions.implementation';
 import App from './App';
 
 ReactDOM.render(

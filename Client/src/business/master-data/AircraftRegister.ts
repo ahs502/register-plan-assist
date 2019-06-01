@@ -1,36 +1,31 @@
-import MasterDataItem, { MasterDataItems } from './MasterDataItem';
+import MasterDataItem, { MasterDataItems, MasterDataItemModel } from './MasterDataItem';
 import AircraftType from './AircraftType';
-import masterData from '.';
+import MasterData from '.';
 
-export default class AircraftRegister implements MasterDataItem {
-  id: string;
-  name: string;
-
+export interface AircraftRegisterModel extends MasterDataItemModel {
   aircraftTypeId: string;
+}
 
-  constructor(id: string, name: string, aircraftTypeId: string) {
-    this.id = id;
-    this.name = name;
+export default class AircraftRegister extends MasterDataItem implements AircraftRegisterModel {
+  readonly aircraftTypeId: string;
 
-    this.aircraftTypeId = aircraftTypeId;
-  }
-
-  static parse(raw: any): AircraftRegister {
-    return new AircraftRegister(String(raw['id']), String(raw['name']), String(raw['aircraftTypeId']));
+  constructor(raw: AircraftRegisterModel) {
+    super(raw);
+    this.aircraftTypeId = raw.aircraftTypeId;
   }
 
   getAircraftType(): AircraftType {
-    return masterData.aircraftTypes.id[this.aircraftTypeId];
+    return MasterData.all.aircraftTypes.id[this.aircraftTypeId];
   }
 
-  getMinimumGroundTime(date: Date, isTransit: boolean, isInternational: boolean): number {
-    return this.getAircraftType().getMinimumGroundTime(date, isTransit, isInternational);
+  getMinimumGroundTime(date: Date, transit: boolean, international: boolean): number {
+    return this.getAircraftType().getMinimumGroundTime(date, transit, international);
   }
 }
 
 export class AircraftRegisters extends MasterDataItems<AircraftRegister> {
-  static parse(raw: any): AircraftRegisters | undefined {
+  static parse(raw?: ReadonlyArray<AircraftRegisterModel>): AircraftRegisters | undefined {
     if (!raw) return undefined;
-    return new AircraftRegisters((<Array<any>>raw).map(AircraftRegister.parse));
+    return new AircraftRegisters(raw.map(x => new AircraftRegister(x)));
   }
 }

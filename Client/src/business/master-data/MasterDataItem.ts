@@ -1,63 +1,35 @@
 /**
- * The minimum common contents of any master data item.
+ * The minimum common content model of any master data item.
  */
-export default interface MasterDataItem {
+export interface MasterDataItemModel {
   id: string;
   name: string;
 }
 
 /**
- * The base class for any master data collection,
- * mimiking the most applicable aspects of Array.
+ * The minimum common contents of any master data item.
  */
-export class MasterDataItems<T extends MasterDataItem> {
-  length: number;
-  [index: number]: T;
+export default abstract class MasterDataItem implements MasterDataItemModel {
+  readonly id: string;
+  readonly name: string;
 
-  id: { [id: string]: T };
+  constructor(raw: MasterDataItemModel) {
+    this.id = raw.id;
+    this.name = raw.name;
+  }
+}
 
-  constructor(items: T[]) {
-    this.length = items.length;
+/**
+ * The base class for any master data collection,
+ * containing both the array and dictionary by id form of the collection items.
+ */
+export abstract class MasterDataItems<T extends MasterDataItem> {
+  readonly items: ReadonlyArray<T>;
+  readonly id: { readonly [id: string]: T };
+
+  protected constructor(items: ReadonlyArray<T>) {
+    this.items = items;
     this.id = {};
-    items.forEach((item, index) => (this[index] = this.id[item.id] = item));
-  }
-
-  toArray(): T[] {
-    let result = [] as T[];
-    for (let i = 0; i < this.length; i++) {
-      result.push(this[i]);
-    }
-    return result;
-  }
-
-  forEach(task: (item: T) => void): void {
-    for (let i = 0; i < this.length; i++) {
-      task(this[i]);
-    }
-  }
-
-  map<R>(task: (item: T) => R): R[] {
-    let result = [] as R[];
-    for (let i = 0; i < this.length; i++) {
-      result.push(task(this[i]));
-    }
-    return result;
-  }
-
-  filter(predicate: (item: T) => boolean): T[] {
-    let result = [] as T[];
-    for (let i = 0; i < this.length; i++) {
-      if (predicate(this[i])) {
-        result.push(this[i]);
-      }
-    }
-    return result;
-  }
-
-  find(predicate: (item: T) => boolean): T | undefined {
-    for (let i = 0; i < this.length; i++) {
-      if (predicate(this[i])) return this[i];
-    }
-    return undefined;
+    items.forEach(item => ((this.id as { [id: string]: T })[item.id] = item));
   }
 }

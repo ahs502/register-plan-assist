@@ -10,11 +10,11 @@ To prepare the project for development, after _clone_:
 
 To run both the server and the client and watch (restart) them for changes _(Also open browser on client port)_:
 
-    $ npm run dev
+    $ npm start
 
 The default server port is **3000** and the default client port is **4000** but you can specify any of them by setting the environment variables **SERVER_PORT** and **CLIENT_PORT** accordingly. For example:
 
-    $ SERVER_PORT=3000 CLIENT_PORT=4000 npm run dev
+    $ SERVER_PORT=3000 CLIENT_PORT=4000 npm start
 
 > The node environment will be **development** in this approach.
 

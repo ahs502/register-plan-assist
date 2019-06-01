@@ -1,22 +1,16 @@
-import MasterDataItem, { MasterDataItems } from './MasterDataItem';
+import MasterDataItem, { MasterDataItems, MasterDataItemModel } from './MasterDataItem';
 
-export default class SeasonType implements MasterDataItem {
-  id: string;
-  name: string;
+export interface SeasonTypeModel extends MasterDataItemModel {}
 
-  constructor(id: string, name: string) {
-    this.id = id;
-    this.name = name;
-  }
-
-  static parse(raw: any): SeasonType {
-    return new SeasonType(String(raw['id']), String(raw['name']));
+export default class SeasonType extends MasterDataItem implements SeasonTypeModel {
+  constructor(raw: SeasonTypeModel) {
+    super(raw);
   }
 }
 
 export class SeasonTypes extends MasterDataItems<SeasonType> {
-  static parse(raw: any): SeasonTypes | undefined {
+  static parse(raw?: ReadonlyArray<SeasonTypeModel>): SeasonTypes | undefined {
     if (!raw) return undefined;
-    return new SeasonTypes((<Array<any>>raw).map(SeasonType.parse));
+    return new SeasonTypes(raw.map(x => new SeasonType(x)));
   }
 }

@@ -1,22 +1,16 @@
-import MasterDataItem, { MasterDataItems } from './MasterDataItem';
+import MasterDataItem, { MasterDataItems, MasterDataItemModel } from './MasterDataItem';
 
-export default class Constraint implements MasterDataItem {
-  id: string;
-  name: string;
+export interface ConstraintModel extends MasterDataItemModel {}
 
-  constructor(id: string, name: string) {
-    this.id = id;
-    this.name = name;
-  }
-
-  static parse(raw: any): Constraint {
-    return new Constraint(String(raw['id']), String(raw['name']));
+export default class Constraint extends MasterDataItem implements ConstraintModel {
+  constructor(raw: ConstraintModel) {
+    super(raw);
   }
 }
 
 export class Constraints extends MasterDataItems<Constraint> {
-  static parse(raw: any): Constraints | undefined {
+  static parse(raw?: ReadonlyArray<ConstraintModel>): Constraints | undefined {
     if (!raw) return undefined;
-    return new Constraints((<Array<any>>raw).map(Constraint.parse));
+    return new Constraints(raw.map(x => new Constraint(x)));
   }
 }

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 
-import MasterDataService from './service/master-data-service';
-import PreplanService from './service/preplan-service';
+import MasterDataService from './services/master-data-service';
+import PreplanService from './services/preplan-service';
 
 let router = Router();
 export default router;

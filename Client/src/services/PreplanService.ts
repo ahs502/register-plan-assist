@@ -4,7 +4,7 @@ import { FlightRequirementModel } from '../business/FlightRequirement';
 import { DummyAircraftRegisterModel, AircraftRegisterOptionsDictionary } from '../business/AircraftRegister';
 import AutoArrangerOptions from '../business/AutoArrangerOptions';
 
-const request = apiRequest.bind(null, 'Preplan');
+const request = apiRequest.bind(null, 'preplan');
 
 export default class PreplanService {
   /**

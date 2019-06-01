@@ -6,8 +6,8 @@ import PreplanService from './services/preplan-service';
 let router = Router();
 export default router;
 
-router.use('/MasterData', MasterDataService);
-router.use('/Preplan', PreplanService);
+router.use('/master-data', MasterDataService);
+router.use('/preplan', PreplanService);
 
 /**
  * Serves the environment name, either one of 'production', 'test' or 'development'.

@@ -3,7 +3,7 @@ import { MasterDataModel } from '../business/master-data';
 import { AircraftGroupModel } from '../business/master-data/AircraftGroup';
 import { ConstraintModel } from '../business/master-data/Constraint';
 
-const request = apiRequest.bind(null, 'MasterData');
+const request = apiRequest.bind(null, 'master-data');
 
 export default class MasterDataService {
   /**

@@ -1,6 +1,5 @@
 import { MongoClient, Db } from 'mongodb';
-
-const config = require('../config');
+import config from '../config';
 
 export function database<T>(task: (db: Db) => T | Promise<T>): Promise<T> {
   return MongoClient.connect(config.mongodbUrl).then(client => {

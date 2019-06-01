@@ -40,7 +40,10 @@ const styles = (theme: Theme) =>
       padding: theme.spacing.unit * 2
     },
     header: {
-      padding: theme.spacing.unit * 2
+      padding: `0px  ${theme.spacing.unit * 2}px`
+    },
+    search: {
+      margin: `0px  ${theme.spacing.unit * 2}px`
     }
   });
 
@@ -54,6 +57,8 @@ interface Props extends WithStyles<typeof styles> {
   selectedItem?: MasterDataItem;
   onItemSelect?: (selectedItem: MasterDataItem) => void;
   onItemUnselect?: () => void;
+  onItemAdd?: () => void;
+  onItemRemove?: (selectedItem: MasterDataItem) => void;
   masterDataTitle: string;
 }
 interface State {
@@ -77,12 +82,24 @@ class MasterDataList extends PureComponent<Props, State> {
   };
 
   render() {
-    const { classes, children, selectedItem, onItemSelect, masterDataTitle } = this.props;
+    const { classes, children, selectedItem, onItemSelect, onItemAdd, onItemRemove, masterDataTitle } = this.props;
     const { filteredItems } = this.state;
 
     function itemSelectHandler(item: MasterDataItem) {
       if (onItemSelect) {
         onItemSelect(item);
+      }
+    }
+
+    function itemAddHandler() {
+      if (onItemAdd) {
+        onItemAdd();
+      }
+    }
+
+    function itemRemoveHandler(item: MasterDataItem) {
+      if (onItemRemove) {
+        onItemRemove(item);
       }
     }
 
@@ -94,12 +111,14 @@ class MasterDataList extends PureComponent<Props, State> {
               <Typography variant="caption">{masterDataTitle}</Typography>
             </Grid>
             <Grid item>
-              <IconButton color="primary" title="Add Preplan">
-                <AddIcon fontSize="large" />
-              </IconButton>
+              {onItemAdd && (
+                <IconButton color="primary" title="Add Preplan" onClick={itemAddHandler}>
+                  <AddIcon fontSize="large" />
+                </IconButton>
+              )}
             </Grid>
           </Grid>
-          <Search onQueryChange={this.queryChangeHandler} />
+          <Search classes={{ root: classes.search }} onQueryChange={this.queryChangeHandler} />
           <br />
           <List>
             {filteredItems.map(item => (
@@ -109,7 +128,7 @@ class MasterDataList extends PureComponent<Props, State> {
                   secondary={<Fragment>{item.description && <Typography component="span">{item.description}</Typography>}</Fragment>}
                 />
                 <ListItemSecondaryAction>
-                  <IconButton aria-label="Comments">
+                  <IconButton aria-label="Comments" onClick={() => itemRemoveHandler(item)}>
                     <ClearIcon />
                   </IconButton>
                 </ListItemSecondaryAction>

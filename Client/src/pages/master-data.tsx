@@ -19,7 +19,7 @@ const aircraftGroupsMasterDataTable: MasterDataTable = {
   description: 'All defined groups of aircrafts',
   path: 'aircraft-groups'
 };
-const constraintsMasterDataTable = {
+const constraintsMasterDataTable: MasterDataTable = {
   title: 'Constraints',
   description: 'All existing constraints in the organization',
   path: 'constraints'
@@ -60,9 +60,7 @@ class MasterData extends Component<Props> {
 
     return (
       <Fragment>
-        <NavBar backLink="/preplan-list" navBarLinks={[{ title: 'Master Data' }]}>
-          Master Data Tools
-        </NavBar>
+        <NavBar backLink="/preplan-list" navBarLinks={[{ title: 'Master Data' }]} />
         <SectionList sections={masterDataTables} selectedSection={selectedMasterDataTable} onSectionSelect={this.sectionSelectHandler}>
           {selectedMasterDataTable === aircraftGroupsMasterDataTable && <AircraftGroupsMasterData />}
           {selectedMasterDataTable === constraintsMasterDataTable && <ConstraintsMasterData />}

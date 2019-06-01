@@ -1,7 +1,13 @@
 import React, { PureComponent } from 'react';
 import { WithStyles, createStyles, withStyles, Theme } from '@material-ui/core/styles';
 import { AppBar as MaterialUiAppBar, Toolbar, IconButton, Typography } from '@material-ui/core';
-import { ArrowBackIos as ArrowBackIcon, Sync as SyncIcon, PersonalVideo as ViewModuleIcon, Fullscreen as FullScreenIcon, FullscreenExit as ExitFullScreenIcon } from '@material-ui/icons';
+import {
+  ArrowBackIos as ArrowBackIcon,
+  Sync as SyncIcon,
+  PersonalVideo as ViewModuleIcon,
+  Fullscreen as FullScreenIcon,
+  FullscreenExit as ExitFullScreenIcon
+} from '@material-ui/icons';
 import User from '../business/User';
 import classNames from 'classnames';
 
@@ -50,10 +56,10 @@ class AppBar extends PureComponent<Props, State> {
     return (
       <MaterialUiAppBar position="relative">
         <Toolbar variant="dense">
-          <IconButton color="inherit">
+          <IconButton color="inherit" title="Back To Other Module">
             <ArrowBackIcon classes={{ root: classes.backIcon }} />
           </IconButton>
-          <IconButton color="inherit">
+          <IconButton color="inherit" title="Refresh Page">
             <SyncIcon />
           </IconButton>
           <Typography classes={{ root: classes.textMargin }} variant="h5" color="inherit">
@@ -63,11 +69,11 @@ class AppBar extends PureComponent<Props, State> {
             {user.displayName}
           </Typography>
           <div className={classes.grow} />
-          <IconButton color="inherit">
+          <IconButton color="inherit" title="Select Module">
             <ViewModuleIcon />
           </IconButton>
-          <IconButton color="inherit" onClick={this.toggleFullScreen}>
-            {isFullScreen ? <FullScreenIcon /> : <ExitFullScreenIcon />}
+          <IconButton color="inherit" onClick={this.toggleFullScreen} title={isFullScreen ? 'Exit Full Screen' : 'Full Screen'}>
+            {isFullScreen ? <ExitFullScreenIcon /> : <FullScreenIcon />}
           </IconButton>
           <i className={classNames('icon-mahan-air-logo', classes.iconSize)} />
         </Toolbar>

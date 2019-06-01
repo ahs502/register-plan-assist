@@ -1,6 +1,7 @@
 import React, { PureComponent, Fragment } from 'react';
 import { WithStyles, createStyles, withStyles, Theme } from '@material-ui/core/styles';
-import { Toolbar, Typography } from '@material-ui/core';
+import { Toolbar, Typography, IconButton } from '@material-ui/core';
+import { withRouter, RouteComponentProps } from 'react-router-dom';
 import { NavigateNext as NavigateNextIcon, KeyboardBackspace as BackIcon } from '@material-ui/icons';
 import LinkTypography from './LinkTypography';
 import LinkIconButton from './LinkIconButton';
@@ -32,22 +33,31 @@ export interface NavBarLink {
   link?: string;
 }
 
-interface Props extends WithStyles<typeof styles> {
+interface Props extends WithStyles<typeof styles>, RouteComponentProps<{}> {
   backLink?: string;
   backTitle?: string;
   navBarLinks: NavBarLink[];
 }
 
 class NavBar extends PureComponent<Props> {
+  goBackHandler = () => {
+    const { history, backLink } = this.props;
+    history.goBack();
+    // history.push(backLink);
+  };
+
   render() {
     const { classes, children, backLink, navBarLinks, backTitle } = this.props;
 
     return (
       <Toolbar className={classes.root} variant="dense">
         {backLink && (
-          <LinkIconButton to={backLink} color="inherit" title={backTitle}>
+          // <LinkIconButton to={backLink} color="inherit" title={backTitle}>
+          //   <BackIcon />
+          // </LinkIconButton>
+          <IconButton color="inherit" title={backTitle} onClick={this.goBackHandler}>
             <BackIcon />
-          </LinkIconButton>
+          </IconButton>
         )}
         <div className={classes.navigation}>
           {navBarLinks.map((navBarLink, index) => (
@@ -72,4 +82,4 @@ class NavBar extends PureComponent<Props> {
   }
 }
 
-export default withStyles(styles)(NavBar);
+export default withStyles(styles)(withRouter(NavBar));

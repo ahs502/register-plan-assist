@@ -3,7 +3,7 @@ import { WithStyles, createStyles, withStyles, Theme } from '@material-ui/core/s
 import { IconButton, Typography, Paper, Tab, Tabs, Fab, Table, TableBody, TableCell, TableHead, TableRow, Switch } from '@material-ui/core';
 import NavBar from '../components/NavBar';
 import LinkButton from '../components/LinkButton';
-import { Waves as WavesIcon, DoneAll as FinilizedIcon, Add as AddIcon, Edit as EditIcon, Clear as ClearIcon } from '@material-ui/icons';
+import { DoneAll as FinilizedIcon, Add as AddIcon, Edit as EditIcon, Clear as ClearIcon } from '@material-ui/icons';
 import classNames from 'classnames';
 import { PreplanHeaderModel } from '../business/Preplan';
 import Search from '../components/Search';
@@ -89,7 +89,7 @@ class PreplanList extends PureComponent<Props, State> {
             }
           ]}
         >
-          <LinkButton to="/master-data" variant="text" color="inherit">
+          <LinkButton to="/master-data" variant="text" color="inherit" title="Master Data">
             Master Data
             <MahanIcon type={MahanIconType.TextFile} />
           </LinkButton>
@@ -100,7 +100,7 @@ class PreplanList extends PureComponent<Props, State> {
             <Tab label="Current User" />
             <Tab label="Public" />
             <Search outlined />
-            <IconButton color="primary">
+            <IconButton color="primary" title="Add Preplan">
               <AddIcon fontSize="large" />
             </IconButton>
           </Tabs>
@@ -137,20 +137,24 @@ class PreplanList extends PureComponent<Props, State> {
                       <TableCell className={classes.preplanTableCell} align="center">
                         {preplan.finalized ? <FinilizedIcon /> : ''}
                       </TableCell>
-                      <TableCell className={classes.preplanTableCell}>{preplan.simulationName}</TableCell>
+                      <TableCell className={classes.preplanTableCell}>{preplan.simulationTitle}</TableCell>
                       <TableCell className={classes.preplanTableCell}>
-                        {preplanType === PreplanType.Public ? preplan.userDisplayName : <Switch checked={preplan.published} onChange={this.togglePreplanPublic(preplan)} />}
+                        {preplanType === PreplanType.Public ? (
+                          preplan.userDisplayName
+                        ) : (
+                          <Switch color="primary" checked={preplan.public} onChange={this.togglePreplanPublic(preplan)} />
+                        )}
                       </TableCell>
                       <TableCell className={classes.preplanTableCell}>
-                        <IconButton>
+                        <IconButton title="Copy Preplan">
                           <MahanIcon type={MahanIconType.CopyContent} />
                         </IconButton>
                         {preplanType !== PreplanType.Public && (
                           <Fragment>
-                            <IconButton>
+                            <IconButton title="Edit Preplan">
                               <EditIcon />
                             </IconButton>
-                            <IconButton>
+                            <IconButton title="Delete Preplan">
                               <ClearIcon />
                             </IconButton>
                           </Fragment>

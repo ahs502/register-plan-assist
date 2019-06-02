@@ -13,9 +13,12 @@ export default abstract class MasterDataItem implements MasterDataItemModel {
   readonly id: string;
   readonly name: string;
 
-  constructor(raw: MasterDataItemModel) {
+  readonly description?: string;
+
+  constructor(raw: MasterDataItemModel, description?: string) {
     this.id = raw.id;
     this.name = raw.name;
+    description && (this.description = description);
   }
 }
 

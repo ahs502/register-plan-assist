@@ -1,5 +1,5 @@
 import React, { Component, FunctionComponent } from 'react';
-import { WithStyles, createStyles, withStyles, Theme } from '@material-ui/core/styles';
+import { createStyles, withStyles, Theme } from '@material-ui/core/styles';
 import Dialog, { DialogProps } from '@material-ui/core/Dialog';
 import Paper, { PaperProps } from '@material-ui/core/Paper';
 import Draggable from 'react-draggable';

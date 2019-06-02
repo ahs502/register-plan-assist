@@ -26,7 +26,7 @@ const preplanReportConnections: PreplanReport = {
 };
 const preplanReports = [preplanReportProposal, preplanReportConnections];
 
-class Reports extends Component<Props> {
+class ReportsPage extends Component<Props> {
   componentDidMount() {
     this.checkUrlAcceptance(this.props);
   }
@@ -78,4 +78,4 @@ class Reports extends Component<Props> {
   }
 }
 
-export default withStyles(styles)(Reports);
+export default withStyles(styles)(ReportsPage);

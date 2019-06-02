@@ -29,14 +29,14 @@ const styles = (theme: Theme) =>
   });
 
 export interface NavBarLink {
-  title: string;
-  link?: string;
+  readonly title: string;
+  readonly link?: string;
 }
 
 interface Props extends WithStyles<typeof styles>, RouteComponentProps<{}> {
   backLink?: string;
   backTitle?: string;
-  navBarLinks: NavBarLink[];
+  navBarLinks: ReadonlyArray<NavBarLink | undefined>;
 }
 
 class NavBar extends PureComponent<Props> {
@@ -60,7 +60,7 @@ class NavBar extends PureComponent<Props> {
           </IconButton>
         )}
         <div className={classes.navigation}>
-          {navBarLinks.map((navBarLink, index) => (
+          {(navBarLinks.filter(Boolean) as NavBarLink[]).map((navBarLink, index) => (
             <Fragment key={index}>
               {index > 0 && <NavigateNextIcon />}
               {navBarLink.link ? (

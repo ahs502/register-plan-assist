@@ -26,7 +26,7 @@ const constraintsMasterDataTable: MasterDataTable = {
 };
 const masterDataTables = [aircraftGroupsMasterDataTable, constraintsMasterDataTable];
 
-class MasterData extends Component<Props> {
+class MasterDataPage extends Component<Props> {
   componentDidMount() {
     this.checkUrlAcceptance(this.props);
   }
@@ -60,7 +60,13 @@ class MasterData extends Component<Props> {
 
     return (
       <Fragment>
-        <NavBar backLink="/preplan-list" navBarLinks={[{ title: 'Master Data' }]} />
+        <NavBar
+          backLink="/preplan-list"
+          navBarLinks={[
+            { title: 'Master Data', link: '/master-data' },
+            selectedMasterDataTable && { title: selectedMasterDataTable.title, link: `/master-data/${selectedMasterDataTable.path}` }
+          ]}
+        />
         <SectionList sections={masterDataTables} selectedSection={selectedMasterDataTable} onSectionSelect={this.sectionSelectHandler}>
           {selectedMasterDataTable === aircraftGroupsMasterDataTable && <AircraftGroupsMasterData />}
           {selectedMasterDataTable === constraintsMasterDataTable && <ConstraintsMasterData />}
@@ -70,4 +76,4 @@ class MasterData extends Component<Props> {
   }
 }
 
-export default withStyles(styles)(MasterData);
+export default withStyles(styles)(MasterDataPage);

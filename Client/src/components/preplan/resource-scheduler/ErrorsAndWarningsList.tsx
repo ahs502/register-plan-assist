@@ -27,7 +27,7 @@ const styles = (theme: Theme) =>
   });
 
 interface Props extends WithStyles<typeof styles> {
-  objections: Objection[];
+  objections: ReadonlyArray<Objection>;
 }
 
 const ErrorAndWarningList: FunctionComponent<Props> = props => {
@@ -35,22 +35,19 @@ const ErrorAndWarningList: FunctionComponent<Props> = props => {
 
   return (
     <React.Fragment>
-      {objections
-        .slice()
-        .sort((a, b) => b.priority - a.priority)
-        .map(objection => (
-          <div className={classes.card} key={objection.message}>
-            <div className={classes.message}>{objection.message}</div>
-            <div
-              className={classNames(classes.icon, {
-                [classes.error]: objection.type === ObjectionType.Error,
-                [classes.warning]: objection.type === ObjectionType.Warning
-              })}
-            >
-              {objection.message}
-            </div>
+      {objections.orderBy('priority').map(objection => (
+        <div className={classes.card} key={objection.message}>
+          <div className={classes.message}>{objection.message}</div>
+          <div
+            className={classNames(classes.icon, {
+              [classes.error]: objection.type === ObjectionType.Error,
+              [classes.warning]: objection.type === ObjectionType.Warning
+            })}
+          >
+            {objection.message}
           </div>
-        ))}
+        </div>
+      ))}
     </React.Fragment>
   );
 };

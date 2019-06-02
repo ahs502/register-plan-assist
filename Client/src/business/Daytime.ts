@@ -17,7 +17,7 @@ export class Daytime {
       let stringValue: string = value,
         separatorIndex = stringValue.indexOf(':');
       this.minutes = Number(stringValue.slice(0, separatorIndex)) * 60 + Number(stringValue.slice(separatorIndex + 1));
-    } else if (value && value.constructor === Date && !isNaN((<Date>value).getTime())) {
+    } else if (value && value.constructor === Date && !isNaN((value as Date).getTime())) {
       if (baseDate) {
         let date = baseDate as Date;
         date.setUTCHours(0, 0, 0, 0);

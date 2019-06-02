@@ -1,23 +1,16 @@
 import React, { PureComponent, Fragment } from 'react';
 import { WithStyles, createStyles, withStyles, Theme } from '@material-ui/core/styles';
-import { IconButton, Typography, Paper, Tab, Tabs, Fab, Table, TableBody, TableCell, TableHead, TableRow, Switch } from '@material-ui/core';
-import NavBar from '../components/NavBar';
-import LinkButton from '../components/LinkButton';
+import { IconButton, Paper, Tab, Tabs, Table, TableBody, TableCell, TableHead, TableRow, Switch } from '@material-ui/core';
 import { DoneAll as FinilizedIcon, Add as AddIcon, Edit as EditIcon, Clear as ClearIcon } from '@material-ui/icons';
-import classNames from 'classnames';
-import { PreplanHeaderModel } from '../business/Preplan';
-import Search from '../components/Search';
-import LinkTypography from '../components/LinkTypography';
 import MahanIcon, { MahanIconType } from '../components/MahanIcon';
-import FlightRequirementDialog from '../components/preplan/FlightRequirementDialog';
+import NavBar from '../components/NavBar';
+import Search from '../components/Search';
+import LinkButton from '../components/LinkButton';
+import LinkTypography from '../components/LinkTypography';
+import { PreplanHeaderModel } from '../business/Preplan';
 
 const styles = (theme: Theme) =>
   createStyles({
-    iconSize: {
-      fontSize: 24,
-      padding: 0,
-      margin: 0
-    },
     contentPage: {
       maxWidth: '1176px',
       margin: 'auto'
@@ -31,53 +24,35 @@ const styles = (theme: Theme) =>
     }
   });
 
+type Tab = 'USER' | 'PUBLIC';
+
 interface Props extends WithStyles<typeof styles> {}
 interface State {
-  preplans: PreplanHeaderModel[];
-  tabNumber: Number;
-  preplanType: PreplanType;
+  preplanHeaders: ReadonlyArray<Readonly<PreplanHeaderModel>>;
+  tab: Tab;
 }
 
-enum PreplanType {
-  User = 0,
-  Public = 1
-}
-
-class PreplanList extends PureComponent<Props, State> {
+class PreplanListPage extends PureComponent<Props, State> {
   constructor(props: Props) {
     super(props);
 
     this.state = {
-      preplans: getDummyPreplans(),
-      tabNumber: 0,
-      preplanType: PreplanType.User
+      preplanHeaders: getDummyPreplanHeaders(),
+      tab: 'USER'
     };
   }
 
-  handleChange = (event: React.ChangeEvent<{}>, tabNumber: Number) => {
-    this.setState({
-      ...this.state,
-      tabNumber,
-      preplanType: tabNumber === 0 ? PreplanType.User : PreplanType.Public
-    });
-  };
+  handleTabChange = (event: React.ChangeEvent<{}>, tab: Tab) => this.setState({ ...this.state, tab });
 
-  togglePreplanPublic = (preplan: PreplanHeaderModel) => (event: React.ChangeEvent<{}>, checked: boolean) => {
-    this.setState(prevState => {
-      const newState = { ...prevState, preplans: [...prevState.preplans] };
-      const tempPreplan = newState.preplans.find(p => p.id === preplan.id);
-
-      if (tempPreplan) {
-        //tempPreplan.public = checked;
-      }
-
-      return newState;
-    });
+  togglePreplanPublicity = (preplanHeader: PreplanHeaderModel) => (event: React.ChangeEvent<{}>, checked: boolean) => {
+    throw new Error('Not implemented.');
   };
 
   render() {
     const { classes } = this.props;
-    const { tabNumber, preplans, preplanType } = this.state;
+    const { preplanHeaders, tab } = this.state;
+
+    const currentUserId: string = '1001'; //TODO: Needs to be reviewed.
 
     return (
       <Fragment>
@@ -96,9 +71,9 @@ class PreplanList extends PureComponent<Props, State> {
         </NavBar>
 
         <div className={classes.contentPage}>
-          <Tabs value={tabNumber} indicatorColor="primary" textColor="primary" onChange={this.handleChange}>
-            <Tab label="Current User" />
-            <Tab label="Public" />
+          <Tabs value={tab} indicatorColor="primary" textColor="primary" onChange={this.handleTabChange}>
+            <Tab value="USER" label="Current User" />
+            <Tab value="PUBLIC" label="Public" />
             <Search outlined />
             <IconButton color="primary" title="Add Preplan">
               <AddIcon fontSize="large" />
@@ -116,7 +91,7 @@ class PreplanList extends PureComponent<Props, State> {
                   <TableCell className={classes.preplanTableCell}>Finalized</TableCell>
                   <TableCell className={classes.preplanTableCell}>Simulation Name</TableCell>
                   <TableCell className={classes.preplanTableCell} align="center">
-                    {preplanType === PreplanType.Public ? 'User' : 'Public'}
+                    {tab === 'USER' ? 'User' : 'Public'}
                   </TableCell>
                   <TableCell className={classes.preplanTableCell} align="center">
                     Actions
@@ -124,32 +99,32 @@ class PreplanList extends PureComponent<Props, State> {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {preplans
-                  .filter(p => (p.userId === '1001' && preplanType === PreplanType.User) || (p.userId !== '1001' && preplanType === PreplanType.Public))
-                  .map(preplan => (
-                    <TableRow key={preplan.id}>
+                {preplanHeaders
+                  .filter(p => (tab === 'USER' ? p.userId === currentUserId : p.published))
+                  .map(preplanHeader => (
+                    <TableRow key={preplanHeader.id}>
                       <TableCell className={classes.preplanTableCell} component="th" scope="row">
-                        <LinkTypography to={'preplan/' + preplan.id}>{preplan.name}</LinkTypography>
+                        <LinkTypography to={'preplan/' + preplanHeader.id}>{preplanHeader.name}</LinkTypography>
                       </TableCell>
-                      <TableCell className={classes.preplanTableCell}>{preplan.lastEditDateTime.toDateString()}</TableCell>
-                      <TableCell className={classes.preplanTableCell}>{preplan.creationDateTime.toDateString()}</TableCell>
-                      <TableCell className={classes.preplanTableCell}>{preplan.parentPreplanName}</TableCell>
+                      <TableCell className={classes.preplanTableCell}>{preplanHeader.lastEditDateTime.toDateString()}</TableCell>
+                      <TableCell className={classes.preplanTableCell}>{preplanHeader.creationDateTime.toDateString()}</TableCell>
+                      <TableCell className={classes.preplanTableCell}>{preplanHeader.parentPreplanName}</TableCell>
                       <TableCell className={classes.preplanTableCell} align="center">
-                        {preplan.finalized ? <FinilizedIcon /> : ''}
+                        {preplanHeader.finalized ? <FinilizedIcon /> : ''}
                       </TableCell>
-                      <TableCell className={classes.preplanTableCell}>{preplan.simulationTitle}</TableCell>
+                      <TableCell className={classes.preplanTableCell}>{preplanHeader.simulationName}</TableCell>
                       <TableCell className={classes.preplanTableCell}>
-                        {preplanType === PreplanType.Public ? (
-                          preplan.userDisplayName
+                        {tab === 'USER' ? (
+                          <Switch color="primary" checked={preplanHeader.published} onChange={this.togglePreplanPublicity(preplanHeader)} />
                         ) : (
-                          <Switch color="primary" checked={preplan.public} onChange={this.togglePreplanPublic(preplan)} />
+                          preplanHeader.userDisplayName
                         )}
                       </TableCell>
                       <TableCell className={classes.preplanTableCell}>
                         <IconButton title="Copy Preplan">
                           <MahanIcon type={MahanIconType.CopyContent} />
                         </IconButton>
-                        {preplanType !== PreplanType.Public && (
+                        {tab === 'USER' && (
                           <Fragment>
                             <IconButton title="Edit Preplan">
                               <EditIcon />
@@ -171,9 +146,11 @@ class PreplanList extends PureComponent<Props, State> {
   }
 }
 
-export default withStyles(styles)(PreplanList);
+export default withStyles(styles)(PreplanListPage);
 
-function getDummyPreplans(): PreplanHeaderModel[] {
+//////////////////////////////////////////////
+
+function getDummyPreplanHeaders(): PreplanHeaderModel[] {
   return [
     {
       id: '123',

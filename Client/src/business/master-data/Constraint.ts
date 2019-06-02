@@ -4,7 +4,7 @@ export interface ConstraintModel extends MasterDataItemModel {}
 
 export default class Constraint extends MasterDataItem implements ConstraintModel {
   constructor(raw: ConstraintModel) {
-    super(raw);
+    super(raw, `description for ${raw.name}` /*TODO: Do something about this! */);
   }
 }
 

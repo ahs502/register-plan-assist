@@ -20,14 +20,35 @@ declare interface Array<T> {
    * @param propertySelector The name of the property or a mapper function to sort on.
    * @param descending Determines whether to sort descending or ascending (by default).
    */
-  sortBy(propertySelector: string | ((item: T) => any), descending?: boolean): T[];
+  sortBy(propertySelector: keyof T | ((item: T) => any), descending?: boolean): T[];
 
   /**
    * Returns a sorted copy of this array (immutable).
    * @param propertySelector The name of the property or a mapper function to sort on.
    * @param descending Determines whether to sort descending or ascending (by default).
    */
-  orderBy(propertySelector: string | ((item: T) => any), descending?: boolean): T[];
+  orderBy(propertySelector: keyof T | ((item: T) => any), descending?: boolean): T[];
+
+  /**
+   * Returns the distinct items of this array.
+   * @param areEqual checker of object equality, by default uses ===.
+   */
+  distinct(areEqual?: (a: T, b: T) => boolean): T[];
+}
+
+declare interface ReadonlyArray<T> {
+  /**
+   * Returns a sorted copy of this array (immutable).
+   * @param propertySelector The name of the property or a mapper function to sort on.
+   * @param descending Determines whether to sort descending or ascending (by default).
+   */
+  orderBy(propertySelector: keyof T | ((item: T) => any), descending?: boolean): T[];
+
+  /**
+   * Returns the distinct items of this array.
+   * @param areEqual checker of object equality, by default uses ===.
+   */
+  distinct(areEqual?: (a: T, b: T) => boolean): T[];
 }
 
 /**

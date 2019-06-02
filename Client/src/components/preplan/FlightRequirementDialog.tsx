@@ -2,18 +2,14 @@ import React, { PureComponent } from 'react';
 import { WithStyles, Theme, createStyles, withStyles } from '@material-ui/core/styles';
 import { DialogActions, DialogContent, DialogContentText, DialogTitle, Button, TextField } from '@material-ui/core';
 import DraggableDialog from '../DraggableDialog';
-//import FlightRequirement from '../../business/FlightRequirement';
-
-export interface FlightRequirement {
-  label: string;
-}
+import FlightRequirement, { FlightRequirementModel } from '../../business/FlightRequirement';
 
 const styles = (theme: Theme) => createStyles({});
 
 interface Props extends WithStyles<typeof styles> {
   flightRequirement?: FlightRequirement;
   open: boolean;
-  onSubmit: (FlightRequirement: FlightRequirement) => void;
+  onSubmit: (flightRequirement: FlightRequirement) => void;
   onDismiss: () => void;
 }
 interface State {
@@ -27,7 +23,7 @@ class FlightRequirementDialog extends PureComponent<Props, State> {
     if (props.flightRequirement) {
       let flightRequirement = props.flightRequirement as FlightRequirement;
       this.state = {
-        label: flightRequirement.label
+        label: flightRequirement.definition.label
       };
     } else {
       this.state = {
@@ -38,10 +34,8 @@ class FlightRequirementDialog extends PureComponent<Props, State> {
 
   handleSubmit = () => {
     const { onSubmit } = this.props;
-    const { label } = this.state;
-    const flightRequirement: FlightRequirement = {
-      label
-    };
+    // const { label } = this.state;
+    const flightRequirement: FlightRequirement = new FlightRequirement({} as FlightRequirementModel);
     onSubmit(flightRequirement);
   };
 

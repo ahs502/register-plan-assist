@@ -12,28 +12,8 @@ import ResourceSchedulerView from '../../components/preplan/resource-scheduler/R
 import FlightRequirementDialog from '../../components/preplan/FlightRequirementDialog';
 import FlightRequirement from '../../business/FlightRequirement';
 import LinkIconButton from '../../components/LinkIconButton';
-import {
-  Toolbar,
-  InputLabel,
-  IconButton,
-  FormControl,
-  Typography,
-  Paper,
-  Tab,
-  Tabs,
-  Fab,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableRow,
-  Switch,
-  Select,
-  OutlinedInput,
-  Badge
-} from '@material-ui/core';
+import { IconButton, Select, OutlinedInput, Badge } from '@material-ui/core';
 import { DoneAll as FinilizedIcon, LockOutlined as LockIcon, LockOpenOutlined as LockOpenIcon, Search as SearchIcon, SettingsOutlined as SettingsIcon } from '@material-ui/icons';
-import LinkTypography from '../../components/LinkTypography';
 import MahanIcon, { MahanIconType } from '../../components/MahanIcon';
 
 const styles = (theme: Theme) =>
@@ -80,7 +60,7 @@ interface State {
   timer: number;
 }
 
-class ResourceScheduler extends PureComponent<Props, State> {
+class ResourceSchedulerPage extends PureComponent<Props, State> {
   constructor(props: Props) {
     super(props);
 
@@ -263,4 +243,4 @@ class ResourceScheduler extends PureComponent<Props, State> {
   }
 }
 
-export default withStyles(styles)(ResourceScheduler);
+export default withStyles(styles)(ResourceSchedulerPage);

@@ -1,15 +1,17 @@
 import React, { PureComponent, Fragment } from 'react';
 import { WithStyles, createStyles, withStyles, Theme } from '@material-ui/core/styles';
-import MasterDataList, { MasterDataItem } from './MasterDataList';
 import { Typography, TextField, Grid, RadioGroup, Radio, FormControlLabel } from '@material-ui/core';
 import MultiSelect from '../MultiSelect';
+import MasterDataItemList from './MasterDataItemList';
+import Constraint from '../../business/master-data/Constraint';
+import MasterData from '../../business/master-data';
 
 const styles = (theme: Theme) => createStyles({});
 
 interface Props extends WithStyles<typeof styles> {}
 interface State {
-  items: MasterDataItem[];
-  selectedItem?: MasterDataItem;
+  selectedItem?: Constraint;
+  isAddModalOpen: boolean;
 }
 
 class ConstraintsMasterData extends PureComponent<Props, State> {
@@ -17,32 +19,38 @@ class ConstraintsMasterData extends PureComponent<Props, State> {
     super(props);
 
     this.state = {
-      items: [
-        { title: 'item 1', description: 'description for first item' },
-        { title: 'item 2', description: 'description for second item' },
-        { title: 'item 3', description: 'description for thirth item' },
-        { title: 'item 4', description: 'description for forth item' }
-      ],
-      selectedItem: undefined
+      selectedItem: undefined,
+      isAddModalOpen: false
     };
   }
 
-  private itemSelectHandler = (selectedItem: MasterDataItem) => {
-    this.setState({ ...this.state, selectedItem });
+  private itemSelectHandler = (item: Constraint) => {
+    this.setState({ selectedItem: item });
   };
   private itemUnselectHandler = () => {
-    this.setState({ ...this.state, selectedItem: undefined });
+    this.setState({ selectedItem: undefined });
   };
-  private itemAddHandler = () => {};
-  private itemRemoveHandler = () => {};
+  private itemAddHandler = () => {
+    this.setState({ isAddModalOpen: true });
+  };
+  private itemRemoveHandler = (item: Constraint) => {
+    alert('Not implemented.');
+  };
+  private addModalCloseHandler = () => {
+    this.setState({ isAddModalOpen: false });
+  };
+  private addAircraftGroup = () => {
+    this.setState({ isAddModalOpen: true });
+  };
 
   render() {
-    const { items, selectedItem } = this.state;
+    const { classes } = this.props;
+    const { selectedItem } = this.state;
 
     return (
-      <MasterDataList
-        items={items}
-        masterDataTitle="Constraints"
+      <MasterDataItemList<Constraint>
+        collection={MasterData.all.constraints}
+        collectionTitle="Constraints"
         selectedItem={selectedItem}
         onItemSelect={this.itemSelectHandler}
         onItemUnselect={this.itemUnselectHandler}
@@ -63,7 +71,7 @@ class ConstraintsMasterData extends PureComponent<Props, State> {
                 <Typography variant="body2">Airports(s)</Typography>
               </Grid>
               <Grid item xs={11}>
-                <MultiSelect label="Registers" placeholder="Select Registers" suggestions={registers} />
+                {/* <MultiSelect label="Registers" placeholder="Select Registers" suggestions={registers} /> */}
               </Grid>
             </Grid>
 
@@ -78,7 +86,7 @@ class ConstraintsMasterData extends PureComponent<Props, State> {
                 <Typography variant="body2">Use the aircraft(s)</Typography>
               </Grid>
               <Grid item xs={9}>
-                <MultiSelect label="Registers" placeholder="Select Registers" suggestions={registers} />
+                {/* <MultiSelect label="Registers" placeholder="Select Registers" suggestions={registers} /> */}
               </Grid>
             </Grid>
 
@@ -87,90 +95,9 @@ class ConstraintsMasterData extends PureComponent<Props, State> {
         ) : (
           <em>[Select an item]</em>
         )}
-      </MasterDataList>
+      </MasterDataItemList>
     );
   }
 }
-
-const registers = [
-  { label: 'MHA' },
-  { label: 'MHE' },
-  { label: 'MHF' },
-  { label: 'MHG' },
-  { label: 'MHI' },
-  { label: 'MHJ' },
-  { label: 'MHK' },
-  { label: 'MHL' },
-  { label: 'MHM' },
-  { label: 'MHN' },
-  { label: 'MHO' },
-  { label: 'MHP' },
-  { label: 'MHQ' },
-  { label: 'MHR' },
-  { label: 'MHS' },
-  { label: 'MHZ' },
-  { label: 'MMA' },
-  { label: 'MMB' },
-  { label: 'MMC' },
-  { label: 'MMD' },
-  { label: 'MME' },
-  { label: 'MMF' },
-  { label: 'MMH' },
-  { label: 'MMI' },
-  { label: 'MMJ' },
-  { label: 'MMK' },
-  { label: 'MML' },
-  { label: 'MMN' },
-  { label: 'MMO' },
-  { label: 'MMP' },
-  { label: 'MMQ' },
-  { label: 'MMR' },
-  { label: 'MMT' },
-  { label: 'MMV' },
-  { label: 'MMX' },
-  { label: 'MNA' },
-  { label: 'MNB' },
-  { label: 'MNC' },
-  { label: 'MND' },
-  { label: 'MNE' },
-  { label: 'MNF' },
-  { label: 'MNG' },
-  { label: 'MNH' },
-  { label: 'MNI' },
-  { label: 'MNJ' },
-  { label: 'MNK' },
-  { label: 'MNL' },
-  { label: 'MNM' },
-  { label: 'MNN' },
-  { label: 'MNO' },
-  { label: 'MNP' },
-  { label: 'MNQ' },
-  { label: 'MNR' },
-  { label: 'MNS' },
-  { label: 'MNT' },
-  { label: 'MNU' },
-  { label: 'MNV' },
-  { label: 'MNW' },
-  { label: 'MNX' },
-  { label: 'MOB' },
-  { label: 'MOC' },
-  { label: 'MOD' },
-  { label: 'MOE' },
-  { label: 'MOF' },
-  { label: 'MOG' },
-  { label: 'MOH' },
-  { label: 'MOI' },
-  { label: 'MOK' },
-  { label: 'MOL' },
-  { label: 'MOM' },
-  { label: 'MON' },
-  { label: 'MOP' },
-  { label: 'MOQ' },
-  { label: 'MOR' },
-  { label: 'MOS' }
-].map(suggestion => ({
-  value: suggestion.label,
-  label: suggestion.label
-}));
 
 export default withStyles(styles)(ConstraintsMasterData);

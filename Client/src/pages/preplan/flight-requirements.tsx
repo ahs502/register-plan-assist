@@ -3,7 +3,7 @@ import { Theme, createStyles, WithStyles, withStyles } from '@material-ui/core/s
 import { RouteComponentProps } from 'react-router-dom';
 import NavBar from '../../components/NavBar';
 import FlightRequirementDialog from '../../components/preplan/FlightRequirementDialog';
-import { FlightRequirement } from '../../components/preplan/FlightRequirementDialog';
+import FlightRequirement from '../../business/FlightRequirement';
 
 const styles = (theme: Theme) => createStyles({});
 
@@ -12,7 +12,7 @@ interface State {
   isFlightRequirementDialogOpen: boolean;
 }
 
-class FlightRequirements extends PureComponent<Props, State> {
+class FlightRequirementsPage extends PureComponent<Props, State> {
   state = {
     isFlightRequirementDialogOpen: false
   };
@@ -61,4 +61,4 @@ class FlightRequirements extends PureComponent<Props, State> {
   }
 }
 
-export default withStyles(styles)(FlightRequirements);
+export default withStyles(styles)(FlightRequirementsPage);

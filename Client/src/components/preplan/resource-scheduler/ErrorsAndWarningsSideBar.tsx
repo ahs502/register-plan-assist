@@ -20,7 +20,7 @@ interface Props extends WithStyles<typeof styles> {
   initialSearch?: string;
 }
 interface State {
-  filteredObjections: Objection[];
+  filteredObjections: ReadonlyArray<Objection>;
 }
 
 class ErrorsAndWarningsSideBar extends PureComponent<Props, State> {
@@ -31,7 +31,7 @@ class ErrorsAndWarningsSideBar extends PureComponent<Props, State> {
     };
   }
 
-  private queryChangeHandler = (query: string[]) => {
+  private queryChangeHandler = (query: ReadonlyArray<string>) => {
     const filteredObjections = filterOnProperties(this.props.objections, query, ['message']);
     this.setState(() => ({ ...this.state, filteredObjections }));
   };

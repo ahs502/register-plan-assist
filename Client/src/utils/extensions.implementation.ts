@@ -35,8 +35,8 @@
     return result;
   };
 
-  Array.prototype.sortBy = function Array_prototype_sortBy<T>(propertySelector: string | ((item: T) => any), descending?: boolean): T[] {
-    let generalPropertySelector = typeof propertySelector === 'function' ? propertySelector : (item: { [key: string]: any }) => item[propertySelector];
+  Array.prototype.sortBy = function Array_prototype_sortBy<T>(propertySelector: keyof T | ((item: T) => any), descending?: boolean): T[] {
+    let generalPropertySelector = typeof propertySelector === 'function' ? propertySelector : (item: T) => item[propertySelector];
     let direction = descending ? -1 : +1;
     return this.sort((a, b) => {
       let aValue = generalPropertySelector(a);
@@ -45,8 +45,17 @@
     });
   };
 
-  Array.prototype.orderBy = function Array_prototype_orderBy<T>(propertySelector: string | ((item: T) => any), descending?: boolean): T[] {
+  Array.prototype.orderBy = function Array_prototype_orderBy<T>(propertySelector: keyof T | ((item: T) => any), descending?: boolean): T[] {
     return this.slice().sortBy(propertySelector, descending);
+  };
+
+  Array.prototype.distinct = function Array_prototype_distinct<T>(areEqual?: (a: T, b: T) => boolean): T[] {
+    let areEqualFunction: (a: T, b: T) => boolean = areEqual || ((a: T, b: T) => a === b);
+    let result: T[] = [];
+    for (let i = 0; i < this.length; ++i) {
+      result.find(x => areEqualFunction(this[i], x)) || result.push(this[i]);
+    }
+    return result;
   };
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////

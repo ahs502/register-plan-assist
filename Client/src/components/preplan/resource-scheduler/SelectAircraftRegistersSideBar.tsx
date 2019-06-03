@@ -1,18 +1,16 @@
-import React, { PureComponent } from 'react';
-import { WithStyles, Theme, createStyles, withStyles } from '@material-ui/core/styles';
+import React, { FC } from 'react';
+import { Theme } from '@material-ui/core';
+import { makeStyles } from '@material-ui/styles';
 import SideBarContainer from './SideBarContainer';
 
-const styles = (theme: Theme) => createStyles({});
+const useStyles = makeStyles((theme: Theme) => ({}));
 
-interface Props extends WithStyles<typeof styles> {
+export interface SelectAircraftRegistersSideBarProps {
   initialSearch?: string;
 }
-interface State {}
 
-class SelectAircraftRegistersSideBar extends PureComponent<Props, State> {
-  render() {
-    return <SideBarContainer label="Select Aircraft Registers">List of aircraft registers...</SideBarContainer>;
-  }
-}
+const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = ({ initialSearch }) => (
+  <SideBarContainer label="Select Aircraft Registers">List of aircraft registers...</SideBarContainer>
+);
 
-export default withStyles(styles)(SelectAircraftRegistersSideBar);
+export default SelectAircraftRegistersSideBar;

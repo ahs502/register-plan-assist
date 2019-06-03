@@ -1,28 +1,23 @@
-import React, { Component, FunctionComponent } from 'react';
-import { createStyles, withStyles, Theme } from '@material-ui/core/styles';
+import React, { FC } from 'react';
 import Dialog, { DialogProps } from '@material-ui/core/Dialog';
 import Paper, { PaperProps } from '@material-ui/core/Paper';
+import { createStyles, withStyles } from '@material-ui/styles';
 import Draggable from 'react-draggable';
 
-const styles = (theme: Theme) =>
-  createStyles({
-    root: {
-      overflow: 'visible'
-    }
-  });
+const styles = createStyles({
+  root: {
+    overflow: 'visible'
+  }
+});
 
-const DraggablePaper: FunctionComponent<PaperProps> = (props: PaperProps) => (
+const DraggablePaper = withStyles(styles)((props: PaperProps) => (
   <Draggable cancel={'[class*="MuiDialogContent-root"]'}>
     <Paper {...props} />
   </Draggable>
-);
+));
 
-const StyledDraggablePaper = withStyles(styles)(DraggablePaper);
+export type DraggableDialogProps = DialogProps;
 
-class DraggableDialog extends Component<DialogProps> {
-  render() {
-    return <Dialog {...this.props} PaperComponent={StyledDraggablePaper} />;
-  }
-}
+const DraggableDialog: FC<DraggableDialogProps> = props => <Dialog {...props} PaperComponent={DraggablePaper} />;
 
 export default DraggableDialog;

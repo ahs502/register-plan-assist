@@ -1,4 +1,4 @@
-import { apiRequest } from '../utils/api';
+import apiRequest from '../utils/apiRequest';
 import { MasterDataModel } from '../business/master-data';
 import { AircraftGroupModel } from '../business/master-data/AircraftGroup';
 import { ConstraintModel } from '../business/master-data/Constraint';

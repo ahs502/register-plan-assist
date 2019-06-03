@@ -1,51 +1,50 @@
-import React, { FunctionComponent, HTMLAttributes, ElementType } from 'react';
-import { createStyles, Theme, withStyles } from '@material-ui/core/styles';
-import { StandardProps } from '@material-ui/core';
+import React, { HTMLAttributes, ElementType, FC } from 'react';
+import { Theme, StandardProps } from '@material-ui/core';
 import { IconClassKey } from '@material-ui/core/Icon';
+import { makeStyles } from '@material-ui/styles';
 import classNames from 'classnames';
 
-const styles = (theme: Theme) =>
-  createStyles({
-    root: {
-      userSelect: 'none',
-      fontSize: 24,
-      lineHeight: '24px',
-      width: '1em',
-      height: '1em',
-      overflow: 'hidden',
-      flexShrink: 0,
-      '&:before': {
-        margin: 0
-      }
-    },
-    colorPrimary: {
-      color: theme.palette.primary.main
-    },
-    colorSecondary: {
-      color: theme.palette.secondary.main
-    },
-    colorAction: {
-      color: theme.palette.action.active
-    },
-    colorError: {
-      color: theme.palette.error.main
-    },
-    colorDisabled: {
-      color: theme.palette.action.disabled
-    },
-    fontSizeInherit: {
-      fontSize: 'inherit',
-      lineHeight: 'inherit'
-    },
-    fontSizeSmall: {
-      fontSize: 20,
-      lineHeight: '20px'
-    },
-    fontSizeLarge: {
-      fontSize: 36,
-      lineHeight: '36px'
+const useStyles = makeStyles((theme: Theme) => ({
+  root: {
+    userSelect: 'none',
+    fontSize: 24,
+    lineHeight: '24px',
+    width: '1em',
+    height: '1em',
+    overflow: 'hidden',
+    flexShrink: 0,
+    '&:before': {
+      margin: 0
     }
-  });
+  },
+  colorPrimary: {
+    color: theme.palette.primary.main
+  },
+  colorSecondary: {
+    color: theme.palette.secondary.main
+  },
+  colorAction: {
+    color: theme.palette.action.active
+  },
+  colorError: {
+    color: theme.palette.error.main
+  },
+  colorDisabled: {
+    color: theme.palette.action.disabled
+  },
+  fontSizeInherit: {
+    fontSize: 'inherit',
+    lineHeight: 'inherit'
+  },
+  fontSizeSmall: {
+    fontSize: 20,
+    lineHeight: '20px'
+  },
+  fontSizeLarge: {
+    fontSize: 36,
+    lineHeight: '36px'
+  }
+}));
 
 export enum MahanIconType {
   Add,
@@ -90,10 +89,9 @@ export interface MahanIconProps extends StandardProps<HTMLAttributes<HTMLElement
   spinner?: boolean;
 }
 
-const MahanIcon: FunctionComponent<MahanIconProps> = (props: MahanIconProps) => {
-  const { children, classes: _classes, className, component, color, fontSize, type: iconType, spinner, ...other } = props;
-  const classes = _classes as { [key: string]: string };
-  const Component = component || ((MahanIcon.defaultProps as Partial<MahanIconProps>).component as string);
+const MahanIcon: FC<MahanIconProps> = ({ children, className, component, color, fontSize, type: iconType, spinner, ...other }) => {
+  const classes = useStyles() as { [key: string]: string };
+  const Component = component || ((MahanIcon.defaultProps as Partial<MahanIconProps>).component as any);
 
   return (
     <Component
@@ -121,11 +119,11 @@ const MahanIcon: FunctionComponent<MahanIconProps> = (props: MahanIconProps) => 
 
 MahanIcon.defaultProps = {
   color: 'inherit',
-  component: 'i',
+  component: 'i' as any,
   fontSize: 'default'
 };
 
-export default withStyles(styles, { name: 'MuiMahanIcon' })(MahanIcon);
+export default MahanIcon;
 
 function capitalize(value: string): string {
   return value[0].toUpperCase() + value.slice(1).toLowerCase();

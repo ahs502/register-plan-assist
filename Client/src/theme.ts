@@ -1,15 +1,13 @@
-import { createMuiTheme } from '@material-ui/styles';
+import { createMuiTheme } from '@material-ui/core';
 import { purple } from '@material-ui/core/colors';
 
 let theme = createMuiTheme({
   palette: {
     primary: { main: '#596BEC' },
     secondary: purple
-  },
-  typography: {
-    useNextVariants: true
   }
 });
+
 declare module '@material-ui/core/styles/createPalette' {
   interface Palette {
     extraColors: {

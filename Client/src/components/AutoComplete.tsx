@@ -1,6 +1,5 @@
-import React, { FunctionComponent } from 'react';
+import React, { FC } from 'react';
 import MuiReactSelect, { Suggestion } from './MuiReactSelect';
-import { ValueType } from 'react-select/lib/types';
 
 export interface AutoCompleteProps {
   label?: string;
@@ -10,13 +9,8 @@ export interface AutoCompleteProps {
   onChange?: (value?: Suggestion) => void;
 }
 
-const AutoComplete: FunctionComponent<AutoCompleteProps> = ({ label, placeholder, suggestions, value, onChange }: AutoCompleteProps) => {
-  function handleChange(value: ValueType<Suggestion>) {
-    if (typeof onChange !== 'function') return;
-    onChange(value ? (value as Suggestion) : undefined);
-  }
-
-  return <MuiReactSelect label={label} placeholder={placeholder} suggestions={suggestions} value={value} onChange={handleChange} />;
-};
+const AutoComplete: FC<AutoCompleteProps> = ({ label, placeholder, suggestions, value, onChange }) => (
+  <MuiReactSelect label={label} placeholder={placeholder} suggestions={suggestions} value={value} onChange={() => onChange && onChange(value && (value as Suggestion))} />
+);
 
 export default AutoComplete;

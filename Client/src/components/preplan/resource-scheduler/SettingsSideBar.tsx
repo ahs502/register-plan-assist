@@ -1,16 +1,12 @@
-import React, { PureComponent } from 'react';
-import { WithStyles, Theme, createStyles, withStyles } from '@material-ui/core/styles';
+import React, { FC } from 'react';
+import { Theme } from '@material-ui/core';
+import { makeStyles } from '@material-ui/styles';
 import SideBarContainer from './SideBarContainer';
 
-const styles = (theme: Theme) => createStyles({});
+const useStyles = makeStyles((theme: Theme) => ({}));
 
-interface Props extends WithStyles<typeof styles> {}
-interface State {}
+export interface SettingsSideBarProps {}
 
-class SettingsSideBar extends PureComponent<Props, State> {
-  render() {
-    return <SideBarContainer label="Auto-Arranger Options">options...</SideBarContainer>;
-  }
-}
+const SettingsSideBar: FC<SettingsSideBarProps> = () => <SideBarContainer label="Auto-Arranger Options">options...</SideBarContainer>;
 
-export default withStyles(styles)(SettingsSideBar);
+export default SettingsSideBar;

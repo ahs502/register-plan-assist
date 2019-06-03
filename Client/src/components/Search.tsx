@@ -1,92 +1,70 @@
-import React, { PureComponent, ChangeEvent, Fragment } from 'react';
-import { Theme, createStyles, WithStyles, withStyles } from '@material-ui/core/styles';
-import { TextField, InputAdornment } from '@material-ui/core';
+import React, { Fragment, FC, useEffect, useState } from 'react';
+import { Theme, TextField, InputAdornment } from '@material-ui/core';
+import { makeStyles } from '@material-ui/styles';
 import MahanIcon, { MahanIconType } from './MahanIcon';
-import classNames from 'classnames';
 
-const styles = (theme: Theme) =>
-  createStyles({
-    wrapper: {
-      display: 'flex',
-      alignItems: 'flex-end'
-    },
-    space: {
-      width: theme.spacing.unit
-    },
-    root: {}
-  });
+const useStyles = makeStyles((theme: Theme) => ({
+  wrapper: {
+    display: 'flex',
+    alignItems: 'flex-end'
+  },
+  space: {
+    width: theme.spacing(1)
+  }
+}));
 
-interface Props extends WithStyles<typeof styles> {
+export interface SearchProps {
   outlined?: boolean;
   initialSearch?: string;
   onQueryChange?: (query: ReadonlyArray<string>) => void;
 }
-interface State {
-  value: string;
-}
 
-class Search extends PureComponent<Props, State> {
-  constructor(props: Props) {
-    super(props);
-    this.state = {
-      value: props.initialSearch || ''
-    };
-    this.changeQuery();
-  }
+const Search: FC<SearchProps> = ({ outlined, initialSearch, onQueryChange }) => {
+  const [value, setValue] = useState(initialSearch || '');
 
-  private onChangeHandler = (event: ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.value;
-    this.setState(() => ({ value }), this.changeQuery);
-  };
-
-  private changeQuery = () => {
-    const { onQueryChange } = this.props;
+  useEffect(() => {
     if (!onQueryChange) return;
-    const query = this.state.value
+    const query = value
       .toLowerCase()
       .split(' ')
       .filter(Boolean)
       .distinct();
     onQueryChange(query);
-  };
+  }, [value]);
 
-  render() {
-    const { classes, outlined } = this.props;
-    const { value } = this.state;
+  const classes = useStyles();
 
-    return (
-      <Fragment>
-        {outlined || (
-          <div className={classNames(classes.wrapper, classes.root)}>
-            <MahanIcon type={MahanIconType.Search} />
-            <span className={classes.space} />
-            <TextField label="Search" value={value} fullWidth onChange={this.onChangeHandler} />
-          </div>
-        )}
-        {outlined && (
-          <TextField
-            className={classes.root}
-            placeholder="Search"
-            variant="outlined"
-            margin="dense"
-            fullWidth
-            value={value}
-            onChange={this.onChangeHandler}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <MahanIcon type={MahanIconType.Search} />
-                </InputAdornment>
-              )
-            }}
-          />
-        )}
-      </Fragment>
-    );
-  }
-}
+  return (
+    <Fragment>
+      {outlined || (
+        <div className={classes.wrapper}>
+          <MahanIcon type={MahanIconType.Search} />
+          <span className={classes.space} />
+          <TextField label="Search" value={value} fullWidth onChange={e => setValue(e.target.value)} />
+        </div>
+      )}
+      {outlined && (
+        <TextField
+          placeholder="Search"
+          variant="outlined"
+          margin="dense"
+          fullWidth
+          value={value}
+          onChange={e => setValue(e.target.value)}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <MahanIcon type={MahanIconType.Search} />
+              </InputAdornment>
+            )
+          }}
+        />
+      )}
+    </Fragment>
+  );
+};
 
-export default withStyles(styles)(Search);
+export default Search;
 
 export function filterOnProperties<K extends string, T extends { [key in K]?: string | undefined | null }>(
   items: ReadonlyArray<T>,

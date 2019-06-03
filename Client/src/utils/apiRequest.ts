@@ -1,4 +1,4 @@
-export async function apiRequest(service: string, command: string, data?: any): Promise<any> {
+export default async function apiRequest(service: string, command: string, data?: any): Promise<any> {
   let response = await fetch(`/api/${service}/${command}`, {
     method: 'POST',
     cache: 'no-cache',

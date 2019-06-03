@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Fragment } from 'react';
 import ReactDOM from 'react-dom';
 import 'typeface-roboto';
 import CssBaseline from '@material-ui/core/CssBaseline';
@@ -7,10 +7,10 @@ import './utils/extensions.implementation';
 import App from './App';
 
 ReactDOM.render(
-  <React.Fragment>
+  <Fragment>
     <CssBaseline />
     <App />
-  </React.Fragment>,
+  </Fragment>,
   document.getElementById('root')
 );
 

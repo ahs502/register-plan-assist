@@ -1,18 +1,14 @@
-import React, { PureComponent } from 'react';
-import { WithStyles, Theme, createStyles, withStyles } from '@material-ui/core/styles';
+import React, { FC } from 'react';
+import { Theme } from '@material-ui/core';
+import { makeStyles } from '@material-ui/styles';
 import SideBarContainer from './SideBarContainer';
 
-const styles = (theme: Theme) => createStyles({});
+const useStyles = makeStyles((theme: Theme) => ({}));
 
-interface Props extends WithStyles<typeof styles> {
+export interface AutoArrangerChangeLogSideBarProps {
   initialSearch?: string;
 }
-interface State {}
 
-class AutoArrangerChangeLogSideBar extends PureComponent<Props, State> {
-  render() {
-    return <SideBarContainer label="Auto-Arranger Change Log">logs...</SideBarContainer>;
-  }
-}
+const AutoArrangerChangeLogSideBar: FC<AutoArrangerChangeLogSideBarProps> = ({ initialSearch }) => <SideBarContainer label="Auto-Arranger Change Log">logs...</SideBarContainer>;
 
-export default withStyles(styles)(AutoArrangerChangeLogSideBar);
+export default AutoArrangerChangeLogSideBar;

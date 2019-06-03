@@ -1,9 +1,9 @@
-import React, { FunctionComponent, CSSProperties, HTMLAttributes } from 'react';
-import { Theme, withTheme, WithTheme, createStyles, WithStyles, withStyles } from '@material-ui/core/styles';
-import { emphasize } from '@material-ui/core/styles/colorManipulator';
-import { Paper, Chip, MenuItem, Typography } from '@material-ui/core';
+import React, { FC, CSSProperties, HTMLAttributes } from 'react';
+import { Theme, Paper, Chip, MenuItem, Typography } from '@material-ui/core';
 import TextField, { BaseTextFieldProps } from '@material-ui/core/TextField';
-import CancelIcon from '@material-ui/icons/Cancel';
+import { emphasize } from '@material-ui/core/styles/colorManipulator';
+import { makeStyles, useTheme } from '@material-ui/styles';
+import { Cancel as CancelIcon } from '@material-ui/icons';
 import Select from 'react-select';
 import { ValueContainerProps } from 'react-select/lib/components/containers';
 import { ControlProps } from 'react-select/lib/components/Control';
@@ -20,65 +20,64 @@ export interface Suggestion {
   value: string;
 }
 
-const styles = (theme: Theme) =>
-  createStyles({
-    root: {
-      flexGrow: 1
-    },
-    input: {
-      display: 'flex',
-      padding: 0,
-      height: 'auto'
-    },
-    valueContainer: {
-      display: 'flex',
-      flexWrap: 'wrap',
-      flex: 1,
-      alignItems: 'center',
-      overflow: 'hidden'
-    },
-    chip: {
-      margin: `${theme.spacing.unit * 0.5}px ${theme.spacing.unit * 0.25}px`
-    },
-    chipFocused: {
-      backgroundColor: emphasize(theme.palette.type === 'light' ? theme.palette.grey[300] : theme.palette.grey[700], 0.08)
-    },
-    noOptionsMessage: {
-      padding: `${theme.spacing.unit}px ${theme.spacing.unit * 2}px`
-    },
-    singleValue: {
-      fontSize: 16
-    },
-    placeholder: {
-      position: 'absolute',
-      left: 2,
-      bottom: 6,
-      fontSize: 16
-    },
-    paper: {
-      position: 'absolute',
-      zIndex: 1,
-      marginTop: theme.spacing.unit,
-      left: 0,
-      right: 0
-    },
-    divider: {
-      height: theme.spacing.unit * 2
-    }
-  });
+const useStyles = makeStyles((theme: Theme) => ({
+  root: {
+    flexGrow: 1
+  },
+  input: {
+    display: 'flex',
+    padding: 0,
+    height: 'auto'
+  },
+  valueContainer: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    flex: 1,
+    alignItems: 'center',
+    overflow: 'hidden'
+  },
+  chip: {
+    margin: theme.spacing(0.5, 0.25)
+  },
+  chipFocused: {
+    backgroundColor: emphasize(theme.palette.type === 'light' ? theme.palette.grey[300] : theme.palette.grey[700], 0.08)
+  },
+  noOptionsMessage: {
+    padding: theme.spacing(1, 2)
+  },
+  singleValue: {
+    fontSize: 16
+  },
+  placeholder: {
+    position: 'absolute',
+    left: 2,
+    bottom: 6,
+    fontSize: 16
+  },
+  paper: {
+    position: 'absolute',
+    zIndex: 1,
+    marginTop: theme.spacing(1),
+    left: 0,
+    right: 0
+  },
+  divider: {
+    height: theme.spacing(2)
+  }
+}));
 
 type NoOptionsMessageComponentProps = NoticeProps<Suggestion>;
-const NoOptionsMessage: FunctionComponent<NoOptionsMessageComponentProps> = (props: NoOptionsMessageComponentProps) => (
+const NoOptionsMessage: FC<NoOptionsMessageComponentProps> = (props: NoOptionsMessageComponentProps) => (
   <Typography color="textSecondary" className={props.selectProps.classes.noOptionsMessage} {...props.innerProps}>
     {props.children}
   </Typography>
 );
 
 type InputComponentProps = Pick<BaseTextFieldProps, 'inputRef'> & HTMLAttributes<HTMLDivElement>;
-const inputComponent: FunctionComponent<InputComponentProps> = ({ inputRef, ...props }: InputComponentProps) => <div ref={inputRef} {...props} />;
+const inputComponent: FC<InputComponentProps> = ({ inputRef, ...props }: InputComponentProps) => <div ref={inputRef} {...props} />;
 
 type ControlComponentProps = ControlProps<Suggestion>;
-const Control: FunctionComponent<ControlComponentProps> = (props: ControlComponentProps) => (
+const Control: FC<ControlComponentProps> = (props: ControlComponentProps) => (
   <TextField
     fullWidth
     InputProps={{
@@ -95,7 +94,7 @@ const Control: FunctionComponent<ControlComponentProps> = (props: ControlCompone
 );
 
 type OptionComponenetProps = OptionProps<Suggestion>;
-const Option: FunctionComponent<OptionComponenetProps> = (props: OptionComponenetProps) => (
+const Option: FC<OptionComponenetProps> = (props: OptionComponenetProps) => (
   <MenuItem
     innerRef={props.innerRef}
     selected={props.isFocused}
@@ -110,26 +109,24 @@ const Option: FunctionComponent<OptionComponenetProps> = (props: OptionComponene
 );
 
 type PlaceholderComponentProps = PlaceholderProps<Suggestion>;
-const Placeholder: FunctionComponent<PlaceholderComponentProps> = (props: PlaceholderComponentProps) => (
+const Placeholder: FC<PlaceholderComponentProps> = (props: PlaceholderComponentProps) => (
   <Typography color="textSecondary" className={props.selectProps.classes.placeholder} {...props.innerProps}>
     {props.children}
   </Typography>
 );
 
 type SingleValueComponentProps = SingleValueProps<Suggestion>;
-const SingleValue: FunctionComponent<SingleValueComponentProps> = (props: SingleValueComponentProps) => (
+const SingleValue: FC<SingleValueComponentProps> = (props: SingleValueComponentProps) => (
   <Typography className={props.selectProps.classes.singleValue} {...props.innerProps}>
     {props.children}
   </Typography>
 );
 
 type ValueContainerComponentProps = ValueContainerProps<Suggestion>;
-const ValueContainer: FunctionComponent<ValueContainerComponentProps> = (props: ValueContainerComponentProps) => (
-  <div className={props.selectProps.classes.valueContainer}>{props.children}</div>
-);
+const ValueContainer: FC<ValueContainerComponentProps> = (props: ValueContainerComponentProps) => <div className={props.selectProps.classes.valueContainer}>{props.children}</div>;
 
 type MultiValueComponentProps = MultiValueProps<Suggestion>;
-const MultiValue: FunctionComponent<MultiValueComponentProps> = (props: MultiValueComponentProps) => (
+const MultiValue: FC<MultiValueComponentProps> = (props: MultiValueComponentProps) => (
   <Chip
     tabIndex={-1}
     label={props.children}
@@ -142,7 +139,7 @@ const MultiValue: FunctionComponent<MultiValueComponentProps> = (props: MultiVal
 );
 
 type MenuComponentProps = MenuProps<Suggestion>;
-const Menu: FunctionComponent<MenuComponentProps> = (props: MenuComponentProps) => (
+const Menu: FC<MenuComponentProps> = (props: MenuComponentProps) => (
   <Paper square className={props.selectProps.classes.paper} {...props.innerProps}>
     {props.children}
   </Paper>
@@ -159,7 +156,7 @@ const components = {
   ValueContainer
 };
 
-export interface MuiReactSelectProps extends WithTheme, WithStyles<typeof styles> {
+export interface MuiReactSelectProps {
   label?: string;
   placeholder?: string;
   suggestions?: ReadonlyArray<Suggestion>;
@@ -168,7 +165,10 @@ export interface MuiReactSelectProps extends WithTheme, WithStyles<typeof styles
   isMulti?: boolean;
 }
 
-const MuiReactSelect: FunctionComponent<MuiReactSelectProps> = ({ theme, classes, label, placeholder, suggestions, value, onChange, isMulti }: MuiReactSelectProps) => {
+const MuiReactSelect: FC<MuiReactSelectProps> = ({ label, placeholder, suggestions, value, onChange, isMulti }) => {
+  const classes = useStyles();
+  const theme = useTheme() as Theme;
+
   const selectStyles = {
     input: (base: CSSProperties) => ({
       ...base,
@@ -195,4 +195,4 @@ const MuiReactSelect: FunctionComponent<MuiReactSelectProps> = ({ theme, classes
   );
 };
 
-export default withStyles(styles)(withTheme()(MuiReactSelect));
+export default MuiReactSelect;

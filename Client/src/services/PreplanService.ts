@@ -1,4 +1,4 @@
-import { apiRequest } from '../utils/api';
+import apiRequest from '../utils/apiRequest';
 import { PreplanHeaderModel, PreplanModel } from '../business/Preplan';
 import { FlightRequirementModel } from '../business/FlightRequirement';
 import { DummyAircraftRegisterModel, AircraftRegisterOptionsDictionary } from '../business/AircraftRegister';

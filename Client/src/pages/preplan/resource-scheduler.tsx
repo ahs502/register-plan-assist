@@ -9,7 +9,7 @@ import ErrorsAndWarningsSideBar from '../../components/preplan/resource-schedule
 import SelectAircraftRegistersSideBar from '../../components/preplan/resource-scheduler/SelectAircraftRegistersSideBar';
 import SettingsSideBar from '../../components/preplan/resource-scheduler/SettingsSideBar';
 import ResourceSchedulerView from '../../components/preplan/resource-scheduler/ResourceSchedulerView';
-import FlightRequirementDialog from '../../components/preplan/FlightRequirementDialog';
+import FlightRequirementModal from '../../components/preplan/FlightRequirementModal';
 import FlightRequirement from '../../business/FlightRequirement';
 import LinkIconButton from '../../components/LinkIconButton';
 import { IconButton, Select, OutlinedInput, Badge } from '@material-ui/core';
@@ -232,7 +232,7 @@ class ResourceSchedulerPage extends PureComponent<Props, State> {
         </Drawer>
         <ResourceSchedulerView />
         <div className={classes.statusBar}>Status Bar</div>
-        <FlightRequirementDialog
+        <FlightRequirementModal
           flightRequirement={undefined}
           open={isFlightRequirementDialogOpen}
           onSubmit={this.flightRequirementDialogSubmitHandler}

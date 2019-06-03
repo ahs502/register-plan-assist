@@ -1,21 +1,7 @@
-import React, { FunctionComponent } from 'react';
-import { WithStyles, withStyles, createStyles, Theme } from '@material-ui/core/styles';
+import React, { FC } from 'react';
 import MuiReactSelect, { Suggestion } from './MuiReactSelect';
-import { ValueType } from 'react-select/lib/types';
 
-const styles = (theme: Theme) =>
-  createStyles({
-    wrapper: {
-      display: 'flex',
-      alignItems: 'flex-end'
-    },
-    space: {
-      width: theme.spacing.unit
-    },
-    root: {}
-  });
-
-export interface MultiSelectProps extends WithStyles<typeof styles> {
+export interface MultiSelectProps {
   label?: string;
   placeholder?: string;
   suggestions?: ReadonlyArray<Suggestion>;
@@ -23,13 +9,15 @@ export interface MultiSelectProps extends WithStyles<typeof styles> {
   onChange?: (value?: ReadonlyArray<Suggestion>) => void;
 }
 
-const MultiSelect: FunctionComponent<MultiSelectProps> = ({ label, placeholder, suggestions, value, onChange, classes }: MultiSelectProps) => {
-  function handleChange(value: ValueType<Suggestion>) {
-    if (typeof onChange !== 'function') return;
-    onChange(value ? (value as ReadonlyArray<Suggestion>) : undefined);
-  }
+const MultiSelect: FC<MultiSelectProps> = ({ label, placeholder, suggestions, value, onChange }) => (
+  <MuiReactSelect
+    label={label}
+    placeholder={placeholder}
+    suggestions={suggestions}
+    value={value}
+    onChange={() => onChange && onChange(value && (value as ReadonlyArray<Suggestion>))}
+    isMulti
+  />
+);
 
-  return <MuiReactSelect classes={{ root: classes.root }} label={label} placeholder={placeholder} suggestions={suggestions} value={value} onChange={handleChange} isMulti />;
-};
-
-export default withStyles(styles)(MultiSelect);
+export default MultiSelect;

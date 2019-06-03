@@ -2,7 +2,7 @@ import React, { PureComponent, Fragment } from 'react';
 import { Theme, createStyles, WithStyles, withStyles } from '@material-ui/core/styles';
 import { RouteComponentProps } from 'react-router-dom';
 import NavBar from '../../components/NavBar';
-import FlightRequirementDialog from '../../components/preplan/FlightRequirementDialog';
+import FlightRequirementModal from '../../components/preplan/FlightRequirementModal';
 import FlightRequirement from '../../business/FlightRequirement';
 
 const styles = (theme: Theme) => createStyles({});
@@ -50,7 +50,7 @@ class FlightRequirementsPage extends PureComponent<Props, State> {
           Pre Plan {this.getId()} FlightRequirements
           <button onClick={this.openFlightRequirementDialog}>FRD</button>
         </NavBar>
-        <FlightRequirementDialog
+        <FlightRequirementModal
           flightRequirement={undefined}
           open={isFlightRequirementDialogOpen}
           onSubmit={this.flightRequirementDialogSubmitHandler}

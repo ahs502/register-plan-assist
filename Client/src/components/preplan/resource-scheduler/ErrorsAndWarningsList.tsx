@@ -1,40 +1,40 @@
-import React, { FunctionComponent } from 'react';
-import { WithStyles, Theme, createStyles, withStyles } from '@material-ui/core/styles';
+import React, { FC, Fragment } from 'react';
+import { Theme } from '@material-ui/core';
+import { makeStyles } from '@material-ui/styles';
 import classNames from 'classnames';
 import Objection, { ObjectionType } from '../../../business/Objection';
 
-const styles = (theme: Theme) =>
-  createStyles({
-    card: {
-      border: '1px solid pink',
-      margin: 0,
-      padding: theme.spacing.unit
-    },
-    message: {
-      display: 'inline-block',
-      width: 'calc(100% - 100px'
-    },
-    icon: {
-      display: 'inline-block',
-      width: 100
-    },
-    error: {
-      color: theme.palette.extraColors.erroredFlight
-    },
-    warning: {
-      color: theme.palette.extraColors.warnedFlight
-    }
-  });
+const useStyles = makeStyles((theme: Theme) => ({
+  card: {
+    border: '1px solid pink',
+    margin: 0,
+    padding: theme.spacing(1)
+  },
+  message: {
+    display: 'inline-block',
+    width: 'calc(100% - 100px'
+  },
+  icon: {
+    display: 'inline-block',
+    width: 100
+  },
+  error: {
+    color: theme.palette.extraColors.erroredFlight
+  },
+  warning: {
+    color: theme.palette.extraColors.warnedFlight
+  }
+}));
 
-interface Props extends WithStyles<typeof styles> {
-  objections: ReadonlyArray<Objection>;
+export interface ErrorAndWarningListProps {
+  objections: ReadonlyArray<Readonly<Objection>>;
 }
 
-const ErrorAndWarningList: FunctionComponent<Props> = props => {
-  const { classes, objections } = props;
+const ErrorAndWarningList: FC<ErrorAndWarningListProps> = ({ objections }) => {
+  const classes = useStyles();
 
   return (
-    <React.Fragment>
+    <Fragment>
       {objections.orderBy('priority').map(objection => (
         <div className={classes.card} key={objection.message}>
           <div className={classes.message}>{objection.message}</div>
@@ -48,8 +48,8 @@ const ErrorAndWarningList: FunctionComponent<Props> = props => {
           </div>
         </div>
       ))}
-    </React.Fragment>
+    </Fragment>
   );
 };
 
-export default withStyles(styles)(ErrorAndWarningList);
+export default ErrorAndWarningList;

@@ -1,14 +1,9 @@
-import React, { FunctionComponent } from 'react';
-import { makeStyles } from '@material-ui/styles';
+import React, { FC } from 'react';
 import Button, { ButtonProps } from '@material-ui/core/Button';
+import { makeStyles } from '@material-ui/styles';
 import { Link } from 'react-router-dom';
 import { History } from 'history';
 import classNames from 'classnames';
-
-interface LinkProps {
-  to: History.LocationDescriptor;
-  replace?: boolean;
-}
 
 const useStyles = makeStyles({
   root: {
@@ -16,10 +11,16 @@ const useStyles = makeStyles({
   }
 });
 
+interface LinkProps {
+  to: History.LocationDescriptor;
+  replace?: boolean;
+}
+
 export interface LinkButtonProps extends ButtonProps, LinkProps {}
 
-const LinkButton: FunctionComponent<LinkButtonProps> = (props: LinkButtonProps) => {
+const LinkButton: FC<LinkButtonProps> = props => {
   const classes = useStyles();
+
   let modifiedProps: LinkButtonProps = {
     ...props,
     classes: {
@@ -27,6 +28,7 @@ const LinkButton: FunctionComponent<LinkButtonProps> = (props: LinkButtonProps) 
       root: classNames((props.classes || {}).root, classes.root)
     }
   };
+
   return <Button {...modifiedProps} component={Link as any} />;
 };
 

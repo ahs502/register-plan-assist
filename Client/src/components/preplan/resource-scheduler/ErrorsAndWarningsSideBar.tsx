@@ -1,78 +1,62 @@
-import React, { PureComponent } from 'react';
-import { WithStyles, Theme, createStyles, withStyles } from '@material-ui/core/styles';
-import Objection, { ObjectionType } from '../../../business/Objection';
-import SideBarContainer from './SideBarContainer';
+import React, { FC, useState } from 'react';
+import { Theme } from '@material-ui/core';
+import { makeStyles } from '@material-ui/styles';
 import Search, { filterOnProperties } from '../../../components/Search';
+import SideBarContainer from './SideBarContainer';
 import ErrorsAndWarningsList from './ErrorsAndWarningsList';
+import Objection, { ObjectionType } from '../../../business/Objection';
 
-const styles = (theme: Theme) =>
-  createStyles({
-    error: {
-      color: theme.palette.extraColors.erroredFlight
-    },
-    warning: {
-      color: theme.palette.extraColors.warnedFlight
-    }
-  });
+const useStyles = makeStyles((theme: Theme) => ({
+  error: {
+    color: theme.palette.extraColors.erroredFlight
+  },
+  warning: {
+    color: theme.palette.extraColors.warnedFlight
+  }
+}));
 
-interface Props extends WithStyles<typeof styles> {
-  objections: Objection[];
+export interface ErrorsAndWarningsSideBarProps {
+  objections: ReadonlyArray<Readonly<Objection>>;
   initialSearch?: string;
 }
-interface State {
-  filteredObjections: ReadonlyArray<Objection>;
-}
 
-class ErrorsAndWarningsSideBar extends PureComponent<Props, State> {
-  constructor(props: Props) {
-    super(props);
-    this.state = {
-      filteredObjections: props.objections
-    };
-  }
+const ErrorsAndWarningsSideBar: FC<ErrorsAndWarningsSideBarProps> = ({ objections, initialSearch }) => {
+  const [filteredObjections, setFilteredObjections] = useState(objections);
 
-  private queryChangeHandler = (query: ReadonlyArray<string>) => {
-    const filteredObjections = filterOnProperties(this.props.objections, query, ['message']);
-    this.setState(() => ({ ...this.state, filteredObjections }));
-  };
+  const classes = useStyles();
 
-  render() {
-    const { classes, initialSearch, objections } = this.props;
-    const { filteredObjections } = this.state;
+  let totalErrorCount = 0,
+    totalWarningCount = 0,
+    filteredErrorCount = 0,
+    filteredWarningCount = 0;
 
-    let totalErrorCount = 0,
-      totalWarningCount = 0,
-      filteredErrorCount = 0,
-      filteredWarningCount = 0;
+  objections.forEach(objection => {
+    objection.type === ObjectionType.Error && totalErrorCount++;
+    objection.type === ObjectionType.Warning && totalWarningCount++;
+  });
+  filteredObjections.forEach(objection => {
+    objection.type === ObjectionType.Error && filteredErrorCount++;
+    objection.type === ObjectionType.Warning && filteredWarningCount++;
+  });
 
-    objections.forEach(objection => {
-      objection.type === ObjectionType.Error && totalErrorCount++;
-      objection.type === ObjectionType.Warning && totalWarningCount++;
-    });
-    filteredObjections.forEach(objection => {
-      objection.type === ObjectionType.Error && filteredErrorCount++;
-      objection.type === ObjectionType.Warning && filteredWarningCount++;
-    });
+  return (
+    <SideBarContainer label="Errors and Warnings">
+      <Search initialSearch={initialSearch} onQueryChange={query => setFilteredObjections(filterOnProperties(objections, query, ['message']))} />
+      <div>
+        <span>
+          <span className={classes.error}>ErrorIcon</span>
+          {filteredErrorCount !== totalErrorCount && <span>{filteredErrorCount} of </span>}
+          {totalErrorCount} Errors
+        </span>
+        <span>
+          <span className={classes.warning}>WarningIcon</span>
+          {filteredWarningCount !== totalWarningCount && <span>{filteredWarningCount} of </span>}
+          {totalErrorCount} Warnings
+        </span>
+      </div>
+      <ErrorsAndWarningsList objections={filteredObjections} />
+    </SideBarContainer>
+  );
+};
 
-    return (
-      <SideBarContainer label="Errors and Warnings">
-        <Search initialSearch={initialSearch} onQueryChange={this.queryChangeHandler} />
-        <div>
-          <span>
-            <span className={classes.error}>ErrorIcon</span>
-            {filteredErrorCount !== totalErrorCount && <span>{filteredErrorCount} of </span>}
-            {totalErrorCount} Errors
-          </span>
-          <span>
-            <span className={classes.warning}>WarningIcon</span>
-            {filteredWarningCount !== totalWarningCount && <span>{filteredWarningCount} of </span>}
-            {totalErrorCount} Warnings
-          </span>
-        </div>
-        <ErrorsAndWarningsList objections={filteredObjections} />
-      </SideBarContainer>
-    );
-  }
-}
-
-export default withStyles(styles)(ErrorsAndWarningsSideBar);
+export default ErrorsAndWarningsSideBar;

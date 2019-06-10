@@ -1,12 +1,13 @@
-import React, { FunctionComponent } from 'react';
-import { WithStyles, createStyles, withStyles, Theme } from '@material-ui/core/styles';
+import React, { FC } from 'react';
+import { Theme } from '@material-ui/core';
+import { makeStyles } from '@material-ui/styles';
 
-const styles = (theme: Theme) => createStyles({});
+const useStyles = makeStyles((theme: Theme) => ({}));
 
-interface Props extends WithStyles<typeof styles> {}
+interface ProposalReportProps {}
 
-const ProposalReport: FunctionComponent<Props> = (props: Props) => {
+const ProposalReport: FC<ProposalReportProps> = () => {
   return <div>Proposal Report Content</div>;
 };
 
-export default withStyles(styles)(ProposalReport);
+export default ProposalReport;

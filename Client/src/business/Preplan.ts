@@ -67,7 +67,7 @@ export default class Preplan implements PreplanHeaderModel {
    */
   readonly aircraftRegisters: AircraftRegisters;
 
-  readonly flightRequirements: FlightRequirement[];
+  flightRequirements: ReadonlyArray<FlightRequirement>;
 
   constructor(raw: PreplanModel) {
     this.id = raw.id;

@@ -1,19 +1,17 @@
-import React, { Component, Fragment } from 'react';
-import { WithStyles, createStyles, withStyles, Theme } from '@material-ui/core/styles';
-import { RouteComponentProps } from 'react-router-dom';
+import React, { FC, Fragment, useEffect } from 'react';
+import { Theme } from '@material-ui/core';
+import { makeStyles } from '@material-ui/styles';
 import NavBar from '../components/NavBar';
 import SectionList, { SectionItem } from '../components/SectionList';
 import AircraftGroupsMasterData from '../components/master-data/AircraftGroupsMasterData';
 import ConstraintsMasterData from '../components/master-data/ConstraintsMasterData';
+import useRouter from '../utils/useRouter';
 
-const styles = (theme: Theme) => createStyles({});
-
-interface Props extends WithStyles<typeof styles>, RouteComponentProps<{ table?: string }> {}
+const useStyles = makeStyles((theme: Theme) => ({}));
 
 interface MasterDataTable extends SectionItem {
   path: string;
 }
-
 const aircraftGroupsMasterDataTable: MasterDataTable = {
   title: 'Aircraft Groups',
   description: 'All defined groups of aircrafts',
@@ -26,54 +24,34 @@ const constraintsMasterDataTable: MasterDataTable = {
 };
 const masterDataTables = [aircraftGroupsMasterDataTable, constraintsMasterDataTable];
 
-class MasterDataPage extends Component<Props> {
-  componentDidMount() {
-    this.checkUrlAcceptance(this.props);
-  }
-  shouldComponentUpdate(nextProps: Props) {
-    if (!this.checkUrlAcceptance(nextProps)) return false;
-    //TODO: update master data table in state from next props
-    return true;
-  }
+const MasterDataPage: FC = () => {
+  const classes = useStyles();
 
-  private checkUrlAcceptance(props: Props): boolean {
-    const table = this.getMasterDataTable(props);
-    if (!table && props.match.params.table) {
-      props.history.push(props.match.url.slice(0, -props.match.params.table.length));
-      return false;
+  const { match, history } = useRouter<{ table?: string }>();
+  const masterDataTable = masterDataTables.find(t => t.path === match.params.table);
+
+  useEffect(() => {
+    if (!masterDataTable && match.params.table) {
+      history.push('/master-data');
     }
-    return true;
-  }
+  });
 
-  getMasterDataTable = (props?: Props): MasterDataTable | undefined => {
-    const tableParam = (props || this.props).match.params.table;
-    return masterDataTables.find(t => t.path === tableParam);
-  };
+  return (
+    <Fragment>
+      <NavBar
+        backLink="/preplan-list"
+        navBarLinks={[{ title: 'Master Data', link: '/master-data' }, masterDataTable && { title: masterDataTable.title, link: `/master-data/${masterDataTable.path}` }]}
+      />
+      <SectionList
+        sections={masterDataTables}
+        selectedSection={masterDataTable}
+        onSectionSelect={selectedSection => history.push(`/master-data/${(selectedSection as MasterDataTable).path}`)}
+      >
+        {masterDataTable === aircraftGroupsMasterDataTable && <AircraftGroupsMasterData />}
+        {masterDataTable === constraintsMasterDataTable && <ConstraintsMasterData />}
+      </SectionList>
+    </Fragment>
+  );
+};
 
-  sectionSelectHandler = (selectedSection: SectionItem) => {
-    const selectedMasterDataTable = selectedSection as MasterDataTable;
-    this.props.history.push(`/master-data/${selectedMasterDataTable.path}`);
-  };
-
-  render() {
-    const selectedMasterDataTable = this.getMasterDataTable();
-
-    return (
-      <Fragment>
-        <NavBar
-          backLink="/preplan-list"
-          navBarLinks={[
-            { title: 'Master Data', link: '/master-data' },
-            selectedMasterDataTable && { title: selectedMasterDataTable.title, link: `/master-data/${selectedMasterDataTable.path}` }
-          ]}
-        />
-        <SectionList sections={masterDataTables} selectedSection={selectedMasterDataTable} onSectionSelect={this.sectionSelectHandler}>
-          {selectedMasterDataTable === aircraftGroupsMasterDataTable && <AircraftGroupsMasterData />}
-          {selectedMasterDataTable === constraintsMasterDataTable && <ConstraintsMasterData />}
-        </SectionList>
-      </Fragment>
-    );
-  }
-}
-
-export default withStyles(styles)(MasterDataPage);
+export default MasterDataPage;

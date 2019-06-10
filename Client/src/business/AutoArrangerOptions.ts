@@ -3,13 +3,9 @@ export default interface AutoArrangerOptions {
   minimumGroundTimeOffset: number;
 }
 
-export enum MinimumGroundTimeMode {
-  Minimum,
-  Maximum,
-  Average
-}
+export type MinimumGroundTimeMode = 'MINIMUM' | 'MAXIMUM' | 'AVERAGE';
 
 export const defaultAutoArrangerOptions: Readonly<AutoArrangerOptions> = {
-  minimumGroundTimeMode: MinimumGroundTimeMode.Minimum,
+  minimumGroundTimeMode: 'MINIMUM',
   minimumGroundTimeOffset: 0
 };

@@ -35,12 +35,12 @@ export interface NavBarLink {
 export interface NavBarProps {
   backLink?: string;
   backTitle?: string;
-  navBarLinks: ReadonlyArray<NavBarLink | undefined>;
+  navBarLinks: ReadonlyArray<NavBarLink | false | null | undefined>;
 }
 
 const NavBar: FC<NavBarProps> = ({ children, backLink, navBarLinks, backTitle }) => {
   const classes = useStyles();
-  const router = useRouter();
+  const { history } = useRouter();
 
   return (
     <Toolbar className={classes.root} variant="dense">
@@ -48,7 +48,7 @@ const NavBar: FC<NavBarProps> = ({ children, backLink, navBarLinks, backTitle })
         // <LinkIconButton to={backLink} color="inherit" title={backTitle}>
         //   <BackIcon />
         // </LinkIconButton>
-        <IconButton color="inherit" title={backTitle} onClick={() => router.history.goBack() /* router.history.push(backLink) */}>
+        <IconButton color="inherit" title={backTitle} onClick={() => history.goBack() /* history.push(backLink) */}>
           <BackIcon />
         </IconButton>
       )}

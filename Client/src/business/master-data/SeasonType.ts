@@ -2,11 +2,7 @@ import MasterDataItem, { MasterDataItems, MasterDataItemModel } from './MasterDa
 
 export interface SeasonTypeModel extends MasterDataItemModel {}
 
-export default class SeasonType extends MasterDataItem implements SeasonTypeModel {
-  constructor(raw: SeasonTypeModel) {
-    super(raw);
-  }
-}
+export default class SeasonType extends MasterDataItem implements SeasonTypeModel {}
 
 export class SeasonTypes extends MasterDataItems<SeasonType> {
   static parse(raw?: ReadonlyArray<SeasonTypeModel>): SeasonTypes | undefined {

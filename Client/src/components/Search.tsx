@@ -30,7 +30,7 @@ const Search: FC<SearchProps> = ({ outlined, initialSearch, onQueryChange }) => 
       .filter(Boolean)
       .distinct();
     onQueryChange(query);
-  }, [value]);
+  }, [onQueryChange, value]);
 
   const classes = useStyles();
 

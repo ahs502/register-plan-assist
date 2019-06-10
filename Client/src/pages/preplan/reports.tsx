@@ -1,81 +1,62 @@
-import React, { Component } from 'react';
-import { Theme, createStyles, WithStyles, withStyles } from '@material-ui/core/styles';
-import { RouteComponentProps } from 'react-router-dom';
-import NavBar from '../../components/NavBar';
+import React, { FC, useEffect, Fragment, useContext } from 'react';
+import { Theme, Portal } from '@material-ui/core';
+import { makeStyles } from '@material-ui/styles';
+import useRouter from '../../utils/useRouter';
 import SectionList, { SectionItem } from '../../components/SectionList';
+import { NavBarToolsContainerContext } from '../preplan';
 import ProposalReport from '../../components/preplan/reports/ProposalReport';
 import ConnectionsReport from '../../components/preplan/reports/ConnectionsReport';
+import Preplan from '../../business/Preplan';
 
-const styles = (theme: Theme) => createStyles({});
-
-interface Props extends WithStyles<typeof styles>, RouteComponentProps<{ id?: string; report?: string }> {}
+const useStyles = makeStyles((theme: Theme) => ({}));
 
 interface PreplanReport extends SectionItem {
   path: string;
 }
-
-const preplanReportProposal: PreplanReport = {
+const proposalPreplanReport: PreplanReport = {
   title: 'Proposal',
   description: 'The list of all flights',
   path: 'proposal'
 };
-const preplanReportConnections: PreplanReport = {
+const connectionsPpreplanReport: PreplanReport = {
   title: 'Connections',
   description: 'All existing connections between flights',
   path: 'connections'
 };
-const preplanReports = [preplanReportProposal, preplanReportConnections];
+const preplanReports = [proposalPreplanReport, connectionsPpreplanReport];
 
-class ReportsPage extends Component<Props> {
-  componentDidMount() {
-    this.checkUrlAcceptance(this.props);
-  }
-  shouldComponentUpdate(nextProps: Props) {
-    return this.checkUrlAcceptance(nextProps);
-  }
-
-  private checkUrlAcceptance(props: Props): boolean {
-    const report = this.getPreplanReport(props);
-    if (!report && props.match.params.report) {
-      props.history.push(props.match.url.slice(0, -props.match.params.report.length));
-      return false;
-    }
-    return true;
-  }
-
-  getId = (props?: Props): number => Number((props || this.props).match.params.id);
-  getPreplanReport = (props?: Props): PreplanReport | undefined => {
-    const reportParam = (props || this.props).match.params.report;
-    return preplanReports.find(p => p.path === reportParam);
-  };
-
-  sectionSelectHandler = (selectedSection: SectionItem) => {
-    const selectedPreplanReport = selectedSection as PreplanReport;
-    this.props.history.push(`/preplan/${this.props.match.params.id}/reports/${selectedPreplanReport.path}`);
-  };
-
-  render() {
-    const selectedPreplanReport = this.getPreplanReport();
-
-    return (
-      <React.Fragment>
-        <NavBar
-          navBarLinks={[
-            {
-              title: 'Pre Plan ' + this.getId(),
-              link: '/preplan/' + this.getId()
-            }
-          ]}
-        >
-          Preplan {this.getId()} Reports
-        </NavBar>
-        <SectionList sections={preplanReports} selectedSection={selectedPreplanReport} onSectionSelect={this.sectionSelectHandler}>
-          {selectedPreplanReport === preplanReportProposal && <ProposalReport />}
-          {selectedPreplanReport === preplanReportConnections && <ConnectionsReport />}
-        </SectionList>
-      </React.Fragment>
-    );
-  }
+export interface ReportsPageProps {
+  preplan: Preplan;
 }
 
-export default withStyles(styles)(ReportsPage);
+const ReportsPage: FC<ReportsPageProps> = ({ preplan }) => {
+  const navBarToolsContainer = useContext(NavBarToolsContainerContext);
+
+  const classes = useStyles();
+  const { match, history } = useRouter<{ id: string; report: string }>();
+  const preplanReport = preplanReports.find(r => r.path === match.params.report);
+
+  useEffect(() => {
+    if (!preplanReport && match.params.report) {
+      history.push(`/preplan/${match.params.id}/reports`);
+    }
+  });
+
+  return (
+    <Fragment>
+      <Portal container={navBarToolsContainer}>
+        <Fragment>Preplan {preplan.name} Reports</Fragment>
+      </Portal>
+      <SectionList
+        sections={preplanReports}
+        selectedSection={preplanReport}
+        onSectionSelect={selectedSection => history.push(`/preplan/${match.params.id}/reports/${(selectedSection as PreplanReport).path}`)}
+      >
+        {preplanReport === proposalPreplanReport && <ProposalReport />}
+        {preplanReport === connectionsPpreplanReport && <ConnectionsReport />}
+      </SectionList>
+    </Fragment>
+  );
+};
+
+export default ReportsPage;

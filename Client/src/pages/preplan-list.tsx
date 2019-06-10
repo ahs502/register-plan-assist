@@ -1,152 +1,132 @@
-import React, { PureComponent, Fragment } from 'react';
-import { WithStyles, createStyles, withStyles, Theme } from '@material-ui/core/styles';
-import { IconButton, Paper, Tab, Tabs, Table, TableBody, TableCell, TableHead, TableRow, Switch } from '@material-ui/core';
+import React, { Fragment, useState, FC } from 'react';
+import { Theme, IconButton, Paper, Tab, Tabs, Table, TableBody, TableCell, TableHead, TableRow, Switch } from '@material-ui/core';
+import { makeStyles } from '@material-ui/styles';
 import { DoneAll as FinilizedIcon, Add as AddIcon, Edit as EditIcon, Clear as ClearIcon } from '@material-ui/icons';
 import MahanIcon, { MahanIconType } from '../components/MahanIcon';
-import NavBar from '../components/NavBar';
 import Search from '../components/Search';
 import LinkButton from '../components/LinkButton';
 import LinkTypography from '../components/LinkTypography';
+import NavBar from '../components/NavBar';
 import { PreplanHeaderModel } from '../business/Preplan';
 
-const styles = (theme: Theme) =>
-  createStyles({
-    contentPage: {
-      maxWidth: '1176px',
-      margin: 'auto'
-    },
-    preplanTableCell: {
-      paddingRight: theme.spacing.unit * 2,
-      paddingLeft: theme.spacing.unit * 2,
-      '&:last-child': {
-        paddingRight: theme.spacing.unit * 2
-      }
+const useStyles = makeStyles((theme: Theme) => ({
+  contentPage: {
+    maxWidth: '1176px',
+    margin: 'auto'
+  },
+  preplanTableCell: {
+    paddingRight: theme.spacing(2),
+    paddingLeft: theme.spacing(2),
+    '&:last-child': {
+      paddingRight: theme.spacing(2)
     }
-  });
+  }
+}));
 
 type Tab = 'USER' | 'PUBLIC';
 
-interface Props extends WithStyles<typeof styles> {}
-interface State {
-  preplanHeaders: ReadonlyArray<Readonly<PreplanHeaderModel>>;
-  tab: Tab;
-}
+const PreplanListPage: FC = () => {
+  const [preplanHeaders, setPreplanHeaders] = useState<ReadonlyArray<Readonly<PreplanHeaderModel>>>([]);
+  const [tab, setTab] = useState<Tab>('USER');
 
-class PreplanListPage extends PureComponent<Props, State> {
-  constructor(props: Props) {
-    super(props);
+  const classes = useStyles();
 
-    this.state = {
-      preplanHeaders: getDummyPreplanHeaders(),
-      tab: 'USER'
-    };
-  }
+  const currentUserId: string = '1001'; //TODO: Needs to be reviewed.
 
-  handleTabChange = (event: React.ChangeEvent<{}>, tab: Tab) => this.setState({ ...this.state, tab });
+  if (!preplanHeaders.length) setPreplanHeaders(getDummyPreplanHeaders()); //TODO: Remove this line later.
 
-  togglePreplanPublicity = (preplanHeader: PreplanHeaderModel) => (event: React.ChangeEvent<{}>, checked: boolean) => {
-    throw new Error('Not implemented.');
-  };
+  return (
+    <Fragment>
+      <NavBar
+        navBarLinks={[
+          {
+            title: 'Pre Plans',
+            link: '/preplan-list'
+          }
+        ]}
+      >
+        <LinkButton to="/master-data" variant="text" color="inherit" title="Master Data">
+          Master Data
+          <MahanIcon type={MahanIconType.TextFile} />
+        </LinkButton>
+      </NavBar>
 
-  render() {
-    const { classes } = this.props;
-    const { preplanHeaders, tab } = this.state;
+      <div className={classes.contentPage}>
+        <Tabs value={tab} indicatorColor="primary" textColor="primary" onChange={(event, tab) => setTab(tab)}>
+          <Tab value="USER" label="Current User" />
+          <Tab value="PUBLIC" label="Public" />
+          <Search outlined />
+          <IconButton color="primary" title="Add Preplan">
+            <AddIcon fontSize="large" />
+          </IconButton>
+        </Tabs>
 
-    const currentUserId: string = '1001'; //TODO: Needs to be reviewed.
+        <Paper>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell className={classes.preplanTableCell}>Name</TableCell>
+                <TableCell className={classes.preplanTableCell}>Last Modified</TableCell>
+                <TableCell className={classes.preplanTableCell}>Created at</TableCell>
+                <TableCell className={classes.preplanTableCell}>Copy Source</TableCell>
+                <TableCell className={classes.preplanTableCell}>Finalized</TableCell>
+                <TableCell className={classes.preplanTableCell}>Simulation Name</TableCell>
+                <TableCell className={classes.preplanTableCell} align="center">
+                  {tab === 'USER' ? 'User' : 'Public'}
+                </TableCell>
+                <TableCell className={classes.preplanTableCell} align="center">
+                  Actions
+                </TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {preplanHeaders
+                .filter(p => (tab === 'USER' ? p.userId === currentUserId : p.published))
+                .map(preplanHeader => (
+                  <TableRow key={preplanHeader.id}>
+                    <TableCell className={classes.preplanTableCell} component="th" scope="row">
+                      <LinkTypography to={'preplan/' + preplanHeader.id}>{preplanHeader.name}</LinkTypography>
+                    </TableCell>
+                    <TableCell className={classes.preplanTableCell}>{preplanHeader.lastEditDateTime.toDateString()}</TableCell>
+                    <TableCell className={classes.preplanTableCell}>{preplanHeader.creationDateTime.toDateString()}</TableCell>
+                    <TableCell className={classes.preplanTableCell}>{preplanHeader.parentPreplanName}</TableCell>
+                    <TableCell className={classes.preplanTableCell} align="center">
+                      {preplanHeader.finalized ? <FinilizedIcon /> : ''}
+                    </TableCell>
+                    <TableCell className={classes.preplanTableCell}>{preplanHeader.simulationName}</TableCell>
+                    <TableCell className={classes.preplanTableCell}>
+                      {tab === 'USER' ? (
+                        <Switch color="primary" checked={preplanHeader.published} onChange={(event, checked) => alert('Not implemented.')} />
+                      ) : (
+                        preplanHeader.userDisplayName
+                      )}
+                    </TableCell>
+                    <TableCell className={classes.preplanTableCell}>
+                      <IconButton title="Copy Preplan">
+                        <MahanIcon type={MahanIconType.CopyContent} />
+                      </IconButton>
+                      {tab === 'USER' && (
+                        <Fragment>
+                          <IconButton title="Edit Preplan">
+                            <EditIcon />
+                          </IconButton>
+                          <IconButton title="Delete Preplan">
+                            <ClearIcon />
+                          </IconButton>
+                        </Fragment>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+            </TableBody>
+          </Table>
+        </Paper>
+      </div>
+    </Fragment>
+  );
+};
 
-    return (
-      <Fragment>
-        <NavBar
-          navBarLinks={[
-            {
-              title: 'Pre Plans',
-              link: '/preplan-list'
-            }
-          ]}
-        >
-          <LinkButton to="/master-data" variant="text" color="inherit" title="Master Data">
-            Master Data
-            <MahanIcon type={MahanIconType.TextFile} />
-          </LinkButton>
-        </NavBar>
-
-        <div className={classes.contentPage}>
-          <Tabs value={tab} indicatorColor="primary" textColor="primary" onChange={this.handleTabChange}>
-            <Tab value="USER" label="Current User" />
-            <Tab value="PUBLIC" label="Public" />
-            <Search outlined />
-            <IconButton color="primary" title="Add Preplan">
-              <AddIcon fontSize="large" />
-            </IconButton>
-          </Tabs>
-
-          <Paper>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell className={classes.preplanTableCell}>Name</TableCell>
-                  <TableCell className={classes.preplanTableCell}>Last Modified</TableCell>
-                  <TableCell className={classes.preplanTableCell}>Created at</TableCell>
-                  <TableCell className={classes.preplanTableCell}>Copy Source</TableCell>
-                  <TableCell className={classes.preplanTableCell}>Finalized</TableCell>
-                  <TableCell className={classes.preplanTableCell}>Simulation Name</TableCell>
-                  <TableCell className={classes.preplanTableCell} align="center">
-                    {tab === 'USER' ? 'User' : 'Public'}
-                  </TableCell>
-                  <TableCell className={classes.preplanTableCell} align="center">
-                    Actions
-                  </TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {preplanHeaders
-                  .filter(p => (tab === 'USER' ? p.userId === currentUserId : p.published))
-                  .map(preplanHeader => (
-                    <TableRow key={preplanHeader.id}>
-                      <TableCell className={classes.preplanTableCell} component="th" scope="row">
-                        <LinkTypography to={'preplan/' + preplanHeader.id}>{preplanHeader.name}</LinkTypography>
-                      </TableCell>
-                      <TableCell className={classes.preplanTableCell}>{preplanHeader.lastEditDateTime.toDateString()}</TableCell>
-                      <TableCell className={classes.preplanTableCell}>{preplanHeader.creationDateTime.toDateString()}</TableCell>
-                      <TableCell className={classes.preplanTableCell}>{preplanHeader.parentPreplanName}</TableCell>
-                      <TableCell className={classes.preplanTableCell} align="center">
-                        {preplanHeader.finalized ? <FinilizedIcon /> : ''}
-                      </TableCell>
-                      <TableCell className={classes.preplanTableCell}>{preplanHeader.simulationName}</TableCell>
-                      <TableCell className={classes.preplanTableCell}>
-                        {tab === 'USER' ? (
-                          <Switch color="primary" checked={preplanHeader.published} onChange={this.togglePreplanPublicity(preplanHeader)} />
-                        ) : (
-                          preplanHeader.userDisplayName
-                        )}
-                      </TableCell>
-                      <TableCell className={classes.preplanTableCell}>
-                        <IconButton title="Copy Preplan">
-                          <MahanIcon type={MahanIconType.CopyContent} />
-                        </IconButton>
-                        {tab === 'USER' && (
-                          <Fragment>
-                            <IconButton title="Edit Preplan">
-                              <EditIcon />
-                            </IconButton>
-                            <IconButton title="Delete Preplan">
-                              <ClearIcon />
-                            </IconButton>
-                          </Fragment>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-              </TableBody>
-            </Table>
-          </Paper>
-        </div>
-      </Fragment>
-    );
-  }
-}
-
-export default withStyles(styles)(PreplanListPage);
+export default PreplanListPage;
 
 //////////////////////////////////////////////
 

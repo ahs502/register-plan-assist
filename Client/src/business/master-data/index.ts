@@ -9,7 +9,7 @@ import { Constraints, ConstraintModel } from './Constraint';
 
 import { AircraftIdentity } from './AircraftSelection';
 
-export interface MasterDataModel {
+export interface MasterDataModel  {
   aircraftTypes: ReadonlyArray<Readonly<AircraftTypeModel>>;
   aircraftRegisters: ReadonlyArray<Readonly<AircraftRegisterModel>>;
   airports: ReadonlyArray<Readonly<AirportModel>>;
@@ -105,7 +105,8 @@ export default class MasterData {
 
 MasterData.recieve({
   
-  aircraftRegisters : [{id: '7092902880000000254',name: 'MHA', aircraftTypeId: '7092902770000000002' },
+  aircraftRegisters : [
+    {id: '7092902880000000254',name: 'MHA', aircraftTypeId: '7092902770000000002' },
   {id: '7092902880000000255',name: 'MHE', aircraftTypeId: '7092902770000000002' },
   {id: '7092902880000000256',name: 'MHF', aircraftTypeId: '7092902770000000002' },
   {id: '7092902880000000257',name: 'MHG', aircraftTypeId: '7092902770000000002' },
@@ -232,8 +233,10 @@ MasterData.recieve({
   {id: '7092902880000001341',name: 'YKA', aircraftTypeId: '7092902770000000024' },
   {id: '7092902880000001342',name: 'YKB', aircraftTypeId: '7092902770000000024' },
   {id: '7092902880000001343',name: 'MNW', aircraftTypeId: '7092902770000000031' },
-  {id: '7092902880000001344',name: 'VIP', aircraftTypeId: '7092902770000000004' }],
-  aircraftTypes:[{id: '7092902770000000013', name: '143', displayOrder: 10, turnrounds: [{startDate: new Date().addDays(-1000), endDate :new Date().addDays(1000), minimumGroundTime :{departureDomestic: 40, departureInternational: 60, transitDomestic: 40, transitInternational: 60}}]},
+  {id: '7092902880000001344',name: 'VIP', aircraftTypeId: '7092902770000000004' }
+],
+  aircraftTypes:[
+    {id: '7092902770000000013', name: '143', displayOrder: 10, turnrounds: [{startDate: new Date().addDays(-1000), endDate :new Date().addDays(1000), minimumGroundTime :{departureDomestic: 40, departureInternational: 60, transitDomestic: 40, transitInternational: 60}}]},
   {id: '7092902770000000009', name: '343', displayOrder: 2, turnrounds: [{startDate: new Date().addDays(-1000), endDate :new Date().addDays(1000), minimumGroundTime :{departureDomestic: 75, departureInternational: 75, transitDomestic: 75, transitInternational: 75}}]},
   {id: '7092902770000000031', name: '346', displayOrder: 1, turnrounds: [{startDate: new Date().addDays(-1000), endDate :new Date().addDays(1000), minimumGroundTime :{departureDomestic: 75, departureInternational: 75, transitDomestic: 75, transitInternational: 75}}]},
   {id: '7092902770000000010', name: '743', displayOrder: 4, turnrounds: [{startDate: new Date().addDays(-1000), endDate :new Date().addDays(1000), minimumGroundTime :{departureDomestic: 140, departureInternational: 120, transitDomestic: 120, transitInternational: 120}}]},
@@ -251,8 +254,10 @@ MasterData.recieve({
   {id: '7092902770000000024', name: 'YK2', displayOrder: 19, turnrounds: [{startDate: new Date().addDays(-1000), endDate :new Date().addDays(1000), minimumGroundTime :{departureDomestic: 1, departureInternational: 1, transitDomestic: 1, transitInternational: 1}}]},
   {id: '7092902770000000041', name: '742', displayOrder: 20, turnrounds: [{startDate: new Date().addDays(-1000), endDate :new Date().addDays(1000), minimumGroundTime :{departureDomestic: 1, departureInternational: 1, transitDomestic: 1, transitInternational: 1}}]},
   {id: '7092902770000000006', name: 'A32', displayOrder: 9, turnrounds: [{startDate: new Date().addDays(-1000), endDate :new Date().addDays(1000), minimumGroundTime :{departureDomestic: 1, departureInternational: 1, transitDomestic: 1, transitInternational: 1}}]},
-  {id: '7092902770000000018', name: 'M82', displayOrder: 24, turnrounds: [{startDate: new Date().addDays(-1000), endDate :new Date().addDays(1000), minimumGroundTime :{departureDomestic: 1, departureInternational: 1, transitDomestic: 1, transitInternational: 1}}]}],
-airports:[{id:'7092901520000000033', name: 'ABD', fullName: 'Abadan', international: false },
+  {id: '7092902770000000018', name: 'M82', displayOrder: 24, turnrounds: [{startDate: new Date().addDays(-1000), endDate :new Date().addDays(1000), minimumGroundTime :{departureDomestic: 1, departureInternational: 1, transitDomestic: 1, transitInternational: 1}}]}
+],
+airports:[
+  {id:'7092901520000000033', name: 'ABD', fullName: 'Abadan', international: false },
 {id:'7092901520000000039', name: 'ABJ', fullName: 'Felix Houphouet Boigny International', international: true },
 {id:'7092901520000000058', name: 'ADU', fullName: 'Ardabil', international: false },
 {id:'7092901520000000060', name: 'ADW', fullName: 'Andrews AFB', international: true },
@@ -633,7 +638,8 @@ airports:[{id:'7092901520000000033', name: 'ABD', fullName: 'Abadan', internatio
 {id:'7092901520000010173', name: 'SZX', fullName: 'Shenzhen', international: true },
 {id:'7092901520000010174', name: 'IFH', fullName: 'HESA', international: false },
 {id:'7092901520000010175', name: 'BNX', fullName: 'Bosnia-Herzegovina', international: true }],
-stcs:[{id: '1',name: 'A', description: 'Cargo/Mail' },
+stcs:[
+  {id: '1',name: 'A', description: 'Cargo/Mail' },
 {id: '2',name: 'B', description: 'Shuttle Mode' },
 {id: '3',name: 'C', description: 'Charter' },
 {id: '4',name: 'D', description: 'General Aviation' },
@@ -660,12 +666,15 @@ stcs:[{id: '1',name: 'A', description: 'Cargo/Mail' },
 {id: '25',name: 'Y', description: 'Airline Company Special' },
 {id: '26',name: 'Z', description: 'Airline Company Special' },
 {id: '27',name: '7', description: '6' }],
-seasonTypes:[{id: '1', name:'All'},{id: '2', name:'S'},{id: '3', name: 'W'}],
-seasons: [{id: '12', name:'S17', startDate:new Date(Date.UTC(2017,3,26)), endDate: new Date(Date.UTC( 2017,10,28)), seasonTypeId: '2'},
+seasonTypes:[
+  {id: '1', name:'All'},{id: '2', name:'S'},{id: '3', name: 'W'}],
+seasons: [
+  {id: '12', name:'S17', startDate:new Date(Date.UTC(2017,3,26)), endDate: new Date(Date.UTC( 2017,10,28)), seasonTypeId: '2'},
 {id: '13', name:'W17', startDate:new Date(Date.UTC(2017,10,29)), endDate: new Date(Date.UTC( 2017,3,24)), seasonTypeId: '3'},
 {id: '14', name:'S18', startDate:new Date(Date.UTC(2018,3,25)), endDate: new Date(Date.UTC( 2017,10,27)), seasonTypeId: '2'},
 {id: '15', name:'W18', startDate:new Date(Date.UTC(2018,10,28)), endDate: new Date(Date.UTC( 2017,3,30)), seasonTypeId: '3'},
 {id: '16', name:'S19', startDate:new Date(Date.UTC(2019,3,31)), endDate: new Date(Date.UTC( 2017,10,26)), seasonTypeId: '2'}],
-aircraftGroups: [{id:'1', name:'GPS', aircraftRegisterIds:['7092902880000001088','7092902880000000270','7092902880000001060','7092902880000000970','7092902880000000348','7092902880000001025','7092902880000001269','7092902880000001120', '7092902880000000282','7092902880000000291']}],
+aircraftGroups: [
+  {id:'1', name:'GPS', aircraftRegisterIds:['7092902880000001088','7092902880000000270','7092902880000001060','7092902880000000970','7092902880000000348','7092902880000001025','7092902880000001269','7092902880000001120', '7092902880000000282','7092902880000000291']}],
 constraints:[],
 })

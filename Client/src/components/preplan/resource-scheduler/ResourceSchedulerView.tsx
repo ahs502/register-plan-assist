@@ -11,12 +11,12 @@ const useStyles = makeStyles((theme: Theme) => ({
   }
 }));
 
-export interface FlightRequirementModalProps {}
+export interface ResourceSchedulerViewProps {}
 
-const FlightRequirementModal: FC<FlightRequirementModalProps> = () => {
+const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = () => {
   const classes = useStyles();
 
   return <div className={classes.root}>vis.js</div>;
 };
 
-export default FlightRequirementModal;
+export default ResourceSchedulerView;

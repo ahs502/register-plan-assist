@@ -1,11 +1,11 @@
 import React, { FC, Fragment, useState } from 'react';
 import { Theme, DialogActions, DialogTitle, DialogContent, Button, TextField, Typography } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
-import DraggableDialog from '../DraggableDialog';
 import MultiSelect from '../MultiSelect';
+import DraggableDialog from '../DraggableDialog';
 import MasterDataItemList from './MasterDataItemList';
-import MasterData from '../../business/master-data';
 import AircraftGroup from '../../business/master-data/AircraftGroup';
+import MasterData from '../../business/master-data';
 
 const useStyles = makeStyles((theme: Theme) => ({
   overflowVisible: {
@@ -31,7 +31,7 @@ const AircraftGroupsMasterData: FC = () => {
         onItemSelect={setSelectedItem}
         onItemUnselect={() => setSelectedItem(undefined)}
         onItemAdd={() => setIsAddModalOpen(true)}
-        onItemRemove={() => alert('Not implemented.')}
+        onItemRemove={item => alert('Not implemented.')}
       >
         {selectedItem ? (
           <div>

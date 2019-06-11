@@ -6,6 +6,7 @@
     "Client/build": true
   },
   "editor.formatOnSave": true,
+  "editor.formatOnSaveTimeout": 2000,
   "prettier.singleQuote": true,
   "prettier.printWidth": 180,
   "prettier.tabWidth": 2,

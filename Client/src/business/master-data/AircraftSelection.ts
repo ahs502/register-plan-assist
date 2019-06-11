@@ -1,7 +1,7 @@
 /**
  * All possible kinds of aircraft identities.
  */
-export type AircraftIdentityType = 'register' | 'type' | 'type existing' | 'type dummy' | 'group';
+export type AircraftIdentityType = 'REGISTER' | 'TYPE' | 'TYPE_EXISTING' | 'TYPE_DUMMY' | 'GROUP';
 
 /**
  * A representive object identifying one or more aircraft registers

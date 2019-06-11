@@ -1,34 +1,25 @@
-export default interface Objection {
-  message: string;
-  type: ObjectionType;
-  priority: number;
-}
+export type ObjectionType = 'ERROR' | 'WARNING';
 
-export enum ObjectionType {
-  Error,
-  Warning
-}
+export default abstract class Objection {
+  readonly type: ObjectionType;
+  readonly message: string;
+  readonly priority: number;
 
-export class ErrorObjection implements Objection {
-  message: string;
-  type: ObjectionType;
-  priority: number;
-
-  constructor(message: string) {
-    this.message = message || '(Error)';
-    this.type = ObjectionType.Error;
-    this.priority = 200;
+  constructor(type: ObjectionType, message: string, priority: number) {
+    this.type = type;
+    this.message = message;
+    this.priority = priority;
   }
 }
 
-export class WarningObjection implements Objection {
-  message: string;
-  type: ObjectionType;
-  priority: number;
+export abstract class ErrorObjection extends Objection {
+  constructor(message: string, priority: number = 200) {
+    super('ERROR', message || '(Error)', priority);
+  }
+}
 
-  constructor(message: string) {
-    this.message = message || '(Warning)';
-    this.type = ObjectionType.Warning;
-    this.priority = 100;
+export abstract class WarningObjection extends Objection {
+  constructor(message: string, priority: number = 100) {
+    super('WARNING', message || '(Warning)', priority);
   }
 }

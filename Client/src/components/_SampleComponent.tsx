@@ -35,7 +35,7 @@ export interface SampleComponentProps {
 const SampleComponent: FC<SampleComponentProps> = ({ someRequiredProp, someOptionalProp }) => {
   // All state or reducer hooks:
   const [stateVariable, setStateVariable] = useState(123);
-  const [anotherStateVariable, setAnotherVariable] = useState('initial data');
+  const [anotherStateVariable, setAnotherVariable] = useState(() => 'initial data');
 
   // All side effect hooks:
   useEffect(() => {
@@ -63,7 +63,9 @@ const SampleComponent: FC<SampleComponentProps> = ({ someRequiredProp, someOptio
 };
 
 // Default values of props when not provided by the user (only for optional props):
-SampleComponent.defaultProps = {};
+SampleComponent.defaultProps = {
+  someOptionalProp: false
+};
 
 // Export the component as the default export:
 export default SampleComponent;

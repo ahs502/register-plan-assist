@@ -90,14 +90,14 @@ export default class MasterData {
    * The singleton object containing all master data collections data.
    */
   static all: MasterData = new MasterData(
-    AircraftTypes.parse([]) as AircraftTypes,
-    AircraftRegisters.parse([]) as AircraftRegisters,
-    Airports.parse([]) as Airports,
-    SeasonTypes.parse([]) as SeasonTypes,
-    Seasons.parse([]) as Seasons,
-    Stcs.parse([]) as Stcs,
-    AircraftGroups.parse([]) as AircraftGroups,
-    Constraints.parse([]) as Constraints
+    AircraftTypes.parse([])!,
+    AircraftRegisters.parse([])!,
+    Airports.parse([])!,
+    SeasonTypes.parse([])!,
+    Seasons.parse([])!,
+    Stcs.parse([])!,
+    AircraftGroups.parse([])!,
+    Constraints.parse([])!
   );
 }
 

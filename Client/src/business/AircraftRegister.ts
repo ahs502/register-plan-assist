@@ -20,15 +20,7 @@ export interface DummyAircraftRegisterModel {
 /**
  * How every aircraft register is treated within each preplan.
  */
-export enum AircraftRegisterStatus {
-  /**
-   * By default, with 0 value.
-   */
-  Excluded,
-
-  Backup,
-  Included
-}
+export type AircraftRegisterStatus = 'IGNORED' | 'BACKUP' | 'INCLUDED';
 
 /**
  * The selected options for an aircraft register in a preplan.
@@ -86,7 +78,7 @@ export default class AircraftRegister implements MasterDataItem {
   }
   getDefaultOptions(): Readonly<AircraftRegisterOptions> {
     return {
-      status: AircraftRegisterStatus.Excluded,
+      status: 'IGNORED',
       startingAirportId: this.getDefaultStartingAirport().id
     };
   }
@@ -108,33 +100,33 @@ export class AircraftRegisters extends MasterDataItems<AircraftRegister> {
     return result;
   }
 
-  resolveAircraftIdentity(aircraftIdentity: AircraftIdentity): ReadonlyArray<AircraftRegister> {
+  resolveAircraftIdentity(aircraftIdentity: AircraftIdentity, status: AircraftRegisterStatus = 'INCLUDED'): ReadonlyArray<AircraftRegister> {
     let result: AircraftRegister[];
     switch (aircraftIdentity.type) {
-      case 'register':
+      case 'REGISTER':
         result = [this.id[aircraftIdentity.entityId]];
         break;
 
-      case 'type':
+      case 'TYPE':
         result = this.items.filter(a => a.aircraftTypeId === aircraftIdentity.entityId);
         break;
 
-      case 'type existing':
+      case 'TYPE_EXISTING':
         result = this.items.filter(a => a.aircraftTypeId === aircraftIdentity.entityId && !a.dummy);
         break;
 
-      case 'type dummy':
+      case 'TYPE_DUMMY':
         result = this.items.filter(a => a.aircraftTypeId === aircraftIdentity.entityId && a.dummy);
         break;
 
-      case 'group':
+      case 'GROUP':
         result = MasterData.all.aircraftGroups.id[aircraftIdentity.entityId].aircraftRegisterIds.map(id => this.id[id]);
         break;
 
       default:
         result = [];
     }
-    return result.filter(a => a.options.status === AircraftRegisterStatus.Included);
+    return result.filter(a => a.options.status === status);
   }
 
   resolveAircraftSelection(aircraftSelection: AircraftSelection): ReadonlyArray<AircraftRegister> {
@@ -142,5 +134,13 @@ export class AircraftRegisters extends MasterDataItems<AircraftRegister> {
     aircraftSelection.allowedIdentities.forEach(i => this.resolveAircraftIdentity(i).forEach(a => result.includes(a) || result.push(a)));
     aircraftSelection.forbiddenIdentities.forEach(i => this.resolveAircraftIdentity(i).forEach(a => result.includes(a) && result.remove(a)));
     return result;
+  }
+
+  findBackupFromAircraftSelection(aircraftSelection: AircraftSelection): AircraftRegister | undefined {
+    let allowed: AircraftRegister[] = [];
+    let forbidden: AircraftRegister[] = [];
+    aircraftSelection.allowedIdentities.forEach(i => this.resolveAircraftIdentity(i).forEach(a => allowed.includes(a) || allowed.push(a)));
+    aircraftSelection.forbiddenIdentities.forEach(i => this.resolveAircraftIdentity(i).forEach(a => forbidden.includes(a) || forbidden.push(a)));
+    return allowed.find(a => !forbidden.includes(a)) || allowed[0];
   }
 }

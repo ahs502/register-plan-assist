@@ -31,14 +31,14 @@ export interface FlightScope {
   times: ReadonlyArray<Readonly<FlightTime>>;
   aircraftSelection: Readonly<AircraftSelection>;
   slot: boolean;
-  slotComments: string;
+  slotComment: string;
   required: boolean;
 }
 
 /**
  * Data representation for an actual flight.
  */
-export interface Flight {
+export interface FlightModel {
   std: Daytime;
   aircraftRegisterId?: string;
 }
@@ -47,7 +47,7 @@ export interface WeekdayFlightRequirementModel {
   scope: Readonly<FlightScope>;
   notes: string;
   day: number;
-  flight: Readonly<Flight>;
+  flight: Readonly<FlightModel>;
 }
 
 export interface FlightRequirementModel {
@@ -58,15 +58,33 @@ export interface FlightRequirementModel {
   ignored: boolean;
 }
 
+export class Flight {
+  readonly derivedId: string;
+  readonly requirement: FlightRequirement;
+  readonly weekdayRequirement: WeekdayFlightRequirement;
+  readonly std: Daytime;
+  readonly aircraftRegisterId?: string;
+
+  constructor(raw: FlightModel, weekdayRequiremnet: WeekdayFlightRequirement) {
+    this.derivedId = weekdayRequiremnet.derivedId;
+    this.requirement = weekdayRequiremnet.requirement;
+    this.weekdayRequirement = weekdayRequiremnet;
+    this.std = new Daytime(raw.std);
+    this.aircraftRegisterId = raw.aircraftRegisterId;
+  }
+}
+
 export class WeekdayFlightRequirement {
-  readonly parent: FlightRequirement;
+  readonly derivedId: string;
+  readonly requirement: FlightRequirement;
   readonly scope: Readonly<FlightScope>;
   readonly notes: string;
   readonly day: number;
-  readonly flight: Readonly<Flight>;
+  readonly flight: Flight;
 
-  constructor(raw: WeekdayFlightRequirementModel, parent: FlightRequirement) {
-    this.parent = parent;
+  constructor(raw: WeekdayFlightRequirementModel, requirement: FlightRequirement) {
+    this.derivedId = `${requirement.id}#${raw.day}`;
+    this.requirement = requirement;
     this.scope = {
       ...raw.scope,
       times: raw.scope.times.map(t => ({
@@ -76,10 +94,7 @@ export class WeekdayFlightRequirement {
     };
     this.notes = raw.notes;
     this.day = raw.day;
-    this.flight = {
-      ...raw.flight,
-      std: new Daytime(raw.flight.std)
-    };
+    this.flight = new Flight(raw.flight, this);
   }
 }
 

@@ -106,7 +106,7 @@ const PreplanPage: FC = () => {
                 <ResourceSchedulerPage
                   preplan={preplan}
                   onEditFlightRequirement={f => setFlightRequirementModal({ open: true, flightRequirement: f, weekly: true /*TODO*/ })}
-                  onEditWeekdayFlightRequirement={f => setFlightRequirementModal({ open: true, flightRequirement: f.parent, weekly: false /*TODO*/ })}
+                  onEditWeekdayFlightRequirement={f => setFlightRequirementModal({ open: true, flightRequirement: f.requirement, weekly: false /*TODO*/ })}
                 />
               )}
             />
@@ -121,7 +121,7 @@ const PreplanPage: FC = () => {
                   onEditFlightRequirement={f => setFlightRequirementModal({ open: true, flightRequirement: f, weekly: true /*TODO*/ })}
                   onAddReturnFlightRequirement={f => setFlightRequirementModal({ open: true, weekly: true /*TODO*/ })}
                   onRemoveWeekdayFlightRequirement={f => alert('Not implemented.\nOpen Y/N modal.')}
-                  onEditWeekdayFlightRequirement={f => setFlightRequirementModal({ open: true, flightRequirement: f.parent, weekly: false /*TODO*/ })}
+                  onEditWeekdayFlightRequirement={f => setFlightRequirementModal({ open: true, flightRequirement: f.requirement, weekly: false /*TODO*/ })}
                 />
               )}
             />

@@ -8,8 +8,8 @@ import {
   Fullscreen as FullScreenIcon,
   FullscreenExit as ExitFullScreenIcon
 } from '@material-ui/icons';
-import User from '../business/User';
 import classNames from 'classnames';
+import User from '../business/User';
 
 const useStyles = makeStyles((theme: Theme) => ({
   textMargin: {
@@ -28,11 +28,11 @@ const useStyles = makeStyles((theme: Theme) => ({
   }
 }));
 
-export interface UserProps {
+export interface AppBarProps {
   user: User;
 }
 
-const AppBar: FC<UserProps> = ({ user }) => {
+const AppBar: FC<AppBarProps> = ({ user }) => {
   const [isFullScreen, setIsFullScreen] = useState(false);
 
   const classes = useStyles();

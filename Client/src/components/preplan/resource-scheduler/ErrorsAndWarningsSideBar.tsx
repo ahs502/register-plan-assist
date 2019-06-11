@@ -4,7 +4,7 @@ import { makeStyles } from '@material-ui/styles';
 import Search, { filterOnProperties } from '../../../components/Search';
 import SideBarContainer from './SideBarContainer';
 import ErrorsAndWarningsList from './ErrorsAndWarningsList';
-import Objection, { ObjectionType } from '../../../business/Objection';
+import Objection from '../../../business/Objection';
 
 const useStyles = makeStyles((theme: Theme) => ({
   error: {
@@ -31,12 +31,12 @@ const ErrorsAndWarningsSideBar: FC<ErrorsAndWarningsSideBarProps> = ({ objection
     filteredWarningCount = 0;
 
   objections.forEach(objection => {
-    objection.type === ObjectionType.Error && totalErrorCount++;
-    objection.type === ObjectionType.Warning && totalWarningCount++;
+    objection.type === 'ERROR' && totalErrorCount++;
+    objection.type === 'WARNING' && totalWarningCount++;
   });
   filteredObjections.forEach(objection => {
-    objection.type === ObjectionType.Error && filteredErrorCount++;
-    objection.type === ObjectionType.Warning && filteredWarningCount++;
+    objection.type === 'ERROR' && filteredErrorCount++;
+    objection.type === 'WARNING' && filteredWarningCount++;
   });
 
   return (

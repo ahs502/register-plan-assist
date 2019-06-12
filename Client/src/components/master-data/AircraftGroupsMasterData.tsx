@@ -6,6 +6,7 @@ import DraggableDialog from '../DraggableDialog';
 import MasterDataItemList from './MasterDataItemList';
 import AircraftGroup from '../../business/master-data/AircraftGroup';
 import MasterData from '../../business/master-data';
+import AircraftRegister from '../../business/master-data/AircraftRegister';
 
 const useStyles = makeStyles((theme: Theme) => ({
   overflowVisible: {
@@ -19,7 +20,8 @@ const useStyles = makeStyles((theme: Theme) => ({
 const AircraftGroupsMasterData: FC = () => {
   const [selectedItem, setSelectedItem] = useState<AircraftGroup | undefined>(undefined);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-
+  const registers = MasterData.all.aircraftRegisters.items;
+  const [groupRegisters, setGroupRegisters] = useState<ReadonlyArray<AircraftRegister>>(registers);
   const classes = useStyles();
 
   return (
@@ -29,7 +31,6 @@ const AircraftGroupsMasterData: FC = () => {
         collectionTitle="Aircraft Groups"
         selectedItem={selectedItem}
         onItemSelect={setSelectedItem}
-        onItemUnselect={() => setSelectedItem(undefined)}
         onItemAdd={() => setIsAddModalOpen(true)}
         onItemRemove={item => alert('Not implemented.')}
       >
@@ -38,7 +39,18 @@ const AircraftGroupsMasterData: FC = () => {
             <Typography classes={{ root: classes.aircraftGroupTitle }} variant="subtitle2">
               {selectedItem.name}
             </Typography>
-            {/* <MultiSelect label="Registers" placeholder="Select Registers" suggestions={registers} /> */}
+            <MultiSelect
+              label="Registers"
+              placeholder="Select Registers"
+              options={registers}
+              value={groupRegisters}
+              getOptionLabel={r => r.name}
+              getOptionValue={r => r.id}
+              onChange={(value, action) => {
+                console.log(value);
+                setGroupRegisters(value as ReadonlyArray<AircraftRegister>);
+              }}
+            />
           </div>
         ) : (
           <Typography classes={{ root: classes.aircraftGroupTitle }} variant="subtitle2">
@@ -51,7 +63,7 @@ const AircraftGroupsMasterData: FC = () => {
         <DialogContent classes={{ root: classes.overflowVisible }}>
           {/* <DialogContentText>To subscribe to this website, please enter your email address here. We will send updates occasionally.</DialogContentText> */}
           <TextField id="groupname" label="Name" fullWidth />
-          {/* <MultiSelect label="Registers" placeholder="Select Registers" suggestions={registers} /> */}
+          <MultiSelect label="Registers" placeholder="Select Registers" options={registers} getOptionLabel={r => r.name} getOptionValue={r => r.id} />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setIsAddModalOpen(false)} color="primary">

@@ -1,10 +1,12 @@
-import React, { FC, CSSProperties, HTMLAttributes } from 'react';
+import React, { FC, CSSProperties, HTMLAttributes, PropsWithChildren, ReactElement } from 'react';
 import { Theme, Paper, Chip, MenuItem, Typography } from '@material-ui/core';
 import TextField, { BaseTextFieldProps } from '@material-ui/core/TextField';
 import { emphasize } from '@material-ui/core/styles/colorManipulator';
 import { makeStyles, useTheme } from '@material-ui/styles';
 import { Cancel as CancelIcon } from '@material-ui/icons';
 import Select from 'react-select';
+import { Props as StatemanagerProps } from 'react-select/lib/stateManager';
+import { Props as SelectProps } from 'react-select/lib/Select';
 import { ValueContainerProps } from 'react-select/lib/components/containers';
 import { ControlProps } from 'react-select/lib/components/Control';
 import { MenuProps, NoticeProps } from 'react-select/lib/components/Menu';
@@ -12,13 +14,9 @@ import { MultiValueProps } from 'react-select/lib/components/MultiValue';
 import { OptionProps } from 'react-select/lib/components/Option';
 import { PlaceholderProps } from 'react-select/lib/components/Placeholder';
 import { SingleValueProps } from 'react-select/lib/components/SingleValue';
-import { ValueType } from 'react-select/lib/types';
+import { ValueType, ActionMeta } from 'react-select/lib/types';
 import classNames from 'classnames';
-
-export interface Suggestion {
-  label: string;
-  value: string;
-}
+import { getOptionLabel, getOptionValue } from 'react-select/lib/builtins';
 
 const useStyles = makeStyles((theme: Theme) => ({
   root: {
@@ -66,8 +64,7 @@ const useStyles = makeStyles((theme: Theme) => ({
   }
 }));
 
-type NoOptionsMessageComponentProps = NoticeProps<Suggestion>;
-const NoOptionsMessage: FC<NoOptionsMessageComponentProps> = (props: NoOptionsMessageComponentProps) => (
+const NoOptionsMessage = <T extends {}>(props: NoticeProps<T>): ReactElement | null => (
   <Typography color="textSecondary" className={props.selectProps.classes.noOptionsMessage} {...props.innerProps}>
     {props.children}
   </Typography>
@@ -76,8 +73,7 @@ const NoOptionsMessage: FC<NoOptionsMessageComponentProps> = (props: NoOptionsMe
 type InputComponentProps = Pick<BaseTextFieldProps, 'inputRef'> & HTMLAttributes<HTMLDivElement>;
 const inputComponent: FC<InputComponentProps> = ({ inputRef, ...props }: InputComponentProps) => <div ref={inputRef} {...props} />;
 
-type ControlComponentProps = ControlProps<Suggestion>;
-const Control: FC<ControlComponentProps> = (props: ControlComponentProps) => (
+const Control = <T extends {}>(props: ControlProps<T>): ReactElement | null => (
   <TextField
     fullWidth
     InputProps={{
@@ -93,8 +89,7 @@ const Control: FC<ControlComponentProps> = (props: ControlComponentProps) => (
   />
 );
 
-type OptionComponenetProps = OptionProps<Suggestion>;
-const Option: FC<OptionComponenetProps> = (props: OptionComponenetProps) => (
+const Option = <T extends {}>(props: OptionProps<T>): ReactElement | null => (
   <MenuItem
     innerRef={props.innerRef}
     selected={props.isFocused}
@@ -108,25 +103,21 @@ const Option: FC<OptionComponenetProps> = (props: OptionComponenetProps) => (
   </MenuItem>
 );
 
-type PlaceholderComponentProps = PlaceholderProps<Suggestion>;
-const Placeholder: FC<PlaceholderComponentProps> = (props: PlaceholderComponentProps) => (
+const Placeholder = <T extends {}>(props: PlaceholderProps<T>): ReactElement | null => (
   <Typography color="textSecondary" className={props.selectProps.classes.placeholder} {...props.innerProps}>
     {props.children}
   </Typography>
 );
 
-type SingleValueComponentProps = SingleValueProps<Suggestion>;
-const SingleValue: FC<SingleValueComponentProps> = (props: SingleValueComponentProps) => (
+const SingleValue = <T extends {}>(props: SingleValueProps<T>): ReactElement | null => (
   <Typography className={props.selectProps.classes.singleValue} {...props.innerProps}>
     {props.children}
   </Typography>
 );
 
-type ValueContainerComponentProps = ValueContainerProps<Suggestion>;
-const ValueContainer: FC<ValueContainerComponentProps> = (props: ValueContainerComponentProps) => <div className={props.selectProps.classes.valueContainer}>{props.children}</div>;
+const ValueContainer = <T extends {}>(props: ValueContainerProps<T>): ReactElement | null => <div className={props.selectProps.classes.valueContainer}>{props.children}</div>;
 
-type MultiValueComponentProps = MultiValueProps<Suggestion>;
-const MultiValue: FC<MultiValueComponentProps> = (props: MultiValueComponentProps) => (
+const MultiValue = <T extends {}>(props: MultiValueProps<T>): ReactElement | null => (
   <Chip
     tabIndex={-1}
     label={props.children}
@@ -138,8 +129,7 @@ const MultiValue: FC<MultiValueComponentProps> = (props: MultiValueComponentProp
   />
 );
 
-type MenuComponentProps = MenuProps<Suggestion>;
-const Menu: FC<MenuComponentProps> = (props: MenuComponentProps) => (
+const Menu = <T extends {}>(props: MenuProps<T>): ReactElement | null => (
   <Paper square className={props.selectProps.classes.paper} {...props.innerProps}>
     {props.children}
   </Paper>
@@ -156,16 +146,12 @@ const components = {
   ValueContainer
 };
 
-export interface MuiReactSelectProps {
+export interface MuiReactSelectProps<T extends {}> extends StatemanagerProps<T>, SelectProps<T> {
   label?: string;
-  placeholder?: string;
-  suggestions?: ReadonlyArray<Suggestion>;
-  value: ValueType<Suggestion>;
-  onChange?: (value: ValueType<Suggestion>) => void;
   isMulti?: boolean;
 }
 
-const MuiReactSelect: FC<MuiReactSelectProps> = ({ label, placeholder, suggestions, value, onChange, isMulti }) => {
+const MuiReactSelect = <T extends {}>({ label, isMulti, ...others }: PropsWithChildren<MuiReactSelectProps<T>>): ReactElement | null => {
   const classes = useStyles();
   const theme = useTheme() as Theme;
 
@@ -185,12 +171,9 @@ const MuiReactSelect: FC<MuiReactSelectProps> = ({ label, placeholder, suggestio
       classes={classes}
       styles={selectStyles}
       TextFieldProps={isMulti ? { label, InputLabelProps: { shrink: true } } : { label }}
-      options={suggestions}
       components={components}
-      value={value}
-      onChange={onChange}
-      placeholder={placeholder}
       isMulti={isMulti}
+      {...others}
     />
   );
 };

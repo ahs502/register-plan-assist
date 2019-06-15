@@ -1,5 +1,6 @@
 import { Router } from 'express';
-import asyncMiddleware from '../utils/asyncMiddleware';
+import { Db } from 'mongodb';
+import { asyncDatabaseMiddleware } from '../utils/storage';
 
 import { MasterDataModel } from '@business/master-data';
 import { AircraftGroupModel } from '@business/master-data/AircraftGroup';
@@ -8,9 +9,11 @@ import { ConstraintModel } from '@business/master-data/Constraint';
 const router = Router();
 export default router;
 
+async function Handler(data: any, db: Db) {}
+
 router.post(
   'get-all',
-  asyncMiddleware(async data => {
+  asyncDatabaseMiddleware(async (data, db) => {
     const collectionSelector: { readonly [collectionName in keyof MasterDataModel]?: true } | undefined = data.collectionSelector;
 
     if (!collectionSelector || collectionSelector.aircraftTypes) {
@@ -23,7 +26,7 @@ router.post(
 
 router.post(
   'add-or-edit-aircraft-group',
-  asyncMiddleware(async data => {
+  asyncDatabaseMiddleware(async (data, db) => {
     const aircraftGroup: Readonly<AircraftGroupModel> = data.aircraftGroup;
 
     // do it...
@@ -34,7 +37,7 @@ router.post(
 
 router.post(
   'remove-aircraft-group',
-  asyncMiddleware(async data => {
+  asyncDatabaseMiddleware(async (data, db) => {
     const aircraftGroupId: string = data.aircraftGroupId;
 
     // do it...
@@ -45,7 +48,7 @@ router.post(
 
 router.post(
   'add-or-edit-constraint',
-  asyncMiddleware(async data => {
+  asyncDatabaseMiddleware(async (data, db) => {
     const constraint: Readonly<ConstraintModel> = data.constraint;
 
     // do it...
@@ -56,7 +59,7 @@ router.post(
 
 router.post(
   'remove-constraint',
-  asyncMiddleware(async data => {
+  asyncDatabaseMiddleware(async (data, db) => {
     const constraintId: string = data.constraintId;
 
     // do it...

@@ -3,6 +3,6 @@ export interface Config {
   mongodbDatabase: string;
 }
 
-const config: Readonly<Config> = require('../config');
+const config: Readonly<Config> = require('../config').default;
 
 export default config;

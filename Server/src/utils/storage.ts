@@ -1,8 +1,9 @@
 import { MongoClient, Db } from 'mongodb';
 import config from '../config';
+import asyncMiddleware from './asyncMiddleware';
 
-export function database<T>(task: (db: Db) => T | Promise<T>): Promise<T> {
-  return MongoClient.connect(config.mongodbUrl).then(client => {
+export function database<T = any>(task: (db: Db) => T | Promise<T>): Promise<T> {
+  return MongoClient.connect(config.mongodbUrl, { useNewUrlParser: true }).then(client => {
     let db = client.db(config.mongodbDatabase);
     return new Promise<T>((resolve, reject) => {
       try {
@@ -21,4 +22,8 @@ export function database<T>(task: (db: Db) => T | Promise<T>): Promise<T> {
       }
     );
   });
+}
+
+export function asyncDatabaseMiddleware<T = any>(task: (data: any, db: Db) => T | Promise<T>) {
+  return asyncMiddleware(data => database(db => task(data, db)));
 }

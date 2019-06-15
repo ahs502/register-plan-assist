@@ -1,4 +1,4 @@
-import AutoArrangerOptions from './AutoArrangerOptions';
+import AutoArrangerOptions, { defaultAutoArrangerOptions } from './AutoArrangerOptions';
 import { DummyAircraftRegisterModel, AircraftRegisters, AircraftRegisterOptionsDictionary } from './AircraftRegister';
 import FlightRequirement, { FlightRequirementModel } from './FlightRequirement';
 
@@ -27,7 +27,7 @@ export interface PreplanHeaderModel {
 }
 
 export interface PreplanModel extends PreplanHeaderModel {
-  autoArrangerOptions: Readonly<AutoArrangerOptions>;
+  autoArrangerOptions?: Readonly<AutoArrangerOptions>;
 
   dummyAircraftRegisters: ReadonlyArray<Readonly<DummyAircraftRegisterModel>>;
   aircraftRegisterOptionsDictionary: Readonly<AircraftRegisterOptionsDictionary>;
@@ -85,7 +85,7 @@ export default class Preplan implements PreplanHeaderModel {
     this.endDate = new Date(raw.endDate);
     this.simulationId = raw.simulationId;
     this.simulationName = raw.simulationName;
-    this.autoArrangerOptions = raw.autoArrangerOptions;
+    this.autoArrangerOptions = raw.autoArrangerOptions || defaultAutoArrangerOptions;
     this.aircraftRegisters = new AircraftRegisters(raw.dummyAircraftRegisters, raw.aircraftRegisterOptionsDictionary);
     this.flightRequirements = raw.flightRequirements.map(f => new FlightRequirement(f));
   }

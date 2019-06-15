@@ -1,6 +1,12 @@
+import '@utils/extensions.implementation';
+
 import * as path from 'path';
 import * as http from 'http';
 import * as express from 'express';
+
+// For safe mode (without side effects, see: https://www.npmjs.com/package/colors):
+// import * as colors from 'colors/safe'
+import 'colors';
 
 const app = express();
 
@@ -28,5 +34,5 @@ server.on('error', error => {
 });
 
 server.on('listening', () => {
-  console.log(`Server is listening on port ${port}...`);
+  console.log(('>>'.bold + ` Server is listening on port ${String(port).bold}:\n`).green);
 });

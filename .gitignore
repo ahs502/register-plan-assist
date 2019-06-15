@@ -45,6 +45,8 @@ Thumbs.db
 ########################################################################
 
 # compiled output
+/Server/temp
+/Server/make
 /Server/dist
 
 # dependencies

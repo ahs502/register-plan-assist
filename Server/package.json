@@ -6,30 +6,31 @@
   "main": "src/index.ts",
   "scripts": {
     "build": "gulp build",
-    "start": "nodemon --watch src --watch index.ts --ext ts,js,json --verbose --exec npm run start-once",
-    "start-once": "cross-env NODE_ENV=development ts-node --project tsconfig.json src/index.ts",
+    "build-dev": "gulp build-dev",
+    "start": "nodemon --watch src --watch ../Client/src/utils/extensions.* --watch ../Client/src/business --watch ../Client/src/validators --ext ts,js,json --verbose --exec \"npm run build-dev && npm run start-once\"",
+    "start-once": "cross-env NODE_ENV=development node make",
     "test": "echo \"Error: no test specified\" && exit 1",
     "gulp": "gulp",
-    "tsc": "tsc",
-    "ts-node": "ts-node"
+    "tsc": "tsc"
   },
   "author": "Mahan Air",
   "license": "ISC",
   "dependencies": {
+    "colors": "^1.3.3",
     "express": "^4.16.4",
-    "mongodb": "^3.2.4",
-    "ts-node": "^8.2.0"
+    "mongodb": "^3.2.4"
   },
   "devDependencies": {
+    "@types/colors": "^1.2.1",
     "@types/express": "^4.16.1",
     "@types/mongodb": "^3.1.26",
     "@types/node": "^11.13.6",
     "cross-env": "^5.2.0",
     "del": "^4.1.0",
     "gulp": "^4.0.1",
+    "gulp-modify-file": "^1.0.1",
     "gulp-typescript": "^5.0.1",
     "nodemon": "^1.18.11",
-    "typescript": "^3.4.4",
-    "watch": "^1.0.2"
+    "typescript": "^3.5.1"
   }
 }

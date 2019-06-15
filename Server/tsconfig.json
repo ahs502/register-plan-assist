@@ -4,8 +4,10 @@
     "module": "commonjs",
     "baseUrl": ".",
     "paths": {
-      "@business/*": ["../Client/src/business/*"]
+      "@utils/*": ["../Client/src/utils/*"],
+      "@business/*": ["../Client/src/business/*"],
+      "@validators/*": ["../Client/src/validators/*"]
     }
   },
-  "include": ["src/index.ts", "src/**/*.ts", "../Client/src/business/**/*.ts"]
+  "include": ["src/index.ts", "src/**/*.ts", "../Client/src/utils/extensions.*.ts", "../Client/src/business/**/*.ts", "../Client/src/validators/**/*.ts"]
 }

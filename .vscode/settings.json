@@ -2,6 +2,8 @@
   "files.exclude": {
     "**/node_modules": true,
     "dist": true,
+    "Server/temp": true,
+    "Server/make": true,
     "Server/dist": true,
     "Client/build": true
   },

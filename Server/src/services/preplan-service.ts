@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { Db } from 'mongodb';
-import { asyncDatabaseMiddleware } from '../utils/storage';
+import { Db, ObjectID, ClientSession } from 'mongodb';
+import { asyncMiddlewareWithDatabase, asyncMiddlewareWithTransaction } from '../utils/asyncMiddleware';
 
 import PreplanValidator from '@validators/PreplanValidator';
 
@@ -15,21 +15,21 @@ export default router;
 //TODO: Replace these with a better implementation:
 const currentUser = { id: '1001', name: 'MAHANAIR\\123456', displayName: 'Hessamoddin Khan' };
 
-router.post('/get-all-headers', asyncDatabaseMiddleware(getAllHeadersHandler));
-router.post('/create-empty', asyncDatabaseMiddleware(createEmptyHandler));
-router.post('/clone', asyncDatabaseMiddleware(cloneHandler));
-router.post('/get', asyncDatabaseMiddleware(getHandler));
-router.post('/edit-header', asyncDatabaseMiddleware(editHeaderHandler));
-router.post('/finalize', asyncDatabaseMiddleware(finalizeHandler));
-router.post('/remove', asyncDatabaseMiddleware(removeHandler));
-router.post('/update-auto-arranger-options', asyncDatabaseMiddleware(updateAutoArrangerOptionsHandler));
-router.post('/add-or-edit-dummy-aircraft-register', asyncDatabaseMiddleware(addOrEditDummyAircraftRegisterHandler));
-router.post('/remove-dummy-aircraft-register', asyncDatabaseMiddleware(removeDummyAircraftRegisterHandler));
-router.post('/update-aircraft-register-options-dictionary', asyncDatabaseMiddleware(updateAircraftRegisterOptionsdictionaryHandler));
-router.post('/add-or-edit-flight-requirement', asyncDatabaseMiddleware(addOrEditFlightRequirementHandler));
-router.post('/remove-flight-requirement', asyncDatabaseMiddleware(removeFlightRequirementHandler));
+router.post('/get-all-headers', asyncMiddlewareWithDatabase(getAllHeadersHandler));
+router.post('/create-empty', asyncMiddlewareWithDatabase(createEmptyHandler));
+router.post('/clone', asyncMiddlewareWithTransaction(cloneHandler));
+router.post('/get', asyncMiddlewareWithDatabase(getHandler));
+router.post('/edit-header', asyncMiddlewareWithDatabase(editHeaderHandler));
+router.post('/finalize', asyncMiddlewareWithDatabase(finalizeHandler));
+router.post('/remove', asyncMiddlewareWithDatabase(removeHandler));
+router.post('/update-auto-arranger-options', asyncMiddlewareWithDatabase(updateAutoArrangerOptionsHandler));
+router.post('/add-or-edit-dummy-aircraft-register', asyncMiddlewareWithDatabase(addOrEditDummyAircraftRegisterHandler));
+router.post('/remove-dummy-aircraft-register', asyncMiddlewareWithDatabase(removeDummyAircraftRegisterHandler));
+router.post('/update-aircraft-register-options-dictionary', asyncMiddlewareWithDatabase(updateAircraftRegisterOptionsdictionaryHandler));
+router.post('/add-or-edit-flight-requirement', asyncMiddlewareWithDatabase(addOrEditFlightRequirementHandler));
+router.post('/remove-flight-requirement', asyncMiddlewareWithDatabase(removeFlightRequirementHandler));
 
-async function getAllHeadersHandler(data: any, db: Db) {
+async function getAllHeadersHandler(db: Db, {}) {
   const raw = await db
     .collection('preplans')
     .find()
@@ -54,16 +54,14 @@ async function getAllHeadersHandler(data: any, db: Db) {
   raw.forEach(item => {
     item.id = item._id.toHexString();
     delete item._id;
+    item.parentPreplanId = item.parentPreplanId.toHexString();
   });
   const result: PreplanHeaderModel[] = raw;
 
   return result;
 }
 
-async function createEmptyHandler(data: any, db: Db) {
-  const name: string = data.name;
-  const startDate: Date = new Date(data.startDate);
-  const endDate: Date = new Date(data.endDate);
+async function createEmptyHandler(db: Db, { name, startDate, endDate }) {
   PreplanValidator.createEmptyValidate(name, startDate, endDate).throwIfErrorsExsit();
 
   const preplan: Omit<PreplanModel, 'id' | 'flightRequirements'> = {
@@ -77,116 +75,134 @@ async function createEmptyHandler(data: any, db: Db) {
     parentPreplanName: undefined,
     creationDateTime: new Date(),
     lastEditDateTime: new Date(),
-    startDate,
-    endDate,
+    startDate: new Date(startDate),
+    endDate: new Date(endDate),
     simulationId: undefined,
     simulationName: undefined,
     autoArrangerOptions: undefined,
     dummyAircraftRegisters: [],
     aircraftRegisterOptionsDictionary: {}
   };
+  const result = await db.collection('preplans').insertOne(preplan);
+  const preplanId = result.insertedId.toHexString();
 
-  //const result = await db.collection('preplans').insertOne(preplan);
-  //const id = result.insertedId.toHexString();
-  const id = 'sdfdsfsdfdsfdsfsdfsdf';
-
-  return id;
+  return preplanId;
 }
 
-async function cloneHandler(data: any, db: Db) {
-  const id: string = data.id;
-  const name: string = data.name;
-  const startDate: Date = new Date(data.startDate);
-  const endDate: Date = new Date(data.endDate);
+async function cloneHandler(db: Db, session: ClientSession, { id, name, startDate, endDate }) {
+  PreplanValidator.cloneValidate(name, startDate, endDate).throwIfErrorsExsit();
 
-  // do it...
+  const sourcePreplan = await db.collection('preplans').findOne({ _id: ObjectID.createFromHexString(id) }, { session });
+  if (!sourcePreplan) throw 'Source preplan is not found.';
 
-  return '12345489';
+  const sourceFlightRequrements = await db
+    .collection('flightRequirements')
+    .find({ preplanId: ObjectID.createFromHexString(id) }, { session })
+    .toArray();
+
+  const clonedPreplan: Omit<PreplanModel, 'id' | 'flightRequirements'> = {
+    name,
+    published: false,
+    finalized: false,
+    userId: currentUser.id,
+    userName: currentUser.name,
+    userDisplayName: currentUser.displayName,
+    parentPreplanId: sourcePreplan._id,
+    parentPreplanName: sourcePreplan.name,
+    creationDateTime: new Date(),
+    lastEditDateTime: new Date(),
+    startDate: new Date(startDate),
+    endDate: new Date(endDate),
+    simulationId: undefined,
+    simulationName: undefined,
+    autoArrangerOptions: sourcePreplan.autoArrangerOptions,
+    dummyAircraftRegisters: sourcePreplan.dummyAircraftRegisters,
+    aircraftRegisterOptionsDictionary: sourcePreplan.aircraftRegisterOptionsDictionary
+  };
+  const result = await db.collection('preplans').insertOne(clonedPreplan, { session });
+  const clonedPreplanObjectId = result.insertedId;
+
+  const clonedFlightRequirements = sourceFlightRequrements.map(f => {
+    delete f._id;
+    f.preplanId = clonedPreplanObjectId;
+    return f;
+  });
+  await db.collection('flightRequirements').insertMany(clonedFlightRequirements, { session });
+
+  const clonedPreplanId = clonedPreplanObjectId.toHexString();
+
+  return clonedPreplanId;
 }
 
-async function getHandler(data: any, db: Db) {
-  const id: string = data.id;
-
+async function getHandler(db: Db, { id }) {
   // do it...
 
   return { id } as PreplanModel;
 }
 
-async function editHeaderHandler(data: any, db: Db) {
-  const id: string = data.id;
-  const name: string = data.id;
-  const published: boolean = data.id;
-  const startDate: Date = new Date(data.id);
-  const endDate: Date = new Date(data.id);
+async function editHeaderHandler(db: Db, { id, name, published, startDate, endDate }) {
+  // const id: string = data.id;
+  // const name: string = data.id;
+  // const published: boolean = data.id;
+  // const startDate: Date = new Date(data.id);
+  // const endDate: Date = new Date(data.id);
 
   // do it...
 
   return [] as PreplanHeaderModel[];
 }
 
-async function finalizeHandler(data: any, db: Db) {
-  const id: string = data.id;
-
+async function finalizeHandler(db: Db, { id }) {
   // do it...
 
   return { id } as PreplanModel;
 }
 
-async function removeHandler(data: any, db: Db) {
-  const id: string = data.id;
-
+async function removeHandler(db: Db, { id }) {
   // do it...
 
   return true;
 }
 
-async function updateAutoArrangerOptionsHandler(data: any, db: Db) {
-  const id: string = data.id;
-  const autoArrangerOptions: Readonly<AutoArrangerOptions> = data.autoArrangerOptions;
+async function updateAutoArrangerOptionsHandler(db: Db, { id, autoArrangerOptions }) {
+  // const autoArrangerOptions: Readonly<AutoArrangerOptions> = data.autoArrangerOptions;
 
   // do it...
 
   return autoArrangerOptions;
 }
 
-async function addOrEditDummyAircraftRegisterHandler(data: any, db: Db) {
-  const id: string = data.id;
-  const dummyAircraftRegister: DummyAircraftRegisterModel = data.dummyAircraftRegister;
+async function addOrEditDummyAircraftRegisterHandler(db: Db, { id, dummyAircraftRegister }) {
+  // const dummyAircraftRegister: DummyAircraftRegisterModel = data.dummyAircraftRegister;
 
   // do it...
 
   return { id } as PreplanModel;
 }
 
-async function removeDummyAircraftRegisterHandler(data: any, db: Db) {
-  const dummyAircraftRegisterId: string = data.dummyAircraftRegisterId;
-
+async function removeDummyAircraftRegisterHandler(db: Db, { dummyAircraftRegisterId }) {
   // do it...
 
   return {} as PreplanModel;
 }
 
-async function updateAircraftRegisterOptionsdictionaryHandler(data: any, db: Db) {
-  const id: string = data.id;
-  const aircraftRegisterOptionsDictionary: Readonly<AircraftRegisterOptionsDictionary> = data.aircraftRegisterOptionsDictionary;
+async function updateAircraftRegisterOptionsdictionaryHandler(db: Db, { id, aircraftRegisterOptionsDictionary }) {
+  // const aircraftRegisterOptionsDictionary: Readonly<AircraftRegisterOptionsDictionary> = data.aircraftRegisterOptionsDictionary;
 
   // do it...
 
   return { id } as PreplanModel;
 }
 
-async function addOrEditFlightRequirementHandler(data: any, db: Db) {
-  const id: string = data.id;
-  const flightRequirement: Readonly<FlightRequirementModel> = data.flightRequirement;
+async function addOrEditFlightRequirementHandler(db: Db, { id, flightRequirement }) {
+  // const flightRequirement: Readonly<FlightRequirementModel> = data.flightRequirement;
 
   // do it...
 
   return flightRequirement;
 }
 
-async function removeFlightRequirementHandler(data: any, db: Db) {
-  const flightRequirementId: string = data.flightRequirementId;
-
+async function removeFlightRequirementHandler(db: Db, { flightRequirementId }) {
   // do it...
 
   return true;

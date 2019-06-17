@@ -103,6 +103,7 @@ export default class MasterData {
 
 ///////////////////////////////////////////////////////////////////////////
 
+
 MasterData.recieve({
 
   aircraftRegisters: [
@@ -675,7 +676,14 @@ MasterData.recieve({
     { id: '14', name: 'S18', startDate: new Date(Date.UTC(2018, 3, 25)), endDate: new Date(Date.UTC(2017, 10, 27)), seasonTypeId: '2' },
     { id: '15', name: 'W18', startDate: new Date(Date.UTC(2018, 10, 28)), endDate: new Date(Date.UTC(2017, 3, 30)), seasonTypeId: '3' },
     { id: '16', name: 'S19', startDate: new Date(Date.UTC(2019, 3, 31)), endDate: new Date(Date.UTC(2017, 10, 26)), seasonTypeId: '2' }],
-  aircraftGroups: [
-    { id: '1', name: 'GPS', aircraftRegisterIds: ['7092902880000001088', '7092902880000000270', '7092902880000001060', '7092902880000000970', '7092902880000000348', '7092902880000001025', '7092902880000001269', '7092902880000001120', '7092902880000000282', '7092902880000000291'] }],
-  constraints: [],
+    aircraftGroups: [
+    { id: '1', name: 'GPS', aircraftRegisterIds: ['7092902880000001088', '7092902880000000270', '7092902880000001060', '7092902880000000970', '7092902880000000348', '7092902880000001025', '7092902880000001269', '7092902880000001120', '7092902880000000282', '7092902880000000291'] },
+    { id: '2', name: 'ACT', aircraftRegisterIds: ['7092902880000001088', '7092902880000000270', '7092902880000001060', '7092902880000000970', '7092902880000000348', '7092902880000001025'] },
+  ],
+  constraints: [
+    { id: '1', name: 'Dont plan APU INOP for PEK and PVG' },
+    { id: '2', name: 'MMA & MMB must not get to China' },
+    { id: '3', name: 'Never plan DUS | BEG | VAR with aircraft type A346'},
+  ],
 })
+

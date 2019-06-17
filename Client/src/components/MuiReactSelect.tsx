@@ -170,7 +170,9 @@ const MuiReactSelect = <T extends {}>({ label, isMulti, ...others }: PropsWithCh
       className={classes.root}
       classes={classes}
       styles={selectStyles}
-      TextFieldProps={isMulti ? { label, InputLabelProps: { shrink: true } } : { label }}
+      TextFieldProps={
+        isMulti ? { label, InputLabelProps: { shrink: true, htmlFor: 'react-select-multiple' } } : { label, InputLabelProps: { shrink: true, htmlFor: 'react-select-single' } }
+      }
       components={components}
       isMulti={isMulti}
       {...others}

@@ -9,12 +9,13 @@ const useStyles = makeStyles((theme: Theme) => ({
     alignItems: 'stretch',
     margin: 0,
     padding: 0,
-    height: 'calc(100vh - 104px)'
+    height: 'calc(100vh - 105px)'
   },
   list: {
     width: 256,
     border: 'none',
-    borderRight: '1px solid grey',
+    borderRight: '1px solid',
+    borderColor: theme.palette.grey[300],
     margin: 0,
     padding: 0,
     paddingTop: theme.spacing(3),

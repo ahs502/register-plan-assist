@@ -1,6 +1,7 @@
 import React, { FC } from 'react';
-import { Theme, Card, CardContent, Typography, CardActionArea, MenuList, MenuItem } from '@material-ui/core';
+import { Theme, Card, CardContent, Typography, CardActionArea, MenuList, MenuItem, List, ListItem, ListItemText } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
+import classNames from 'classnames';
 
 const useStyles = makeStyles((theme: Theme) => ({
   root: {
@@ -64,21 +65,22 @@ interface SectionListProps {
   sections: SectionItem[];
   selectedSection?: SectionItem;
   onSectionSelect?: (selectedSection: SectionItem) => void;
+  className?: string;
 }
 
-const SectionList: FC<SectionListProps> = ({ children, sections, selectedSection, onSectionSelect }) => {
+const SectionList: FC<SectionListProps> = ({ children, sections, selectedSection, onSectionSelect, className }) => {
   const classes = useStyles();
 
   return (
     <div className={classes.root}>
-      <div className={classes.list}>
-        <MenuList>
+      <div className={classNames(classes.list, className)}>
+        <List>
           {sections.map(section => (
-            <MenuItem key={section.title} onClick={() => onSectionSelect && onSectionSelect(section)}>
-              {section.title}
-            </MenuItem>
+            <ListItem key={section.title} button selected={selectedSection === section} onClick={() => onSectionSelect && onSectionSelect(section)}>
+              <ListItemText primary={<Typography variant="subtitle2">{section.title}</Typography>} />
+            </ListItem>
           ))}
-        </MenuList>
+        </List>
       </div>
       <div className={classes.contents}>
         {selectedSection ? (

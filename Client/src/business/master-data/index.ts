@@ -104,7 +104,6 @@ export default class MasterData {
 ///////////////////////////////////////////////////////////////////////////
 
 MasterData.recieve({
-
   aircraftRegisters: [
     { id: '7092902880000000254', name: 'MHA', aircraftTypeId: '7092902770000000002' },
     { id: '7092902880000000255', name: 'MHE', aircraftTypeId: '7092902770000000002' },

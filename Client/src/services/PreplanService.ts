@@ -32,7 +32,7 @@ export default class PreplanService {
   /**
    * Provides the complete model of a preplan by its id.
    */
-  static async get(id: string): Promise<Readonly<ServerResult<PreplanModel>>> {
+  static async get(id: string): Promise<ServerResult<Readonly<PreplanModel>>> {
     return await request('get', { id });
   }
 
@@ -52,9 +52,9 @@ export default class PreplanService {
   }
 
   /**
-   * Removes a preplan completely and provides the success status of that operation.
+   * Removes a preplan completely and provides the list of all user related or public preplan headers.
    */
-  static async remove(id: string): Promise<ServerResult<boolean>> {
+  static async remove(id: string): Promise<ServerResult<ReadonlyArray<Readonly<PreplanHeaderModel>>>> {
     return await request('remove', { id });
   }
 

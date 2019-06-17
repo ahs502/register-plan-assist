@@ -5,11 +5,11 @@ export default class Validation<K extends string> {
   messages: { [key in K]?: string } = {};
   badges: string[] = [];
 
-  check(badge: string, requiredBadges: string[], validityCheck: () => boolean, key: K, message: string): void {
+  check(badge: string, requiredBadges: string[], validityCheck: () => boolean, key?: K, message?: string): void {
     if (requiredBadges.find(b => !this.badges.includes(b))) return;
-    validityCheck() ? this.badges.push(badge) : ((this.ok = false), (this.messages[key] = message));
+    validityCheck() ? this.badges.push(badge) : ((this.ok = false), key && (this.messages[key] = message));
   }
   throwIfErrorsExsit(): void {
-    if (!this.ok) throw Object.values(this.messages).find(Boolean);
+    if (!this.ok) throw Object.values(this.messages).find(Boolean) || 'Invalid API input arguments.';
   }
 }

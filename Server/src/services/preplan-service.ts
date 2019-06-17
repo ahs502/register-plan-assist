@@ -6,8 +6,11 @@ import PreplanValidator from '@validators/PreplanValidator';
 
 import { PreplanHeaderModel, PreplanModel } from '@business/Preplan';
 import { FlightRequirementModel } from '@business/FlightRequirement';
-import { DummyAircraftRegisterModel, AircraftRegisterOptionsDictionary } from '@business/AircraftRegister';
+import { DummyAircraftRegisterModel } from '@business/AircraftRegister';
 import AutoArrangerOptions from '@business/AutoArrangerOptions';
+import { Daytime } from '@business/Daytime';
+import PreplanSchema, { PreplanHeaderSchema } from '../schemas/PreplanSchema';
+import FlightRequirementSchema from '../schemas/FlightRequirementSchema';
 
 const router = Router();
 export default router;
@@ -21,7 +24,7 @@ router.post('/clone', asyncMiddlewareWithTransaction(cloneHandler));
 router.post('/get', asyncMiddlewareWithDatabase(getHandler));
 router.post('/edit-header', asyncMiddlewareWithDatabase(editHeaderHandler));
 router.post('/finalize', asyncMiddlewareWithDatabase(finalizeHandler));
-router.post('/remove', asyncMiddlewareWithDatabase(removeHandler));
+router.post('/remove', asyncMiddlewareWithTransaction(removeHandler));
 router.post('/update-auto-arranger-options', asyncMiddlewareWithDatabase(updateAutoArrangerOptionsHandler));
 router.post('/add-or-edit-dummy-aircraft-register', asyncMiddlewareWithDatabase(addOrEditDummyAircraftRegisterHandler));
 router.post('/remove-dummy-aircraft-register', asyncMiddlewareWithDatabase(removeDummyAircraftRegisterHandler));
@@ -30,33 +33,13 @@ router.post('/add-or-edit-flight-requirement', asyncMiddlewareWithDatabase(addOr
 router.post('/remove-flight-requirement', asyncMiddlewareWithDatabase(removeFlightRequirementHandler));
 
 async function getAllHeadersHandler(db: Db, {}) {
-  const raw = await db
+  const raw: PreplanHeaderSchema[] = await db
     .collection('preplans')
-    .find()
-    .project({
-      name: 1,
-      published: 1,
-      finalized: 1,
-      userId: 1,
-      userName: 1,
-      userDisplayName: 1,
-      parentPreplanId: 1,
-      parentPreplanName: 1,
-      creationDateTime: 1,
-      lastEditDateTime: 1,
-      startDate: 1,
-      endDate: 1,
-      simulationId: 1,
-      simulationName: 1
-    })
+    .find({ $or: [{ userId: currentUser.id }, { published: true }] })
+    .project(preplanHeaderSchemaProjection)
     .toArray();
 
-  raw.forEach(item => {
-    item.id = item._id.toHexString();
-    delete item._id;
-    item.parentPreplanId = item.parentPreplanId.toHexString();
-  });
-  const result: PreplanHeaderModel[] = raw;
+  const result: PreplanHeaderModel[] = raw.map(convertPreplanHeaderSchemaToModel);
 
   return result;
 }
@@ -64,7 +47,7 @@ async function getAllHeadersHandler(db: Db, {}) {
 async function createEmptyHandler(db: Db, { name, startDate, endDate }) {
   PreplanValidator.createEmptyValidate(name, startDate, endDate).throwIfErrorsExsit();
 
-  const preplan: Omit<PreplanModel, 'id' | 'flightRequirements'> = {
+  const preplan: PreplanSchema = {
     name,
     published: false,
     finalized: false,
@@ -92,15 +75,15 @@ async function createEmptyHandler(db: Db, { name, startDate, endDate }) {
 async function cloneHandler(db: Db, session: ClientSession, { id, name, startDate, endDate }) {
   PreplanValidator.cloneValidate(name, startDate, endDate).throwIfErrorsExsit();
 
-  const sourcePreplan = await db.collection('preplans').findOne({ _id: ObjectID.createFromHexString(id) }, { session });
+  const sourcePreplan: PreplanSchema | null = await db.collection('preplans').findOne({ _id: ObjectID.createFromHexString(id) }, { session });
   if (!sourcePreplan) throw 'Source preplan is not found.';
 
-  const sourceFlightRequrements = await db
+  const sourceFlightRequrements: FlightRequirementSchema[] = await db
     .collection('flightRequirements')
     .find({ preplanId: ObjectID.createFromHexString(id) }, { session })
     .toArray();
 
-  const clonedPreplan: Omit<PreplanModel, 'id' | 'flightRequirements'> = {
+  const clonedPreplan: PreplanSchema = {
     name,
     published: false,
     finalized: false,
@@ -121,63 +104,114 @@ async function cloneHandler(db: Db, session: ClientSession, { id, name, startDat
   };
   const result = await db.collection('preplans').insertOne(clonedPreplan, { session });
   const clonedPreplanObjectId = result.insertedId;
+  const clonedPreplanId = clonedPreplanObjectId.toHexString();
 
-  const clonedFlightRequirements = sourceFlightRequrements.map(f => {
+  const clonedFlightRequirements: FlightRequirementSchema[] = sourceFlightRequrements.map(f => {
     delete f._id;
     f.preplanId = clonedPreplanObjectId;
     return f;
   });
   await db.collection('flightRequirements').insertMany(clonedFlightRequirements, { session });
 
-  const clonedPreplanId = clonedPreplanObjectId.toHexString();
-
   return clonedPreplanId;
 }
 
 async function getHandler(db: Db, { id }) {
-  // do it...
+  const preplan: PreplanSchema | null = await db.collection('preplans').findOne({ _id: ObjectID.createFromHexString(id) });
+  if (!preplan) throw 'Preplan is not found.';
 
-  return { id } as PreplanModel;
+  const flightRequirements: FlightRequirementSchema[] = await db
+    .collection('flightRequirements')
+    .find({ preplanId: ObjectID.createFromHexString(id) })
+    .toArray();
+
+  const result: PreplanModel = convertPreplanSchemaToModel(preplan, flightRequirements);
+
+  return result;
 }
 
 async function editHeaderHandler(db: Db, { id, name, published, startDate, endDate }) {
-  // const id: string = data.id;
-  // const name: string = data.id;
-  // const published: boolean = data.id;
-  // const startDate: Date = new Date(data.id);
-  // const endDate: Date = new Date(data.id);
+  PreplanValidator.editHeaderValidate(name, startDate, endDate).throwIfErrorsExsit();
 
-  // do it...
+  const result = await db
+    .collection('preplans')
+    .findOneAndUpdate({ _id: ObjectID.createFromHexString(id) }, { $set: { name, published, startDate, endDate, lastEditDateTime: new Date() } });
+  if (!result.ok) throw 'Preplan is not updated.';
 
-  return [] as PreplanHeaderModel[];
+  return await getAllHeadersHandler(db, {});
 }
 
 async function finalizeHandler(db: Db, { id }) {
-  // do it...
+  const result = await db.collection('preplans').findOneAndUpdate({ _id: ObjectID.createFromHexString(id) }, { $set: { finalized: true, lastEditDateTime: new Date() } });
+  if (!result.ok) throw 'Preplan is not updated.';
 
-  return { id } as PreplanModel;
+  return await getHandler(db, { id });
 }
 
-async function removeHandler(db: Db, { id }) {
-  // do it...
+async function removeHandler(db: Db, session: ClientSession, { id }) {
+  const preplan: PreplanSchema | null = await db.collection('preplans').findOne({ _id: ObjectID.createFromHexString(id) }, { session });
+  if (!preplan) throw 'Preplan is not found.';
 
-  return true;
+  const updateChildrenResult = await db
+    .collection('preplans')
+    .updateMany(
+      { parentPreplanId: ObjectID.createFromHexString(id) },
+      { $set: { parentPreplanId: preplan.parentPreplanId, parentPreplanName: preplan.parentPreplanName } },
+      { session }
+    );
+  if (!updateChildrenResult.result.ok) throw 'Preplan is not deleted.';
+
+  const deletePreplanResult = await db.collection('preplans').deleteOne({ _id: ObjectID.createFromHexString(id) }, { session });
+  if (!deletePreplanResult.result.ok) throw 'Preplan is not deleted.';
+
+  const deleteFlightRequirementsResult = await db.collection('flightRequirements').deleteMany({ preplanId: ObjectID.createFromHexString(id) }, { session });
+  if (!deleteFlightRequirementsResult.result.ok) throw 'Preplan is not deleted.';
+
+  return await getHandler(db, { id });
 }
 
 async function updateAutoArrangerOptionsHandler(db: Db, { id, autoArrangerOptions }) {
-  // const autoArrangerOptions: Readonly<AutoArrangerOptions> = data.autoArrangerOptions;
+  PreplanValidator.updateAutoArrangerOptionsValidate(autoArrangerOptions).throwIfErrorsExsit();
 
-  // do it...
+  const data: AutoArrangerOptions = {
+    minimumGroundTimeMode: autoArrangerOptions.minimumGroundTimeMode,
+    minimumGroundTimeOffset: autoArrangerOptions.minimumGroundTimeOffset
+  };
+  const result = await db.collection('preplans').findOneAndUpdate({ _id: ObjectID.createFromHexString(id) }, { $set: { autoArrangerOptions: data } });
+  if (!result.ok) throw 'Auto-arranger options are not updated.';
 
-  return autoArrangerOptions;
+  return data;
 }
 
 async function addOrEditDummyAircraftRegisterHandler(db: Db, { id, dummyAircraftRegister }) {
-  // const dummyAircraftRegister: DummyAircraftRegisterModel = data.dummyAircraftRegister;
+  PreplanValidator.addOrEditDummyAircraftRegisterValidate(dummyAircraftRegister).throwIfErrorsExsit();
 
-  // do it...
+  const preplan: PreplanSchema | null = await db.collection('preplans').findOne({ _id: ObjectID.createFromHexString(id) });
+  if (!preplan) throw 'Preplan is not found.';
 
-  return { id } as PreplanModel;
+  const data: DummyAircraftRegisterModel = {
+    id: dummyAircraftRegister.id,
+    name: dummyAircraftRegister.name,
+    aircraftTypeId: dummyAircraftRegister.aircraftTypeId
+  };
+
+  if (preplan.dummyAircraftRegisters.some(a => a.name.toUpperCase() === data.name && a.id !== data.id)) throw 'Name already exists among other dummy aircraft registers.';
+
+  const modifiedDummyAircraftRegisters: DummyAircraftRegisterModel[] = preplan.dummyAircraftRegisters.slice();
+  const index = modifiedDummyAircraftRegisters.findIndex(a => a.id === data.id);
+  if (index < 0) {
+    let count = 1;
+    while (modifiedDummyAircraftRegisters.some(a => a.id === 'dummy-' + count)) count++;
+    data.id = 'dummy-' + count;
+    modifiedDummyAircraftRegisters.push(data);
+  } else {
+    modifiedDummyAircraftRegisters.splice(index, 1, data);
+  }
+
+  const result = await db.collection('preplans').updateOne({ _id: ObjectID.createFromHexString(id) }, { $set: { dummyAircraftRegisters: modifiedDummyAircraftRegisters } });
+  if (!result.result.ok) throw `Aircraft register '${data.name.toUpperCase()}' is not ${data.id ? 'edited' : 'added'}.`;
+
+  return await getHandler(db, { id });
 }
 
 async function removeDummyAircraftRegisterHandler(db: Db, { dummyAircraftRegisterId }) {
@@ -206,4 +240,97 @@ async function removeFlightRequirementHandler(db: Db, { flightRequirementId }) {
   // do it...
 
   return true;
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+
+const preplanHeaderSchemaProjection = {
+  name: 1,
+  published: 1,
+  finalized: 1,
+  userId: 1,
+  userName: 1,
+  userDisplayName: 1,
+  parentPreplanId: 1,
+  parentPreplanName: 1,
+  creationDateTime: 1,
+  lastEditDateTime: 1,
+  startDate: 1,
+  endDate: 1,
+  simulationId: 1,
+  simulationName: 1
+};
+
+function convertPreplanHeaderSchemaToModel(data: PreplanHeaderSchema): PreplanHeaderModel {
+  return {
+    id: data._id!.toHexString(),
+    name: data.name,
+    published: data.published,
+    finalized: data.finalized,
+    userId: data.userId,
+    userName: data.userName,
+    userDisplayName: data.userDisplayName,
+    parentPreplanId: data.parentPreplanId && data.parentPreplanId.toHexString(),
+    parentPreplanName: data.parentPreplanName,
+    creationDateTime: data.creationDateTime,
+    lastEditDateTime: data.lastEditDateTime,
+    startDate: data.startDate,
+    endDate: data.endDate,
+    simulationId: data.simulationId,
+    simulationName: data.simulationName
+  };
+}
+
+function convertPreplanSchemaToModel(data: PreplanSchema, flightRequirements: FlightRequirementSchema[]): PreplanModel {
+  return {
+    id: data._id!.toHexString(),
+    name: data.name,
+    published: data.published,
+    finalized: data.finalized,
+    userId: data.userId,
+    userName: data.userName,
+    userDisplayName: data.userDisplayName,
+    parentPreplanId: data.parentPreplanId && data.parentPreplanId.toHexString(),
+    parentPreplanName: data.parentPreplanName,
+    creationDateTime: data.creationDateTime,
+    lastEditDateTime: data.lastEditDateTime,
+    startDate: data.startDate,
+    endDate: data.endDate,
+    simulationId: data.simulationId,
+    simulationName: data.simulationName,
+    autoArrangerOptions: data.autoArrangerOptions,
+    dummyAircraftRegisters: data.dummyAircraftRegisters,
+    aircraftRegisterOptionsDictionary: data.aircraftRegisterOptionsDictionary,
+    flightRequirements: flightRequirements.map(convertFlightRequirementSchemaToModel)
+  };
+}
+
+function convertFlightRequirementSchemaToModel(data: FlightRequirementSchema): FlightRequirementModel {
+  return {
+    id: data._id!.toHexString(),
+    definition: data.definition,
+    scope: {
+      ...data.scope,
+      times: data.scope.times.map(t => ({
+        stdLowerBound: new Daytime(t.stdLowerBound),
+        stdUpperBound: new Daytime(t.stdUpperBound)
+      }))
+    },
+    days: data.days.map(d => ({
+      scope: {
+        ...d.scope,
+        times: d.scope.times.map(t => ({
+          stdLowerBound: new Daytime(t.stdLowerBound),
+          stdUpperBound: new Daytime(t.stdUpperBound)
+        }))
+      },
+      notes: d.notes,
+      day: d.day,
+      flight: {
+        std: new Daytime(d.flight.std),
+        aircraftRegisterId: d.flight.aircraftRegisterId
+      }
+    })),
+    ignored: data.ignored
+  };
 }

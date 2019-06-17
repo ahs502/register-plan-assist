@@ -3,8 +3,10 @@ import MasterDataItem, { MasterDataItems, MasterDataItemModel } from './MasterDa
 export interface ConstraintModel extends MasterDataItemModel {}
 
 export default class Constraint extends MasterDataItem implements ConstraintModel {
+  readonly description: string;
   constructor(raw: ConstraintModel) {
     super(raw, `description for ${raw.name}` /*TODO: Do something about this! */);
+    this.description = raw.name;
   }
 }
 

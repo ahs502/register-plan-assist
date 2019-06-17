@@ -7,7 +7,11 @@ import AircraftGroupsMasterData from '../components/master-data/AircraftGroupsMa
 import ConstraintsMasterData from '../components/master-data/ConstraintsMasterData';
 import useRouter from '../utils/useRouter';
 
-const useStyles = makeStyles((theme: Theme) => ({}));
+const useStyles = makeStyles((theme: Theme) => ({
+  list: {
+    minWidth: theme.spacing(32)
+  }
+}));
 
 interface MasterDataTable extends SectionItem {
   path: string;
@@ -43,6 +47,7 @@ const MasterDataPage: FC = () => {
         navBarLinks={[{ title: 'Master Data', link: '/master-data' }, masterDataTable && { title: masterDataTable.title, link: `/master-data/${masterDataTable.path}` }]}
       />
       <SectionList
+        className={classes.list}
         sections={masterDataTables}
         selectedSection={masterDataTable}
         onSectionSelect={selectedSection => history.push(`/master-data/${(selectedSection as MasterDataTable).path}`)}

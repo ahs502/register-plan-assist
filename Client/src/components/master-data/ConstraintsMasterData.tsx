@@ -42,7 +42,7 @@ const ConstraintsMasterData: FC = () => {
       >
         {selectedItem ? (
           <div className={classes.contentStyle}>
-            <ConstraintEditor mode="edit" />
+            <ConstraintEditor mode="edit" model={selectedItem} />
           </div>
         ) : (
           <Typography className={classes.constraintTitle} variant="subtitle2">

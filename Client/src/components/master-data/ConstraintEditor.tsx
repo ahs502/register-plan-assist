@@ -63,7 +63,7 @@ const ConstraintEditor: FC<ConstraintEditorProps> = ({ model, mode }) => {
           </Typography>
         </Grid>
         <Grid item xs={12}>
-          <TextField fullWidth margin="dense" label="Title" />
+          <TextField fullWidth margin="dense" label="Title" value={model ? model.name : ''} />
         </Grid>
         <Grid item xs={12}>
           <TextField fullWidth multiline rowsMax="2" rows="2" margin="dense" label="Details" />

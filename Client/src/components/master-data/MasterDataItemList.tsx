@@ -2,7 +2,6 @@ import React, { Fragment, useState, PropsWithChildren, ReactElement } from 'reac
 import { Theme, Typography, ListItem, List, ListItemText, ListItemSecondaryAction, IconButton, Grid } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import { Clear as ClearIcon, Add as AddIcon } from '@material-ui/icons';
-import classNames from 'classnames';
 import Search, { filterOnProperties } from '../Search';
 import MasterDataItem, { MasterDataItems } from '../../business/master-data/MasterDataItem';
 
@@ -10,7 +9,7 @@ const useStyles = makeStyles((theme: Theme) => ({
   root: {
     display: 'flex',
     alignItems: 'stretch',
-    border: '1px solid brown',
+
     margin: 0,
     padding: 0,
     height: 'calc(100vh - 104px)'
@@ -36,8 +35,7 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
   contents: {
     flexGrow: 1,
-    margin: 0,
-    padding: theme.spacing(2)
+    margin: 0
   },
   header: {
     padding: theme.spacing(0, 2)
@@ -98,7 +96,7 @@ const MasterDataItemList = <T extends MasterDataItem>({
         <br />
         <List>
           {filteredItems.map(item => (
-            <ListItem key={item.name} role={undefined} button onClick={() => onItemSelect && onItemSelect(item)}>
+            <ListItem key={item.name} selected={selectedItem === item} role={undefined} button onClick={() => onItemSelect && onItemSelect(item)}>
               <ListItemText
                 primary={<Typography variant="subtitle2">{item.name}</Typography>}
                 secondary={<Fragment>{item.description && <Typography component="span">{item.description}</Typography>}</Fragment>}

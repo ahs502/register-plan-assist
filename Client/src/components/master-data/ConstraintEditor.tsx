@@ -3,10 +3,10 @@ import { Theme, Typography, TextField, Grid, RadioGroup, Radio, FormControlLabel
 import { makeStyles } from '@material-ui/styles';
 import MultiSelect from '../MultiSelect';
 import MasterData from '../../business/master-data';
-import AutoComplete from '../AutoComplete';
-import Season, { SeasonModel } from '../../business/master-data/Season';
+
+import Season from '../../business/master-data/Season';
 import DaysPicker from '../DaysPicker';
-import { Weekday } from '../../business/Weekday';
+
 import Constraint from '../../business/master-data/Constraint';
 
 const useStyles = makeStyles((theme: Theme) => ({

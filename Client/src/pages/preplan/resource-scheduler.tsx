@@ -19,11 +19,10 @@ const useStyles = makeStyles((theme: Theme) => ({
     backgroundColor: 'transparent'
   },
   sideBarPaper: {
-    top: 106
+    top: 105
   },
   statusBar: {
     height: 54,
-    border: '1px solid orange',
     backgroundColor: theme.palette.extraColors.backupRegister,
     margin: 0,
     padding: theme.spacing(2)

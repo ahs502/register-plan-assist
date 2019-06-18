@@ -1,5 +1,5 @@
 import React, { FC } from 'react';
-import { Theme, Typography } from '@material-ui/core';
+import { Theme, Typography, Button, Grid } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 
 const useStyles = makeStyles((theme: Theme) => ({
@@ -27,15 +27,23 @@ const useStyles = makeStyles((theme: Theme) => ({
 
 export interface SideBarContainerProps {
   label?: string;
+  onAction?: () => void;
 }
 
-const SideBarContainer: FC<SideBarContainerProps> = ({ label, children }) => {
+const SideBarContainer: FC<SideBarContainerProps> = ({ label, onAction, children }) => {
   const classes = useStyles();
 
   return (
     <div className={classes.root}>
       <div className={classes.label}>
-        <Typography> {label}</Typography>
+        <Grid container direction="row" justify="space-between" alignItems="center">
+          <Typography> {label}</Typography>
+          {onAction && (
+            <Button variant="contained" onClick={() => onAction()}>
+              Apply
+            </Button>
+          )}
+        </Grid>
       </div>
       <div className={classes.contents}>{children}</div>
     </div>

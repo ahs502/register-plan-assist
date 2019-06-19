@@ -103,7 +103,7 @@ const ConstraintEditor: FC<ConstraintEditorProps> = ({ model, mode }) => {
           <Typography variant="body2">Airports(s)</Typography>
         </Grid>
         <Grid item xs={9} zeroMinWidth>
-          <MultiSelect label="Airports" placeholder="Select Airports" options={airports} getOptionLabel={r => r.name} getOptionValue={r => r.id} />
+          <MultiSelect placeholder="Select Airports" options={airports} getOptionLabel={r => r.name} getOptionValue={r => r.id} />
         </Grid>
 
         <Grid item xs={3} zeroMinWidth>
@@ -120,13 +120,13 @@ const ConstraintEditor: FC<ConstraintEditorProps> = ({ model, mode }) => {
           <Typography variant="body2">Use the aircraft(s)</Typography>
         </Grid>
         <Grid item xs={6} zeroMinWidth>
-          <MultiSelect label="Registers" placeholder="Select Registers" options={aircraftGroupsAndRegisters} getOptionLabel={r => r.name} getOptionValue={r => r.id} />
+          <MultiSelect placeholder="Select Registers" options={aircraftGroupsAndRegisters} getOptionLabel={r => r.name} getOptionValue={r => r.id} />
         </Grid>
         <Grid item xs={3} zeroMinWidth>
           <Typography variant="body2">except for</Typography>
         </Grid>
         <Grid item xs={9} zeroMinWidth>
-          <MultiSelect label="Registers" placeholder="Select Registers" options={aircraftGroupsAndRegisters} getOptionLabel={r => r.name} getOptionValue={r => r.id} />
+          <MultiSelect placeholder="Select Registers" options={aircraftGroupsAndRegisters} getOptionLabel={r => r.name} getOptionValue={r => r.id} />
         </Grid>
       </Grid>
 
@@ -150,7 +150,7 @@ const ConstraintEditor: FC<ConstraintEditorProps> = ({ model, mode }) => {
             <Select
               variant="outlined"
               value={selectedSeason}
-              input={<Input disabled={mode !== 'add'} />}
+              input={<Input disabled={mode === 'readOnly'} />}
               onChange={e => {
                 setSelectedSeason(e.target.value as string);
               }}

@@ -1,105 +1,4 @@
-import { AircraftTypes, AircraftTypeModel } from './AircraftType';
-import { AircraftRegisters, AircraftRegisterModel } from './AircraftRegister';
-import { Airports, AirportModel } from './Airport';
-import { SeasonTypes, SeasonTypeModel } from './SeasonType';
-import { Seasons, SeasonModel } from './Season';
-import { Stcs, StcModel } from './Stc';
-import { AircraftGroups, AircraftGroupModel } from './AircraftGroup';
-import { Constraints, ConstraintModel } from './Constraint';
-
-import { AircraftIdentity } from './AircraftSelection';
-
-export interface MasterDataModel {
-  aircraftTypes: ReadonlyArray<Readonly<AircraftTypeModel>>;
-  aircraftRegisters: ReadonlyArray<Readonly<AircraftRegisterModel>>;
-  airports: ReadonlyArray<Readonly<AirportModel>>;
-  seasonTypes: ReadonlyArray<Readonly<SeasonTypeModel>>;
-  seasons: ReadonlyArray<Readonly<SeasonModel>>;
-  stcs: ReadonlyArray<Readonly<StcModel>>;
-  aircraftGroups: ReadonlyArray<Readonly<AircraftGroupModel>>;
-  constraints: ReadonlyArray<Readonly<ConstraintModel>>;
-}
-
-/**
- * The global master data collection containter.
- * It is a singleton class with a static property all.
- */
-export default class MasterData {
-  readonly aircraftTypes: AircraftTypes;
-  readonly aircraftRegisters: AircraftRegisters;
-  readonly airports: Airports;
-  readonly seasonTypes: SeasonTypes;
-  readonly seasons: Seasons;
-  readonly stcs: Stcs;
-  readonly aircraftGroups: AircraftGroups;
-  readonly constraints: Constraints;
-
-  /**
-   * All available aircraft identifiers for master data declarations,
-   * including all aircraft registers/types/groups by their names and
-   * all existing or dummy portion of each aircraft types by their names
-   * followed by a '&lowbar;EXISTING' or '&lowbar;DUMMY' postfix.
-   */
-  readonly aircraftIdentities: ReadonlyArray<Readonly<AircraftIdentity>>;
-
-  private constructor(
-    aircraftTypes: AircraftTypes,
-    aircraftRegisters: AircraftRegisters,
-    airports: Airports,
-    seasonTypes: SeasonTypes,
-    seasons: Seasons,
-    stcs: Stcs,
-    aircraftGroups: AircraftGroups,
-    constraints: Constraints
-  ) {
-    this.aircraftTypes = aircraftTypes;
-    this.aircraftRegisters = aircraftRegisters;
-    this.airports = airports;
-    this.seasonTypes = seasonTypes;
-    this.seasons = seasons;
-    this.stcs = stcs;
-    this.aircraftGroups = aircraftGroups;
-    this.constraints = constraints;
-
-    this.aircraftIdentities = ([] as AircraftIdentity[])
-      .concat(this.aircraftRegisters.items.map(a => ({ type: 'REGISTER', name: a.name, entityId: a.id })))
-      .concat(this.aircraftTypes.items.map(a => ({ type: 'TYPE', name: a.name, entityId: a.id })))
-      .concat(this.aircraftTypes.items.map(a => ({ type: 'TYPE_EXISTING', name: a.name + '_EXISTING', entityId: a.id })))
-      .concat(this.aircraftTypes.items.map(a => ({ type: 'TYPE_DUMMY', name: a.name + '_DUMMY', entityId: a.id })))
-      .concat(this.aircraftGroups.items.map(a => ({ type: 'GROUP', name: a.name, entityId: a.id })));
-  }
-
-  /**
-   * Parses the retrieved raw data for master data collections.
-   * @param raw A JSON object containing partially the raw retrieved data for some/all master data collections.
-   */
-  static recieve(raw: Partial<MasterDataModel>) {
-    MasterData.all = new MasterData(
-      AircraftTypes.parse(raw.aircraftTypes) || MasterData.all.aircraftTypes,
-      AircraftRegisters.parse(raw.aircraftRegisters) || MasterData.all.aircraftRegisters,
-      Airports.parse(raw.airports) || MasterData.all.airports,
-      SeasonTypes.parse(raw.seasonTypes) || MasterData.all.seasonTypes,
-      Seasons.parse(raw.seasons) || MasterData.all.seasons,
-      Stcs.parse(raw.stcs) || MasterData.all.stcs,
-      AircraftGroups.parse(raw.aircraftGroups) || MasterData.all.aircraftGroups,
-      Constraints.parse(raw.constraints) || MasterData.all.constraints
-    );
-  }
-
-  /**
-   * The singleton object containing all master data collections data.
-   */
-  static all: MasterData = new MasterData(
-    AircraftTypes.parse([])!,
-    AircraftRegisters.parse([])!,
-    Airports.parse([])!,
-    SeasonTypes.parse([])!,
-    Seasons.parse([])!,
-    Stcs.parse([])!,
-    AircraftGroups.parse([])!,
-    Constraints.parse([])!
-  );
-}
+import MasterData from "./MasterData";
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -562,7 +461,7 @@ MasterData.recieve({
 {id:'7092901520000010173', name: 'SZX', fullName: 'Shenzhen', international: true,utcOffsets:[{dst:false, startDateTimeLocal: new Date(Date.UTC(1970,1,1)), startDateTimeUtc: new Date(Date.UTC(1970,1,1 )), endDateTimeLocal : new Date(Date.UTC(2069,12,31)), endDateTimeUtc: new Date(Date.UTC(2069,12,31)), offset: 480 }] },
 {id:'7092901520000010175', name: 'BNX', fullName: 'Bosnia-Herzegovina', international: true,utcOffsets:[{dst:false, startDateTimeLocal: new Date(Date.UTC(1970,1,1)), startDateTimeUtc: new Date(Date.UTC(1970,1,1 )), endDateTimeLocal : new Date(Date.UTC(2069,12,31)), endDateTimeUtc: new Date(Date.UTC(2069,12,31)), offset: 120 }] },
 {id:'7092901520000001588', name: 'IKA', fullName: 'Imam Khomeini International Airport', international: false,utcOffsets:[{dst:false, startDateTimeLocal: new Date(Date.UTC(1970,1,1)), startDateTimeUtc: new Date(Date.UTC(1970,1,1 )), endDateTimeLocal : new Date(Date.UTC(2069,12,31)), endDateTimeUtc: new Date(Date.UTC(2069,12,31)), offset: 210 }] },{id:'7092901520000001588', name: 'IKA', fullName: 'Imam Khomeini International Airport', international: false,utcOffsets:[{dst:true, startDateTimeLocal: new Date(Date.UTC(2000,3,21)), startDateTimeUtc: new Date(Date.UTC(2000,3,20 )), endDateTimeLocal : new Date(Date.UTC(2000,9,21)), endDateTimeUtc: new Date(Date.UTC(2000,9,20)), offset: 60 }] },{id:'7092901520000001588', name: 'IKA', fullName: 'Imam Khomeini International Airport', international: false,utcOffsets:[{dst:true, startDateTimeLocal: new Date(Date.UTC(2001,3,22)), startDateTimeUtc: new Date(Date.UTC(2001,3,21 )), endDateTimeLocal : new Date(Date.UTC(2001,9,22)), endDateTimeUtc: new Date(Date.UTC(2001,9,21)), offset: 60 }] },{id:'7092901520000001588', name: 'IKA', fullName: 'Imam Khomeini International Airport', international: false,utcOffsets:[{dst:true, startDateTimeLocal: new Date(Date.UTC(2002,3,22)), startDateTimeUtc: new Date(Date.UTC(2002,3,21 )), endDateTimeLocal : new Date(Date.UTC(2002,9,22)), endDateTimeUtc: new Date(Date.UTC(2002,9,21)), offset: 60 }] },{id:'7092901520000001588', name: 'IKA', fullName: 'Imam Khomeini International Airport', international: false,utcOffsets:[{dst:true, startDateTimeLocal: new Date(Date.UTC(2003,3,22)), startDateTimeUtc: new Date(Date.UTC(2003,3,21 )), endDateTimeLocal : new Date(Date.UTC(2003,9,22)), endDateTimeUtc: new Date(Date.UTC(2003,9,21)), offset: 60 }] },{id:'7092901520000001588', name: 'IKA', fullName: 'Imam Khomeini International Airport', international: false,utcOffsets:[{dst:true, startDateTimeLocal: new Date(Date.UTC(2004,3,21)), startDateTimeUtc: new Date(Date.UTC(2004,3,20 )), endDateTimeLocal : new Date(Date.UTC(2004,9,21)), endDateTimeUtc: new Date(Date.UTC(2004,9,20)), offset: 60 }] },{id:'7092901520000001588', name: 'IKA', fullName: 'Imam Khomeini International Airport', international: false,utcOffsets:[{dst:true, startDateTimeLocal: new Date(Date.UTC(2005,3,22)), startDateTimeUtc: new Date(Date.UTC(2005,3,21 )), endDateTimeLocal : new Date(Date.UTC(2005,9,22)), endDateTimeUtc: new Date(Date.UTC(2005,9,21)), offset: 60 }] },{id:'7092901520000001588', name: 'IKA', fullName: 'Imam Khomeini International Airport', international: false,utcOffsets:[{dst:true, startDateTimeLocal: new Date(Date.UTC(2008,3,21)), startDateTimeUtc: new Date(Date.UTC(2008,3,20 )), endDateTimeLocal : new Date(Date.UTC(2008,9,21)), endDateTimeUtc: new Date(Date.UTC(2008,9,20)), offset: 60 }] },{id:'7092901520000001588', name: 'IKA', fullName: 'Imam Khomeini International Airport', international: false,utcOffsets:[{dst:true, startDateTimeLocal: new Date(Date.UTC(2009,3,22)), startDateTimeUtc: new Date(Date.UTC(2009,3,21 )), endDateTimeLocal : new Date(Date.UTC(2009,9,22)), endDateTimeUtc: new Date(Date.UTC(2009,9,21)), offset: 60 }] },{id:'7092901520000001588', name: 'IKA', fullName: 'Imam Khomeini International Airport', international: false,utcOffsets:[{dst:true, startDateTimeLocal: new Date(Date.UTC(2010,3,22)), startDateTimeUtc: new Date(Date.UTC(2010,3,21 )), endDateTimeLocal : new Date(Date.UTC(2010,9,22)), endDateTimeUtc: new Date(Date.UTC(2010,9,21)), offset: 60 }] },{id:'7092901520000001588', name: 'IKA', fullName: 'Imam Khomeini International Airport', international: false,utcOffsets:[{dst:true, startDateTimeLocal: new Date(Date.UTC(2011,3,22)), startDateTimeUtc: new Date(Date.UTC(2011,3,21 )), endDateTimeLocal : new Date(Date.UTC(2011,9,22)), endDateTimeUtc: new Date(Date.UTC(2011,9,21)), offset: 60 }] },{id:'7092901520000001588', name: 'IKA', fullName: 'Imam Khomeini International Airport', international: false,utcOffsets:[{dst:true, startDateTimeLocal: new Date(Date.UTC(2012,3,21)), startDateTimeUtc: new Date(Date.UTC(2012,3,20 )), endDateTimeLocal : new Date(Date.UTC(2012,9,21)), endDateTimeUtc: new Date(Date.UTC(2012,9,20)), offset: 60 }] },{id:'7092901520000001588', name: 'IKA', fullName: 'Imam Khomeini International Airport', international: false,utcOffsets:[{dst:true, startDateTimeLocal: new Date(Date.UTC(2013,3,22)), startDateTimeUtc: new Date(Date.UTC(2013,3,21 )), endDateTimeLocal : new Date(Date.UTC(2013,9,22)), endDateTimeUtc: new Date(Date.UTC(2013,9,21)), offset: 60 }] },{id:'7092901520000001588', name: 'IKA', fullName: 'Imam Khomeini International Airport', international: false,utcOffsets:[{dst:true, startDateTimeLocal: new Date(Date.UTC(2014,3,22)), startDateTimeUtc: new Date(Date.UTC(2014,3,21 )), endDateTimeLocal : new Date(Date.UTC(2014,9,22)), endDateTimeUtc: new Date(Date.UTC(2014,9,21)), offset: 60 }] },{id:'7092901520000001588', name: 'IKA', fullName: 'Imam Khomeini International Airport', international: false,utcOffsets:[{dst:true, startDateTimeLocal: new Date(Date.UTC(2015,3,22)), startDateTimeUtc: new Date(Date.UTC(2015,3,21 )), endDateTimeLocal : new Date(Date.UTC(2015,9,22)), endDateTimeUtc: new Date(Date.UTC(2015,9,21)), offset: 60 }] },{id:'7092901520000001588', name: 'IKA', fullName: 'Imam Khomeini International Airport', international: false,utcOffsets:[{dst:true, startDateTimeLocal: new Date(Date.UTC(2016,3,21)), startDateTimeUtc: new Date(Date.UTC(2016,3,20 )), endDateTimeLocal : new Date(Date.UTC(2016,9,21)), endDateTimeUtc: new Date(Date.UTC(2016,9,20)), offset: 60 }] },{id:'7092901520000001588', name: 'IKA', fullName: 'Imam Khomeini International Airport', international: false,utcOffsets:[{dst:true, startDateTimeLocal: new Date(Date.UTC(2017,3,22)), startDateTimeUtc: new Date(Date.UTC(2017,3,21 )), endDateTimeLocal : new Date(Date.UTC(2017,9,22)), endDateTimeUtc: new Date(Date.UTC(2017,9,21)), offset: 60 }] },{id:'7092901520000001588', name: 'IKA', fullName: 'Imam Khomeini International Airport', international: false,utcOffsets:[{dst:true, startDateTimeLocal: new Date(Date.UTC(2018,3,22)), startDateTimeUtc: new Date(Date.UTC(2018,3,21 )), endDateTimeLocal : new Date(Date.UTC(2018,9,22)), endDateTimeUtc: new Date(Date.UTC(2018,9,21)), offset: 60 }] },{id:'7092901520000001588', name: 'IKA', fullName: 'Imam Khomeini International Airport', international: false,utcOffsets:[{dst:true, startDateTimeLocal: new Date(Date.UTC(2019,3,22)), startDateTimeUtc: new Date(Date.UTC(2019,3,21 )), endDateTimeLocal : new Date(Date.UTC(2019,9,22)), endDateTimeUtc: new Date(Date.UTC(2019,9,21)), offset: 60 }] },{id:'7092901520000001588', name: 'IKA', fullName: 'Imam Khomeini International Airport', international: false,utcOffsets:[{dst:true, startDateTimeLocal: new Date(Date.UTC(2020,3,21)), startDateTimeUtc: new Date(Date.UTC(2020,3,20 )), endDateTimeLocal : new Date(Date.UTC(2020,9,21)), endDateTimeUtc: new Date(Date.UTC(2020,9,20)), offset: 60 }] },{id:'7092901520000001588', name: 'IKA', fullName: 'Imam Khomeini International Airport', international: false,utcOffsets:[{dst:true, startDateTimeLocal: new Date(Date.UTC(2021,3,22)), startDateTimeUtc: new Date(Date.UTC(2021,3,21 )), endDateTimeLocal : new Date(Date.UTC(2021,9,22)), endDateTimeUtc: new Date(Date.UTC(2021,9,21)), offset: 60 }] },
-] as AirportModel[],
+],
   stcs: [
     { id: '1', name: 'A', description: 'Cargo/Mail' },
     { id: '2', name: 'B', description: 'Shuttle Mode' },
@@ -602,4 +501,4 @@ MasterData.recieve({
   aircraftGroups: [
     { id: '1', name: 'GPS', aircraftRegisterIds: ['7092902880000001088', '7092902880000000270', '7092902880000001060', '7092902880000000970', '7092902880000000348', '7092902880000001025', '7092902880000001269', '7092902880000001120', '7092902880000000282', '7092902880000000291'] }],
   constraints: [],
-})
+} as any)

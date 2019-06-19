@@ -1,12 +1,9 @@
-import MasterDataItem, { MasterDataItems, MasterDataItemModel } from './MasterDataItem';
+import AircraftRegisterModel from '../models/master-data/AircraftRegisterModel';
+import MasterDataItem, { MasterDataItems } from './MasterDataItem';
 import AircraftType from './AircraftType';
-import MasterData from '.';
+import MasterData from './MasterData';
 
-export interface AircraftRegisterModel extends MasterDataItemModel {
-  aircraftTypeId: string;
-}
-
-export default class AircraftRegister extends MasterDataItem implements AircraftRegisterModel {
+export default class AircraftRegister extends MasterDataItem {
   readonly aircraftTypeId: string;
 
   constructor(raw: AircraftRegisterModel) {
@@ -17,14 +14,13 @@ export default class AircraftRegister extends MasterDataItem implements Aircraft
   getAircraftType(): AircraftType {
     return MasterData.all.aircraftTypes.id[this.aircraftTypeId];
   }
-
   getMinimumGroundTime(date: Date, transit: boolean, international: boolean): number {
     return this.getAircraftType().getMinimumGroundTime(date, transit, international);
   }
 }
 
 export class AircraftRegisters extends MasterDataItems<AircraftRegister> {
-  static parse(raw?: ReadonlyArray<AircraftRegisterModel>): AircraftRegisters | undefined {
+  static parse(raw?: readonly AircraftRegisterModel[]): AircraftRegisters | undefined {
     if (!raw) return undefined;
     return new AircraftRegisters(raw.map(x => new AircraftRegister(x)));
   }

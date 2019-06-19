@@ -1,7 +1,7 @@
-import apiRequest from '../utils/apiRequest';
-import { MasterDataModel } from '../business/master-data';
-import { AircraftGroupModel } from '../business/master-data/AircraftGroup';
-import { ConstraintModel } from '../business/master-data/Constraint';
+import apiRequest from 'src/utils/apiRequest';
+import MasterDataModel from '@core/models/master-data/MasterDataModel';
+import AircraftGroupModel from '@core/models/master-data/AircraftGroupModel';
+import ConstraintModel from '@core/models/master-data/ConstraintModel';
 
 const request = apiRequest.bind(null, 'master-data');
 

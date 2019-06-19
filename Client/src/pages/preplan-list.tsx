@@ -2,12 +2,12 @@ import React, { Fragment, useState, FC } from 'react';
 import { Theme, IconButton, Paper, Tab, Tabs, Table, TableBody, TableCell, TableHead, TableRow, Switch } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import { DoneAll as FinilizedIcon, Add as AddIcon, Edit as EditIcon, Clear as ClearIcon } from '@material-ui/icons';
-import MahanIcon, { MahanIconType } from '../components/MahanIcon';
-import Search from '../components/Search';
-import LinkButton from '../components/LinkButton';
-import LinkTypography from '../components/LinkTypography';
-import NavBar from '../components/NavBar';
-import { PreplanHeaderModel } from '../business/Preplan';
+import MahanIcon, { MahanIconType } from 'src/components/MahanIcon';
+import Search from 'src/components/Search';
+import LinkButton from 'src/components/LinkButton';
+import LinkTypography from 'src/components/LinkTypography';
+import NavBar from 'src/components/NavBar';
+import { PreplanHeader } from 'src/view-models/Preplan';
 
 const useStyles = makeStyles((theme: Theme) => ({
   contentPage: {
@@ -26,7 +26,7 @@ const useStyles = makeStyles((theme: Theme) => ({
 type Tab = 'USER' | 'PUBLIC';
 
 const PreplanListPage: FC = () => {
-  const [preplanHeaders, setPreplanHeaders] = useState<ReadonlyArray<Readonly<PreplanHeaderModel>>>([]);
+  const [preplanHeaders, setPreplanHeaders] = useState<ReadonlyArray<Readonly<PreplanHeader>>>([]);
   const [tab, setTab] = useState<Tab>('USER');
 
   const classes = useStyles();
@@ -130,7 +130,7 @@ export default PreplanListPage;
 
 //////////////////////////////////////////////
 
-function getDummyPreplanHeaders(): PreplanHeaderModel[] {
+function getDummyPreplanHeaders(): PreplanHeader[] {
   return [
     {
       id: '123',

@@ -1,10 +1,9 @@
 import React, { Fragment, FC, useState } from 'react';
 import { Theme, Typography, TextField, Grid, RadioGroup, Radio, FormControlLabel } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
-import MultiSelect from '../MultiSelect';
+import MultiSelect from 'src/components/MultiSelect';
 import MasterDataItemList from './MasterDataItemList';
-import Constraint from '../../business/master-data/Constraint';
-import MasterData from '../../business/master-data';
+import MasterData, { Constraint } from '@core/master-data';
 
 const useStyles = makeStyles((theme: Theme) => ({}));
 

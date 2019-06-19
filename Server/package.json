@@ -7,7 +7,7 @@
   "scripts": {
     "build": "gulp build",
     "build-dev": "gulp build-dev",
-    "start": "nodemon --watch src --watch ../Client/src/utils/extensions.* --watch ../Client/src/business --watch ../Client/src/validators --ext ts,js,json --verbose --exec \"npm run build-dev && npm run start-once\"",
+    "start": "nodemon --watch src --watch ../Core --ext ts,js,json --verbose --exec \"npm run build-dev && npm run start-once\"",
     "start-once": "cross-env NODE_ENV=development node make",
     "test": "echo \"Error: no test specified\" && exit 1",
     "gulp": "gulp",
@@ -23,6 +23,7 @@
   "devDependencies": {
     "@types/colors": "^1.2.1",
     "@types/express": "^4.16.1",
+    "@types/gulp": "^4.0.6",
     "@types/mongodb": "^3.1.26",
     "@types/node": "^11.13.6",
     "cross-env": "^5.2.0",

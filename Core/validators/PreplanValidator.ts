@@ -1,6 +1,6 @@
 import Validation from './Validation';
-import MasterData from '../business/master-data';
-import { DummyAircraftRegisterModel } from '@business/AircraftRegister';
+import MasterData from '../master-data';
+import DummyAircraftRegisterModel from '../models/DummyAircraftRegisterModel';
 
 export default class PreplanValidator {
   static createEmptyValidate(

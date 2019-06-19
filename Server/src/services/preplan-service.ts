@@ -2,13 +2,14 @@ import { Router } from 'express';
 import { Db, ObjectID, ClientSession } from 'mongodb';
 import { asyncMiddlewareWithDatabase, asyncMiddlewareWithTransaction } from '../utils/asyncMiddleware';
 
-import PreplanValidator from '@validators/PreplanValidator';
+import PreplanValidator from '@core/validators/PreplanValidator';
 
-import { PreplanHeaderModel, PreplanModel } from '@business/Preplan';
-import { FlightRequirementModel } from '@business/FlightRequirement';
-import { DummyAircraftRegisterModel } from '@business/AircraftRegister';
-import AutoArrangerOptions from '@business/AutoArrangerOptions';
-import { Daytime } from '@business/Daytime';
+import PreplanModel, { PreplanHeaderModel } from '@core/models/PreplanModel';
+import FlightRequirementModel from '@core/models/FlightRequirementModel';
+import DummyAircraftRegisterModel from '@core/models/DummyAircraftRegisterModel';
+import AutoArrangerOptions from '@core/models/AutoArrangerOptionsModel';
+import Daytime from '@core/types/Daytime';
+
 import PreplanSchema, { PreplanHeaderSchema } from '../schemas/PreplanSchema';
 import FlightRequirementSchema from '../schemas/FlightRequirementSchema';
 
@@ -56,16 +57,16 @@ async function createEmptyHandler(db: Db, { name, startDate, endDate }) {
     userDisplayName: currentUser.displayName,
     parentPreplanId: undefined,
     parentPreplanName: undefined,
-    creationDateTime: new Date(),
-    lastEditDateTime: new Date(),
-    startDate: new Date(startDate),
-    endDate: new Date(endDate),
+    // creationDateTime: new Date(),
+    // lastEditDateTime: new Date(),
+    // startDate: new Date(startDate),
+    // endDate: new Date(endDate),
     simulationId: undefined,
     simulationName: undefined,
     autoArrangerOptions: undefined,
     dummyAircraftRegisters: [],
     aircraftRegisterOptionsDictionary: {}
-  };
+  } as any;
   const result = await db.collection('preplans').insertOne(preplan);
   const preplanId = result.insertedId.toHexString();
 
@@ -92,16 +93,16 @@ async function cloneHandler(db: Db, session: ClientSession, { id, name, startDat
     userDisplayName: currentUser.displayName,
     parentPreplanId: sourcePreplan._id,
     parentPreplanName: sourcePreplan.name,
-    creationDateTime: new Date(),
-    lastEditDateTime: new Date(),
-    startDate: new Date(startDate),
-    endDate: new Date(endDate),
+    // creationDateTime: new Date(),
+    // lastEditDateTime: new Date(),
+    // startDate: new Date(startDate),
+    // endDate: new Date(endDate),
     simulationId: undefined,
     simulationName: undefined,
     autoArrangerOptions: sourcePreplan.autoArrangerOptions,
     dummyAircraftRegisters: sourcePreplan.dummyAircraftRegisters,
     aircraftRegisterOptionsDictionary: sourcePreplan.aircraftRegisterOptionsDictionary
-  };
+  } as any;
   const result = await db.collection('preplans').insertOne(clonedPreplan, { session });
   const clonedPreplanObjectId = result.insertedId;
   const clonedPreplanId = clonedPreplanObjectId.toHexString();
@@ -200,9 +201,9 @@ async function addOrEditDummyAircraftRegisterHandler(db: Db, { id, dummyAircraft
   const modifiedDummyAircraftRegisters: DummyAircraftRegisterModel[] = preplan.dummyAircraftRegisters.slice();
   const index = modifiedDummyAircraftRegisters.findIndex(a => a.id === data.id);
   if (index < 0) {
-    let count = 1;
-    while (modifiedDummyAircraftRegisters.some(a => a.id === 'dummy-' + count)) count++;
-    data.id = 'dummy-' + count;
+    // let count = 1;
+    // while (modifiedDummyAircraftRegisters.some(a => a.id === 'dummy-' + count)) count++;
+    // data.id = 'dummy-' + count;
     modifiedDummyAircraftRegisters.push(data);
   } else {
     modifiedDummyAircraftRegisters.splice(index, 1, data);
@@ -332,5 +333,5 @@ function convertFlightRequirementSchemaToModel(data: FlightRequirementSchema): F
       }
     })),
     ignored: data.ignored
-  };
+  } as any;
 }

@@ -1,11 +1,11 @@
 import React, { FC, Fragment, useEffect } from 'react';
 import { Theme } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
-import NavBar from '../components/NavBar';
-import SectionList, { SectionItem } from '../components/SectionList';
-import AircraftGroupsMasterData from '../components/master-data/AircraftGroupsMasterData';
-import ConstraintsMasterData from '../components/master-data/ConstraintsMasterData';
-import useRouter from '../utils/useRouter';
+import NavBar from 'src/components/NavBar';
+import SectionList, { SectionItem } from 'src/components/SectionList';
+import AircraftGroupsMasterData from 'src/components/master-data/AircraftGroupsMasterData';
+import ConstraintsMasterData from 'src/components/master-data/ConstraintsMasterData';
+import useRouter from 'src/utils/useRouter';
 
 const useStyles = makeStyles((theme: Theme) => ({}));
 

@@ -2,7 +2,7 @@
  * Specifies a certain time of a day with minutes precision.
  * It can be invalid.
  */
-export class Daytime {
+export default class Daytime {
   public readonly minutes: number;
 
   /**

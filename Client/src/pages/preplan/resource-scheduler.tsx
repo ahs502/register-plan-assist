@@ -2,17 +2,17 @@ import React, { FC, Fragment, useState, useContext } from 'react';
 import { Theme, IconButton, Select, OutlinedInput, Badge, Drawer, Portal } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import { DoneAll as FinilizedIcon, LockOutlined as LockIcon, LockOpenOutlined as LockOpenIcon, Search as SearchIcon, SettingsOutlined as SettingsIcon } from '@material-ui/icons';
-import MahanIcon, { MahanIconType } from '../../components/MahanIcon';
-import LinkIconButton from '../../components/LinkIconButton';
-import { NavBarToolsContainerContext } from '../preplan';
-import AutoArrangerChangeLogSideBar from '../../components/preplan/resource-scheduler/AutoArrangerChangeLogSideBar';
-import SearchFlightsSideBar from '../../components/preplan/resource-scheduler/SearchFlightsSideBar';
-import ErrorsAndWarningsSideBar from '../../components/preplan/resource-scheduler/ErrorsAndWarningsSideBar';
-import SelectAircraftRegistersSideBar from '../../components/preplan/resource-scheduler/SelectAircraftRegistersSideBar';
-import SettingsSideBar from '../../components/preplan/resource-scheduler/SettingsSideBar';
-import ResourceSchedulerView from '../../components/preplan/resource-scheduler/ResourceSchedulerView';
-import Preplan from '../../business/Preplan';
-import FlightRequirement, { WeekdayFlightRequirement } from '../../business/FlightRequirement';
+import MahanIcon, { MahanIconType } from 'src/components/MahanIcon';
+import LinkIconButton from 'src/components/LinkIconButton';
+import { NavBarToolsContainerContext } from 'src/pages/preplan';
+import AutoArrangerChangeLogSideBar from 'src/components/preplan/resource-scheduler/AutoArrangerChangeLogSideBar';
+import SearchFlightsSideBar from 'src/components/preplan/resource-scheduler/SearchFlightsSideBar';
+import ErrorsAndWarningsSideBar from 'src/components/preplan/resource-scheduler/ErrorsAndWarningsSideBar';
+import SelectAircraftRegistersSideBar from 'src/components/preplan/resource-scheduler/SelectAircraftRegistersSideBar';
+import SettingsSideBar from 'src/components/preplan/resource-scheduler/SettingsSideBar';
+import ResourceSchedulerView from 'src/components/preplan/resource-scheduler/ResourceSchedulerView';
+import Preplan from 'src/view-models/Preplan';
+import FlightRequirement, { WeekdayFlightRequirement } from '../../view-models/FlightRequirement';
 
 const useStyles = makeStyles((theme: Theme) => ({
   sideBarBackdrop: {

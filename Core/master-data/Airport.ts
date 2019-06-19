@@ -1,26 +1,17 @@
-import MasterDataItem, { MasterDataItems, MasterDataItemModel } from './MasterDataItem';
+import AirportModel from '../models/master-data/AirportModel';
+import MasterDataItem, { MasterDataItems } from './MasterDataItem';
 
-export interface UtcOffset {
-  dst: boolean;
-  startDateTimeUtc: Date;
-  endDateTimeUtc: Date;
-  startDateTimeLocal: Date;
-  endDateTimeLocal: Date;
-
-  /** In minutes. */
-  offset: number;
-}
-
-export interface AirportModel extends MasterDataItemModel {
-  fullName: string;
-  international: boolean;
-  utcOffsets: ReadonlyArray<Readonly<UtcOffset>>;
-}
-
-export default class Airport extends MasterDataItem implements AirportModel {
+export default class Airport extends MasterDataItem {
   readonly fullName: string;
   readonly international: boolean;
-  readonly utcOffsets: ReadonlyArray<Readonly<UtcOffset>>;
+  readonly utcOffsets: readonly {
+    readonly dst: boolean;
+    readonly startDateTimeUtc: Date;
+    readonly endDateTimeUtc: Date;
+    readonly startDateTimeLocal: Date;
+    readonly endDateTimeLocal: Date;
+    /** In minutes. */ readonly offset: number;
+  }[];
 
   constructor(raw: AirportModel) {
     super(raw);
@@ -47,7 +38,7 @@ export default class Airport extends MasterDataItem implements AirportModel {
 }
 
 export class Airports extends MasterDataItems<Airport> {
-  static parse(raw?: ReadonlyArray<AirportModel>): Airports | undefined {
+  static parse(raw?: readonly AirportModel[]): Airports | undefined {
     if (!raw) return undefined;
     return new Airports(raw.map(x => new Airport(x)));
   }

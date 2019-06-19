@@ -4,7 +4,7 @@ import { makeStyles } from '@material-ui/styles';
 import { NavigateNext as NavigateNextIcon, KeyboardBackspace as BackIcon } from '@material-ui/icons';
 import LinkTypography from './LinkTypography';
 import LinkIconButton from './LinkIconButton';
-import useRouter from '../utils/useRouter';
+import useRouter from 'src/utils/useRouter';
 
 const useStyles = makeStyles((theme: Theme) => ({
   root: {

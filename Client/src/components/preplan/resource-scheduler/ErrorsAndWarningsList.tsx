@@ -2,7 +2,7 @@ import React, { FC, Fragment } from 'react';
 import { Theme } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import classNames from 'classnames';
-import Objection, { ObjectionType } from '../../../business/Objection';
+import Objection from 'src/view-models/Objection';
 
 const useStyles = makeStyles((theme: Theme) => ({
   card: {
@@ -40,8 +40,8 @@ const ErrorAndWarningList: FC<ErrorAndWarningListProps> = ({ objections }) => {
           <div className={classes.message}>{objection.message}</div>
           <div
             className={classNames(classes.icon, {
-              [classes.error]: objection.type === ObjectionType.Error,
-              [classes.warning]: objection.type === ObjectionType.Warning
+              [classes.error]: objection.type === 'ERROR',
+              [classes.warning]: objection.type === 'WARNING'
             })}
           >
             {objection.message}

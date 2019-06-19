@@ -1,8 +1,8 @@
 import React, { FC, Fragment, useState, useContext } from 'react';
 import { Theme, Portal } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
-import { NavBarToolsContainerContext } from '../preplan';
-import FlightRequirement, { WeekdayFlightRequirement } from '../../business/FlightRequirement';
+import { NavBarToolsContainerContext } from 'src/pages/preplan';
+import FlightRequirement, { WeekdayFlightRequirement } from 'src/view-models/FlightRequirement';
 
 const useStyles = makeStyles((theme: Theme) => ({}));
 

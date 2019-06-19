@@ -24,21 +24,12 @@ function buildSource(destinationFolder, packageJsonModifier) {
       },
       done => {
         let data = require('./tsconfig.json');
-        data.compilerOptions.paths['@utils/*'] = ['./utils/*'];
-        data.compilerOptions.paths['@business/*'] = ['./business/*'];
-        data.compilerOptions.paths['@validators/*'] = ['./validators/*'];
+        data.compilerOptions.paths['@core/*'] = ['./*'];
         delete data.include;
         fs.writeFile(path.join(__dirname, 'temp/tsconfig.json'), JSON.stringify(data, null, 4), done);
       },
-      gulp.series(
-        () => gulp.src('src/**/*.ts').pipe(gulp.dest('temp')),
-        gulp.parallel(
-          () => gulp.src('../Client/src/utils/extensions.*.ts').pipe(gulp.dest('temp/utils')),
-          () => gulp.src('../Client/src/business/**/*.ts').pipe(gulp.dest('temp/business')),
-          () => gulp.src('../Client/src/validators/**/*.ts').pipe(gulp.dest('temp/validators'))
-        )
-      ),
-      gulp.series(() => gulp.src(['public/**', 'public/_Readme']).pipe(gulp.dest('temp/public')), () => del('temp/public/_Readme'))
+      () => gulp.src(['src/**/*.ts', '../Core/**/*.ts']).pipe(gulp.dest('temp')),
+      gulp.series(() => gulp.src('public/**').pipe(gulp.dest('temp/public')), () => del('temp/public/_Readme'))
     ),
     () => {
       const typescriptProject = typescript.createProject('temp/tsconfig.json');
@@ -48,9 +39,9 @@ function buildSource(destinationFolder, packageJsonModifier) {
         .js.pipe(
           modifyFile((content, filePath, file) => {
             let i = -1;
-            while (((i = content.indexOf('require("@', i + 1)), i > 0)) {
-              const endingDubleQuotationIndex = content.indexOf('"', i + 10);
-              const dependencyFile = content.slice(i + 10, endingDubleQuotationIndex);
+            while (((i = content.indexOf('require("@core/', i + 1)), i > 0)) {
+              const endingDubleQuotationIndex = content.indexOf('"', i + 15);
+              const dependencyFile = content.slice(i + 15, endingDubleQuotationIndex);
               const dependencyPath = path.join(__dirname, 'temp', dependencyFile);
               const dependencyRelativePath = path.relative(path.dirname(filePath), dependencyPath).replace(/\\/g, '/');
               const dependencyRelativePathFromCurrent = dependencyRelativePath.startsWith('.') ? dependencyRelativePath : './' + dependencyRelativePath;

@@ -1,14 +1,9 @@
-import MasterDataItem, { MasterDataItems, MasterDataItemModel } from './MasterDataItem';
+import SeasonModel from '../models/master-data/SeasonModel';
+import MasterDataItem, { MasterDataItems } from './MasterDataItem';
 import SeasonType from './SeasonType';
-import MasterData from '.';
+import MasterData from './MasterData';
 
-export interface SeasonModel extends MasterDataItemModel {
-  startDate: Date;
-  endDate: Date;
-  seasonTypeId: string;
-}
-
-export default class Season extends MasterDataItem implements SeasonModel {
+export default class Season extends MasterDataItem {
   readonly startDate: Date;
   readonly endDate: Date;
   readonly seasonTypeId: string;
@@ -26,7 +21,7 @@ export default class Season extends MasterDataItem implements SeasonModel {
 }
 
 export class Seasons extends MasterDataItems<Season> {
-  static parse(raw?: ReadonlyArray<SeasonModel>): Seasons | undefined {
+  static parse(raw?: readonly SeasonModel[]): Seasons | undefined {
     if (!raw) return undefined;
     return new Seasons(raw.map(x => new Season(x)));
   }

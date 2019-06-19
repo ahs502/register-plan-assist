@@ -1,9 +1,10 @@
-import apiRequest from '../utils/apiRequest';
-import { PreplanHeaderModel, PreplanModel } from '../business/Preplan';
-import { FlightRequirementModel } from '../business/FlightRequirement';
-import { DummyAircraftRegisterModel, AircraftRegisterOptionsDictionary } from '../business/AircraftRegister';
-import AutoArrangerOptions from '../business/AutoArrangerOptions';
-import { ServerResult } from '../validators/Validation';
+import apiRequest from 'src/utils/apiRequest';
+import { AircraftRegisterOptionsDictionary } from '@core/types/AircraftRegisterOptions';
+import PreplanModel, { PreplanHeaderModel } from '@core/models/PreplanModel';
+import FlightRequirementModel from '@core/models/FlightRequirementModel';
+import DummyAircraftRegisterModel from '@core/models/DummyAircraftRegisterModel';
+import AutoArrangerOptions from '@core/models/AutoArrangerOptionsModel';
+import { ServerResult } from '@core/validators/Validation';
 
 const request = apiRequest.bind(null, 'preplan');
 

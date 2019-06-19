@@ -1,4 +1,4 @@
-import '@utils/extensions.implementation';
+import '@core/utils/extensions.implementation';
 
 import * as path from 'path';
 import * as http from 'http';

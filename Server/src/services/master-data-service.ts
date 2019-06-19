@@ -2,10 +2,6 @@ import { Router } from 'express';
 import { Db } from 'mongodb';
 import { asyncMiddlewareWithDatabase } from '../utils/asyncMiddleware';
 
-import { MasterDataModel } from '@business/master-data';
-import { AircraftGroupModel } from '@business/master-data/AircraftGroup';
-import { ConstraintModel } from '@business/master-data/Constraint';
-
 const router = Router();
 export default router;
 

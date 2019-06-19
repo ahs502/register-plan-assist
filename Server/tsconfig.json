@@ -4,10 +4,8 @@
     "module": "commonjs",
     "baseUrl": ".",
     "paths": {
-      "@utils/*": ["../Client/src/utils/*"],
-      "@business/*": ["../Client/src/business/*"],
-      "@validators/*": ["../Client/src/validators/*"]
+      "@core/*": ["../Core/*"]
     }
   },
-  "include": ["src/index.ts", "src/**/*.ts", "../Client/src/utils/extensions.*.ts", "../Client/src/business/**/*.ts", "../Client/src/validators/**/*.ts"]
+  "include": ["src/**/*.ts", "../Core/**/*.ts"]
 }

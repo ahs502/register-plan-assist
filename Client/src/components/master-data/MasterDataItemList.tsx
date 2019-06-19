@@ -3,8 +3,8 @@ import { Theme, Typography, ListItem, List, ListItemText, ListItemSecondaryActio
 import { makeStyles } from '@material-ui/styles';
 import { Clear as ClearIcon, Add as AddIcon } from '@material-ui/icons';
 import classNames from 'classnames';
-import Search, { filterOnProperties } from '../Search';
-import MasterDataItem, { MasterDataItems } from '../../business/master-data/MasterDataItem';
+import Search, { filterOnProperties } from 'src/components/Search';
+import MasterDataItem, { MasterDataItems } from '@core/master-data/MasterDataItem';
 
 const useStyles = makeStyles((theme: Theme) => ({
   root: {

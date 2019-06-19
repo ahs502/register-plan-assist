@@ -1,18 +1,11 @@
-/**
- * The minimum common content model of any master data item.
- */
-export interface MasterDataItemModel {
-  id: string;
-  name: string;
-}
+import MasterDataItemModel from '../models/master-data/MasterDataItemModel';
 
 /**
  * The minimum common contents of any master data item.
  */
-export default abstract class MasterDataItem implements MasterDataItemModel {
+export default abstract class MasterDataItem {
   readonly id: string;
   readonly name: string;
-
   readonly description?: string;
 
   constructor(raw: MasterDataItemModel, description?: string) {

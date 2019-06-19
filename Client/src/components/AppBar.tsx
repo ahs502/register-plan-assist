@@ -9,7 +9,7 @@ import {
   FullscreenExit as ExitFullScreenIcon
 } from '@material-ui/icons';
 import classNames from 'classnames';
-import User from '../business/User';
+import User from 'src/view-models/User';
 
 const useStyles = makeStyles((theme: Theme) => ({
   textMargin: {

@@ -1,5 +1,6 @@
 import React, { useState, PropsWithChildren, ReactElement } from 'react';
 import { Theme, TextField } from '@material-ui/core';
+import { BaseTextFieldProps } from '@material-ui/core/TextField';
 import { makeStyles, useTheme } from '@material-ui/styles';
 import { red } from '@material-ui/core/colors';
 
@@ -9,7 +10,7 @@ const useStyles = makeStyles((theme: Theme) => ({
   }
 }));
 
-export interface ItemPicker<T> {
+export interface ItemPicker<T> extends BaseTextFieldProps {
   readonly sources: ReadonlyArray<Readonly<T>>;
   readonly fieldName: keyof T;
   onItemSelect?: (item: T) => void;
@@ -49,4 +50,4 @@ const ItemPicker = <T extends {}>(props: PropsWithChildren<ItemPicker<T>>): Reac
   );
 };
 
-export default Picker;
+export default ItemPicker;

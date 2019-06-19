@@ -1,16 +1,34 @@
 import React, { FC, useState, Fragment } from 'react';
-import { Theme, Table, TableHead, TableBody, TableCell, TableRow, Typography, MenuItem } from '@material-ui/core';
+import { Theme, Table, TableHead, TableBody, TableCell, TableRow, Typography, MenuItem, TextField, IconButton, FormControl, Select, InputLabel } from '@material-ui/core';
+import { Clear as RemoveIcon } from '@material-ui/icons';
 import { makeStyles } from '@material-ui/styles';
 import SideBarContainer from './SideBarContainer';
 import Search, { filterOnProperties } from '../../Search';
 import MasterData from '../../../business/master-data';
 import MasterDataItem from '../../../business/master-data/MasterDataItem';
-import AutoComplete from '../../AutoComplete';
 import Airport from '../../../business/master-data/Airport';
+import ItemPicker from '../../ItemPicker';
+import AircraftType from '../../../business/master-data/AircraftType';
 
 const useStyles = makeStyles((theme: Theme) => ({
   search: {
     margin: theme.spacing(0, 2)
+  },
+  formControl: {
+    marginTop: theme.spacing(2)
+  },
+  selectStyle: {
+    paddingLeft: theme.spacing(1),
+    paddingRight: theme.spacing(5)
+  },
+  backupColor: {
+    backgroundColor: theme.palette.extraColors.backupRegister
+  },
+  ignoreColor: {
+    backgroundColor: theme.palette.extraColors.excludedRegister
+  },
+  padding: {
+    padding: theme.spacing(0, 2)
   }
 }));
 
@@ -19,7 +37,7 @@ export interface SelectAircraftRegistersSideBarProps {
 }
 
 interface DummyData extends MasterDataItem {
-  type: string;
+  type: AircraftType;
   base: Airport;
   group: string;
   state: string;
@@ -39,6 +57,13 @@ enum state {
   'Backup',
   'Ignore'
 }
+
+type IfEquals<X, Y, A = X, B = never> = (<T>() => T extends X ? 1 : 2) extends (<T>() => T extends Y ? 1 : 2) ? A : B;
+
+type WritableKeys<T> = { [P in keyof T]-?: IfEquals<{ [Q in P]: T[P] }, { -readonly [Q in P]: T[P] }, P> }[keyof T];
+
+type ReadonlyKeys<T> = { [P in keyof T]-?: IfEquals<{ [Q in P]: T[P] }, { -readonly [Q in P]: T[P] }, never, P> }[keyof T];
+
 const ika = allAirports.find(a => a.name === 'IKA');
 const collection = registers
   .map(r => {
@@ -46,25 +71,56 @@ const collection = registers
     return {
       name: r.name,
       id: r.id,
-      type: type ? type.name : '',
+      type: type,
       base: ika,
       group: groupTypes[Math.floor(Math.random() * 3)],
       state: state[Math.floor(Math.random() * 3)]
     } as DummyData;
   })
-  .sortBy('type');
+  .sortBy(i => {
+    return i.type.name;
+  });
 
 const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = ({ initialSearch }) => {
-  debugger;
-
   const [filteredItems, setFilteredItems] = useState(collection as ReadonlyArray<DummyData>);
-  var temp = Array.range(0, registers.length).map(r => ika);
-  const [selectedAirport, setSelectedAirport] = useState(temp);
+  const [dummyRegisterList, setDummyRegisterList] = useState([] as ReadonlyArray<DummyData>);
+
+  const handelRemoveDummyRegister = (index: number) => {
+    const tempDummyRegisterList = [...dummyRegisterList];
+    tempDummyRegisterList.splice(index, 1);
+    setDummyRegisterList(tempDummyRegisterList);
+  };
+
+  const handleChange = <T extends {}>(
+    list: ReadonlyArray<T>,
+    index: number,
+    propertyName: WritableKeys<T>,
+    newValue: any,
+    settter: (value: React.SetStateAction<ReadonlyArray<T>>) => void
+  ) => {
+    const tempList = [...list];
+    tempList[index][propertyName] = newValue;
+
+    settter(tempList);
+  };
+
   const classes = useStyles();
   return (
     <SideBarContainer
-      onAction={() => {
+      onApply={() => {
         alert('TODO: Data Model Must save in database...');
+      }}
+      onAdd={() => {
+        const tempDummyRegisterList = [...dummyRegisterList];
+        tempDummyRegisterList.push({
+          id: Date.now().toString(),
+          name: '',
+
+          base: ika,
+          group: '',
+          state: ''
+        } as DummyData);
+        setDummyRegisterList(tempDummyRegisterList);
       }}
       label="Select Aircraft Registers"
     >
@@ -89,17 +145,78 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
                 <Typography variant="body2">Type</Typography>
               </TableCell>
               <TableCell>
-                <Typography variant="body2">Group</Typography>
-              </TableCell>
-              <TableCell>
                 <Typography variant="body2">Base</Typography>
               </TableCell>
               <TableCell>
                 <Typography variant="body2">State</Typography>
               </TableCell>
+              <TableCell>
+                <Typography variant="body2">Group</Typography>
+              </TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
+            {dummyRegisterList.map((item, i) => {
+              return (
+                <TableRow key={item.id} className={item.state === 'Backup' ? classes.backupColor : item.state === 'Ignore' ? classes.ignoreColor : ''}>
+                  <TableCell>
+                    <TextField />
+                  </TableCell>
+                  <TableCell className={classes.padding}>
+                    <ItemPicker
+                      sources={aircraftTypes}
+                      fieldName="name"
+                      defaultValue={item.type}
+                      onItemSelect={newValue => {
+                        handleChange(filteredItems, i, 'type', newValue, setFilteredItems);
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell className={classes.padding}>
+                    <ItemPicker
+                      sources={allAirports}
+                      fieldName="name"
+                      defaultValue={item.base}
+                      onItemSelect={newValue => {
+                        handleChange(dummyRegisterList, i, 'base', newValue, setDummyRegisterList);
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell className={classes.padding}>
+                    <FormControl fullWidth className={classes.formControl}>
+                      <Select
+                        classes={{ select: classes.selectStyle }}
+                        native
+                        variant="outlined"
+                        value={item.state}
+                        onChange={(event, child) => {
+                          handleChange(dummyRegisterList, i, 'state', event.target.value, setDummyRegisterList);
+                        }}
+                      >
+                        {Array.range(0, 2).map(i => {
+                          return (
+                            <option key={i} value={state[i]}>
+                              {state[i]}
+                            </option>
+                          );
+                        })}
+                      </Select>
+                    </FormControl>
+                  </TableCell>
+                  <TableCell>
+                    <IconButton
+                      size="small"
+                      onClick={() => {
+                        // console.log(i);
+                        handelRemoveDummyRegister(i);
+                      }}
+                    >
+                      <RemoveIcon />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
             {filteredItems.map((item, i) => {
               return (
                 <Fragment key={item.id}>
@@ -113,34 +230,47 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
                   ) : (
                     <Fragment />
                   )}
-                  <TableRow>
+                  <TableRow className={item.state === 'Backup' ? classes.backupColor : item.state === 'Ignore' ? classes.ignoreColor : ''}>
                     <TableCell>
                       <Typography variant="body2">{item.name}</Typography>
                     </TableCell>
                     <TableCell>
-                      <Typography variant="body2">{item.type}</Typography>
+                      <Typography variant="body2">{item.type.name}</Typography>
+                    </TableCell>
+
+                    <TableCell className={classes.padding}>
+                      <ItemPicker
+                        sources={allAirports}
+                        fieldName="name"
+                        defaultValue={item.base}
+                        onItemSelect={newValue => {
+                          handleChange(filteredItems, i, 'base', newValue, setFilteredItems);
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell className={classes.padding}>
+                      <FormControl fullWidth className={classes.formControl}>
+                        <Select
+                          classes={{ select: classes.selectStyle }}
+                          native
+                          variant="outlined"
+                          value={item.state}
+                          onChange={(event, child) => {
+                            handleChange(filteredItems, i, 'state', event.target.value, setFilteredItems);
+                          }}
+                        >
+                          {Array.range(0, 2).map(i => {
+                            return (
+                              <option key={i} value={state[i]}>
+                                {state[i]}
+                              </option>
+                            );
+                          })}
+                        </Select>
+                      </FormControl>
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2">{item.group}</Typography>
-                    </TableCell>
-                    <TableCell>
-                      {/* <AutoComplete
-                        key={item.id}
-                        options={allAirports}
-                        variant="outlined"
-                        value={selectedAirport[i]}
-                        getOptionLabel={r => r.name}
-                        getOptionValue={r => r.id}
-                        onChange={(newValue, action) => {
-                          const newSelectedAirport = [...selectedAirport];
-                          newSelectedAirport[i] = newValue as Airport;
-                          setSelectedAirport(newSelectedAirport);
-                          console.log(newValue, item.id);
-                        }}
-                      /> */}
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">{item.state}</Typography>
                     </TableCell>
                   </TableRow>
                 </Fragment>

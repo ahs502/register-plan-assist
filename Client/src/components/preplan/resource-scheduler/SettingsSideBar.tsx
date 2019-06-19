@@ -29,7 +29,7 @@ const SettingsSideBar: FC<SettingsSideBarProps> = (mode, offset) => {
   const classes = useStyles();
   return (
     <SideBarContainer
-      onAction={() => {
+      onApply={() => {
         console.log(selectedMgtMode);
         console.log(selectedOffset);
         alert('TODO: Data Model Must save in database...');

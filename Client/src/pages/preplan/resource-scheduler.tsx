@@ -13,6 +13,7 @@ import SettingsSideBar from '../../components/preplan/resource-scheduler/Setting
 import ResourceSchedulerView from '../../components/preplan/resource-scheduler/ResourceSchedulerView';
 import Preplan from '../../business/Preplan';
 import FlightRequirement, { WeekdayFlightRequirement } from '../../business/FlightRequirement';
+import useRouter from '../../utils/useRouter';
 
 const useStyles = makeStyles((theme: Theme) => ({
   sideBarBackdrop: {
@@ -49,6 +50,8 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
   const [allFlightsFreezed, setAllFlightsFreezed] = useState(() => false); //TODO: Initialize from preplan flights.
   const navBarToolsContainer = useContext(NavBarToolsContainerContext);
 
+  const { match } = useRouter<{ id: string }>();
+
   const classes = useStyles();
 
   const numberOfObjections: number = 12; //TODO: Not implemented.
@@ -67,9 +70,9 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
           <IconButton color="inherit" onClick={() => alert('Not implemented.')} title={allFlightsFreezed ? 'Unfreeze All Flights' : 'Freeze All Flights'}>
             {allFlightsFreezed ? <LockOpenIcon /> : <LockIcon />}
           </IconButton>
-          <IconButton color="inherit" onClick={() => alert('Not implemented.')} title="Flight Requirments">
+          <LinkIconButton color="inherit" to={'/preplan/' + match.params.id + '/flight-requirement-list'} title="Flight Requirments">
             <MahanIcon type={MahanIconType.FlightIcon} />
-          </IconButton>
+          </LinkIconButton>
           <IconButton color="inherit" title="Reports">
             <MahanIcon type={MahanIconType.Chart} />
           </IconButton>

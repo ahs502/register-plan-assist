@@ -9,15 +9,17 @@ import MasterDataItem from '../../../business/master-data/MasterDataItem';
 import Airport from '../../../business/master-data/Airport';
 import ItemPicker from '../../ItemPicker';
 import AircraftType from '../../../business/master-data/AircraftType';
+import classNames from 'classnames';
 
 const useStyles = makeStyles((theme: Theme) => ({
   search: {
-    margin: theme.spacing(0, 2)
+    margin: theme.spacing(0, 0, 5, 0)
   },
   formControl: {
-    marginTop: theme.spacing(2)
+    marginTop: theme.spacing(1)
   },
   selectStyle: {
+    paddingTop: theme.spacing(0),
     paddingLeft: theme.spacing(1),
     paddingRight: theme.spacing(5)
   },
@@ -28,7 +30,21 @@ const useStyles = makeStyles((theme: Theme) => ({
     backgroundColor: theme.palette.extraColors.excludedRegister
   },
   padding: {
-    padding: theme.spacing(0, 2)
+    padding: theme.spacing(1, 2, 0, 0)
+  },
+  baseColumnStyle: {
+    width: theme.spacing(2),
+    marginTop: theme.spacing(0.25)
+  },
+  stateColumnStyle: {
+    width: theme.spacing(14.5)
+  },
+  registerColumnStyle: {
+    width: theme.spacing(2),
+    paddingLeft: theme.spacing(1)
+  },
+  typeColumnStyle: {
+    width: theme.spacing(2)
   }
 }));
 
@@ -138,31 +154,34 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>
+              <TableCell className={classNames(classes.padding, classes.registerColumnStyle)}>
                 <Typography variant="body2">Register</Typography>
               </TableCell>
-              <TableCell>
+              <TableCell className={classNames(classes.padding, classes.typeColumnStyle)}>
                 <Typography variant="body2">Type</Typography>
               </TableCell>
-              <TableCell>
-                <Typography variant="body2">Base</Typography>
+              <TableCell className={classNames(classes.padding, classes.baseColumnStyle)}>
+                <Typography variant="body2" align="left">
+                  Base
+                </Typography>
               </TableCell>
-              <TableCell>
+              <TableCell className={classes.padding}>
                 <Typography variant="body2">State</Typography>
               </TableCell>
-              <TableCell>
+              <TableCell className={classes.padding}>
                 <Typography variant="body2">Group</Typography>
               </TableCell>
+              <TableCell className={classes.padding} />
             </TableRow>
           </TableHead>
           <TableBody>
             {dummyRegisterList.map((item, i) => {
               return (
                 <TableRow key={item.id} className={item.state === 'Backup' ? classes.backupColor : item.state === 'Ignore' ? classes.ignoreColor : ''}>
-                  <TableCell>
+                  <TableCell className={classNames(classes.padding, classes.registerColumnStyle)}>
                     <TextField />
                   </TableCell>
-                  <TableCell className={classes.padding}>
+                  <TableCell className={classNames(classes.padding, classes.typeColumnStyle)}>
                     <ItemPicker
                       sources={aircraftTypes}
                       fieldName="name"
@@ -172,7 +191,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
                       }}
                     />
                   </TableCell>
-                  <TableCell className={classes.padding}>
+                  <TableCell className={classNames(classes.padding, classes.baseColumnStyle)}>
                     <ItemPicker
                       sources={allAirports}
                       fieldName="name"
@@ -182,7 +201,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
                       }}
                     />
                   </TableCell>
-                  <TableCell className={classes.padding}>
+                  <TableCell className={classNames(classes.padding, classes.stateColumnStyle)}>
                     <FormControl fullWidth className={classes.formControl}>
                       <Select
                         classes={{ select: classes.selectStyle }}
@@ -203,7 +222,8 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
                       </Select>
                     </FormControl>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className={classes.padding} />
+                  <TableCell className={classes.padding}>
                     <IconButton
                       size="small"
                       onClick={() => {
@@ -231,15 +251,16 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
                     <Fragment />
                   )}
                   <TableRow className={item.state === 'Backup' ? classes.backupColor : item.state === 'Ignore' ? classes.ignoreColor : ''}>
-                    <TableCell>
+                    <TableCell className={classNames(classes.padding, classes.registerColumnStyle)}>
                       <Typography variant="body2">{item.name}</Typography>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className={classNames(classes.padding, classes.typeColumnStyle)}>
                       <Typography variant="body2">{item.type.name}</Typography>
                     </TableCell>
 
-                    <TableCell className={classes.padding}>
+                    <TableCell className={classNames(classes.padding, classes.baseColumnStyle)}>
                       <ItemPicker
+                        className={classes.baseColumnStyle}
                         sources={allAirports}
                         fieldName="name"
                         defaultValue={item.base}
@@ -248,7 +269,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
                         }}
                       />
                     </TableCell>
-                    <TableCell className={classes.padding}>
+                    <TableCell className={classNames(classes.padding, classes.stateColumnStyle)}>
                       <FormControl fullWidth className={classes.formControl}>
                         <Select
                           classes={{ select: classes.selectStyle }}
@@ -269,9 +290,10 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
                         </Select>
                       </FormControl>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className={classes.padding}>
                       <Typography variant="body2">{item.group}</Typography>
                     </TableCell>
+                    <TableCell className={classes.padding} />
                   </TableRow>
                 </Fragment>
               );

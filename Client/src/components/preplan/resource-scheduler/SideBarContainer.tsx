@@ -39,17 +39,27 @@ const SideBarContainer: FC<SideBarContainerProps> = ({ label, onApply, onAdd, ch
     <div className={classes.root}>
       <div className={classes.label}>
         <Grid container direction="row" justify="space-between" alignItems="center">
-          <Typography> {label}</Typography>
-          {onAdd && (
-            <Button color="primary" variant="outlined" onClick={() => onAdd()}>
-              <AddIcon />
-            </Button>
-          )}
-          {onApply && (
-            <Button color="primary" variant="outlined" onClick={() => onApply()}>
-              Apply
-            </Button>
-          )}
+          <Grid>
+            <Typography> {label}</Typography>
+          </Grid>
+          <Grid>
+            <Grid container direction="row" justify="space-between" alignItems="center" spacing={1}>
+              {onAdd && (
+                <Grid item>
+                  <Button color="primary" variant="outlined" onClick={() => onAdd()}>
+                    <AddIcon />
+                  </Button>
+                </Grid>
+              )}
+              {onApply && (
+                <Grid item>
+                  <Button color="primary" variant="outlined" onClick={() => onApply()}>
+                    Apply
+                  </Button>
+                </Grid>
+              )}
+            </Grid>
+          </Grid>
         </Grid>
       </div>
       <div className={classes.contents}>{children}</div>

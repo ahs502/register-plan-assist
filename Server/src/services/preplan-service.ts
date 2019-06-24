@@ -5,13 +5,10 @@ import { asyncMiddlewareWithDatabase, asyncMiddlewareWithTransaction } from '../
 import PreplanValidator from '@core/validators/PreplanValidator';
 
 import PreplanModel, { PreplanHeaderModel } from '@core/models/PreplanModel';
-import FlightRequirementModel from '@core/models/FlightRequirementModel';
-import DummyAircraftRegisterModel from '@core/models/DummyAircraftRegisterModel';
-import AutoArrangerOptions from '@core/models/AutoArrangerOptionsModel';
-import Daytime from '@core/types/Daytime';
 
-import PreplanSchema, { PreplanHeaderSchema } from '../schemas/PreplanSchema';
-import FlightRequirementSchema from '../schemas/FlightRequirementSchema';
+import PreplanEntity, { PreplanHeaderEntity, preplanHeaderProjection, convertPreplanHeaderEntityToModel, convertPreplanEntityToModel } from 'src/entities/PreplanEntity';
+import FlightRequirementEntity from 'src/entities/FlightRequirementEntity';
+import AutoArrangerOptionsEntity from 'src/entities/AutoArrangerOptionsEntity';
 
 const router = Router();
 export default router;
@@ -27,20 +24,20 @@ router.post('/edit-header', asyncMiddlewareWithDatabase(editHeaderHandler));
 router.post('/finalize', asyncMiddlewareWithDatabase(finalizeHandler));
 router.post('/remove', asyncMiddlewareWithTransaction(removeHandler));
 router.post('/update-auto-arranger-options', asyncMiddlewareWithDatabase(updateAutoArrangerOptionsHandler));
-router.post('/add-or-edit-dummy-aircraft-register', asyncMiddlewareWithDatabase(addOrEditDummyAircraftRegisterHandler));
-router.post('/remove-dummy-aircraft-register', asyncMiddlewareWithDatabase(removeDummyAircraftRegisterHandler));
-router.post('/update-aircraft-register-options-dictionary', asyncMiddlewareWithDatabase(updateAircraftRegisterOptionsdictionaryHandler));
+// router.post('/add-or-edit-dummy-aircraft-register', asyncMiddlewareWithDatabase(addOrEditDummyAircraftRegisterHandler));
+// router.post('/remove-dummy-aircraft-register', asyncMiddlewareWithDatabase(removeDummyAircraftRegisterHandler));
+// router.post('/update-aircraft-register-options-dictionary', asyncMiddlewareWithDatabase(updateAircraftRegisterOptionsdictionaryHandler));
 router.post('/add-or-edit-flight-requirement', asyncMiddlewareWithDatabase(addOrEditFlightRequirementHandler));
 router.post('/remove-flight-requirement', asyncMiddlewareWithDatabase(removeFlightRequirementHandler));
 
 async function getAllHeadersHandler(db: Db, {}) {
-  const raw: PreplanHeaderSchema[] = await db
+  const raw: PreplanHeaderEntity[] = await db
     .collection('preplans')
     .find({ $or: [{ userId: currentUser.id }, { published: true }] })
-    .project(preplanHeaderSchemaProjection)
+    .project(preplanHeaderProjection)
     .toArray();
 
-  const result: PreplanHeaderModel[] = raw.map(convertPreplanHeaderSchemaToModel);
+  const result: PreplanHeaderModel[] = raw.map(convertPreplanHeaderEntityToModel);
 
   return result;
 }
@@ -48,7 +45,7 @@ async function getAllHeadersHandler(db: Db, {}) {
 async function createEmptyHandler(db: Db, { name, startDate, endDate }) {
   PreplanValidator.createEmptyValidate(name, startDate, endDate).throwIfErrorsExsit();
 
-  const preplan: PreplanSchema = {
+  const preplan: PreplanEntity = {
     name,
     published: false,
     finalized: false,
@@ -57,17 +54,18 @@ async function createEmptyHandler(db: Db, { name, startDate, endDate }) {
     userDisplayName: currentUser.displayName,
     parentPreplanId: undefined,
     parentPreplanName: undefined,
-    // creationDateTime: new Date(),
-    // lastEditDateTime: new Date(),
-    // startDate: new Date(startDate),
-    // endDate: new Date(endDate),
+    creationDateTime: new Date(),
+    lastEditDateTime: new Date(),
+    startDate: new Date(startDate),
+    endDate: new Date(endDate),
     simulationId: undefined,
     simulationName: undefined,
     autoArrangerOptions: undefined,
     dummyAircraftRegisters: [],
     aircraftRegisterOptionsDictionary: {}
-  } as any;
+  };
   const result = await db.collection('preplans').insertOne(preplan);
+  if (!result.result.ok) throw 'Unable to create a new preplan.';
   const preplanId = result.insertedId.toHexString();
 
   return preplanId;
@@ -76,15 +74,15 @@ async function createEmptyHandler(db: Db, { name, startDate, endDate }) {
 async function cloneHandler(db: Db, session: ClientSession, { id, name, startDate, endDate }) {
   PreplanValidator.cloneValidate(name, startDate, endDate).throwIfErrorsExsit();
 
-  const sourcePreplan: PreplanSchema | null = await db.collection('preplans').findOne({ _id: ObjectID.createFromHexString(id) }, { session });
-  if (!sourcePreplan) throw 'Source preplan is not found.';
+  const sourcePreplan: PreplanEntity | null = await db.collection('preplans').findOne({ _id: ObjectID.createFromHexString(id) }, { session });
+  if (!sourcePreplan) throw 'Preplan is not found.';
 
-  const sourceFlightRequrements: FlightRequirementSchema[] = await db
+  const sourceFlightRequrements: FlightRequirementEntity[] = await db
     .collection('flightRequirements')
     .find({ preplanId: ObjectID.createFromHexString(id) }, { session })
     .toArray();
 
-  const clonedPreplan: PreplanSchema = {
+  const clonedPreplan: PreplanEntity = {
     name,
     published: false,
     finalized: false,
@@ -93,40 +91,44 @@ async function cloneHandler(db: Db, session: ClientSession, { id, name, startDat
     userDisplayName: currentUser.displayName,
     parentPreplanId: sourcePreplan._id,
     parentPreplanName: sourcePreplan.name,
-    // creationDateTime: new Date(),
-    // lastEditDateTime: new Date(),
-    // startDate: new Date(startDate),
-    // endDate: new Date(endDate),
+    creationDateTime: new Date(),
+    lastEditDateTime: new Date(),
+    startDate: new Date(startDate),
+    endDate: new Date(endDate),
     simulationId: undefined,
     simulationName: undefined,
     autoArrangerOptions: sourcePreplan.autoArrangerOptions,
     dummyAircraftRegisters: sourcePreplan.dummyAircraftRegisters,
     aircraftRegisterOptionsDictionary: sourcePreplan.aircraftRegisterOptionsDictionary
-  } as any;
-  const result = await db.collection('preplans').insertOne(clonedPreplan, { session });
-  const clonedPreplanObjectId = result.insertedId;
+  };
+  const insertPreplanResult = await db.collection('preplans').insertOne(clonedPreplan, { session });
+  if (!insertPreplanResult.result.ok) throw 'Unable to copy preplan.';
+  const clonedPreplanObjectId = insertPreplanResult.insertedId;
   const clonedPreplanId = clonedPreplanObjectId.toHexString();
 
-  const clonedFlightRequirements: FlightRequirementSchema[] = sourceFlightRequrements.map(f => {
-    delete f._id;
-    f.preplanId = clonedPreplanObjectId;
-    return f;
-  });
-  await db.collection('flightRequirements').insertMany(clonedFlightRequirements, { session });
+  const clonedFlightRequirements: FlightRequirementEntity[] = sourceFlightRequrements.map(f => ({
+    preplanId: clonedPreplanObjectId,
+    definition: f.definition,
+    scope: f.scope,
+    days: f.days,
+    ignored: f.ignored
+  }));
+  const insertFlightRequirementsResult = await db.collection('flightRequirements').insertMany(clonedFlightRequirements, { session });
+  if (!insertFlightRequirementsResult.result.ok) throw 'Unable to copy preplan.';
 
   return clonedPreplanId;
 }
 
 async function getHandler(db: Db, { id }) {
-  const preplan: PreplanSchema | null = await db.collection('preplans').findOne({ _id: ObjectID.createFromHexString(id) });
+  const preplan: PreplanEntity | null = await db.collection('preplans').findOne({ _id: ObjectID.createFromHexString(id) });
   if (!preplan) throw 'Preplan is not found.';
 
-  const flightRequirements: FlightRequirementSchema[] = await db
+  const flightRequirements: FlightRequirementEntity[] = await db
     .collection('flightRequirements')
     .find({ preplanId: ObjectID.createFromHexString(id) })
     .toArray();
 
-  const result: PreplanModel = convertPreplanSchemaToModel(preplan, flightRequirements);
+  const result: PreplanModel = convertPreplanEntityToModel(preplan, flightRequirements);
 
   return result;
 }
@@ -150,7 +152,7 @@ async function finalizeHandler(db: Db, { id }) {
 }
 
 async function removeHandler(db: Db, session: ClientSession, { id }) {
-  const preplan: PreplanSchema | null = await db.collection('preplans').findOne({ _id: ObjectID.createFromHexString(id) }, { session });
+  const preplan: PreplanEntity | null = await db.collection('preplans').findOne({ _id: ObjectID.createFromHexString(id) }, { session });
   if (!preplan) throw 'Preplan is not found.';
 
   const updateChildrenResult = await db
@@ -174,7 +176,7 @@ async function removeHandler(db: Db, session: ClientSession, { id }) {
 async function updateAutoArrangerOptionsHandler(db: Db, { id, autoArrangerOptions }) {
   PreplanValidator.updateAutoArrangerOptionsValidate(autoArrangerOptions).throwIfErrorsExsit();
 
-  const data: AutoArrangerOptions = {
+  const data: AutoArrangerOptionsEntity = {
     minimumGroundTimeMode: autoArrangerOptions.minimumGroundTimeMode,
     minimumGroundTimeOffset: autoArrangerOptions.minimumGroundTimeOffset
   };
@@ -184,6 +186,7 @@ async function updateAutoArrangerOptionsHandler(db: Db, { id, autoArrangerOption
   return data;
 }
 
+/*
 async function addOrEditDummyAircraftRegisterHandler(db: Db, { id, dummyAircraftRegister }) {
   PreplanValidator.addOrEditDummyAircraftRegisterValidate(dummyAircraftRegister).throwIfErrorsExsit();
 
@@ -228,110 +231,18 @@ async function updateAircraftRegisterOptionsdictionaryHandler(db: Db, { id, airc
 
   return { id } as PreplanModel;
 }
+*/
 
 async function addOrEditFlightRequirementHandler(db: Db, { id, flightRequirement }) {
   // const flightRequirement: Readonly<FlightRequirementModel> = data.flightRequirement;
 
-  // do it...
+  throw 'Not implemented.';
 
   return flightRequirement;
 }
 
 async function removeFlightRequirementHandler(db: Db, { flightRequirementId }) {
-  // do it...
+  throw 'Not implemented.';
 
   return true;
-}
-
-/////////////////////////////////////////////////////////////////////////////////
-
-const preplanHeaderSchemaProjection = {
-  name: 1,
-  published: 1,
-  finalized: 1,
-  userId: 1,
-  userName: 1,
-  userDisplayName: 1,
-  parentPreplanId: 1,
-  parentPreplanName: 1,
-  creationDateTime: 1,
-  lastEditDateTime: 1,
-  startDate: 1,
-  endDate: 1,
-  simulationId: 1,
-  simulationName: 1
-};
-
-function convertPreplanHeaderSchemaToModel(data: PreplanHeaderSchema): PreplanHeaderModel {
-  return {
-    id: data._id!.toHexString(),
-    name: data.name,
-    published: data.published,
-    finalized: data.finalized,
-    userId: data.userId,
-    userName: data.userName,
-    userDisplayName: data.userDisplayName,
-    parentPreplanId: data.parentPreplanId && data.parentPreplanId.toHexString(),
-    parentPreplanName: data.parentPreplanName,
-    creationDateTime: data.creationDateTime,
-    lastEditDateTime: data.lastEditDateTime,
-    startDate: data.startDate,
-    endDate: data.endDate,
-    simulationId: data.simulationId,
-    simulationName: data.simulationName
-  };
-}
-
-function convertPreplanSchemaToModel(data: PreplanSchema, flightRequirements: FlightRequirementSchema[]): PreplanModel {
-  return {
-    id: data._id!.toHexString(),
-    name: data.name,
-    published: data.published,
-    finalized: data.finalized,
-    userId: data.userId,
-    userName: data.userName,
-    userDisplayName: data.userDisplayName,
-    parentPreplanId: data.parentPreplanId && data.parentPreplanId.toHexString(),
-    parentPreplanName: data.parentPreplanName,
-    creationDateTime: data.creationDateTime,
-    lastEditDateTime: data.lastEditDateTime,
-    startDate: data.startDate,
-    endDate: data.endDate,
-    simulationId: data.simulationId,
-    simulationName: data.simulationName,
-    autoArrangerOptions: data.autoArrangerOptions,
-    dummyAircraftRegisters: data.dummyAircraftRegisters,
-    aircraftRegisterOptionsDictionary: data.aircraftRegisterOptionsDictionary,
-    flightRequirements: flightRequirements.map(convertFlightRequirementSchemaToModel)
-  };
-}
-
-function convertFlightRequirementSchemaToModel(data: FlightRequirementSchema): FlightRequirementModel {
-  return {
-    id: data._id!.toHexString(),
-    definition: data.definition,
-    scope: {
-      ...data.scope,
-      times: data.scope.times.map(t => ({
-        stdLowerBound: new Daytime(t.stdLowerBound),
-        stdUpperBound: new Daytime(t.stdUpperBound)
-      }))
-    },
-    days: data.days.map(d => ({
-      scope: {
-        ...d.scope,
-        times: d.scope.times.map(t => ({
-          stdLowerBound: new Daytime(t.stdLowerBound),
-          stdUpperBound: new Daytime(t.stdUpperBound)
-        }))
-      },
-      notes: d.notes,
-      day: d.day,
-      flight: {
-        std: new Daytime(d.flight.std),
-        aircraftRegisterId: d.flight.aircraftRegisterId
-      }
-    })),
-    ignored: data.ignored
-  } as any;
 }

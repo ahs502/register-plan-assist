@@ -8,8 +8,8 @@ db.getCollection('preplans').ensureIndex({ _id: 1, userId: 1, published: 1 });
 db.createCollection('flightRequirements');
 db.getCollection('flightRequirements').ensureIndex({ _id: 1, preplanId: 1 });
 
-db.createCollection('masterDataAircraftGroups');
-db.getCollection('masterDataAircraftGroups').ensureIndex({ _id: 1 });
+db.createCollection('masterData.aircraftGroups');
+db.getCollection('masterData.aircraftGroups').ensureIndex({ _id: 1 });
 
-db.createCollection('masterDataConstraints');
-db.getCollection('masterDataConstraints').ensureIndex({ _id: 1 });
+db.createCollection('masterData.constraints');
+db.getCollection('masterData.constraints').ensureIndex({ _id: 1 });

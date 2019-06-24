@@ -66,30 +66,30 @@ export default class PreplanService {
     return await request('update-auto-arranger-options', { id, autoArrangerOptions });
   }
 
-  /**
-   * Adds/edits (according to the given id in model) some dummy aircraft register for
-   * some specified preplan and provides the complete data model of that preplan.
-   */
-  static async addOrEditDummyAircraftRegister(id: string, dummyAircraftRegister: Readonly<DummyAircraftRegisterModel>): Promise<ServerResult<Readonly<PreplanModel>>> {
-    return await request('add-or-edit-dummy-aircraft-register', { id, dummyAircraftRegister });
-  }
+  // /**
+  //  * Adds/edits (according to the given id in model) some dummy aircraft register for
+  //  * some specified preplan and provides the complete data model of that preplan.
+  //  */
+  // static async addOrEditDummyAircraftRegister(id: string, dummyAircraftRegister: Readonly<DummyAircraftRegisterModel>): Promise<ServerResult<Readonly<PreplanModel>>> {
+  //   return await request('add-or-edit-dummy-aircraft-register', { id, dummyAircraftRegister });
+  // }
 
-  /**
-   * Removes some dummy aircraft register and provides the complete data model of its preplan.
-   */
-  static async removeDummyAircraftRegister(dummyAircraftRegisterId: string): Promise<ServerResult<Readonly<PreplanModel>>> {
-    return await request('remove-dummy-aircraft-register', { dummyAircraftRegisterId });
-  }
+  // /**
+  //  * Removes some dummy aircraft register and provides the complete data model of its preplan.
+  //  */
+  // static async removeDummyAircraftRegister(dummyAircraftRegisterId: string): Promise<ServerResult<Readonly<PreplanModel>>> {
+  //   return await request('remove-dummy-aircraft-register', { dummyAircraftRegisterId });
+  // }
 
-  /**
-   * Updates the aircraft register options dictionary for some specified preplan and provides the complete data model of that preplan.
-   */
-  static async updateAircraftRegisterOptionsDictionary(
-    id: string,
-    aircraftRegisterOptionsDictionary: Readonly<AircraftRegisterOptionsDictionary>
-  ): Promise<ServerResult<Readonly<PreplanModel>>> {
-    return await request('update-aircraft-register-options-dictionary', { id, aircraftRegisterOptionsDictionary });
-  }
+  // /**
+  //  * Updates the aircraft register options dictionary for some specified preplan and provides the complete data model of that preplan.
+  //  */
+  // static async updateAircraftRegisterOptionsDictionary(
+  //   id: string,
+  //   aircraftRegisterOptionsDictionary: Readonly<AircraftRegisterOptionsDictionary>
+  // ): Promise<ServerResult<Readonly<PreplanModel>>> {
+  //   return await request('update-aircraft-register-options-dictionary', { id, aircraftRegisterOptionsDictionary });
+  // }
 
   /**
    * Adds/edits (according to the given id) some flight requirement including

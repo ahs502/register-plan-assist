@@ -138,7 +138,7 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = ({
             filterFlightRequiermentBySelectedTab(filterOnProperties(query), tab);
           }}
         />
-        <IconButton color="primary" title="Add Preplan">
+        <IconButton color="primary" title="Add Preplan" onClick={() => onAddFlightRequirement()}>
           <AddIcon fontSize="large" />
         </IconButton>
       </Tabs>
@@ -178,12 +178,12 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = ({
                     <Button color="primary">RETURN</Button>
                   </Grid>
                   <Grid item className={classNames(d.ignored && classes.disableOpacityStyle)}>
-                    <IconButton size="small">
+                    <IconButton size="small" disabled={d.ignored} onClick={() => onEditFlightRequirement(d)}>
                       <EditIcon fontSize="large" />
                     </IconButton>
                   </Grid>
                   <Grid item className={classNames(d.ignored && classes.disableOpacityStyle)}>
-                    <IconButton size="small">
+                    <IconButton size="small" disabled={d.ignored}>
                       <ClearIcon fontSize="large" />
                     </IconButton>
                   </Grid>
@@ -232,10 +232,10 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = ({
                         </TableCell>
                         <TableCell>{item.scope.required && <DoneIcon />}</TableCell>
                         <TableCell>
-                          <IconButton>
+                          <IconButton disabled={d.ignored}>
                             <EditIcon />
                           </IconButton>
-                          <IconButton>
+                          <IconButton disabled={d.ignored}>
                             <ClearIcon />
                           </IconButton>
                         </TableCell>

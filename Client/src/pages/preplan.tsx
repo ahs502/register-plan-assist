@@ -11,12 +11,13 @@ import Preplan from 'src/view-models/Preplan';
 import DraggableDialog from 'src/components/DraggableDialog';
 import FlightRequirement, { FlightTime } from 'src/view-models/FlightRequirement';
 import AircraftIdentity from '@core/types/AircraftIdentity';
+import FlightRequirementEditor from 'src/components/preplan/flight-requirement/FlightRequirementEditor';
 
 const useStyles = makeStyles((theme: Theme) => ({}));
 
 export const NavBarToolsContainerContext = createContext<HTMLDivElement | null>(null);
 
-type FlightRequirementModal = {
+export type FlightRequirementModal = {
   open: boolean;
   flightRequirement?: FlightRequirement;
   weekly?: boolean;
@@ -132,19 +133,7 @@ const PreplanPage: FC = () => {
       )}
 
       <DraggableDialog open={flightRequirementModal.open} onClose={() => setFlightRequirementModal({ open: false })} aria-labelledby="form-dialog-title">
-        <DialogTitle id="form-dialog-title">Subscribe</DialogTitle>
-        <DialogContent>
-          <DialogContentText>To subscribe to this website, please enter your email address here. We will send updates occasionally.</DialogContentText>
-          <TextField autoFocus margin="dense" id="name" label="Email Address" type="email" fullWidth />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setFlightRequirementModal({ open: false })} color="primary">
-            Cancel
-          </Button>
-          <Button onClick={() => alert('Not implemented.')} color="primary">
-            Subscribe
-          </Button>
-        </DialogActions>
+        <FlightRequirementEditor model={flightRequirementModal} mode="add" onSave={fr => alert('TODO: Save FR')} />
       </DraggableDialog>
     </Fragment>
   );

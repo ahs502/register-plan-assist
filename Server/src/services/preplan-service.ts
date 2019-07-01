@@ -9,6 +9,7 @@ import PreplanModel, { PreplanHeaderModel } from '@core/models/PreplanModel';
 import PreplanEntity, { PreplanHeaderEntity, preplanHeaderProjection, convertPreplanHeaderEntityToModel, convertPreplanEntityToModel } from 'src/entities/PreplanEntity';
 import FlightRequirementEntity from 'src/entities/FlightRequirementEntity';
 import AutoArrangerOptionsEntity from 'src/entities/AutoArrangerOptionsEntity';
+import { convertDummyAircraftRegisterEntityToModel } from 'src/entities/DummyAircraftRegisterEntity';
 
 const router = Router();
 export default router;
@@ -234,9 +235,17 @@ async function updateAircraftRegisterOptionsdictionaryHandler(db: Db, { id, airc
 */
 
 async function addOrEditFlightRequirementHandler(db: Db, { id, flightRequirement }) {
-  // const flightRequirement: Readonly<FlightRequirementModel> = data.flightRequirement;
+  const preplan: PreplanEntity | null = await db.collection('preplans').findOne({ _id: ObjectID.createFromHexString(id) });
+  if (!preplan) throw 'Preplan is not found.';
 
-  throw 'Not implemented.';
+  const dummyAircraftRegisters = preplan.dummyAircraftRegisters.map(convertDummyAircraftRegisterEntityToModel);
+  PreplanValidator.addOrEditFlightRequirementValidate(flightRequirement, dummyAircraftRegisters).throwIfErrorsExsit();
+
+  // const data:FlightRequirementEntity={
+  //   _id:flightRequirement.id&&ObjectID.createFromHexString(flightRequirement.id),
+  //   preplanId:ObjectID.createFromHexString(id)
+  //   ,definition:flightRequirement.definition
+  // }
 
   return flightRequirement;
 }

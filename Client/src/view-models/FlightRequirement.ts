@@ -4,6 +4,7 @@ import FlightRequirementModel, { FlightModel, WeekdayFlightRequirementModel } fr
 
 export interface FlightDefinition {
   readonly label: string;
+  readonly stcId: string;
   readonly flightNumber: string;
   readonly departureAirportId: string;
   readonly arrivalAirportId: string;

@@ -16,12 +16,24 @@ export default class Validation<K extends string> {
     this.fakeValidation = isFake ? this : new Validation(true);
   }
 
-  when(...requiredBadges: (K | { badge: K; index?: string | number; subIndex?: string | number })[]): Validation<K> {
+  when(
+    ...requiredBadges: (K | { badge: K; index?: string | number; subIndex?: string | number } | K | { badge: K; index?: string | number; subIndex?: string | number }[])[]
+  ): Validation<K> {
     if (this.isFake) return this.fakeValidation;
     for (let i = 0; i < requiredBadges.length; ++i) {
       const r = requiredBadges[i];
       if (typeof r === 'string' && this.badges.every(b => b.badge !== r || b.index !== undefined || b.subIndex !== undefined)) return this.fakeValidation;
-      if (typeof r === 'object' && this.badges.every(b => b.badge !== r.badge || b.index !== r.index || b.subIndex !== r.subIndex)) return this.fakeValidation;
+      if (typeof r === 'object' && !Array.isArray(r) && this.badges.every(b => b.badge !== r.badge || b.index !== r.index || b.subIndex !== r.subIndex)) return this.fakeValidation;
+      if (
+        typeof r === 'object' &&
+        Array.isArray(r) &&
+        r.some(t =>
+          typeof t === 'string'
+            ? this.badges.every(b => b.badge !== t || b.index !== undefined || b.subIndex !== undefined)
+            : this.badges.every(b => b.badge !== t.badge || b.index !== t.index || b.subIndex !== t.subIndex)
+        )
+      )
+        return this.fakeValidation;
     }
     return this;
   }

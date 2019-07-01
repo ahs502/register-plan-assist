@@ -12,18 +12,19 @@ import SelectAircraftRegistersSideBar from 'src/components/preplan/resource-sche
 import SettingsSideBar from 'src/components/preplan/resource-scheduler/SettingsSideBar';
 import ResourceSchedulerView from 'src/components/preplan/resource-scheduler/ResourceSchedulerView';
 import Preplan from 'src/view-models/Preplan';
-import FlightRequirement, { WeekdayFlightRequirement } from '../../view-models/FlightRequirement';
+import FlightRequirement, { WeekdayFlightRequirement } from 'src/view-models/FlightRequirement';
+import useRouter from 'src/utils/useRouter';
 
 const useStyles = makeStyles((theme: Theme) => ({
   sideBarBackdrop: {
     backgroundColor: 'transparent'
   },
   sideBarPaper: {
-    top: 106
+    top: 105,
+    height: 'calc(100% - 105px)'
   },
   statusBar: {
     height: 54,
-    border: '1px solid orange',
     backgroundColor: theme.palette.extraColors.backupRegister,
     margin: 0,
     padding: theme.spacing(2)
@@ -50,6 +51,8 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
   const [allFlightsFreezed, setAllFlightsFreezed] = useState(() => false); //TODO: Initialize from preplan flights.
   const navBarToolsContainer = useContext(NavBarToolsContainerContext);
 
+  const { match } = useRouter<{ id: string }>();
+
   const classes = useStyles();
 
   const numberOfObjections: number = 12; //TODO: Not implemented.
@@ -68,9 +71,9 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
           <IconButton color="inherit" onClick={() => alert('Not implemented.')} title={allFlightsFreezed ? 'Unfreeze All Flights' : 'Freeze All Flights'}>
             {allFlightsFreezed ? <LockOpenIcon /> : <LockIcon />}
           </IconButton>
-          <IconButton color="inherit" onClick={() => alert('Not implemented.')} title="Flight Requirments">
+          <LinkIconButton color="inherit" to={'/preplan/' + match.params.id + '/flight-requirement-list'} title="Flight Requirments">
             <MahanIcon type={MahanIconType.FlightIcon} />
-          </IconButton>
+          </LinkIconButton>
           <IconButton color="inherit" title="Reports">
             <MahanIcon type={MahanIconType.Chart} />
           </IconButton>
@@ -121,8 +124,17 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
         ModalProps={{ BackdropProps: { classes: { root: classes.sideBarBackdrop } } }}
         classes={{ paper: classes.sideBarPaper }}
       >
-        {sideBar.sideBar === 'SETTINGS' && <SettingsSideBar />}
-        {sideBar.sideBar === 'SELECT_AIRCRAFT_REGISTERS' && <SelectAircraftRegistersSideBar initialSearch={sideBar.initialSearch} />}
+        {sideBar.sideBar === 'SETTINGS' && <SettingsSideBar autoArrangerOptions={preplan.autoArrangerOptions} onApply={autoArrangerOptions => alert('TODO: Not implemented.')} />}
+        {sideBar.sideBar === 'SELECT_AIRCRAFT_REGISTERS' && (
+          <SelectAircraftRegistersSideBar
+            initialSearch={sideBar.initialSearch}
+            aircraftRegisters={preplan.aircraftRegisters}
+            onApply={(dummyAircraftRegisters, aircraftRegisterOptionsDictionary) => {
+              console.table(dummyAircraftRegisters, aircraftRegisterOptionsDictionary);
+              alert('Not implemented.');
+            }}
+          />
+        )}
         {sideBar.sideBar === 'SEARCH_FLIGHTS' && <SearchFlightsSideBar initialSearch={sideBar.initialSearch} />}
         {sideBar.sideBar === 'AUTO_ARRANGER_CHANGE_LOG' && <AutoArrangerChangeLogSideBar initialSearch={sideBar.initialSearch} />}
         {sideBar.sideBar === 'OBJECTIONS' && <ErrorsAndWarningsSideBar initialSearch={sideBar.initialSearch} objections={[]} />}

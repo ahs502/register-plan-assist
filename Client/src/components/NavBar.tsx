@@ -8,7 +8,8 @@ import useRouter from 'src/utils/useRouter';
 
 const useStyles = makeStyles((theme: Theme) => ({
   root: {
-    border: '1px solid green',
+    borderBottom: '1px solid',
+    borderBottomColor: theme.palette.grey[500],
     backgroundColor: theme.palette.grey[300],
     margin: 0,
     padding: theme.spacing(0.5),

@@ -1,7 +1,7 @@
 /**
  * The days of a week starting from Saturday.
  */
-export enum Weekday {
+enum Weekday {
   Saturday,
   Sunday,
   Monday,
@@ -10,3 +10,5 @@ export enum Weekday {
   Thursday,
   Friday
 }
+
+export default Weekday;

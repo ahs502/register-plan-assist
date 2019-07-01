@@ -1,10 +1,11 @@
 import { ObjectID } from 'mongodb';
 import AircraftSelection from '@core/types/AircraftSelection';
-import FlightRequirementModel from '@core/models/FlightRequirementModel';
+import FlightRequirementModel, { FlightDefinitionModel, FlightTimeModel, FlightScopeModel, FlightModel, WeekdayFlightRequirementModel } from '@core/models/FlightRequirementModel';
 import Daytime from '@core/types/Daytime';
 
 export interface FlightDefinitionEntity {
   readonly label: string;
+  readonly stcId: string;
   readonly flightNumber: string;
   readonly departureAirportId: string;
   readonly arrivalAirportId: string;
@@ -45,32 +46,56 @@ export default interface FlightRequirementEntity {
   readonly ignored: boolean;
 }
 
+export function convertFlightDefinitionEntityToModel(data: FlightDefinitionEntity): FlightDefinitionModel {
+  return {
+    label: data.label,
+    stcId: data.stcId,
+    flightNumber: data.flightNumber,
+    departureAirportId: data.departureAirportId,
+    arrivalAirportId: data.arrivalAirportId
+  };
+}
+
+export function convertFlightTimeEntityToModel(data: FlightTimeEntity): FlightTimeModel {
+  return {
+    stdLowerBound: data.stdLowerBound,
+    stdUpperBound: data.stdUpperBound
+  };
+}
+
+export function convertFlightScopeEntityToModel(data: FlightScopeEntity): FlightScopeModel {
+  return {
+    blockTime: data.blockTime,
+    times: data.times.map(convertFlightTimeEntityToModel),
+    aircraftSelection: data.aircraftSelection,
+    slot: data.slot,
+    slotComment: data.slotComment,
+    required: data.required
+  };
+}
+
+export function convertFlightEntityToModel(data: FlightEntity): FlightModel {
+  return {
+    std: data.std,
+    aircraftRegisterId: data.aircraftRegisterId
+  };
+}
+
+export function convertWeekdayFlightRequirementEntityToModel(data: WeekdayFlightRequirementEntity): WeekdayFlightRequirementModel {
+  return {
+    scope: convertFlightScopeEntityToModel(data.scope),
+    notes: data.notes,
+    day: data.day,
+    flight: convertFlightEntityToModel(data.flight)
+  };
+}
+
 export function convertFlightRequirementEntityToModel(data: FlightRequirementEntity): FlightRequirementModel {
   return {
     id: data._id!.toHexString(),
-    definition: data.definition,
-    scope: {
-      ...data.scope,
-      times: data.scope.times.map(t => ({
-        stdLowerBound: new Daytime(t.stdLowerBound),
-        stdUpperBound: new Daytime(t.stdUpperBound)
-      }))
-    },
-    days: data.days.map(d => ({
-      scope: {
-        ...d.scope,
-        times: d.scope.times.map(t => ({
-          stdLowerBound: new Daytime(t.stdLowerBound),
-          stdUpperBound: new Daytime(t.stdUpperBound)
-        }))
-      },
-      notes: d.notes,
-      day: d.day,
-      flight: {
-        std: new Daytime(d.flight.std),
-        aircraftRegisterId: d.flight.aircraftRegisterId
-      }
-    })),
+    definition: convertFlightDefinitionEntityToModel(data.definition),
+    scope: convertFlightScopeEntityToModel(data.scope),
+    days: data.days.map(convertWeekdayFlightRequirementEntityToModel),
     ignored: data.ignored
-  } as any;
+  };
 }

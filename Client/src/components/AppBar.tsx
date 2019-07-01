@@ -25,6 +25,9 @@ const useStyles = makeStyles((theme: Theme) => ({
   backIcon: {
     position: 'relative',
     left: 5
+  },
+  appBarStyle: {
+    height: theme.spacing(6)
   }
 }));
 
@@ -38,7 +41,7 @@ const AppBar: FC<AppBarProps> = ({ user }) => {
   const classes = useStyles();
 
   return (
-    <MaterialUiAppBar position="relative">
+    <MaterialUiAppBar position="relative" className={classes.appBarStyle}>
       <Toolbar variant="dense">
         <IconButton color="inherit" title="Back To Other Module">
           <ArrowBackIcon classes={{ root: classes.backIcon }} />

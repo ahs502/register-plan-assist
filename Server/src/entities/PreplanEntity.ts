@@ -1,6 +1,6 @@
 import { ObjectID } from 'mongodb';
 import AutoArrangerOptionsEntity from './AutoArrangerOptionsEntity';
-import DummyAircraftRegisterEntity from './DummyAircraftRegisterEntity';
+import DummyAircraftRegisterEntity, { convertDummyAircraftRegisterEntityToModel } from './DummyAircraftRegisterEntity';
 import { AircraftRegisterOptionsDictionary } from '@core/types/AircraftRegisterOptions';
 import PreplanModel, { PreplanHeaderModel } from '@core/models/PreplanModel';
 import FlightRequirementEntity, { convertFlightRequirementEntityToModel } from './FlightRequirementEntity';
@@ -84,7 +84,7 @@ export function convertPreplanEntityToModel(data: PreplanEntity, flightRequireme
     simulationId: data.simulationId,
     simulationName: data.simulationName,
     autoArrangerOptions: data.autoArrangerOptions,
-    dummyAircraftRegisters: data.dummyAircraftRegisters,
+    dummyAircraftRegisters: data.dummyAircraftRegisters.map(convertDummyAircraftRegisterEntityToModel),
     aircraftRegisterOptionsDictionary: data.aircraftRegisterOptionsDictionary,
     flightRequirements: flightRequirements.map(convertFlightRequirementEntityToModel)
   };

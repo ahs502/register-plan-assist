@@ -21,12 +21,12 @@ export interface SomeExtraDefinitions {}
 
 interface SomeOtherExtraDefinitions {}
 
-export interface SampleGenericComponentProps<T extends number> {
+export interface SampleGenericComponentProps<T extends {}> {
   someRequiredProp: T;
   someOptionalProp?: boolean;
 }
 
-const SampleGenericComponent = <T extends number>(props: PropsWithChildren<SampleGenericComponentProps<T>>): ReactElement | null => {
+const SampleGenericComponent = <T extends {}>(props: PropsWithChildren<SampleGenericComponentProps<T>>): ReactElement | null => {
   const { someRequiredProp, someOptionalProp } = props;
 
   const [stateVariable, setStateVariable] = useState(123);

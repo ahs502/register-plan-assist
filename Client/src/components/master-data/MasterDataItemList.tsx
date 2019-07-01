@@ -10,15 +10,16 @@ const useStyles = makeStyles((theme: Theme) => ({
   root: {
     display: 'flex',
     alignItems: 'stretch',
-    border: '1px solid brown',
+
     margin: 0,
     padding: 0,
-    height: 'calc(100vh - 104px)'
+    height: 'calc(100vh - 105px)'
   },
   list: {
     width: theme.spacing(64),
     border: 'none',
-    borderRight: '1px solid grey',
+    borderRight: '1px solid',
+    borderColor: theme.palette.grey[300],
     margin: 0,
     padding: 0,
     paddingTop: theme.spacing(2),
@@ -36,8 +37,7 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
   contents: {
     flexGrow: 1,
-    margin: 0,
-    padding: theme.spacing(2)
+    margin: 0
   },
   header: {
     padding: theme.spacing(0, 2)
@@ -98,7 +98,7 @@ const MasterDataItemList = <T extends MasterDataItem>({
         <br />
         <List>
           {filteredItems.map(item => (
-            <ListItem key={item.name} role={undefined} button onClick={() => onItemSelect && onItemSelect(item)}>
+            <ListItem key={item.name} selected={selectedItem === item} role={undefined} button onClick={() => onItemSelect && onItemSelect(item)}>
               <ListItemText
                 primary={<Typography variant="subtitle2">{item.name}</Typography>}
                 secondary={<Fragment>{item.description && <Typography component="span">{item.description}</Typography>}</Fragment>}

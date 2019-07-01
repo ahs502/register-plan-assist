@@ -30,7 +30,7 @@ const Search: FC<SearchProps> = ({ outlined, initialSearch, onQueryChange }) => 
       .filter(Boolean)
       .distinct();
     onQueryChange(query);
-  }, [onQueryChange, value]);
+  }, [value]);
 
   const classes = useStyles();
 
@@ -67,10 +67,10 @@ const Search: FC<SearchProps> = ({ outlined, initialSearch, onQueryChange }) => 
 export default Search;
 
 export function filterOnProperties<K extends string, T extends { [key in K]?: string | undefined | null }>(
-  items: ReadonlyArray<T>,
-  query: ReadonlyArray<string>,
-  properties: ReadonlyArray<K>
-): ReadonlyArray<T> {
+  items: readonly T[],
+  query: readonly string[],
+  properties: readonly K[]
+): readonly T[] {
   if (query.length === 0) return items;
   return items.filter(item => {
     for (let i = 0; i < properties.length; ++i) {

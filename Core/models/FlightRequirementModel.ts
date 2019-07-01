@@ -2,6 +2,7 @@ import AircraftSelection from '../types/AircraftSelection';
 
 export interface FlightDefinitionModel {
   readonly label: string;
+  readonly stcId: string;
   readonly flightNumber: string;
   readonly departureAirportId: string;
   readonly arrivalAirportId: string;

@@ -1,5 +1,6 @@
 import React, { FC } from 'react';
-import { Theme, Typography } from '@material-ui/core';
+import { Theme, Typography, Button, Grid } from '@material-ui/core';
+import { Add as AddIcon } from '@material-ui/icons';
 import { makeStyles } from '@material-ui/styles';
 
 const useStyles = makeStyles((theme: Theme) => ({
@@ -27,15 +28,39 @@ const useStyles = makeStyles((theme: Theme) => ({
 
 export interface SideBarContainerProps {
   label?: string;
+  onApply?: () => void;
+  onAdd?: () => void;
 }
 
-const SideBarContainer: FC<SideBarContainerProps> = ({ label, children }) => {
+const SideBarContainer: FC<SideBarContainerProps> = ({ label, onApply, onAdd, children }) => {
   const classes = useStyles();
 
   return (
     <div className={classes.root}>
       <div className={classes.label}>
-        <Typography> {label}</Typography>
+        <Grid container direction="row" justify="space-between" alignItems="center">
+          <Grid>
+            <Typography> {label}</Typography>
+          </Grid>
+          <Grid>
+            <Grid container direction="row" justify="space-between" alignItems="center" spacing={1}>
+              {onAdd && (
+                <Grid item>
+                  <Button color="primary" variant="outlined" onClick={() => onAdd()}>
+                    <AddIcon />
+                  </Button>
+                </Grid>
+              )}
+              {onApply && (
+                <Grid item>
+                  <Button color="primary" variant="outlined" onClick={() => onApply()}>
+                    Apply
+                  </Button>
+                </Grid>
+              )}
+            </Grid>
+          </Grid>
+        </Grid>
       </div>
       <div className={classes.contents}>{children}</div>
     </div>

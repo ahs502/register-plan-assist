@@ -1,67 +1,76 @@
 import React, { Fragment, FC, useState } from 'react';
-import { Theme, Typography, TextField, Grid, RadioGroup, Radio, FormControlLabel } from '@material-ui/core';
+import { Theme, DialogTitle, DialogContent, DialogActions, Button, Typography } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import MultiSelect from 'src/components/MultiSelect';
 import MasterDataItemList from './MasterDataItemList';
 import MasterData, { Constraint } from '@core/master-data';
+import ConstraintEditor from './ConstraintEditor';
+import DraggableDialog from '../DraggableDialog';
 
-const useStyles = makeStyles((theme: Theme) => ({}));
+const useStyles = makeStyles((theme: Theme) => ({
+  contentStyle: {
+    margin: theme.spacing(4),
+    width: theme.spacing(73)
+  },
+  constraintTitle: {
+    margin: theme.spacing(2, 0),
+    padding: theme.spacing(2)
+  }
+}));
 
 const ConstraintsMasterData: FC = () => {
   const [selectedItem, setSelectedItem] = useState<Constraint | undefined>(undefined);
-  const [addModalOpen, setAddModalOpen] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
+  const addConstraint = () => {
+    setIsAddModalOpen(false);
+    alert('TODO: the Data model requierd for mor implementation');
+  };
 
   const classes = useStyles();
 
   return (
-    <MasterDataItemList<Constraint>
-      collection={MasterData.all.constraints}
-      collectionTitle="Constraints"
-      selectedItem={selectedItem}
-      onItemSelect={setSelectedItem}
-      onItemUnselect={() => setSelectedItem(undefined)}
-      onItemAdd={() => setAddModalOpen(true)}
-      onItemRemove={item => alert('Not implemented.')}
-    >
-      {selectedItem ? (
-        <Fragment>
-          <Typography variant="caption">Caption</Typography>
-          <TextField fullWidth margin="dense" label="Title" />
-          <TextField fullWidth multiline rowsMax="4" margin="dense" label="Details" />
-          <Typography variant="caption">Constraint Template</Typography>
-          <Typography variant="body1">Aircrafts Restriction on Airports</Typography>
-          <Typography variant="body2">When planning the flight of the</Typography>
+    <Fragment>
+      <MasterDataItemList<Constraint>
+        collection={MasterData.all.constraints}
+        collectionTitle="Constraints"
+        selectedItem={selectedItem}
+        onItemSelect={setSelectedItem}
+        // onItemUnselect={() => setSelectedItem(undefined)}
+        onItemAdd={() => setIsAddModalOpen(true)}
+        onItemRemove={item => alert('Not implemented.')}
+      >
+        {selectedItem ? (
+          <div className={classes.contentStyle}>
+            <ConstraintEditor mode="edit" model={selectedItem} />
+          </div>
+        ) : (
+          <Typography className={classes.constraintTitle} variant="subtitle2">
+            Please select a Constraint
+          </Typography>
+        )}
+      </MasterDataItemList>
 
-          <Grid container direction="row" alignItems="flex-end" spacing={8}>
-            <Grid item xs={1}>
-              <Typography variant="body2">Airports(s)</Typography>
-            </Grid>
-            <Grid item xs={11}>
-              {/* <MultiSelect label="Registers" placeholder="Select Registers" suggestions={registers} /> */}
-            </Grid>
-          </Grid>
-
-          <Grid container direction="row" alignItems="center" spacing={8}>
-            <Grid item xs={1}>
-              <RadioGroup>
-                <FormControlLabel value="Only" control={<Radio />} label="Only" />
-                <FormControlLabel value="Never" control={<Radio />} label="Never" />
-              </RadioGroup>
-            </Grid>
-            <Grid item xs={2}>
-              <Typography variant="body2">Use the aircraft(s)</Typography>
-            </Grid>
-            <Grid item xs={9}>
-              {/* <MultiSelect label="Registers" placeholder="Select Registers" suggestions={registers} /> */}
-            </Grid>
-          </Grid>
-
-          <Typography variant="caption">Date Filter</Typography>
-        </Fragment>
-      ) : (
-        <em>[Select an item]</em>
-      )}
-    </MasterDataItemList>
+      <DraggableDialog open={isAddModalOpen} maxWidth="sm" fullWidth={true} onClose={() => setIsAddModalOpen(false)} aria-labelledby="form-dialog-title">
+        <DialogTitle id="form-dialog-add-aircraft-group">What is the new Constraint?</DialogTitle>
+        <DialogContent>
+          <ConstraintEditor mode="add" />
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setIsAddModalOpen(false);
+            }}
+            color="primary"
+          >
+            Cancel
+          </Button>
+          <Button onClick={() => addConstraint()} color="primary">
+            Add
+          </Button>
+        </DialogActions>
+      </DraggableDialog>
+    </Fragment>
   );
 };
 

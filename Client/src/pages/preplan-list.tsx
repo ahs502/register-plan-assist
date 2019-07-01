@@ -15,12 +15,16 @@ const useStyles = makeStyles((theme: Theme) => ({
     margin: 'auto'
   },
   preplanTableCell: {
-    paddingRight: theme.spacing(2),
-    paddingLeft: theme.spacing(2),
+    paddingRight: theme.spacing(0),
+    paddingLeft: theme.spacing(0),
     '&:last-child': {
-      paddingRight: theme.spacing(2)
+      paddingRight: theme.spacing(0)
+    },
+    '&:first-child': {
+      paddingLeft: theme.spacing(2)
     }
-  }
+  },
+
 }));
 
 type Tab = 'USER' | 'PUBLIC';
@@ -83,7 +87,7 @@ const PreplanListPage: FC = () => {
               {preplanHeaders
                 .filter(p => (tab === 'USER' ? p.userId === currentUserId : p.published))
                 .map(preplanHeader => (
-                  <TableRow key={preplanHeader.id}>
+                  <TableRow key={preplanHeader.id} >
                     <TableCell className={classes.preplanTableCell} component="th" scope="row">
                       <LinkTypography to={'preplan/' + preplanHeader.id}>{preplanHeader.name}</LinkTypography>
                     </TableCell>
@@ -94,14 +98,14 @@ const PreplanListPage: FC = () => {
                       {preplanHeader.finalized ? <FinilizedIcon /> : ''}
                     </TableCell>
                     <TableCell className={classes.preplanTableCell}>{preplanHeader.simulationName}</TableCell>
-                    <TableCell className={classes.preplanTableCell}>
+                    <TableCell className={classes.preplanTableCell} align="center">
                       {tab === 'USER' ? (
                         <Switch color="primary" checked={preplanHeader.published} onChange={(event, checked) => alert('Not implemented.')} />
                       ) : (
-                        preplanHeader.userDisplayName
-                      )}
+                          preplanHeader.userDisplayName
+                        )}
                     </TableCell>
-                    <TableCell className={classes.preplanTableCell}>
+                    <TableCell className={classes.preplanTableCell} align="center">
                       <IconButton title="Copy Preplan">
                         <MahanIcon type={MahanIconType.CopyContent} />
                       </IconButton>

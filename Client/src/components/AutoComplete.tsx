@@ -1,16 +1,19 @@
-import React, { FC } from 'react';
-import MuiReactSelect, { Suggestion } from './MuiReactSelect';
+import React, { ReactElement } from 'react';
+import { ActionMeta } from 'react-select/lib/types';
+import MuiReactSelect, { MuiReactSelectProps } from './MuiReactSelect';
 
-export interface AutoCompleteProps {
-  label?: string;
-  placeholder?: string;
-  suggestions?: ReadonlyArray<Suggestion>;
-  value?: Suggestion;
-  onChange?: (value?: Suggestion) => void;
+export interface AutoCompleteProps<T extends {}> extends MuiReactSelectProps<T> {
+  onSelect?(value: T, action: ActionMeta): void;
 }
 
-const AutoComplete: FC<AutoCompleteProps> = ({ label, placeholder, suggestions, value, onChange }) => (
-  <MuiReactSelect label={label} placeholder={placeholder} suggestions={suggestions} value={value} onChange={() => onChange && onChange(value && (value as Suggestion))} />
+const AutoComplete = <T extends {}>({ onSelect, onChange, ...others }: AutoCompleteProps<T>): ReactElement | null => (
+  <MuiReactSelect
+    {...others}
+    onChange={(value, actionMeta) => {
+      if (onSelect) return onSelect(value as T, actionMeta);
+      if (onChange) return onChange(value, actionMeta);
+    }}
+  />
 );
 
 export default AutoComplete;

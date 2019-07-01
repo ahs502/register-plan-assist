@@ -7,9 +7,7 @@
     "postinstall": "gulp install-server && gulp install-client",
     "prebuild": "npm install",
     "build": "gulp build",
-    "start": "concurrently -k -p \"[{index}] [{time}] [{name}]\" -n \"Server,Client\" -c \"blue,green\" \"npm:dev-server\" \"npm:dev-client\"",
-    "dev-server": "gulp dev-server",
-    "dev-client": "gulp dev-client",
+    "start": "concurrently -k -p \"[{index}] [{time}] [{name}]\" -n \"Server,Client\" -c \"blue,green\" \"gulp dev-server\" \"gulp dev-client\"",
     "test": "npm --prefix Client test && npm --prefix Server test",
     "gulp": "gulp"
   },

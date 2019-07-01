@@ -1,22 +1,18 @@
-import React, { FC } from 'react';
-import MuiReactSelect, { Suggestion } from './MuiReactSelect';
+import React, { ReactElement } from 'react';
+import { ActionMeta } from 'react-select/lib/types';
+import MuiReactSelect, { MuiReactSelectProps } from './MuiReactSelect';
 
-export interface MultiSelectProps {
-  label?: string;
-  placeholder?: string;
-  suggestions?: ReadonlyArray<Suggestion>;
-  value?: ReadonlyArray<Suggestion>;
-  onChange?: (value?: ReadonlyArray<Suggestion>) => void;
+export interface MultiSelectProps<T extends {}> extends MuiReactSelectProps<T> {
+  onSelect?(value: readonly T[], action: ActionMeta): void;
 }
 
-const MultiSelect: FC<MultiSelectProps> = ({ label, placeholder, suggestions, value, onChange }) => (
+const MultiSelect = <T extends {}>({ onSelect, onChange, ...others }: MultiSelectProps<T>): ReactElement | null => (
   <MuiReactSelect
-    label={label}
-    placeholder={placeholder}
-    suggestions={suggestions}
-    value={value}
-    onChange={() => onChange && onChange(value && (value as ReadonlyArray<Suggestion>))}
-    isMulti
+    {...others}
+    onChange={(value, actionMeta) => {
+      if (onSelect) return onSelect(value as readonly T[], actionMeta);
+      if (onChange) return onChange(value, actionMeta);
+    }}
   />
 );
 

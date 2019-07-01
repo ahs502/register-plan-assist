@@ -1,6 +1,20 @@
 import React, { FC, useState, useEffect, Fragment } from 'react';
-import { Theme, DialogTitle, DialogContent, DialogContentText, TextField, DialogActions, Button, Typography, Grid, IconButton, Switch } from '@material-ui/core';
-import { Clear as ClearIcon, Add as AddIcon } from '@material-ui/icons';
+import {
+  Theme,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  TextField,
+  DialogActions,
+  Button,
+  Typography,
+  Grid,
+  IconButton,
+  Switch,
+  FormControlLabel,
+  Checkbox
+} from '@material-ui/core';
+import { Clear as ClearIcon, Add as AddIcon, CheckBox } from '@material-ui/icons';
 import { makeStyles, useTheme } from '@material-ui/styles';
 import DraggableDialog from '../../../components/DraggableDialog';
 import FlightRequirement from '../../../business/FlightRequirement';
@@ -10,6 +24,8 @@ import { Weekday } from '../../../business/Weekday';
 import { Scope } from '@babel/traverse';
 import { FlightScope, FlightTime } from '../../../view-models/FlightRequirement';
 import { FlightRequirementModal } from '../../../pages/preplan';
+import ItemPicker from '../../ItemPicker';
+import MasterData from '../../../business/master-data';
 // Our custom styles:
 const useStyles = makeStyles((theme: Theme) => ({
   allowTimeStyle: {
@@ -54,6 +70,7 @@ const FlightRequirementEditor: FC<FlightRequirementEditorProps> = ({ model, mode
     model = {} as FlightRequirementModal;
   }
 
+  const stc = MasterData.all.stcs.items;
   model.times = model.times || ([] as FlightTime[]);
   model.times.push({} as FlightTime);
 
@@ -99,26 +116,40 @@ const FlightRequirementEditor: FC<FlightRequirementEditorProps> = ({ model, mode
           </Grid>
           <Grid item xs={12}>
             <Grid container className={classNames(classes.allowTimeStyle)} spacing={2}>
-              <IconButton onClick={() => {}}>
+              <IconButton
+                onClick={() => {
+                  var temp = { ...flightRequirement };
+                  temp.times = temp.times && [...temp.times];
+                  temp.times && temp.times.push({} as FlightTime);
+                  setFlightRequirement(temp);
+                }}
+              >
                 <AddIcon />
               </IconButton>
               {flightRequirement &&
                 flightRequirement.times &&
-                flightRequirement.times.map(t => {
+                flightRequirement.times.map((t, index) => {
                   return (
-                    <Fragment>
-                      <Grid item xs={5} key={Math.random()}>
+                    <Fragment key={index}>
+                      <Grid item xs={4}>
                         <TextField fullWidth label="STD Lower Bound">
                           {t.stdLowerBound}
                         </TextField>
                       </Grid>
-                      <Grid item xs={5}>
+                      <Grid item xs={4}>
                         <TextField fullWidth label="STD Upper Bound">
                           {t.stdUpperBound}
                         </TextField>
                       </Grid>
                       <Grid item xs={2}>
-                        <IconButton>
+                        <IconButton
+                          onClick={() => {
+                            var temp = { ...flightRequirement };
+                            temp.times = temp.times && temp.times.filter(r => r != t);
+
+                            setFlightRequirement(temp);
+                          }}
+                        >
                           <ClearIcon />
                         </IconButton>
                       </Grid>
@@ -160,8 +191,27 @@ const FlightRequirementEditor: FC<FlightRequirementEditorProps> = ({ model, mode
                   <Typography variant="body2">Requierd</Typography>
                 </Grid>
                 <Grid item xs={6}>
-                  <Switch checked={true} color="primary" />
+                  <Switch color="primary" />
                 </Grid>
+              </Grid>
+            </Grid>
+          </Grid>
+          <Grid item xs={12}>
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <Typography variant="caption" className={classes.captionTextColor}>
+                  Extra Information
+                </Typography>
+              </Grid>
+              <Grid item xs={9}>
+                <TextField label="STC" />
+                {/* <ItemPicker sources={stc} fieldName="name" label="STC" /> */}
+              </Grid>
+              <Grid item xs={3}>
+                <FormControlLabel control={<Checkbox color="primary" />} label="Slot" />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField fullWidth label="Comment" />
               </Grid>
             </Grid>
           </Grid>

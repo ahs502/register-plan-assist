@@ -47,7 +47,7 @@ const ConstraintEditor: FC<ConstraintEditorProps> = ({ model, mode }) => {
     .sortBy('startDate')
     .concat(allSeasenObjects as Season)
     .reverse();
-  const allTemplates = ['Aircraft Restriction on airport', 'Airport time restriction', 'Aircraft Time Restriction'];
+  const allTemplates = ['Aircraft Restriction on airport', 'Airport Time Restriction', 'Aircraft Time Restriction'];
   const aircraftGroupsAndRegisters = registers.concat(aircraftGroups);
 
   const [selectedSeason, setSelectedSeason] = useState(allSeasenObjects.id);
@@ -63,7 +63,7 @@ const ConstraintEditor: FC<ConstraintEditorProps> = ({ model, mode }) => {
           </Typography>
         </Grid>
         <Grid item xs={12}>
-          <TextField fullWidth margin="dense" label="Title" value={model ? model.name : ''} />
+          <TextField fullWidth margin="dense" label="Title" />
         </Grid>
         <Grid item xs={12}>
           <TextField fullWidth multiline rowsMax="2" rows="2" margin="dense" label="Details" />

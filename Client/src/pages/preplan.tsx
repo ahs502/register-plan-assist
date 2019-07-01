@@ -13,7 +13,12 @@ import FlightRequirement, { FlightTime } from '../business/FlightRequirement';
 import { AircraftIdentity } from '../business/master-data/AircraftSelection';
 import FlightRequirementEditor from '../components/preplan/flight-requirment/FlightRequirementEditor';
 
-const useStyles = makeStyles((theme: Theme) => ({}));
+const useStyles = makeStyles((theme: Theme) => ({
+  flightRequirementStyle: {
+    height: '780px',
+    maxHeight: '900px'
+  }
+}));
 
 export const NavBarToolsContainerContext = createContext<HTMLDivElement | null>(null);
 
@@ -132,7 +137,12 @@ const PreplanPage: FC = () => {
         </NavBarToolsContainerContext.Provider>
       )}
 
-      <DraggableDialog open={flightRequirementModal.open} onClose={() => setFlightRequirementModal({ open: false })} aria-labelledby="form-dialog-title">
+      <DraggableDialog
+        classes={{ paper: classes.flightRequirementStyle }}
+        open={flightRequirementModal.open}
+        onClose={() => setFlightRequirementModal({ open: false })}
+        aria-labelledby="form-dialog-title"
+      >
         <FlightRequirementEditor model={flightRequirementModal} mode="add" onSave={fr => alert('TODO: Save FR')} />
       </DraggableDialog>
     </Fragment>

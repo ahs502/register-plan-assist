@@ -1,10 +1,10 @@
 import React, { FC, useState } from 'react';
 import { Theme } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
-import Search, { filterOnProperties } from '../../../components/Search';
+import Search, { filterOnProperties } from 'src/components/Search';
 import SideBarContainer from './SideBarContainer';
 import ErrorsAndWarningsList from './ErrorsAndWarningsList';
-import Objection from '../../../business/Objection';
+import Objection from 'src/view-models/Objection';
 
 const useStyles = makeStyles((theme: Theme) => ({
   error: {

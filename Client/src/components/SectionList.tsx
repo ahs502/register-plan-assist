@@ -12,7 +12,7 @@ const useStyles = makeStyles((theme: Theme) => ({
     height: 'calc(100vh - 105px)'
   },
   list: {
-    width: 256,
+    width: theme.spacing(32),
     border: 'none',
     borderRight: '1px solid',
     borderColor: theme.palette.grey[300],
@@ -62,19 +62,18 @@ export interface SectionItem {
   description: string;
 }
 
-interface SectionListProps {
+export interface SectionListProps {
   sections: SectionItem[];
   selectedSection?: SectionItem;
   onSectionSelect?: (selectedSection: SectionItem) => void;
-  className?: string;
 }
 
-const SectionList: FC<SectionListProps> = ({ children, sections, selectedSection, onSectionSelect, className }) => {
+const SectionList: FC<SectionListProps> = ({ children, sections, selectedSection, onSectionSelect }) => {
   const classes = useStyles();
 
   return (
     <div className={classes.root}>
-      <div className={classNames(classes.list, className)}>
+      <div className={classes.list}>
         <List>
           {sections.map(section => (
             <ListItem key={section.title} button selected={selectedSection === section} onClick={() => onSectionSelect && onSectionSelect(section)}>

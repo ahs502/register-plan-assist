@@ -18,6 +18,7 @@
   "author": "Mahan Air",
   "license": "ISC",
   "devDependencies": {
+    "@types/gulp": "^4.0.6",
     "concurrently": "^4.1.0",
     "del": "^4.1.0",
     "gulp": "^4.0.1",

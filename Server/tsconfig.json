@@ -4,8 +4,8 @@
     "module": "commonjs",
     "baseUrl": ".",
     "paths": {
-      "@business/*": ["../Client/src/business/*"]
+      "@core/*": ["../Core/*"]
     }
   },
-  "include": ["src/index.ts", "src/**/*.ts", "../Client/src/business/**/*.ts"]
+  "include": ["src/**/*.ts", "../Core/**/*.ts"]
 }

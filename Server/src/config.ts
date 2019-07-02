@@ -1,8 +1,8 @@
 export interface Config {
-  mongodbUrl: string;
-  mongodbDatabase: string;
+  readonly mongodbUrl: string;
+  readonly mongodbDatabase: string;
 }
 
-const config: Readonly<Config> = require('../config');
+const config: Config = require('../config').default;
 
 export default config;

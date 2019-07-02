@@ -1,9 +1,9 @@
 import React, { Fragment, FC, useState } from 'react';
 import { Theme, DialogTitle, DialogContent, DialogActions, Button, Typography } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
+import MultiSelect from 'src/components/MultiSelect';
 import MasterDataItemList from './MasterDataItemList';
-import Constraint from '../../business/master-data/Constraint';
-import MasterData from '../../business/master-data';
+import MasterData, { Constraint } from '@core/master-data';
 import ConstraintEditor from './ConstraintEditor';
 import DraggableDialog from '../DraggableDialog';
 

@@ -1,66 +1,65 @@
 import { Router } from 'express';
-import asyncMiddleware from '../utils/asyncMiddleware';
-
-import { MasterDataModel } from '@business/master-data';
-import { AircraftGroupModel } from '@business/master-data/AircraftGroup';
-import { ConstraintModel } from '@business/master-data/Constraint';
+import { Db } from 'mongodb';
+import { asyncMiddlewareWithDatabase } from '../utils/asyncMiddleware';
 
 const router = Router();
 export default router;
 
-router.post(
-  'get-all',
-  asyncMiddleware(async data => {
-    const collectionSelector: { readonly [collectionName in keyof MasterDataModel]?: true } | undefined = data.collectionSelector;
+// async function Handler(data: any, db: Db) {}
 
-    if (!collectionSelector || collectionSelector.aircraftTypes) {
-      // do it...
-    }
+// router.post(
+//   'get-all',
+//   asyncDatabaseMiddleware(async (data, db) => {
+//     const collectionSelector: { readonly [collectionName in keyof MasterDataModel]?: true } | undefined = data.collectionSelector;
 
-    return {} as Partial<MasterDataModel>;
-  })
-);
+//     if (!collectionSelector || collectionSelector.aircraftTypes) {
+//       // do it...
+//     }
 
-router.post(
-  'add-or-edit-aircraft-group',
-  asyncMiddleware(async data => {
-    const aircraftGroup: Readonly<AircraftGroupModel> = data.aircraftGroup;
+//     return {} as Partial<MasterDataModel>;
+//   })
+// );
 
-    // do it...
+// router.post(
+//   'add-or-edit-aircraft-group',
+//   asyncDatabaseMiddleware(async (data, db) => {
+//     const aircraftGroup: Readonly<AircraftGroupModel> = data.aircraftGroup;
 
-    return { aircraftGroups: [aircraftGroup] as AircraftGroupModel[] } as Pick<MasterDataModel, 'aircraftGroups'>;
-  })
-);
+//     // do it...
 
-router.post(
-  'remove-aircraft-group',
-  asyncMiddleware(async data => {
-    const aircraftGroupId: string = data.aircraftGroupId;
+//     return { aircraftGroups: [aircraftGroup] as AircraftGroupModel[] } as Pick<MasterDataModel, 'aircraftGroups'>;
+//   })
+// );
 
-    // do it...
+// router.post(
+//   'remove-aircraft-group',
+//   asyncDatabaseMiddleware(async (data, db) => {
+//     const aircraftGroupId: string = data.aircraftGroupId;
 
-    return { aircraftGroups: [] as AircraftGroupModel[] } as Pick<MasterDataModel, 'aircraftGroups'>;
-  })
-);
+//     // do it...
 
-router.post(
-  'add-or-edit-constraint',
-  asyncMiddleware(async data => {
-    const constraint: Readonly<ConstraintModel> = data.constraint;
+//     return { aircraftGroups: [] as AircraftGroupModel[] } as Pick<MasterDataModel, 'aircraftGroups'>;
+//   })
+// );
 
-    // do it...
+// router.post(
+//   'add-or-edit-constraint',
+//   asyncDatabaseMiddleware(async (data, db) => {
+//     const constraint: Readonly<ConstraintModel> = data.constraint;
 
-    return { constraints: [constraint] as ConstraintModel[] } as Pick<MasterDataModel, 'constraints'>;
-  })
-);
+//     // do it...
 
-router.post(
-  'remove-constraint',
-  asyncMiddleware(async data => {
-    const constraintId: string = data.constraintId;
+//     return { constraints: [constraint] as ConstraintModel[] } as Pick<MasterDataModel, 'constraints'>;
+//   })
+// );
 
-    // do it...
+// router.post(
+//   'remove-constraint',
+//   asyncDatabaseMiddleware(async (data, db) => {
+//     const constraintId: string = data.constraintId;
 
-    return { constraints: [] as ConstraintModel[] } as Pick<MasterDataModel, 'constraints'>;
-  })
-);
+//     // do it...
+
+//     return { constraints: [] as ConstraintModel[] } as Pick<MasterDataModel, 'constraints'>;
+//   })
+// );

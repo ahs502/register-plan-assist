@@ -5,4 +5,4 @@ var config = {
 
 /* ENVIRONMENT SPECIFIC CONFIGURATION PLACEHOLDER */
 
-module.exports = config;
+module.exports = { default: config };

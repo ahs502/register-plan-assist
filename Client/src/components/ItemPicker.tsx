@@ -1,50 +1,32 @@
 import React, { useState, PropsWithChildren, ReactElement } from 'react';
-import { Theme, TextField } from '@material-ui/core';
-import { BaseTextFieldProps } from '@material-ui/core/TextField';
-import { makeStyles, useTheme } from '@material-ui/styles';
-import { red } from '@material-ui/core/colors';
+import TextField, { TextFieldProps } from '@material-ui/core/TextField';
 
-const useStyles = makeStyles((theme: Theme) => ({
-  reject: {
-    color: red[500]
-  }
-}));
+export type ItemPickerProps<K extends string, T extends { [key in K]: string }> = Omit<TextFieldProps, 'value' | 'onChange'> & {
+  items: readonly T[];
+  fieldName: K;
+  onChange?: (item: T | undefined, value: string) => void;
+  item: T | undefined;
+};
 
-export interface ItemPicker<T> extends BaseTextFieldProps {
-  readonly sources: ReadonlyArray<Readonly<T>>;
-  readonly fieldName: keyof T;
-  onItemSelect?: (item: T) => void;
-  defaultValue?: T;
-}
-
-const ItemPicker = <T extends {}>(props: PropsWithChildren<ItemPicker<T>>): ReactElement | null => {
-  const { sources, fieldName, onItemSelect, defaultValue } = props;
-  const selectItem = defaultValue ? defaultValue[fieldName] : '';
-  const [selectedItem, setSelectedItem] = useState<string>((selectItem as any) as string);
-  const [isValidObject, setIsValidObject] = useState(defaultValue ? sources.some(s => s[fieldName] === defaultValue[fieldName]) : false);
-
-  const classes = useStyles();
-  //const theme = useTheme();
+const ItemPicker = <K extends string, T extends { [key in K]: string }>({
+  items,
+  fieldName,
+  onChange,
+  item,
+  ...others
+}: PropsWithChildren<ItemPickerProps<K, T>>): ReactElement | null => {
+  const [value, setValue] = useState(() => (item ? (item[fieldName] as string) : ''));
 
   return (
     <TextField
-      value={selectedItem}
-      error={!isValidObject}
-      InputProps={{
-        className: !isValidObject ? classes.reject : ''
-      }}
+      {...others as any}
+      value={value}
       onChange={e => {
-        var itemValue = e.target.value;
-        var item = sources.find(i => ((i[fieldName] as any) as string).toLowerCase() === itemValue.toLowerCase());
-
-        if (item) {
-          onItemSelect && onItemSelect(item);
-          itemValue = itemValue.toUpperCase();
-          setIsValidObject(true);
-        } else {
-          setIsValidObject(false);
-        }
-        setSelectedItem(itemValue);
+        const value = e.target.value;
+        const itemValue = (value || '').toUpperCase();
+        const item = items.find(i => i[fieldName].toUpperCase() === itemValue);
+        onChange && onChange(item, value);
+        setValue(item ? itemValue : value);
       }}
     />
   );

@@ -2,25 +2,26 @@ import React, { FC, Fragment, useState, useContext } from 'react';
 import { Theme, IconButton, Select, OutlinedInput, Badge, Drawer, Portal } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import { DoneAll as FinilizedIcon, LockOutlined as LockIcon, LockOpenOutlined as LockOpenIcon, Search as SearchIcon, SettingsOutlined as SettingsIcon } from '@material-ui/icons';
-import MahanIcon, { MahanIconType } from '../../components/MahanIcon';
-import LinkIconButton from '../../components/LinkIconButton';
-import { NavBarToolsContainerContext } from '../preplan';
-import AutoArrangerChangeLogSideBar from '../../components/preplan/resource-scheduler/AutoArrangerChangeLogSideBar';
-import SearchFlightsSideBar from '../../components/preplan/resource-scheduler/SearchFlightsSideBar';
-import ErrorsAndWarningsSideBar from '../../components/preplan/resource-scheduler/ErrorsAndWarningsSideBar';
-import SelectAircraftRegistersSideBar from '../../components/preplan/resource-scheduler/SelectAircraftRegistersSideBar';
-import SettingsSideBar from '../../components/preplan/resource-scheduler/SettingsSideBar';
-import ResourceSchedulerView from '../../components/preplan/resource-scheduler/ResourceSchedulerView';
-import Preplan from '../../business/Preplan';
-import FlightRequirement, { WeekdayFlightRequirement } from '../../business/FlightRequirement';
-import useRouter from '../../utils/useRouter';
+import MahanIcon, { MahanIconType } from 'src/components/MahanIcon';
+import LinkIconButton from 'src/components/LinkIconButton';
+import { NavBarToolsContainerContext } from 'src/pages/preplan';
+import AutoArrangerChangeLogSideBar from 'src/components/preplan/resource-scheduler/AutoArrangerChangeLogSideBar';
+import SearchFlightsSideBar from 'src/components/preplan/resource-scheduler/SearchFlightsSideBar';
+import ErrorsAndWarningsSideBar from 'src/components/preplan/resource-scheduler/ErrorsAndWarningsSideBar';
+import SelectAircraftRegistersSideBar from 'src/components/preplan/resource-scheduler/SelectAircraftRegistersSideBar';
+import SettingsSideBar from 'src/components/preplan/resource-scheduler/SettingsSideBar';
+import ResourceSchedulerView from 'src/components/preplan/resource-scheduler/ResourceSchedulerView';
+import Preplan from 'src/view-models/Preplan';
+import FlightRequirement, { WeekdayFlightRequirement } from 'src/view-models/FlightRequirement';
+import useRouter from 'src/utils/useRouter';
 
 const useStyles = makeStyles((theme: Theme) => ({
   sideBarBackdrop: {
     backgroundColor: 'transparent'
   },
   sideBarPaper: {
-    top: 105
+    top: 105,
+    height: 'calc(100% - 105px)'
   },
   statusBar: {
     height: 54,
@@ -123,9 +124,24 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
         ModalProps={{ BackdropProps: { classes: { root: classes.sideBarBackdrop } } }}
         classes={{ paper: classes.sideBarPaper }}
       >
-        {sideBar.sideBar === 'SETTINGS' && <SettingsSideBar />}
-        {sideBar.sideBar === 'SELECT_AIRCRAFT_REGISTERS' && <SelectAircraftRegistersSideBar initialSearch={sideBar.initialSearch} />}
-        {sideBar.sideBar === 'SEARCH_FLIGHTS' && <SearchFlightsSideBar initialSearch={sideBar.initialSearch} />}
+        {sideBar.sideBar === 'SETTINGS' && <SettingsSideBar autoArrangerOptions={preplan.autoArrangerOptions} onApply={autoArrangerOptions => alert('TODO: Not implemented.')} />}
+        {sideBar.sideBar === 'SELECT_AIRCRAFT_REGISTERS' && (
+          <SelectAircraftRegistersSideBar
+            initialSearch={sideBar.initialSearch}
+            aircraftRegisters={preplan.aircraftRegisters}
+            onApply={(dummyAircraftRegisters, aircraftRegisterOptionsDictionary) => {
+              console.table(dummyAircraftRegisters, aircraftRegisterOptionsDictionary);
+              alert('Not implemented.');
+            }}
+          />
+        )}
+        {sideBar.sideBar === 'SEARCH_FLIGHTS' && (
+          <SearchFlightsSideBar
+            initialSearch={sideBar.initialSearch}
+            flights={preplan.flightRequirements.map(w => w.days.map(d => d.flight)).flatten()}
+            onClick={flight => alert('not implemented.')}
+          />
+        )}
         {sideBar.sideBar === 'AUTO_ARRANGER_CHANGE_LOG' && <AutoArrangerChangeLogSideBar initialSearch={sideBar.initialSearch} />}
         {sideBar.sideBar === 'OBJECTIONS' && <ErrorsAndWarningsSideBar initialSearch={sideBar.initialSearch} objections={[]} />}
       </Drawer>

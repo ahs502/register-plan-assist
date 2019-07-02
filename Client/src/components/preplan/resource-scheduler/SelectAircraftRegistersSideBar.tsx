@@ -1,306 +1,401 @@
 import React, { FC, useState, Fragment } from 'react';
-import { Theme, Table, TableHead, TableBody, TableCell, TableRow, Typography, MenuItem, TextField, IconButton, FormControl, Select, InputLabel } from '@material-ui/core';
-import { Clear as RemoveIcon } from '@material-ui/icons';
+import { Theme, Table, TableHead, TableBody, TableCell, TableRow, Typography, TextField, IconButton, FormControl, Select, Divider, Grow, Collapse } from '@material-ui/core';
+import { Clear as RemoveIcon, Check as CheckIcon } from '@material-ui/icons';
 import { makeStyles } from '@material-ui/styles';
 import SideBarContainer from './SideBarContainer';
-import Search, { filterOnProperties } from '../../Search';
-import MasterData from '../../../business/master-data';
-import MasterDataItem from '../../../business/master-data/MasterDataItem';
-import Airport from '../../../business/master-data/Airport';
-import ItemPicker from '../../ItemPicker';
-import AircraftType from '../../../business/master-data/AircraftType';
 import classNames from 'classnames';
+import { PreplanAircraftRegisters } from 'src/view-models/PreplanAircraftRegister';
+import DummyAircraftRegisterModel from '@core/models/DummyAircraftRegisterModel';
+import { AircraftRegisterOptionsDictionary, AircraftRegisterStatus } from '@core/types/AircraftRegisterOptions';
+import MasterData, { Airport, AircraftType } from '@core/master-data';
+import Search, { filterOnProperties } from 'src/components/Search';
 
 const useStyles = makeStyles((theme: Theme) => ({
-  search: {
+  searchWrapper: {
     margin: theme.spacing(0, 0, 5, 0)
   },
-  formControl: {
-    marginTop: theme.spacing(1)
+  nameCell: {
+    width: 80
   },
-  selectStyle: {
-    paddingTop: theme.spacing(0),
-    paddingLeft: theme.spacing(1),
-    paddingRight: theme.spacing(5)
+  baseAirportCell: {
+    width: 90
   },
-  backupColor: {
+  stateCell: {
+    width: 130
+  },
+  select: {
+    width: '100%',
+    paddingRight: 0
+  },
+  backupRegister: {
     backgroundColor: theme.palette.extraColors.backupRegister
   },
-  ignoreColor: {
-    backgroundColor: theme.palette.extraColors.excludedRegister
-  },
-  padding: {
-    padding: theme.spacing(1, 2, 0, 0)
-  },
-  baseColumnStyle: {
-    width: theme.spacing(2),
-    marginTop: theme.spacing(0.25)
-  },
-  stateColumnStyle: {
-    width: theme.spacing(14.5)
-  },
-  registerColumnStyle: {
-    width: theme.spacing(2),
-    paddingLeft: theme.spacing(1)
-  },
-  typeColumnStyle: {
-    width: theme.spacing(2)
+  ignoredRegister: {
+    backgroundColor: theme.palette.extraColors.ignoredRegister
   }
 }));
 
+interface AircraftRegister {
+  id: string;
+  name: string;
+  groups: string[];
+  baseAirport: string;
+  status: AircraftRegisterStatus;
+}
+interface DummyAircraftRegister {
+  id: string;
+  name: string;
+  baseAirport: string;
+  status: AircraftRegisterStatus;
+}
+interface AircraftRegistersPerType {
+  type: AircraftType;
+  registers: AircraftRegister[];
+  dummyRegisters: DummyAircraftRegister[];
+}
+type AircraftRegisters = AircraftRegistersPerType[];
+
+interface AddDummyAircraftRegisterForm {
+  show: boolean;
+  name: string;
+  aircraftType: string;
+  baseAirport: string;
+  status: AircraftRegisterStatus;
+}
+
+const aircraftRegisterStatusList: readonly { value: AircraftRegisterStatus; label: string }[] = [
+  { value: 'IGNORED', label: 'Ignored' },
+  { value: 'BACKUP', label: 'Backup' },
+  { value: 'INCLUDED', label: 'Included' }
+];
+
 export interface SelectAircraftRegistersSideBarProps {
   initialSearch?: string;
+  aircraftRegisters: PreplanAircraftRegisters;
+  onApply(dummyAircraftRegisters: readonly DummyAircraftRegisterModel[], aircraftRegisterOptionsDictionary: AircraftRegisterOptionsDictionary): void;
 }
 
-interface DummyData extends MasterDataItem {
-  type: AircraftType;
-  base: Airport;
-  group: string;
-  state: string;
-}
+const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = ({ initialSearch, aircraftRegisters, onApply }) => {
+  let dummyAircraftRegisterIdCounter: number = 1;
 
-const registers = MasterData.all.aircraftRegisters.items;
-const aircraftTypes = MasterData.all.aircraftTypes.items;
-const allAirports = MasterData.all.airports.items;
-enum groupTypes {
-  'GPS',
-  'RJ',
-  'ACT'
-}
+  const [query, setQuery] = useState<readonly string[]>([]);
+  const [list, setList] = useState<AircraftRegisters>(() => {
+    dummyAircraftRegisterIdCounter =
+      (aircraftRegisters.items
+        .filter(r => r.dummy)
+        .map(r => Number(r.id.replace('dummy-', '')))
+        .sort()
+        .reverse()[0] || 0) + 1;
 
-enum state {
-  'Include',
-  'Backup',
-  'Ignore'
-}
-
-type IfEquals<X, Y, A = X, B = never> = (<T>() => T extends X ? 1 : 2) extends (<T>() => T extends Y ? 1 : 2) ? A : B;
-
-type WritableKeys<T> = { [P in keyof T]-?: IfEquals<{ [Q in P]: T[P] }, { -readonly [Q in P]: T[P] }, P> }[keyof T];
-
-type ReadonlyKeys<T> = { [P in keyof T]-?: IfEquals<{ [Q in P]: T[P] }, { -readonly [Q in P]: T[P] }, never, P> }[keyof T];
-
-const ika = allAirports.find(a => a.name === 'IKA');
-const collection = registers
-  .map(r => {
-    const type = aircraftTypes.find(t => t.id === r.aircraftTypeId);
-    return {
-      name: r.name,
-      id: r.id,
-      type: type,
-      base: ika,
-      group: groupTypes[Math.floor(Math.random() * 3)],
-      state: state[Math.floor(Math.random() * 3)]
-    } as DummyData;
-  })
-  .sortBy(i => {
-    return i.type.name;
+    return MasterData.all.aircraftTypes.items.orderBy('displayOrder').map(t => {
+      const registers = aircraftRegisters.items
+        .filter(a => !a.dummy && a.aircraftTypeId === t.id)
+        .map(a => ({
+          id: a.id,
+          name: a.name,
+          groups: MasterData.all.aircraftGroups.items.filter(g => g.aircraftRegisterIds.includes(a.id)).map(g => g.name),
+          baseAirport: MasterData.all.airports.id[a.options.startingAirportId].name,
+          status: a.options.status
+        }));
+      const dummyRegisters = aircraftRegisters.items
+        .filter(a => a.dummy && a.aircraftTypeId === t.id)
+        .map(a => ({
+          id: a.id,
+          name: a.name,
+          baseAirport: MasterData.all.airports.id[a.options.startingAirportId].name,
+          status: a.options.status
+        }));
+      return {
+        type: t,
+        registers,
+        filteredRegisters: registers,
+        dummyRegisters,
+        filteredDummyRegisters: dummyRegisters
+      };
+    });
+  });
+  const [addDummyRegisterFormModel, setAddDummyRegisterFormModel] = useState<AddDummyAircraftRegisterForm>({
+    show: false,
+    name: '',
+    aircraftType: '',
+    baseAirport: '',
+    status: 'INCLUDED'
   });
 
-const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = ({ initialSearch }) => {
-  const [filteredItems, setFilteredItems] = useState(collection as ReadonlyArray<DummyData>);
-  const [dummyRegisterList, setDummyRegisterList] = useState([] as ReadonlyArray<DummyData>);
-
-  const handelRemoveDummyRegister = (index: number) => {
-    const tempDummyRegisterList = [...dummyRegisterList];
-    tempDummyRegisterList.splice(index, 1);
-    setDummyRegisterList(tempDummyRegisterList);
-  };
-
-  const handleChange = <T extends {}>(
-    list: ReadonlyArray<T>,
-    index: number,
-    propertyName: WritableKeys<T>,
-    newValue: any,
-    settter: (value: React.SetStateAction<ReadonlyArray<T>>) => void
-  ) => {
-    const tempList = [...list];
-    tempList[index][propertyName] = newValue;
-
-    settter(tempList);
-  };
+  function applyHandler() {
+    const dummyAircraftRegisters: DummyAircraftRegisterModel[] = list
+      .map(t =>
+        t.dummyRegisters.map(r => ({
+          id: r.id,
+          name: r.name.toUpperCase(),
+          aircraftTypeId: t.type.id
+        }))
+      )
+      .reduce((a, l) => a.concat(l), [] as DummyAircraftRegisterModel[]);
+    const aircraftRegisterOptionsDictionary: AircraftRegisterOptionsDictionary = {};
+    list.forEach(t => {
+      t.registers.forEach(
+        r =>
+          ((aircraftRegisterOptionsDictionary[r.id] as any) = {
+            status: r.status,
+            startingAirportId: MasterData.all.airports.items.find(a => a.name.toUpperCase() === r.baseAirport.toUpperCase())!.id
+          })
+      );
+      t.dummyRegisters.forEach(
+        r =>
+          ((aircraftRegisterOptionsDictionary[r.id] as any) = {
+            status: r.status,
+            startingAirportId: MasterData.all.airports.items.find(a => a.name.toUpperCase() === r.baseAirport.toUpperCase())!.id
+          })
+      );
+    });
+    //TODO: Validate those models...
+    onApply(dummyAircraftRegisters, aircraftRegisterOptionsDictionary);
+  }
 
   const classes = useStyles();
-  return (
-    <SideBarContainer
-      onApply={() => {
-        alert('TODO: Data Model Must save in database...');
-      }}
-      onAdd={() => {
-        const tempDummyRegisterList = [...dummyRegisterList];
-        tempDummyRegisterList.push({
-          id: Date.now().toString(),
-          name: '',
 
-          base: ika,
-          group: '',
-          state: ''
-        } as DummyData);
-        setDummyRegisterList(tempDummyRegisterList);
-      }}
-      label="Select Aircraft Registers"
-    >
-      <div className={classes.search}>
-        <Search
-          onQueryChange={query => {
-            const f = filterOnProperties(collection as ReadonlyArray<DummyData>, query, ['name']);
-            //onItemUnselect && onItemUnselect();
-            setFilteredItems(f as ReadonlyArray<DummyData>);
+  const addDummyRegisterForm = (
+    <Collapse in={addDummyRegisterFormModel.show}>
+      <Table size="small">
+        <TableHead>
+          <TableRow>
+            <TableCell>
+              <Typography variant="body2">Reg.</Typography>
+            </TableCell>
+            <TableCell>
+              <Typography variant="body2">Type</Typography>
+            </TableCell>
+            <TableCell>
+              <Typography variant="body2" align="left">
+                Base
+              </Typography>
+            </TableCell>
+            <TableCell>
+              <Typography variant="body2">State</Typography>
+            </TableCell>
+            <TableCell />
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          <TableRow
+            className={classNames({
+              [classes.backupRegister]: addDummyRegisterFormModel.status === 'BACKUP',
+              [classes.ignoredRegister]: addDummyRegisterFormModel.status === 'IGNORED'
+            })}
+          >
+            <TableCell className={classes.nameCell}>
+              <TextField
+                value={addDummyRegisterFormModel.name}
+                onChange={e => {
+                  setAddDummyRegisterFormModel({ ...addDummyRegisterFormModel, name: e.target.value });
+                }}
+              />
+            </TableCell>
+            <TableCell>
+              <TextField
+                value={addDummyRegisterFormModel.aircraftType}
+                onChange={e => {
+                  setAddDummyRegisterFormModel({ ...addDummyRegisterFormModel, aircraftType: e.target.value });
+                }}
+              />
+            </TableCell>
+            <TableCell className={classes.baseAirportCell}>
+              <TextField
+                value={addDummyRegisterFormModel.baseAirport}
+                onChange={e => {
+                  setAddDummyRegisterFormModel({ ...addDummyRegisterFormModel, baseAirport: e.target.value });
+                }}
+              />
+            </TableCell>
+            <TableCell className={classes.stateCell}>
+              <FormControl fullWidth>
+                <Select
+                  classes={{ select: classes.select }}
+                  native
+                  variant="outlined"
+                  value={addDummyRegisterFormModel.status}
+                  onChange={e => {
+                    setAddDummyRegisterFormModel({ ...addDummyRegisterFormModel, status: e.target.value as AircraftRegisterStatus });
+                  }}
+                >
+                  {aircraftRegisterStatusList.map(a => (
+                    <option key={a.value} value={a.value}>
+                      {a.label}
+                    </option>
+                  ))}
+                </Select>
+              </FormControl>
+            </TableCell>
+            <TableCell>
+              <IconButton size="small" onClick={() => setAddDummyRegisterFormModel({ ...addDummyRegisterFormModel, show: false })}>
+                <RemoveIcon />
+              </IconButton>
+              <IconButton
+                size="small"
+                onClick={() => {
+                  const type = MasterData.all.aircraftTypes.items.find(t => t.name.toUpperCase() === addDummyRegisterFormModel.aircraftType!.toUpperCase())!;
+                  list
+                    .find(t => t.type === type)!
+                    .dummyRegisters.push({
+                      id: `dummy-${dummyAircraftRegisterIdCounter++}`,
+                      name: addDummyRegisterFormModel.name!.toUpperCase(),
+                      baseAirport: addDummyRegisterFormModel.baseAirport!,
+                      status: addDummyRegisterFormModel.status!
+                    });
+                  setAddDummyRegisterFormModel({ ...addDummyRegisterFormModel, show: false });
+                }}
+              >
+                <CheckIcon />
+              </IconButton>
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
+    </Collapse>
+  );
+  const tableHead = (
+    <TableHead>
+      <TableRow>
+        <TableCell>
+          <Typography variant="body2">Reg.</Typography>
+        </TableCell>
+        <TableCell>
+          <Typography variant="body2" align="left">
+            Base
+          </Typography>
+        </TableCell>
+        <TableCell>
+          <Typography variant="body2">State</Typography>
+        </TableCell>
+        <TableCell>
+          <Typography variant="body2">Group</Typography>
+        </TableCell>
+        <TableCell />
+      </TableRow>
+    </TableHead>
+  );
+  const aircraftRegisterRow = (t: AircraftRegistersPerType, r: AircraftRegister) => (
+    <TableRow key={r.id} className={classNames({ [classes.backupRegister]: r.status === 'BACKUP', [classes.ignoredRegister]: r.status === 'IGNORED' })}>
+      <TableCell className={classes.nameCell}>
+        <Typography variant="body2">{r.name}</Typography>
+      </TableCell>
+      <TableCell className={classes.baseAirportCell}>
+        <TextField
+          value={r.baseAirport}
+          onChange={e => {
+            r.baseAirport = e.target.value;
+            setList([...list]);
           }}
         />
+      </TableCell>
+      <TableCell className={classes.stateCell}>
+        <FormControl fullWidth>
+          <Select
+            classes={{ select: classes.select }}
+            native
+            variant="outlined"
+            value={r.status}
+            onChange={e => {
+              r.status = e.target.value as AircraftRegisterStatus;
+              setList([...list]);
+            }}
+          >
+            {aircraftRegisterStatusList.map(a => (
+              <option key={a.value} value={a.value}>
+                {a.label}
+              </option>
+            ))}
+          </Select>
+        </FormControl>
+      </TableCell>
+      <TableCell colSpan={2}>
+        <Typography variant="body2">{r.groups.join(', ')}</Typography>
+      </TableCell>
+    </TableRow>
+  );
+  const dummyAircraftRegisterRow = (t: AircraftRegistersPerType, r: DummyAircraftRegister) => (
+    <TableRow key={r.id} className={classNames({ [classes.backupRegister]: r.status === 'BACKUP', [classes.ignoredRegister]: r.status === 'IGNORED' })}>
+      <TableCell className={classes.nameCell}>
+        <TextField
+          value={r.name}
+          onChange={e => {
+            r.name = e.target.value;
+            setList([...list]);
+          }}
+        />
+      </TableCell>
+      <TableCell className={classes.baseAirportCell}>
+        <TextField
+          value={r.baseAirport}
+          onChange={e => {
+            r.baseAirport = e.target.value;
+            setList([...list]);
+          }}
+        />
+      </TableCell>
+      <TableCell className={classes.stateCell}>
+        <FormControl fullWidth>
+          <Select
+            classes={{ select: classes.select }}
+            native
+            variant="outlined"
+            value={r.status}
+            onChange={e => {
+              r.status = e.target.value as AircraftRegisterStatus;
+              setList([...list]);
+            }}
+          >
+            {aircraftRegisterStatusList.map(a => (
+              <option key={a.value} value={a.value}>
+                {a.label}
+              </option>
+            ))}
+          </Select>
+        </FormControl>
+      </TableCell>
+      <TableCell />
+      <TableCell>
+        <IconButton
+          size="small"
+          onClick={() => {
+            t.dummyRegisters.remove(r);
+            setList([...list]);
+          }}
+        >
+          <RemoveIcon />
+        </IconButton>
+      </TableCell>
+    </TableRow>
+  );
+
+  return (
+    <SideBarContainer
+      onApply={applyHandler}
+      onAdd={() => setAddDummyRegisterFormModel({ show: true, name: '', aircraftType: '', baseAirport: '', status: 'INCLUDED' })}
+      label="Select Aircraft Registers"
+    >
+      <div className={classes.searchWrapper}>
+        <Search onQueryChange={query => setQuery(query)} />
       </div>
 
-      <div>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell className={classNames(classes.padding, classes.registerColumnStyle)}>
-                <Typography variant="body2">Register</Typography>
-              </TableCell>
-              <TableCell className={classNames(classes.padding, classes.typeColumnStyle)}>
-                <Typography variant="body2">Type</Typography>
-              </TableCell>
-              <TableCell className={classNames(classes.padding, classes.baseColumnStyle)}>
-                <Typography variant="body2" align="left">
-                  Base
-                </Typography>
-              </TableCell>
-              <TableCell className={classes.padding}>
-                <Typography variant="body2">State</Typography>
-              </TableCell>
-              <TableCell className={classes.padding}>
-                <Typography variant="body2">Group</Typography>
-              </TableCell>
-              <TableCell className={classes.padding} />
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {dummyRegisterList.map((item, i) => {
-              return (
-                <TableRow key={item.id} className={item.state === 'Backup' ? classes.backupColor : item.state === 'Ignore' ? classes.ignoreColor : ''}>
-                  <TableCell className={classNames(classes.padding, classes.registerColumnStyle)}>
-                    <TextField />
-                  </TableCell>
-                  <TableCell className={classNames(classes.padding, classes.typeColumnStyle)}>
-                    <ItemPicker
-                      sources={aircraftTypes}
-                      fieldName="name"
-                      defaultValue={item.type}
-                      onItemSelect={newValue => {
-                        handleChange(filteredItems, i, 'type', newValue, setFilteredItems);
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell className={classNames(classes.padding, classes.baseColumnStyle)}>
-                    <ItemPicker
-                      sources={allAirports}
-                      fieldName="name"
-                      defaultValue={item.base}
-                      onItemSelect={newValue => {
-                        handleChange(dummyRegisterList, i, 'base', newValue, setDummyRegisterList);
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell className={classNames(classes.padding, classes.stateColumnStyle)}>
-                    <FormControl fullWidth className={classes.formControl}>
-                      <Select
-                        classes={{ select: classes.selectStyle }}
-                        native
-                        variant="outlined"
-                        value={item.state}
-                        onChange={(event, child) => {
-                          handleChange(dummyRegisterList, i, 'state', event.target.value, setDummyRegisterList);
-                        }}
-                      >
-                        {Array.range(0, 2).map(i => {
-                          return (
-                            <option key={i} value={state[i]}>
-                              {state[i]}
-                            </option>
-                          );
-                        })}
-                      </Select>
-                    </FormControl>
-                  </TableCell>
-                  <TableCell className={classes.padding} />
-                  <TableCell className={classes.padding}>
-                    <IconButton
-                      size="small"
-                      onClick={() => {
-                        // console.log(i);
-                        handelRemoveDummyRegister(i);
-                      }}
-                    >
-                      <RemoveIcon />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-            {filteredItems.map((item, i) => {
-              return (
-                <Fragment key={item.id}>
-                  {i > 0 && item.type !== filteredItems[i - 1].type ? (
-                    <TableRow>
-                      <TableCell colSpan={5}>
-                        <br />
-                        <br />
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    <Fragment />
-                  )}
-                  <TableRow className={item.state === 'Backup' ? classes.backupColor : item.state === 'Ignore' ? classes.ignoreColor : ''}>
-                    <TableCell className={classNames(classes.padding, classes.registerColumnStyle)}>
-                      <Typography variant="body2">{item.name}</Typography>
-                    </TableCell>
-                    <TableCell className={classNames(classes.padding, classes.typeColumnStyle)}>
-                      <Typography variant="body2">{item.type.name}</Typography>
-                    </TableCell>
-
-                    <TableCell className={classNames(classes.padding, classes.baseColumnStyle)}>
-                      <ItemPicker
-                        className={classes.baseColumnStyle}
-                        sources={allAirports}
-                        fieldName="name"
-                        defaultValue={item.base}
-                        onItemSelect={newValue => {
-                          handleChange(filteredItems, i, 'base', newValue, setFilteredItems);
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell className={classNames(classes.padding, classes.stateColumnStyle)}>
-                      <FormControl fullWidth className={classes.formControl}>
-                        <Select
-                          classes={{ select: classes.selectStyle }}
-                          native
-                          variant="outlined"
-                          value={item.state}
-                          onChange={(event, child) => {
-                            handleChange(filteredItems, i, 'state', event.target.value, setFilteredItems);
-                          }}
-                        >
-                          {Array.range(0, 2).map(i => {
-                            return (
-                              <option key={i} value={state[i]}>
-                                {state[i]}
-                              </option>
-                            );
-                          })}
-                        </Select>
-                      </FormControl>
-                    </TableCell>
-                    <TableCell className={classes.padding}>
-                      <Typography variant="body2">{item.group}</Typography>
-                    </TableCell>
-                    <TableCell className={classes.padding} />
-                  </TableRow>
-                </Fragment>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </div>
+      {addDummyRegisterForm}
+      {list.map(t => (
+        <Fragment key={t.type.id}>
+          <br />
+          <br />
+          <Typography variant="h6" display="inline">
+            Type: {t.type.name}
+          </Typography>
+          <Table size="small">
+            {tableHead}
+            <TableBody>
+              {filterOnProperties(t.registers, query, ['name']).map(r => aircraftRegisterRow(t, r))}
+              {filterOnProperties(t.dummyRegisters, query, ['name']).map(r => dummyAircraftRegisterRow(t, r))}
+            </TableBody>
+          </Table>
+        </Fragment>
+      ))}
     </SideBarContainer>
   );
 };

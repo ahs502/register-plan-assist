@@ -1,12 +1,10 @@
 import React, { FC, Fragment, useState } from 'react';
 import { Theme, DialogActions, DialogTitle, DialogContent, Button, TextField, Typography } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
-import MultiSelect from '../MultiSelect';
-import DraggableDialog from '../DraggableDialog';
+import MultiSelect from 'src/components/MultiSelect';
+import DraggableDialog from 'src/components/DraggableDialog';
 import MasterDataItemList from './MasterDataItemList';
-import AircraftGroup from '../../business/master-data/AircraftGroup';
-import MasterData from '../../business/master-data';
-import AircraftRegister from '../../business/master-data/AircraftRegister';
+import MasterData, { AircraftGroup, AircraftRegister } from '@core/master-data';
 
 const useStyles = makeStyles((theme: Theme) => ({
   overflowVisible: {
@@ -76,7 +74,7 @@ const AircraftGroupsMasterData: FC = () => {
               value={groupRegisters}
               getOptionLabel={r => r.name}
               getOptionValue={r => r.id}
-              onChange={(value, action) => {
+              onSelect={value => {
                 setGroupRegisters(value as ReadonlyArray<AircraftRegister>);
               }}
             />
@@ -109,7 +107,7 @@ const AircraftGroupsMasterData: FC = () => {
             options={registers}
             getOptionLabel={r => r.name}
             getOptionValue={r => r.id}
-            onChange={(value, action) => {
+            onSelect={value => {
               setNewAircraftGroupRegisters(value as ReadonlyArray<AircraftRegister>);
             }}
           />

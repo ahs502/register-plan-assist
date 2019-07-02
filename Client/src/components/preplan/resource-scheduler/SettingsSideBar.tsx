@@ -2,6 +2,10 @@ import React, { FC, useState } from 'react';
 import { Theme, Typography, FormControl, Select, TextField, InputLabel } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import SideBarContainer from './SideBarContainer';
+import { MinimumGroundTimeMode } from '@core/types/auto-arranger-options';
+import AutoArrangerOptionsModel from '@core/models/AutoArrangerOptionsModel';
+import AutoArrangerOptions from 'src/view-models/AutoArrangerOptions';
+import PreplanValidator from '@core/validators/PreplanValidator';
 
 const useStyles = makeStyles((theme: Theme) => ({
   formControl: {
@@ -16,57 +20,57 @@ const useStyles = makeStyles((theme: Theme) => ({
   }
 }));
 
+const minimumGroundTimeModes: readonly { value: MinimumGroundTimeMode; label: string }[] = [
+  { value: 'MINIMUM', label: 'Minimum' },
+  { value: 'MAXIMUM', label: 'Maximum' },
+  { value: 'AVERAGE', label: 'Average' }
+];
+
 export interface SettingsSideBarProps {
-  mode?: 'Average' | 'Maximum' | 'Minimum';
-  offset?: number;
+  autoArrangerOptions: AutoArrangerOptions;
+  onApply: (autoArrangerOptions: AutoArrangerOptionsModel) => void;
 }
 
-const allMode = ['Average', 'Maximum', 'Minimum'];
+const SettingsSideBar: FC<SettingsSideBarProps> = ({ autoArrangerOptions, onApply }) => {
+  const [minimumGroundTimeMode, setMinimumGroundTimeMode] = useState(autoArrangerOptions.minimumGroundTimeMode);
+  const [minimumGroundTimeOffset, setMinimumGroundTimeOffset] = useState(autoArrangerOptions.minimumGroundTimeOffset);
 
-const SettingsSideBar: FC<SettingsSideBarProps> = (mode, offset) => {
-  const [selectedMgtMode, setSelectedMgtMode] = useState('Average');
-  const [selectedOffset, setSelectedOffset] = useState(0);
   const classes = useStyles();
+
   return (
     <SideBarContainer
-      onApply={() => {
-        console.log(selectedMgtMode);
-        console.log(selectedOffset);
-        alert('TODO: Data Model Must save in database...');
-      }}
       label="Auto-Arranger Options"
+      onApply={() => {
+        const autoArrangerOptions: AutoArrangerOptionsModel = { minimumGroundTimeMode, minimumGroundTimeOffset };
+        const validation = PreplanValidator.updateAutoArrangerOptionsValidate(autoArrangerOptions);
+        if (validation.ok) {
+          onApply(autoArrangerOptions);
+        }
+      }}
     >
-      <Typography variant="body1"> Minimum Ground Time </Typography>
-
+      <Typography variant="body1">Minimum Ground Time</Typography>
       <FormControl fullWidth className={classes.formControl}>
         <InputLabel htmlFor="age-native-simple">Mode</InputLabel>
         <Select
           classes={{ select: classes.selectStyle }}
           native
           variant="outlined"
-          value={selectedMgtMode}
-          // input={<Input disabled={mode !== 'add'} />}
-          onChange={e => {
-            setSelectedMgtMode(e.target.value as string);
-          }}
+          value={minimumGroundTimeMode}
+          onChange={e => setMinimumGroundTimeMode(e.target.value as MinimumGroundTimeMode)}
         >
-          {allMode.map((s, i) => {
-            return (
-              <option key={i} value={s}>
-                {s}
-              </option>
-            );
-          })}
+          {minimumGroundTimeModes.map(mode => (
+            <option key={mode.value} value={mode.value}>
+              {mode.label}
+            </option>
+          ))}
         </Select>
       </FormControl>
       <FormControl fullWidth className={classes.formControl}>
         <TextField
           type="number"
           label="Offset"
-          value={selectedOffset}
-          onChange={e => {
-            setSelectedOffset(parseInt(e.target.value));
-          }}
+          value={minimumGroundTimeOffset}
+          onChange={e => setMinimumGroundTimeOffset(Number(e.target.value))}
           InputProps={{
             className: classes.textFieldStyle
           }}

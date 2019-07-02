@@ -17,7 +17,7 @@ declare module '@material-ui/core/styles/createPalette' {
       warnedFlight: string;
       includedRegister: string;
       backupRegister: string;
-      excludedRegister: string;
+      ignoredRegister: string;
     };
   }
 }
@@ -28,7 +28,7 @@ theme.palette.extraColors = {
   warnedFlight: '#FF9933',
   includedRegister: '#FFFFFF',
   backupRegister: '#FFFFCC',
-  excludedRegister: '#CCCCCC'
+  ignoredRegister: '#CCCCCC'
 };
 
 export default theme;

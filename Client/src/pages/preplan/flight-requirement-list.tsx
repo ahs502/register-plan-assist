@@ -1,18 +1,15 @@
 import React, { FC, Fragment, useState, useContext } from 'react';
 import { Theme, Portal, Paper, Tabs, Tab, IconButton, Grid, TableHead, TableRow, TableCell, Table, TableBody, Typography, Switch, Backdrop, Button } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
-import { NavBarToolsContainerContext } from '../preplan';
-import { Weekday } from '../../business/Weekday';
-import { FlightRequirementModel, FlightTime } from '../../business/FlightRequirement';
-import { Daytime } from '../../business/Daytime';
-import Search from '../../components/Search';
+import { NavBarToolsContainerContext } from 'src/pages/preplan';
+import FlightRequirement, { WeekdayFlightRequirement, FlightTime, FlightScope } from 'src/view-models/FlightRequirement';
+import { fade } from '@material-ui/core/styles';
+import Search from 'src/components/Search';
 import { DoneAll as FinilizedIcon, Add as AddIcon, Edit as EditIcon, Clear as ClearIcon, Done as DoneIcon } from '@material-ui/icons';
-import FlightRequirement, { WeekdayFlightRequirement, FlightScope, FlightDefinition } from '../../view-models/FlightRequirement';
 import classNames from 'classnames';
-import { fade } from '@material-ui/core/styles/colorManipulator';
-
-// import { Search } from '@material-ui/icons';
-// import Search from '../components/Search';
+import Weekday from '@core/types/Weekday';
+import Daytime from '@core/types/Daytime';
+import FlightRequirementModel from '@core/models/FlightRequirementModel';
 
 const useStyles = makeStyles((theme: Theme) => ({
   contentPage: {
@@ -83,7 +80,7 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = ({
   const [searchValue, setSearchValue] = useState<readonly string[]>([]);
   const [numberOfAllFR, setNumberOfAllFr] = useState(0);
   const [numberOfIgnoreFR, setNumberOfIgnoreFr] = useState(0);
-  const [filterFlightRequirment, setFilterFlightRequirment] = useState<ReadonlyArray<FlightRequirement>>(dummyDatas);
+  const [filterFlightRequirment, setFilterFlightRequirment] = useState<ReadonlyArray<FlightRequirement>>([]);
   const classes = useStyles();
 
   const handleChange = <T extends {}>(list: ReadonlyArray<T>, item: T, propertyName: keyof T, newValue: any, settter: (value: React.SetStateAction<ReadonlyArray<T>>) => void) => {
@@ -95,9 +92,9 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = ({
 
   const filterOnProperties = (query: readonly string[]): ReadonlyArray<FlightRequirement> => {
     console.log(query);
-    if (!query || query.length <= 0) return dummyDatas;
+    if (!query || query.length <= 0) return [];
 
-    return dummyDatas.filter(item => {
+    return ([] as ReadonlyArray<FlightRequirement>).filter(item => {
       for (let j = 0; j < query.length; ++j) {
         if (((item.definition.label || '') as string).toLowerCase().includes(query[j])) return true;
         if (((item.definition.arrivalAirportId || '') as string).toLowerCase().includes(query[j])) return true;
@@ -256,179 +253,179 @@ export default FlightRequirementListPage;
 
 //==============================================================================================
 
-const dummyDatas = [
-  new FlightRequirement({
-    id: '125',
-    definition: { label: 'DXB1', flightNumber: 'W5 0060', departureAirportId: '7092901520000005420', arrivalAirportId: '7092901520000001588' } as FlightDefinition,
-    scope: {
-      blockTime: 120,
-      times: [{ stdLowerBound: new Daytime(500), stdUpperBound: new Daytime(600) }, { stdLowerBound: new Daytime(720), stdUpperBound: new Daytime(820) }] as ReadonlyArray<
-        Readonly<FlightTime>
-      >,
-      slot: true,
-      slotComment: 'no comment .....',
-      required: true
-    } as FlightScope,
-    days: [
-      {
-        notes: 'note1',
-        day: 1,
-        scope: {
-          blockTime: 120,
-          times: [{ stdLowerBound: new Daytime(500), stdUpperBound: new Daytime(600) }, { stdLowerBound: new Daytime(720), stdUpperBound: new Daytime(820) }] as ReadonlyArray<
-            Readonly<FlightTime>
-          >,
-          slot: true,
-          slotComment: 'no comment .....',
-          required: true
-        } as FlightScope,
-        flight: {}
-      },
-      {
-        notes: 'note3',
-        day: 3,
-        scope: {
-          blockTime: 120,
-          times: [{ stdLowerBound: new Daytime(500), stdUpperBound: new Daytime(600) }, { stdLowerBound: new Daytime(720), stdUpperBound: new Daytime(820) }] as ReadonlyArray<
-            Readonly<FlightTime>
-          >,
-          slot: true,
-          slotComment: 'no comment .....',
-          required: false
-        } as FlightScope,
-        flight: {}
-      },
-      {
-        notes: 'note5',
-        day: 5,
-        scope: {
-          blockTime: 120,
-          times: [{ stdLowerBound: new Daytime(500), stdUpperBound: new Daytime(600) }, { stdLowerBound: new Daytime(720), stdUpperBound: new Daytime(820) }] as ReadonlyArray<
-            Readonly<FlightTime>
-          >,
-          slot: true,
-          slotComment: 'no comment .....',
-          required: true
-        } as FlightScope,
-        flight: {}
-      }
-    ] as WeekdayFlightRequirement[],
-    ignored: true
-  } as FlightRequirementModel),
-  new FlightRequirement({
-    id: '126',
-    definition: { label: 'DXB1', flightNumber: 'W5 0061', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000005420' } as FlightDefinition,
-    scope: {
-      blockTime: 120,
-      times: [{ stdLowerBound: new Daytime(500), stdUpperBound: new Daytime(600) }, { stdLowerBound: new Daytime(720), stdUpperBound: new Daytime(820) }] as ReadonlyArray<
-        Readonly<FlightTime>
-      >,
-      slot: true,
-      slotComment: 'no comment .....',
-      required: true
-    } as FlightScope,
-    days: [
-      {
-        notes: 'note1',
-        day: 1,
-        scope: {
-          blockTime: 120,
-          times: [{ stdLowerBound: new Daytime(500), stdUpperBound: new Daytime(600) }, { stdLowerBound: new Daytime(720), stdUpperBound: new Daytime(820) }] as ReadonlyArray<
-            Readonly<FlightTime>
-          >,
-          slot: true,
-          slotComment: 'no comment .....',
-          required: true
-        } as FlightScope,
-        flight: {}
-      },
-      {
-        notes: 'note3',
-        day: 3,
-        scope: {
-          blockTime: 120,
-          times: [{ stdLowerBound: new Daytime(500), stdUpperBound: new Daytime(600) }, { stdLowerBound: new Daytime(720), stdUpperBound: new Daytime(820) }] as ReadonlyArray<
-            Readonly<FlightTime>
-          >,
-          slot: true,
-          slotComment: 'no comment .....',
-          required: false
-        } as FlightScope,
-        flight: {}
-      },
-      {
-        notes: 'note5',
-        day: 5,
-        scope: {
-          blockTime: 120,
-          times: [{ stdLowerBound: new Daytime(500), stdUpperBound: new Daytime(600) }, { stdLowerBound: new Daytime(720), stdUpperBound: new Daytime(820) }] as ReadonlyArray<
-            Readonly<FlightTime>
-          >,
-          slot: true,
-          slotComment: 'no comment .....',
-          required: true
-        } as FlightScope,
-        flight: {}
-      }
-    ] as WeekdayFlightRequirement[],
-    ignored: false
-  } as FlightRequirementModel),
-  new FlightRequirement({
-    id: '127',
-    definition: { label: 'IST1', flightNumber: 'W5 0113', departureAirportId: '7092901520000001628', arrivalAirportId: '7092901520000001588' } as FlightDefinition,
-    scope: {
-      blockTime: 120,
-      times: [{ stdLowerBound: new Daytime(500), stdUpperBound: new Daytime(600) }, { stdLowerBound: new Daytime(720), stdUpperBound: new Daytime(820) }] as ReadonlyArray<
-        Readonly<FlightTime>
-      >,
-      slot: true,
-      slotComment: 'no comment .....',
-      required: true
-    } as FlightScope,
-    days: [
-      {
-        notes: 'note2',
-        day: 2,
-        scope: {
-          blockTime: 120,
-          times: [{ stdLowerBound: new Daytime(500), stdUpperBound: new Daytime(600) }, { stdLowerBound: new Daytime(720), stdUpperBound: new Daytime(820) }] as ReadonlyArray<
-            Readonly<FlightTime>
-          >,
-          slot: true,
-          slotComment: 'no comment .....',
-          required: true
-        } as FlightScope,
-        flight: {}
-      },
-      {
-        notes: 'note4',
-        day: 4,
-        scope: {
-          blockTime: 120,
-          times: [{ stdLowerBound: new Daytime(500), stdUpperBound: new Daytime(600) }, { stdLowerBound: new Daytime(720), stdUpperBound: new Daytime(820) }] as ReadonlyArray<
-            Readonly<FlightTime>
-          >,
-          slot: true,
-          slotComment: 'no comment .....',
-          required: true
-        } as FlightScope,
-        flight: {}
-      },
-      {
-        notes: 'note6',
-        day: 6,
-        scope: {
-          blockTime: 120,
-          times: [{ stdLowerBound: new Daytime(500), stdUpperBound: new Daytime(600) }, { stdLowerBound: new Daytime(720), stdUpperBound: new Daytime(820) }] as ReadonlyArray<
-            Readonly<FlightTime>
-          >,
-          slot: true,
-          slotComment: 'no comment .....',
-          required: true
-        } as FlightScope,
-        flight: {}
-      }
-    ] as WeekdayFlightRequirement[],
-    ignored: false
-  } as FlightRequirementModel)
-] as ReadonlyArray<FlightRequirement>;
+// const dummyDatas = [
+//   new FlightRequirement({
+//     id: '125',
+//     definition: { label: 'DXB1', flightNumber: 'W5 0060', departureAirportId: '7092901520000005420', arrivalAirportId: '7092901520000001588' } as FlightDefinition,
+//     scope: {
+//       blockTime: 120,
+//       times: [{ stdLowerBound: new Daytime(500), stdUpperBound: new Daytime(600) }, { stdLowerBound: new Daytime(720), stdUpperBound: new Daytime(820) }] as ReadonlyArray<
+//         Readonly<FlightTime>
+//       >,
+//       slot: true,
+//       slotComment: 'no comment .....',
+//       required: true
+//     } as FlightScope,
+//     days: [
+//       {
+//         notes: 'note1',
+//         day: 1,
+//         scope: {
+//           blockTime: 120,
+//           times: [{ stdLowerBound: new Daytime(500), stdUpperBound: new Daytime(600) }, { stdLowerBound: new Daytime(720), stdUpperBound: new Daytime(820) }] as ReadonlyArray<
+//             Readonly<FlightTime>
+//           >,
+//           slot: true,
+//           slotComment: 'no comment .....',
+//           required: true
+//         } as FlightScope,
+//         flight: {}
+//       },
+//       {
+//         notes: 'note3',
+//         day: 3,
+//         scope: {
+//           blockTime: 120,
+//           times: [{ stdLowerBound: new Daytime(500), stdUpperBound: new Daytime(600) }, { stdLowerBound: new Daytime(720), stdUpperBound: new Daytime(820) }] as ReadonlyArray<
+//             Readonly<FlightTime>
+//           >,
+//           slot: true,
+//           slotComment: 'no comment .....',
+//           required: false
+//         } as FlightScope,
+//         flight: {}
+//       },
+//       {
+//         notes: 'note5',
+//         day: 5,
+//         scope: {
+//           blockTime: 120,
+//           times: [{ stdLowerBound: new Daytime(500), stdUpperBound: new Daytime(600) }, { stdLowerBound: new Daytime(720), stdUpperBound: new Daytime(820) }] as ReadonlyArray<
+//             Readonly<FlightTime>
+//           >,
+//           slot: true,
+//           slotComment: 'no comment .....',
+//           required: true
+//         } as FlightScope,
+//         flight: {}
+//       }
+//     ] as WeekdayFlightRequirement[],
+//     ignored: true
+//   } as FlightRequirementModel),
+//   new FlightRequirement({
+//     id: '126',
+//     definition: { label: 'DXB1', flightNumber: 'W5 0061', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000005420' } as FlightDefinition,
+//     scope: {
+//       blockTime: 120,
+//       times: [{ stdLowerBound: new Daytime(500), stdUpperBound: new Daytime(600) }, { stdLowerBound: new Daytime(720), stdUpperBound: new Daytime(820) }] as ReadonlyArray<
+//         Readonly<FlightTime>
+//       >,
+//       slot: true,
+//       slotComment: 'no comment .....',
+//       required: true
+//     } as FlightScope,
+//     days: [
+//       {
+//         notes: 'note1',
+//         day: 1,
+//         scope: {
+//           blockTime: 120,
+//           times: [{ stdLowerBound: new Daytime(500), stdUpperBound: new Daytime(600) }, { stdLowerBound: new Daytime(720), stdUpperBound: new Daytime(820) }] as ReadonlyArray<
+//             Readonly<FlightTime>
+//           >,
+//           slot: true,
+//           slotComment: 'no comment .....',
+//           required: true
+//         } as FlightScope,
+//         flight: {}
+//       },
+//       {
+//         notes: 'note3',
+//         day: 3,
+//         scope: {
+//           blockTime: 120,
+//           times: [{ stdLowerBound: new Daytime(500), stdUpperBound: new Daytime(600) }, { stdLowerBound: new Daytime(720), stdUpperBound: new Daytime(820) }] as ReadonlyArray<
+//             Readonly<FlightTime>
+//           >,
+//           slot: true,
+//           slotComment: 'no comment .....',
+//           required: false
+//         } as FlightScope,
+//         flight: {}
+//       },
+//       {
+//         notes: 'note5',
+//         day: 5,
+//         scope: {
+//           blockTime: 120,
+//           times: [{ stdLowerBound: new Daytime(500), stdUpperBound: new Daytime(600) }, { stdLowerBound: new Daytime(720), stdUpperBound: new Daytime(820) }] as ReadonlyArray<
+//             Readonly<FlightTime>
+//           >,
+//           slot: true,
+//           slotComment: 'no comment .....',
+//           required: true
+//         } as FlightScope,
+//         flight: {}
+//       }
+//     ] as WeekdayFlightRequirement[],
+//     ignored: false
+//   } as FlightRequirementModel),
+//   new FlightRequirement({
+//     id: '127',
+//     definition: { label: 'IST1', flightNumber: 'W5 0113', departureAirportId: '7092901520000001628', arrivalAirportId: '7092901520000001588' } as FlightDefinition,
+//     scope: {
+//       blockTime: 120,
+//       times: [{ stdLowerBound: new Daytime(500), stdUpperBound: new Daytime(600) }, { stdLowerBound: new Daytime(720), stdUpperBound: new Daytime(820) }] as ReadonlyArray<
+//         Readonly<FlightTime>
+//       >,
+//       slot: true,
+//       slotComment: 'no comment .....',
+//       required: true
+//     } as FlightScope,
+//     days: [
+//       {
+//         notes: 'note2',
+//         day: 2,
+//         scope: {
+//           blockTime: 120,
+//           times: [{ stdLowerBound: new Daytime(500), stdUpperBound: new Daytime(600) }, { stdLowerBound: new Daytime(720), stdUpperBound: new Daytime(820) }] as ReadonlyArray<
+//             Readonly<FlightTime>
+//           >,
+//           slot: true,
+//           slotComment: 'no comment .....',
+//           required: true
+//         } as FlightScope,
+//         flight: {}
+//       },
+//       {
+//         notes: 'note4',
+//         day: 4,
+//         scope: {
+//           blockTime: 120,
+//           times: [{ stdLowerBound: new Daytime(500), stdUpperBound: new Daytime(600) }, { stdLowerBound: new Daytime(720), stdUpperBound: new Daytime(820) }] as ReadonlyArray<
+//             Readonly<FlightTime>
+//           >,
+//           slot: true,
+//           slotComment: 'no comment .....',
+//           required: true
+//         } as FlightScope,
+//         flight: {}
+//       },
+//       {
+//         notes: 'note6',
+//         day: 6,
+//         scope: {
+//           blockTime: 120,
+//           times: [{ stdLowerBound: new Daytime(500), stdUpperBound: new Daytime(600) }, { stdLowerBound: new Daytime(720), stdUpperBound: new Daytime(820) }] as ReadonlyArray<
+//             Readonly<FlightTime>
+//           >,
+//           slot: true,
+//           slotComment: 'no comment .....',
+//           required: true
+//         } as FlightScope,
+//         flight: {}
+//       }
+//     ] as WeekdayFlightRequirement[],
+//     ignored: false
+//   } as FlightRequirementModel)
+// ] as any;

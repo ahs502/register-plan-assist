@@ -1,11 +1,11 @@
-import React, { FC, CSSProperties, HTMLAttributes, PropsWithChildren, ReactElement } from 'react';
+import React, { FC, CSSProperties, HTMLAttributes, ReactElement } from 'react';
 import { Theme, Paper, Chip, MenuItem, Typography } from '@material-ui/core';
 import TextField, { BaseTextFieldProps } from '@material-ui/core/TextField';
 import { emphasize } from '@material-ui/core/styles/colorManipulator';
 import { makeStyles, useTheme } from '@material-ui/styles';
 import { Cancel as CancelIcon } from '@material-ui/icons';
 import Select from 'react-select';
-import { Props as StatemanagerProps } from 'react-select/lib/stateManager';
+import { Props as StateManagerProps } from 'react-select/lib/stateManager';
 import { Props as SelectProps } from 'react-select/lib/Select';
 import { ValueContainerProps } from 'react-select/lib/components/containers';
 import { ControlProps } from 'react-select/lib/components/Control';
@@ -14,9 +14,7 @@ import { MultiValueProps } from 'react-select/lib/components/MultiValue';
 import { OptionProps } from 'react-select/lib/components/Option';
 import { PlaceholderProps } from 'react-select/lib/components/Placeholder';
 import { SingleValueProps } from 'react-select/lib/components/SingleValue';
-import { ValueType, ActionMeta } from 'react-select/lib/types';
 import classNames from 'classnames';
-import { getOptionLabel, getOptionValue } from 'react-select/lib/builtins';
 
 const useStyles = makeStyles((theme: Theme) => ({
   root: {
@@ -146,12 +144,12 @@ const components = {
   ValueContainer
 };
 
-export interface MuiReactSelectProps<T extends {}> extends StatemanagerProps<T>, SelectProps<T> {
+export interface MuiReactSelectProps<T extends {}> extends StateManagerProps<T>, SelectProps<T> {
   label?: string;
   isMulti?: boolean;
 }
 
-const MuiReactSelect = <T extends {}>({ label, isMulti, ...others }: PropsWithChildren<MuiReactSelectProps<T>>): ReactElement | null => {
+const MuiReactSelect = <T extends {}>({ label, isMulti, ...others }: MuiReactSelectProps<T>): ReactElement | null => {
   const classes = useStyles();
   const theme = useTheme() as Theme;
 

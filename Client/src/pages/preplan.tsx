@@ -2,16 +2,16 @@ import React, { FC, Fragment, useState, useEffect, useRef, createContext } from 
 import { Theme, DialogTitle, DialogContent, DialogContentText, TextField, DialogActions, Button } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import { Switch, Redirect, Route } from 'react-router-dom';
-import useRouter from '../utils/useRouter';
-import NavBar from '../components/NavBar';
-import ResourceSchedulerPage from './preplan/resource-scheduler';
-import FlightRequirementListPage from './preplan/flight-requirement-list';
-import ReportsPage from './preplan/reports';
-import Preplan from '../business/Preplan';
-import DraggableDialog from '../components/DraggableDialog';
-import FlightRequirement, { FlightTime } from '../business/FlightRequirement';
-import { AircraftIdentity } from '../business/master-data/AircraftSelection';
-import FlightRequirementEditor from '../components/preplan/flight-requirment/FlightRequirementEditor';
+import useRouter from 'src/utils/useRouter';
+import NavBar from 'src/components/NavBar';
+import ResourceSchedulerPage from 'src/pages/preplan/resource-scheduler';
+import FlightRequirementListPage from 'src/pages/preplan/flight-requirement-list';
+import ReportsPage from 'src/pages/preplan/reports';
+import Preplan from 'src/view-models/Preplan';
+import DraggableDialog from 'src/components/DraggableDialog';
+import FlightRequirement, { FlightTime } from 'src/view-models/FlightRequirement';
+import AircraftIdentity from '@core/types/AircraftIdentity';
+import FlightRequirementEditor from 'src/components/preplan/flight-requirement/FlightRequirementEditor';
 
 const useStyles = makeStyles((theme: Theme) => ({
   flightRequirementStyle: {
@@ -164,10 +164,10 @@ function getDummyPreplan(): Preplan {
     userDisplayName: 'Moradi',
     parentPreplanId: '2020',
     parentPreplanName: 'Before First Preplan',
-    creationDateTime: new Date().addDays(-10),
-    lastEditDateTime: new Date().addDays(-1),
-    startDate: new Date().addDays(10),
-    endDate: new Date().addDays(20),
+    creationDateTime: new Date().addDays(-10).toJSON(),
+    lastEditDateTime: new Date().addDays(-1).toJSON(),
+    startDate: new Date().addDays(10).toJSON(),
+    endDate: new Date().addDays(20).toJSON(),
     autoArrangerOptions: { minimumGroundTimeMode: 'AVERAGE', minimumGroundTimeOffset: 50 },
     flightRequirements: [],
     dummyAircraftRegisters: [],

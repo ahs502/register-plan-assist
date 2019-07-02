@@ -2,11 +2,13 @@
   "files.exclude": {
     "**/node_modules": true,
     "dist": true,
+    "Server/temp": true,
+    "Server/make": true,
     "Server/dist": true,
     "Client/build": true
   },
   "editor.formatOnSave": true,
-  "editor.formatOnSaveTimeout": 2000,
+  "editor.formatOnSaveTimeout": 3000,
   "prettier.singleQuote": true,
   "prettier.printWidth": 180,
   "prettier.tabWidth": 2,

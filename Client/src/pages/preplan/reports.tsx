@@ -1,12 +1,12 @@
 import React, { FC, useEffect, Fragment, useContext } from 'react';
 import { Theme, Portal } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
-import useRouter from '../../utils/useRouter';
-import SectionList, { SectionItem } from '../../components/SectionList';
-import { NavBarToolsContainerContext } from '../preplan';
-import ProposalReport from '../../components/preplan/reports/ProposalReport';
-import ConnectionsReport from '../../components/preplan/reports/ConnectionsReport';
-import Preplan from '../../business/Preplan';
+import useRouter from 'src/utils/useRouter';
+import SectionList, { SectionItem } from 'src/components/SectionList';
+import { NavBarToolsContainerContext } from 'src/pages/preplan';
+import ProposalReport from 'src/components/preplan/reports/ProposalReport';
+import ConnectionsReport from 'src/components/preplan/reports/ConnectionsReport';
+import Preplan from 'src/view-models/Preplan';
 
 const useStyles = makeStyles((theme: Theme) => ({}));
 

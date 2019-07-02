@@ -41,10 +41,52 @@ testem.log
 Thumbs.db
 
 ########################################################################
+### Core Project #######################################################
+########################################################################
+
+# compiled output
+/Core/dist
+
+# dependencies
+/Core/node_modules
+
+# IDEs and editors
+/Core/.idea
+/Core/.project
+/Core/.classpath
+/Core/.c9/
+/Core/*.launch
+/Core/.settings/
+/Core/*.sublime-workspace
+
+# IDE - VSCode
+/Core/.vscode/*
+!/Core/.vscode/settings.json
+!/Core/.vscode/tasks.json
+!/Core/.vscode/launch.json
+!/Core/.vscode/extensions.json
+
+# misc
+/Core/.sass-cache
+/Core/connect.lock
+/Core/coverage
+/Core/libpeerconnection.log
+/Core/npm-debug.log
+/Core/yarn-error.log
+/Core/testem.log
+/Core/typings
+
+# System Files
+/Core/.DS_Store
+/Core/Thumbs.db
+
+########################################################################
 ### Server Project #####################################################
 ########################################################################
 
 # compiled output
+/Server/temp
+/Server/make
 /Server/dist
 
 # dependencies

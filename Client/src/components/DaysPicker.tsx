@@ -1,7 +1,7 @@
 import React, { FC, useState, Fragment } from 'react';
 import { Theme, Button, Typography } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
-import { Weekday } from '../business/Weekday';
+import Weekday from '@core/types/Weekday';
 
 const useStyles = makeStyles((theme: Theme) => ({
   button: {
@@ -21,8 +21,9 @@ export interface DaysPickerProps {
 }
 
 const DaysPicker: FC<DaysPickerProps> = ({ selectedDays, onItemClick, disabled }) => {
-  const classes = useStyles();
   const [buttonsState, setButtonsState] = useState(selectedDays || Array.range(0, 6).map(d => false));
+
+  const classes = useStyles();
 
   return (
     <Fragment>

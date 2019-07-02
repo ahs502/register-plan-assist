@@ -89,16 +89,16 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
 
     return MasterData.all.aircraftTypes.items.orderBy('displayOrder').map(t => {
       const registers = aircraftRegisters.items
-        .filter(a => !a.dummy && a.aircraftTypeId === t.id)
+        .filter(a => !a.dummy && a.aircraftType.id === t.id)
         .map(a => ({
           id: a.id,
           name: a.name,
-          groups: MasterData.all.aircraftGroups.items.filter(g => g.aircraftRegisterIds.includes(a.id)).map(g => g.name),
+          groups: MasterData.all.aircraftGroups.items.filter(g => g.aircraftRegisters.filter(r => r.id === a.id)).map(g => g.name),
           baseAirport: MasterData.all.airports.id[a.options.startingAirportId].name,
           status: a.options.status
         }));
       const dummyRegisters = aircraftRegisters.items
-        .filter(a => a.dummy && a.aircraftTypeId === t.id)
+        .filter(a => a.dummy && a.aircraftType.id === t.id)
         .map(a => ({
           id: a.id,
           name: a.name,

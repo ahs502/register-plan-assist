@@ -1,13 +1,15 @@
 import Daytime from '@core/types/Daytime';
 import AircraftSelection from '@core/types/AircraftSelection';
 import FlightRequirementModel, { FlightModel, WeekdayFlightRequirementModel } from '@core/models/FlightRequirementModel';
+import MasterData, { Stc, Airport } from '@core/master-data';
+import PreplanAircraftRegister, { PreplanAircraftRegisters } from './PreplanAircraftRegister';
 
 export interface FlightDefinition {
   readonly label: string;
-  readonly stcId: string;
+  readonly stc: Stc;
   readonly flightNumber: string;
-  readonly departureAirportId: string;
-  readonly arrivalAirportId: string;
+  readonly departureAirport: Airport;
+  readonly arrivalAirport: Airport;
 }
 
 export interface FlightTime {
@@ -25,21 +27,32 @@ export interface FlightScope {
 }
 
 export class Flight {
+  readonly requirement: FlightRequirement;
   readonly weekdayRequirement: WeekdayFlightRequirement;
+  readonly derivedId: string;
+  readonly label: string;
+  readonly stc: Stc;
+  readonly flightNumber: string;
+  readonly departureAirport: Airport;
+  readonly arrivalAirport: Airport;
+  readonly day: number;
+  readonly notes: string;
   readonly std: Daytime;
-  readonly aircraftRegisterId?: string;
+  readonly aircraftRegister?: PreplanAircraftRegister;
 
-  constructor(raw: FlightModel, weekdayRequiremnet: WeekdayFlightRequirement) {
+  constructor(raw: FlightModel, weekdayRequiremnet: WeekdayFlightRequirement, aircraftRegisters: PreplanAircraftRegisters) {
+    this.requirement = weekdayRequiremnet.requirement;
     this.weekdayRequirement = weekdayRequiremnet;
+    this.derivedId = weekdayRequiremnet.derivedId;
+    this.label = weekdayRequiremnet.definition.label;
+    this.stc = weekdayRequiremnet.definition.stc;
+    this.flightNumber = weekdayRequiremnet.definition.flightNumber;
+    this.departureAirport = weekdayRequiremnet.definition.departureAirport;
+    this.arrivalAirport = weekdayRequiremnet.definition.arrivalAirport;
+    this.day = weekdayRequiremnet.day;
+    this.notes = weekdayRequiremnet.notes;
     this.std = new Daytime(raw.std);
-    this.aircraftRegisterId = raw.aircraftRegisterId;
-  }
-
-  get derivedId(): string {
-    return this.weekdayRequirement.derivedId;
-  }
-  get requirement(): FlightRequirement {
-    return this.weekdayRequirement.requirement;
+    this.aircraftRegister = raw.aircraftRegisterId ? aircraftRegisters.id[raw.aircraftRegisterId] : undefined;
   }
 }
 
@@ -51,7 +64,7 @@ export class WeekdayFlightRequirement {
   readonly day: number;
   readonly flight: Flight;
 
-  constructor(raw: WeekdayFlightRequirementModel, requirement: FlightRequirement) {
+  constructor(raw: WeekdayFlightRequirementModel, requirement: FlightRequirement, aircraftRegisters: PreplanAircraftRegisters) {
     this.derivedId = `${requirement.id}#${raw.day}`;
     this.requirement = requirement;
     this.scope = {
@@ -63,7 +76,7 @@ export class WeekdayFlightRequirement {
     };
     this.notes = raw.notes;
     this.day = raw.day;
-    this.flight = new Flight(raw.flight, this);
+    this.flight = new Flight(raw.flight, this, aircraftRegisters);
   }
 
   get definition(): FlightDefinition {
@@ -78,9 +91,15 @@ export default class FlightRequirement {
   readonly days: readonly WeekdayFlightRequirement[];
   readonly ignored: boolean;
 
-  constructor(raw: FlightRequirementModel) {
+  constructor(raw: FlightRequirementModel, aircraftRegisters: PreplanAircraftRegisters) {
     this.id = raw.id;
-    this.definition = raw.definition;
+    this.definition = {
+      label: raw.definition.label,
+      stc: MasterData.all.stcs.id[raw.definition.stcId],
+      flightNumber: raw.definition.flightNumber,
+      departureAirport: MasterData.all.airports.id[raw.definition.departureAirportId],
+      arrivalAirport: MasterData.all.airports.id[raw.definition.arrivalAirportId]
+    };
     this.scope = {
       ...raw.scope,
       times: raw.scope.times.map(t => ({
@@ -88,7 +107,7 @@ export default class FlightRequirement {
         stdUpperBound: new Daytime(t.stdUpperBound)
       }))
     };
-    this.days = raw.days.map(d => new WeekdayFlightRequirement(d, this)).sortBy(d => d.day);
+    this.days = raw.days.map(d => new WeekdayFlightRequirement(d, this, aircraftRegisters)).sortBy(d => d.day);
     this.ignored = raw.ignored;
   }
 
@@ -96,7 +115,7 @@ export default class FlightRequirement {
    * Gets the day flight requirement of the specified day.
    * @param day The day of the period.
    */
-  get(day: number): WeekdayFlightRequirement | undefined {
+  getDay(day: number): WeekdayFlightRequirement | undefined {
     return this.days.find(d => d.day === day);
   }
 }

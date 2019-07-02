@@ -6,7 +6,8 @@ import MasterData from './MasterData';
 export default class Season extends MasterDataItem {
   readonly startDate: Date;
   readonly endDate: Date;
-  readonly seasonTypeId: string;
+
+  private readonly seasonTypeId: string;
 
   constructor(raw: SeasonModel) {
     super(raw);
@@ -15,7 +16,7 @@ export default class Season extends MasterDataItem {
     this.seasonTypeId = raw.seasonTypeId;
   }
 
-  getSeasonType(): SeasonType {
+  get seasonType(): SeasonType {
     return MasterData.all.seasonTypes.id[this.seasonTypeId];
   }
 }

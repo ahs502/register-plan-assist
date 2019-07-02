@@ -61,7 +61,7 @@ export default class Preplan extends PreplanHeader {
     super(raw);
     this.autoArrangerOptions = raw.autoArrangerOptions || defaultAutoArrangerOptions;
     this.aircraftRegisters = new PreplanAircraftRegisters(raw.dummyAircraftRegisters, raw.aircraftRegisterOptionsDictionary);
-    this.flightRequirements = raw.flightRequirements.map(f => new FlightRequirement(f));
+    this.flightRequirements = raw.flightRequirements.map(f => new FlightRequirement(f, this.aircraftRegisters));
   }
 
   /**

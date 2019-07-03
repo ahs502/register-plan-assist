@@ -172,6 +172,26 @@ function getDummyPreplan(): Preplan {
     startDate: new Date().addDays(10).toJSON(),
     endDate: new Date().addDays(20).toJSON(),
     autoArrangerOptions: { minimumGroundTimeMode: 'AVERAGE', minimumGroundTimeOffset: 50 },
+    autoArrangerState: {
+      solving: true,
+      solvingStartDateTime: new Date().toString(),
+      solvingDuration: 185,
+      message: {
+        type: 'ERROR',
+        text: 'Message Text .... '
+      },
+      messageViewed: false,
+      changeLogs: [
+        {
+          flightDerievedId: '123',
+          oldStd: 156,
+          oldAircraftRegisterId: '000',
+          newStd: 485,
+          newAircraftRegisterId: '123'
+        }
+      ],
+      changeLogsViewed: true
+    },
     flightRequirements: [
       {
         id: '000',

@@ -35,3 +35,18 @@ export default interface PreplanModel extends PreplanHeaderModel {
 
   readonly flightRequirements: readonly FlightRequirementModel[];
 }
+
+export interface NewPreplanHeaderModel {
+  readonly id: string;
+  readonly name: string;
+  readonly startDate: string;
+  readonly endDate: string;
+}
+
+export interface ModifyPreplanHeaderModel {
+  readonly id: string;
+  readonly name: string;
+  readonly published: boolean;
+  readonly startDate: string;
+  readonly endDate: string;
+}

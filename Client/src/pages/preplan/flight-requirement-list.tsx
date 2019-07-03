@@ -97,8 +97,8 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = ({
     return ([] as ReadonlyArray<FlightRequirement>).filter(item => {
       for (let j = 0; j < query.length; ++j) {
         if (((item.definition.label || '') as string).toLowerCase().includes(query[j])) return true;
-        if (((item.definition.arrivalAirportId || '') as string).toLowerCase().includes(query[j])) return true;
-        if (((item.definition.departureAirportId || '') as string).toLowerCase().includes(query[j])) return true;
+        if (((item.definition.arrivalAirport.name || '') as string).toLowerCase().includes(query[j])) return true;
+        if (((item.definition.departureAirport.name || '') as string).toLowerCase().includes(query[j])) return true;
         if (((item.definition.flightNumber || '') as string).toLowerCase().includes(query[j])) return true;
       }
     });

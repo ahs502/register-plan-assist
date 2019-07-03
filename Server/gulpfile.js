@@ -24,7 +24,8 @@ function buildSource(destinationFolder, packageJsonModifier) {
       },
       done => {
         let data = require('./tsconfig.json');
-        data.compilerOptions.paths['@core/*'] = ['./*'];
+        delete data.compilerOptions.baseUrl;
+        delete data.compilerOptions.paths;
         delete data.include;
         fs.writeFile(path.join(__dirname, 'temp/tsconfig.json'), JSON.stringify(data, null, 4), done);
       },
@@ -33,24 +34,35 @@ function buildSource(destinationFolder, packageJsonModifier) {
     ),
     () => {
       const typescriptProject = typescript.createProject('temp/tsconfig.json');
+      const conversions = [{ from: '@core/', to: './' }, { from: 'src/', to: './' }];
       return typescriptProject
         .src()
-        .pipe(typescriptProject())
-        .js.pipe(
+        .pipe(
           modifyFile((content, filePath, file) => {
-            let i = -1;
-            while (((i = content.indexOf('require("@core/', i + 1)), i > 0)) {
-              const endingDubleQuotationIndex = content.indexOf('"', i + 15);
-              const dependencyFile = content.slice(i + 15, endingDubleQuotationIndex);
-              const dependencyPath = path.join(__dirname, 'temp', dependencyFile);
-              const dependencyRelativePath = path.relative(path.dirname(filePath), dependencyPath).replace(/\\/g, '/');
-              const dependencyRelativePathFromCurrent = dependencyRelativePath.startsWith('.') ? dependencyRelativePath : './' + dependencyRelativePath;
-              content = content.slice(0, i + 9) + dependencyRelativePathFromCurrent + content.slice(endingDubleQuotationIndex);
-            }
-            return content;
+            const lines = content.split('\r\n');
+            return lines
+              .map(line => {
+                if (line.startsWith('import ')) {
+                  conversions.forEach(({ from, to }) => {
+                    const firstQuotationIndex = line.indexOf("'");
+                    const secondQuotationIndex = line.slice(firstQuotationIndex + 1).indexOf("'") + firstQuotationIndex + 1;
+                    const absoluteDependency = line.slice(firstQuotationIndex + 1, secondQuotationIndex); // 'from/utils/module'
+                    if (absoluteDependency.startsWith(from)) {
+                      const dependencyFile = absoluteDependency.slice(from.length); // 'utils/module'
+                      const dependencyPath = path.join(__dirname, 'temp', to, dependencyFile); // '/usr/hessam/projects/plan-assist/Server/temp/to/utils/module'
+                      const dependencyRelativePath = path.relative(path.dirname(filePath), dependencyPath).replace(/\\/g, '/'); // '../../to/utils/module'
+                      const dependencyRelativePathRelativeForm = dependencyRelativePath.startsWith('.') ? dependencyRelativePath : './' + dependencyRelativePath; // '../../to/utils/module'
+                      line = line.slice(0, firstQuotationIndex + 1) + dependencyRelativePathRelativeForm + line.slice(secondQuotationIndex);
+                    }
+                  });
+                }
+                return line;
+              })
+              .join('\r\n');
           })
         )
-        .pipe(gulp.dest(destinationFolder));
+        .pipe(typescriptProject())
+        .js.pipe(gulp.dest(destinationFolder));
     },
     () => gulp.src(['config.js', packageJsonModifier && 'temp/package.json'].filter(Boolean)).pipe(gulp.dest(destinationFolder)),
     () => del('temp/**')

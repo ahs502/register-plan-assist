@@ -1,6 +1,6 @@
 import AutoArrangerOptions, { defaultAutoArrangerOptions } from './AutoArrangerOptions';
 import { PreplanAircraftRegisters } from './PreplanAircraftRegister';
-import FlightRequirement from './FlightRequirement';
+import FlightRequirement, { Flight } from './FlightRequirement';
 import PreplanModel, { PreplanHeaderModel } from '@core/models/PreplanModel';
 
 export class PreplanHeader {
@@ -61,6 +61,13 @@ export default class Preplan extends PreplanHeader {
     super(raw);
     this.autoArrangerOptions = raw.autoArrangerOptions || defaultAutoArrangerOptions;
     this.aircraftRegisters = new PreplanAircraftRegisters(raw.dummyAircraftRegisters, raw.aircraftRegisterOptionsDictionary);
-    this.flightRequirements = raw.flightRequirements.map(f => new FlightRequirement(f));
+    this.flightRequirements = raw.flightRequirements.map(f => new FlightRequirement(f, this.aircraftRegisters));
+  }
+
+  /**
+   * Gets the flattened list of this preplan's flights.
+   */
+  get flights(): readonly Flight[] {
+    return this.flightRequirements.map(w => w.days.map(d => d.flight)).flatten();
   }
 }

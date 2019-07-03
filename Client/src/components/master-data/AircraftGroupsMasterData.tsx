@@ -57,7 +57,7 @@ const AircraftGroupsMasterData: FC = () => {
         selectedItem={selectedItem}
         onItemSelect={item => {
           setSelectedItem(item);
-          setGroupRegisters(registers.filter(r => item.aircraftRegisterIds.some(ar => ar === r.id)));
+          setGroupRegisters(registers.filter(r => item.aircraftRegisters.some(ar => ar.id === r.id)));
         }}
         onItemAdd={() => setIsAddModalOpen(true)}
         onItemRemove={item => alert('Not implemented.')}

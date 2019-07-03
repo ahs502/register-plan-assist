@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { Db, ObjectID, ClientSession } from 'mongodb';
-import { asyncMiddlewareWithDatabase, asyncMiddlewareWithTransaction } from '../utils/asyncMiddleware';
+import { asyncMiddlewareWithDatabase, asyncMiddlewareWithTransaction } from 'src/utils/asyncMiddleware';
 
 import PreplanValidator from '@core/validators/PreplanValidator';
 

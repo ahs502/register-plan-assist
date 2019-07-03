@@ -2,6 +2,7 @@ import { AircraftRegisterOptionsDictionary } from '../types/AircraftRegisterOpti
 import AutoArrangerOptionsModel from './AutoArrangerOptionsModel';
 import DummyAircraftRegisterModel from './DummyAircraftRegisterModel';
 import FlightRequirementModel from './FlightRequirementModel';
+import AutoArrangerStateModel from './AutoArrangerStateModel';
 
 export interface PreplanHeaderModel {
   readonly id: string;
@@ -29,6 +30,7 @@ export interface PreplanHeaderModel {
 
 export default interface PreplanModel extends PreplanHeaderModel {
   readonly autoArrangerOptions?: AutoArrangerOptionsModel;
+  readonly autoArrangerState: AutoArrangerStateModel;
 
   readonly dummyAircraftRegisters: readonly DummyAircraftRegisterModel[];
   readonly aircraftRegisterOptionsDictionary: AircraftRegisterOptionsDictionary;

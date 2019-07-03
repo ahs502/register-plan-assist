@@ -2,6 +2,8 @@ import AutoArrangerOptions, { defaultAutoArrangerOptions } from './AutoArrangerO
 import { PreplanAircraftRegisters } from './PreplanAircraftRegister';
 import FlightRequirement, { Flight } from './FlightRequirement';
 import PreplanModel, { PreplanHeaderModel } from '@core/models/PreplanModel';
+import AutoArrangerState from './AutoArrangerState';
+import Daytime from '@core/types/Daytime';
 
 export class PreplanHeader {
   readonly id: string;
@@ -47,6 +49,7 @@ export class PreplanHeader {
 
 export default class Preplan extends PreplanHeader {
   autoArrangerOptions: AutoArrangerOptions;
+  autoArrangerState: AutoArrangerState;
 
   /**
    * The enhanced aircraft registers for this preplan.
@@ -61,6 +64,24 @@ export default class Preplan extends PreplanHeader {
     super(raw);
     this.autoArrangerOptions = raw.autoArrangerOptions || defaultAutoArrangerOptions;
     this.aircraftRegisters = new PreplanAircraftRegisters(raw.dummyAircraftRegisters, raw.aircraftRegisterOptionsDictionary);
+    this.autoArrangerState = {
+      solving: raw.autoArrangerState.solving,
+      solvingStartDateTime: raw.autoArrangerState.solvingStartDateTime ? new Date(raw.autoArrangerState.solvingStartDateTime) : undefined,
+      solvingDuration: raw.autoArrangerState.solvingDuration,
+      message: {
+        type: raw.autoArrangerState.message.type,
+        text: raw.autoArrangerState.message.text
+      },
+      messageViewed: raw.autoArrangerState.messageViewed,
+      changeLogs: raw.autoArrangerState.changeLogs.map(l => ({
+        flightDerievedId: l.flightDerievedId,
+        oldStd: new Daytime(l.oldStd),
+        oldAircraftRegister: l.oldAircraftRegisterId ? this.aircraftRegisters.id[l.oldAircraftRegisterId] : undefined,
+        newStd: new Daytime(l.newStd),
+        newAircraftRegister: l.newAircraftRegisterId ? this.aircraftRegisters.id[l.newAircraftRegisterId] : undefined
+      })),
+      changeLogsViewed: raw.autoArrangerState.changeLogsViewed
+    };
     this.flightRequirements = raw.flightRequirements.map(f => new FlightRequirement(f, this.aircraftRegisters));
   }
 

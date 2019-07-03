@@ -1,9 +1,10 @@
 import { ObjectID } from 'mongodb';
-import AutoArrangerOptionsEntity from './AutoArrangerOptionsEntity';
+import AutoArrangerOptionsEntity, { convertAutoArrangerOptionsEntityToModel } from './AutoArrangerOptionsEntity';
 import DummyAircraftRegisterEntity, { convertDummyAircraftRegisterEntityToModel } from './DummyAircraftRegisterEntity';
 import { AircraftRegisterOptionsDictionary } from '@core/types/AircraftRegisterOptions';
 import PreplanModel, { PreplanHeaderModel } from '@core/models/PreplanModel';
 import FlightRequirementEntity, { convertFlightRequirementEntityToModel } from './FlightRequirementEntity';
+import AutoArrangerStateEntity, { convertAutoArrangerStateEntityToModel } from './AutoArrangerStateEntity';
 
 export interface PreplanHeaderEntity {
   readonly _id?: ObjectID;
@@ -25,6 +26,7 @@ export interface PreplanHeaderEntity {
 
 export default interface PreplanEntity extends PreplanHeaderEntity {
   readonly autoArrangerOptions?: AutoArrangerOptionsEntity;
+  readonly autoArrangerState: AutoArrangerStateEntity;
   readonly dummyAircraftRegisters: readonly DummyAircraftRegisterEntity[];
   readonly aircraftRegisterOptionsDictionary: AircraftRegisterOptionsDictionary;
 }
@@ -84,6 +86,7 @@ export function convertPreplanEntityToModel(data: PreplanEntity, flightRequireme
     simulationId: data.simulationId,
     simulationName: data.simulationName,
     autoArrangerOptions: data.autoArrangerOptions,
+    autoArrangerState: convertAutoArrangerStateEntityToModel(data.autoArrangerState),
     dummyAircraftRegisters: data.dummyAircraftRegisters.map(convertDummyAircraftRegisterEntityToModel),
     aircraftRegisterOptionsDictionary: data.aircraftRegisterOptionsDictionary,
     flightRequirements: flightRequirements.map(convertFlightRequirementEntityToModel)

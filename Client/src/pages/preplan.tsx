@@ -63,7 +63,6 @@ const PreplanPage: FC = () => {
   useEffect(() => setShowContents(true), []);
 
   if (!preplan) setPreplan(getDummyPreplan()); //TODO: Remove this later.
-
   const resourceSchedulerPageSelected = window.location.href.startsWith(`${window.location.host}/#${match.url}/resource-scheduler`);
   const flightRequirementListPageSelected = window.location.href.startsWith(`${window.location.host}/#${match.url}/flight-requirement-list`);
   const reportsPageSelected = window.location.href.startsWith(`${window.location.host}/#${match.url}/reports`);
@@ -227,9 +226,20 @@ function getDummyPreplan(): Preplan {
                 type: 'REGISTER' as AircraftIdentityType,
                 name: 'REG1',
                 entityId: MasterData.all.aircraftRegisters.items[0].id
+              },
+              {
+                type: 'REGISTER' as AircraftIdentityType,
+                name: 'REG2',
+                entityId: MasterData.all.aircraftRegisters.items[2].id
               }
             ],
-            forbiddenIdentities: []
+            forbiddenIdentities: [
+              {
+                type: 'REGISTER' as AircraftIdentityType,
+                name: 'REG3',
+                entityId: MasterData.all.aircraftRegisters.items[3].id
+              }
+            ]
           },
           slot: true,
           slotComment: 'some comment...',
@@ -255,9 +265,20 @@ function getDummyPreplan(): Preplan {
                     type: 'REGISTER' as AircraftIdentityType,
                     name: 'REG1',
                     entityId: MasterData.all.aircraftRegisters.items[0].id
+                  },
+                  {
+                    type: 'REGISTER' as AircraftIdentityType,
+                    name: 'REG2',
+                    entityId: MasterData.all.aircraftRegisters.items[2].id
                   }
                 ],
-                forbiddenIdentities: []
+                forbiddenIdentities: [
+                  {
+                    type: 'REGISTER' as AircraftIdentityType,
+                    name: 'REG3',
+                    entityId: MasterData.all.aircraftRegisters.items[3].id
+                  }
+                ]
               },
               slot: true,
               slotComment: 'some comment...',

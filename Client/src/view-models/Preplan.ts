@@ -1,10 +1,9 @@
-import Daytime from '@core/types/Daytime';
 import PreplanModel, { PreplanHeaderModel } from '@core/models/PreplanModel';
-import AutoArrangerOptions, { defaultAutoArrangerOptions } from './AutoArrangerOptions';
 import { PreplanAircraftRegisters } from './PreplanAircraftRegister';
 import AutoArrangerState from './AutoArrangerState';
 import FlightRequirement from './flight/FlightRequirement';
 import Flight from './flight/Flight';
+import AutoArrangerOptions from './AutoArrangerOptions';
 
 export class PreplanHeader {
   readonly id: string;

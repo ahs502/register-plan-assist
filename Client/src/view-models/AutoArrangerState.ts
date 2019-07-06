@@ -15,14 +15,14 @@ export class Message {
 }
 
 export class ChangeLog {
-  readonly flight?: Flight;
+  readonly flight: Flight;
   readonly oldStd: Daytime;
   readonly oldAircraftRegister?: PreplanAircraftRegister;
   readonly newStd: Daytime;
   readonly newAircraftRegister?: PreplanAircraftRegister;
 
   constructor(raw: ChangeLogModel, aircraftRegisters: PreplanAircraftRegisters, flights: readonly Flight[]) {
-    this.flight = flights.find(f => f.derivedId === raw.flightDerievedId);
+    this.flight = flights.find(f => f.derivedId === raw.flightDerievedId)!;
     this.oldStd = new Daytime(raw.oldStd);
     this.oldAircraftRegister = raw.oldAircraftRegisterId ? aircraftRegisters.id[raw.oldAircraftRegisterId] : undefined;
     this.newStd = new Daytime(raw.newStd);
@@ -45,7 +45,7 @@ export default class AutoArrangerState {
     this.solvingDuration = raw.solvingDuration;
     this.message = raw.message ? new Message(raw.message) : undefined;
     this.messageViewed = raw.messageViewed;
-    this.changeLogs = raw.changeLogs.map(l => new ChangeLog(l, aircraftRegisters, flights));
+    this.changeLogs = raw.changeLogs.filter(l => flights.some(f => f.derivedId === l.flightDerievedId)).map(l => new ChangeLog(l, aircraftRegisters, flights));
     this.changeLogsViewed = raw.changeLogsViewed;
   }
 }

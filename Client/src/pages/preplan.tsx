@@ -183,11 +183,18 @@ function getDummyPreplan(): Preplan {
       messageViewed: false,
       changeLogs: [
         {
-          flightDerievedId: '123',
+          flightDerievedId: '000#4',
           oldStd: 156,
-          oldAircraftRegisterId: '000',
+          oldAircraftRegisterId: MasterData.all.aircraftRegisters.items[0].id,
           newStd: 485,
-          newAircraftRegisterId: '123'
+          newAircraftRegisterId: MasterData.all.aircraftRegisters.items[1].id
+        },
+        {
+          flightDerievedId: '000#5',
+          oldStd: 300,
+          oldAircraftRegisterId: MasterData.all.aircraftRegisters.items[2].id,
+          newStd: 720,
+          newAircraftRegisterId: MasterData.all.aircraftRegisters.items[3].id
         }
       ],
       changeLogsViewed: true

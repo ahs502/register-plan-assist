@@ -3,12 +3,15 @@ import { Theme, TableRow, TableCell, Table, TableHead, TableBody } from '@materi
 import { makeStyles } from '@material-ui/styles';
 import SideBarContainer from './SideBarContainer';
 import { Flight } from 'src/view-models/FlightRequirement';
-import Search, { filterOnProperties } from 'src/components/Search';
+import Search from 'src/components/Search';
 import Weekday from '@core/types/Weekday';
 
 const useStyles = makeStyles((theme: Theme) => ({
   searchWrapper: {
     margin: theme.spacing(0, 0, 5, 0)
+  },
+  tableCell: {
+    paddingRight: theme.spacing(1)
   }
 }));
 
@@ -28,25 +31,27 @@ const SearchFlightsSideBar: FC<SearchFlightsSideBarProps> = ({ initialSearch, fl
       <div className={classes.searchWrapper}>
         <Search initialSearch={initialSearch} onQueryChange={query => setFilteredFlights(filterFlights(flights, query))} />
       </div>
-      <Table>
+      <Table size="small">
         <TableHead>
           <TableRow>
-            <TableCell>F.NO</TableCell>
-            <TableCell>DEP-ARR</TableCell>
-            <TableCell>Register</TableCell>
-            <TableCell>Weekday</TableCell>
-            <TableCell>STD</TableCell>
+            <TableCell classes={{ root: classes.tableCell }}>Flight Number</TableCell>
+            <TableCell classes={{ root: classes.tableCell }}>Route</TableCell>
+            <TableCell classes={{ root: classes.tableCell }}>Weekday</TableCell>
+            <TableCell classes={{ root: classes.tableCell }}>Register</TableCell>
+            <TableCell classes={{ root: classes.tableCell }}>STD</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
           {filteredFlights.map(f => {
             return (
-              <TableRow key={f.derivedId} onClick={() => onClick(f)}>
-                <TableCell> {f.flightNumber}</TableCell>
-                <TableCell>{f.arrivalAirport.name + '-' + f.departureAirport.name}</TableCell>
-                <TableCell>{f.aircraftRegister ? f.aircraftRegister.name : '???'}</TableCell>
-                <TableCell>{Weekday[f.day]}</TableCell>
-                <TableCell>{f.std.toString()}</TableCell>
+              <TableRow key={f.derivedId} onClick={() => onClick(f)} hover={true}>
+                <TableCell classes={{ root: classes.tableCell }}> {f.flightNumber}</TableCell>
+                <TableCell classes={{ root: classes.tableCell }}>
+                  {f.arrivalAirport.name} &ndash; {f.departureAirport.name}
+                </TableCell>
+                <TableCell classes={{ root: classes.tableCell }}>{Weekday[f.day].slice(0, 3)}</TableCell>
+                <TableCell classes={{ root: classes.tableCell }}>{f.aircraftRegister ? f.aircraftRegister.name : '???'}</TableCell>
+                <TableCell classes={{ root: classes.tableCell }}>{f.std.toString()}</TableCell>
               </TableRow>
             );
           })}

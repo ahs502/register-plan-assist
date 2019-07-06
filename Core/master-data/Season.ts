@@ -1,4 +1,4 @@
-import SeasonModel from '../models/master-data/SeasonModel';
+import SeasonModel from '@core/models/master-data/SeasonModel';
 import MasterDataItem, { MasterDataItems } from './MasterDataItem';
 import SeasonType from './SeasonType';
 import MasterData from './MasterData';

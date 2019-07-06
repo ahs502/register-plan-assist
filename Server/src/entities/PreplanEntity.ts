@@ -1,10 +1,10 @@
 import { ObjectID } from 'mongodb';
 import AutoArrangerOptionsEntity, { convertAutoArrangerOptionsEntityToModel } from './AutoArrangerOptionsEntity';
 import DummyAircraftRegisterEntity, { convertDummyAircraftRegisterEntityToModel } from './DummyAircraftRegisterEntity';
-import { AircraftRegisterOptionsDictionary } from '@core/types/AircraftRegisterOptions';
 import PreplanModel, { PreplanHeaderModel } from '@core/models/PreplanModel';
-import FlightRequirementEntity, { convertFlightRequirementEntityToModel } from './FlightRequirementEntity';
+import FlightRequirementEntity, { convertFlightRequirementEntityToModel } from './flight/FlightRequirementEntity';
 import AutoArrangerStateEntity, { convertAutoArrangerStateEntityToModel } from './AutoArrangerStateEntity';
+import { AircraftRegisterOptionsDictionaryEntity, convertAircraftRegisterOptionsDictionaryEntityToModel } from './AircraftRegisterOptionsEntity';
 
 export interface PreplanHeaderEntity {
   readonly _id?: ObjectID;
@@ -28,7 +28,7 @@ export default interface PreplanEntity extends PreplanHeaderEntity {
   readonly autoArrangerOptions?: AutoArrangerOptionsEntity;
   readonly autoArrangerState: AutoArrangerStateEntity;
   readonly dummyAircraftRegisters: readonly DummyAircraftRegisterEntity[];
-  readonly aircraftRegisterOptionsDictionary: AircraftRegisterOptionsDictionary;
+  readonly aircraftRegisterOptionsDictionary: AircraftRegisterOptionsDictionaryEntity;
 }
 
 export const preplanHeaderProjection = {
@@ -85,10 +85,10 @@ export function convertPreplanEntityToModel(data: PreplanEntity, flightRequireme
     endDate: data.endDate.toJSON(),
     simulationId: data.simulationId,
     simulationName: data.simulationName,
-    autoArrangerOptions: data.autoArrangerOptions,
+    autoArrangerOptions: data.autoArrangerOptions ? convertAutoArrangerOptionsEntityToModel(data.autoArrangerOptions) : undefined,
     autoArrangerState: convertAutoArrangerStateEntityToModel(data.autoArrangerState),
     dummyAircraftRegisters: data.dummyAircraftRegisters.map(convertDummyAircraftRegisterEntityToModel),
-    aircraftRegisterOptionsDictionary: data.aircraftRegisterOptionsDictionary,
+    aircraftRegisterOptionsDictionary: convertAircraftRegisterOptionsDictionaryEntityToModel(data.aircraftRegisterOptionsDictionary),
     flightRequirements: flightRequirements.map(convertFlightRequirementEntityToModel)
   };
 }

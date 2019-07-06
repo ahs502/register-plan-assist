@@ -1,9 +1,10 @@
+import Daytime from '@core/types/Daytime';
+import PreplanModel, { PreplanHeaderModel } from '@core/models/PreplanModel';
 import AutoArrangerOptions, { defaultAutoArrangerOptions } from './AutoArrangerOptions';
 import { PreplanAircraftRegisters } from './PreplanAircraftRegister';
-import FlightRequirement, { Flight } from './FlightRequirement';
-import PreplanModel, { PreplanHeaderModel } from '@core/models/PreplanModel';
 import AutoArrangerState from './AutoArrangerState';
-import Daytime from '@core/types/Daytime';
+import FlightRequirement from './flight/FlightRequirement';
+import Flight from './flight/Flight';
 
 export class PreplanHeader {
   readonly id: string;
@@ -62,32 +63,15 @@ export default class Preplan extends PreplanHeader {
 
   constructor(raw: PreplanModel) {
     super(raw);
-    this.autoArrangerOptions = raw.autoArrangerOptions || defaultAutoArrangerOptions;
+    this.autoArrangerOptions = raw.autoArrangerOptions ? new AutoArrangerOptions(raw.autoArrangerOptions) : AutoArrangerOptions.default;
     this.aircraftRegisters = new PreplanAircraftRegisters(raw.dummyAircraftRegisters, raw.aircraftRegisterOptionsDictionary);
     this.flightRequirements = raw.flightRequirements.map(f => new FlightRequirement(f, this.aircraftRegisters));
-    const flights = this.flights;
-    this.autoArrangerState = {
-      solving: raw.autoArrangerState.solving,
-      solvingStartDateTime: raw.autoArrangerState.solvingStartDateTime ? new Date(raw.autoArrangerState.solvingStartDateTime) : undefined,
-      solvingDuration: raw.autoArrangerState.solvingDuration,
-      message: {
-        type: raw.autoArrangerState.message.type,
-        text: raw.autoArrangerState.message.text
-      },
-      messageViewed: raw.autoArrangerState.messageViewed,
-      changeLogs: raw.autoArrangerState.changeLogs.map(l => ({
-        flight: flights.find(f => f.derivedId === l.flightDerievedId)!,
-        oldStd: new Daytime(l.oldStd),
-        oldAircraftRegister: l.oldAircraftRegisterId ? this.aircraftRegisters.id[l.oldAircraftRegisterId] : undefined,
-        newStd: new Daytime(l.newStd),
-        newAircraftRegister: l.newAircraftRegisterId ? this.aircraftRegisters.id[l.newAircraftRegisterId] : undefined
-      })),
-      changeLogsViewed: raw.autoArrangerState.changeLogsViewed
-    };
+    this.autoArrangerState = new AutoArrangerState(raw.autoArrangerState, this.aircraftRegisters, this.flights);
   }
 
   /**
    * Gets the flattened list of this preplan's flights.
+   * NOTE: USE WITH CAUTION, IT IS A COMPUTED PROPERTY AND HAS PROCESSING COSTS.
    */
   get flights(): readonly Flight[] {
     return this.flightRequirements.map(w => w.days.map(d => d.flight)).flatten();

@@ -2,9 +2,9 @@ import React, { FC, useState } from 'react';
 import { Theme, TableRow, TableCell, Table, TableHead, TableBody } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import SideBarContainer from './SideBarContainer';
-import { Flight } from 'src/view-models/FlightRequirement';
 import Search from 'src/components/Search';
 import Weekday from '@core/types/Weekday';
+import Flight from 'src/view-models/flight/Flight';
 
 const useStyles = makeStyles((theme: Theme) => ({
   searchWrapper: {

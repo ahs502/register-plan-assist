@@ -1,8 +1,10 @@
-import MasterData, { MasterDataItem, MasterDataItems, AircraftType, Airport } from '@core/master-data';
-import AircraftRegisterOptions, { AircraftRegisterOptionsDictionary, AircraftRegisterStatus } from '@core/types/AircraftRegisterOptions';
-import DummyAircraftRegisterModel from '@core/models/DummyAircraftRegisterModel';
+import AircraftRegisterStatus from '@core/types/aircraft-register-options/AircraftRegisterStatus';
 import AircraftIdentity from '@core/types/AircraftIdentity';
 import AircraftSelection from '@core/types/AircraftSelection';
+import DummyAircraftRegisterModel from '@core/models/DummyAircraftRegisterModel';
+import { AircraftRegisterOptionsDictionaryModel } from '@core/models/AircraftRegisterOptionsModel';
+import MasterData, { MasterDataItem, MasterDataItems, AircraftType } from '@core/master-data';
+import AircraftRegisterOptions, { AircraftRegisterOptionsDictionary } from './AircraftRegisterOptions';
 
 /**
  * An enhanced aircraft register capable of presenting both master data and dummy aircraft registers.
@@ -30,21 +32,11 @@ export default class PreplanAircraftRegister implements MasterDataItem {
     this.name = name;
     this.aircraftType = aircraftType;
     this.dummy = dummy;
-    this.options = options || this.getDefaultOptions();
+    this.options = options || AircraftRegisterOptions.default;
   }
 
   getMinimumGroundTime(date: Date, transit: boolean, international: boolean): number {
     return this.aircraftType.getMinimumGroundTime(date, transit, international);
-  }
-
-  getDefaultStartingAirport(): Airport {
-    return MasterData.all.airports.items.find(a => a.name === 'IKA')!; //TODO: Implement something better!
-  }
-  getDefaultOptions(): AircraftRegisterOptions {
-    return {
-      status: 'IGNORED',
-      startingAirportId: this.getDefaultStartingAirport().id
-    };
   }
 }
 
@@ -52,13 +44,10 @@ export default class PreplanAircraftRegister implements MasterDataItem {
  * Encapsulates all master data and dummy aircraft registers as a single collection.
  */
 export class PreplanAircraftRegisters extends MasterDataItems<PreplanAircraftRegister> {
-  constructor(dummyAircraftRegisters: readonly DummyAircraftRegisterModel[], aircraftRegisterOptionsDictionary: AircraftRegisterOptionsDictionary) {
-    let masterDataItems = MasterData.all.aircraftRegisters.items.map(
-      a => new PreplanAircraftRegister(a.id, a.name, a.aircraftType, false, aircraftRegisterOptionsDictionary[a.id])
-    );
-    let dummyItems = dummyAircraftRegisters.map(
-      a => new PreplanAircraftRegister(a.id, a.name, MasterData.all.aircraftTypes.id[a.aircraftTypeId], true, aircraftRegisterOptionsDictionary[a.id])
-    );
+  constructor(dummyAircraftRegisters: readonly DummyAircraftRegisterModel[], aircraftRegisterOptionsDictionary: AircraftRegisterOptionsDictionaryModel) {
+    const dictionary = new AircraftRegisterOptionsDictionary(aircraftRegisterOptionsDictionary);
+    let masterDataItems = MasterData.all.aircraftRegisters.items.map(a => new PreplanAircraftRegister(a.id, a.name, a.aircraftType, false, dictionary[a.id]));
+    let dummyItems = dummyAircraftRegisters.map(a => new PreplanAircraftRegister(a.id, a.name, MasterData.all.aircraftTypes.id[a.aircraftTypeId], true, dictionary[a.id]));
     super(masterDataItems.concat(dummyItems));
   }
 

@@ -139,12 +139,7 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
           <SearchFlightsSideBar initialSearch={sideBar.initialSearch} flights={preplan.flights} onClick={flight => alert('not implemented.')} />
         )}
         {sideBar.sideBar === 'AUTO_ARRANGER_CHANGE_LOG' && (
-          <AutoArrangerChangeLogSideBar
-            initialSearch={sideBar.initialSearch}
-            flights={preplan.flights}
-            autoArrangerState={preplan.autoArrangerState}
-            onClick={flight => alert('not implemented.')}
-          />
+          <AutoArrangerChangeLogSideBar initialSearch={sideBar.initialSearch} changeLogs={preplan.autoArrangerState.changeLogs} onClick={flight => alert('not implemented.')} />
         )}
         {sideBar.sideBar === 'OBJECTIONS' && <ErrorsAndWarningsSideBar initialSearch={sideBar.initialSearch} objections={[]} />}
       </Drawer>

@@ -1,6 +1,15 @@
 import { MessageType } from '@core/types/auto-arranger-state';
 import Daytime from '@core/types/Daytime';
 import PreplanAircraftRegister from './PreplanAircraftRegister';
+import { Flight } from './FlightRequirement';
+
+export interface ChangeLog {
+  flight: Flight;
+  oldStd: Daytime;
+  oldAircraftRegister?: PreplanAircraftRegister;
+  newStd: Daytime;
+  newAircraftRegister?: PreplanAircraftRegister;
+}
 
 export default interface AutoArrangerState {
   solving: boolean;
@@ -11,12 +20,6 @@ export default interface AutoArrangerState {
     text: string;
   };
   messageViewed: boolean;
-  changeLogs: readonly {
-    flightDerievedId: string;
-    oldStd: Daytime;
-    oldAircraftRegister?: PreplanAircraftRegister;
-    newStd: Daytime;
-    newAircraftRegister?: PreplanAircraftRegister;
-  }[];
+  changeLogs: readonly ChangeLog[];
   changeLogsViewed: boolean;
 }

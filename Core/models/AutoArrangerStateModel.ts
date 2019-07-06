@@ -1,5 +1,13 @@
 import { MessageType } from '../types/auto-arranger-state';
 
+export interface ChangeLogModel {
+  flightDerievedId: string;
+  oldStd: number;
+  oldAircraftRegisterId?: string;
+  newStd: number;
+  newAircraftRegisterId?: string;
+}
+
 export default interface AutoArrangerStateModel {
   solving: boolean;
   solvingStartDateTime?: string;
@@ -9,12 +17,6 @@ export default interface AutoArrangerStateModel {
     text: string;
   };
   messageViewed: boolean;
-  changeLogs: readonly {
-    flightDerievedId: string;
-    oldStd: number;
-    oldAircraftRegisterId?: string;
-    newStd: number;
-    newAircraftRegisterId?: string;
-  }[];
+  changeLogs: readonly ChangeLogModel[];
   changeLogsViewed: boolean;
 }

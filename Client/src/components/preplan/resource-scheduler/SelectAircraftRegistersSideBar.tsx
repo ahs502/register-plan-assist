@@ -183,6 +183,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
               [classes.backupRegister]: addDummyRegisterFormModel.status === 'BACKUP',
               [classes.ignoredRegister]: addDummyRegisterFormModel.status === 'IGNORED'
             })}
+            hover={true}
           >
             <TableCell className={classes.nameCell}>
               <TextField
@@ -276,7 +277,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
     </TableHead>
   );
   const aircraftRegisterRow = (t: AircraftRegistersPerType, r: AircraftRegister) => (
-    <TableRow key={r.id} className={classNames({ [classes.backupRegister]: r.status === 'BACKUP', [classes.ignoredRegister]: r.status === 'IGNORED' })}>
+    <TableRow key={r.id} hover={true} className={classNames({ [classes.backupRegister]: r.status === 'BACKUP', [classes.ignoredRegister]: r.status === 'IGNORED' })}>
       <TableCell className={classes.nameCell}>
         <Typography variant="body2">{r.name}</Typography>
       </TableCell>
@@ -315,7 +316,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
     </TableRow>
   );
   const dummyAircraftRegisterRow = (t: AircraftRegistersPerType, r: DummyAircraftRegister) => (
-    <TableRow key={r.id} className={classNames({ [classes.backupRegister]: r.status === 'BACKUP', [classes.ignoredRegister]: r.status === 'IGNORED' })}>
+    <TableRow key={r.id} hover={true} className={classNames({ [classes.backupRegister]: r.status === 'BACKUP', [classes.ignoredRegister]: r.status === 'IGNORED' })}>
       <TableCell className={classes.nameCell}>
         <TextField
           value={r.name}

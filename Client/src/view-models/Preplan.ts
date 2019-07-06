@@ -64,6 +64,8 @@ export default class Preplan extends PreplanHeader {
     super(raw);
     this.autoArrangerOptions = raw.autoArrangerOptions || defaultAutoArrangerOptions;
     this.aircraftRegisters = new PreplanAircraftRegisters(raw.dummyAircraftRegisters, raw.aircraftRegisterOptionsDictionary);
+    this.flightRequirements = raw.flightRequirements.map(f => new FlightRequirement(f, this.aircraftRegisters));
+    const flights = this.flights;
     this.autoArrangerState = {
       solving: raw.autoArrangerState.solving,
       solvingStartDateTime: raw.autoArrangerState.solvingStartDateTime ? new Date(raw.autoArrangerState.solvingStartDateTime) : undefined,
@@ -74,7 +76,7 @@ export default class Preplan extends PreplanHeader {
       },
       messageViewed: raw.autoArrangerState.messageViewed,
       changeLogs: raw.autoArrangerState.changeLogs.map(l => ({
-        flightDerievedId: l.flightDerievedId,
+        flight: flights.find(f => f.derivedId === l.flightDerievedId)!,
         oldStd: new Daytime(l.oldStd),
         oldAircraftRegister: l.oldAircraftRegisterId ? this.aircraftRegisters.id[l.oldAircraftRegisterId] : undefined,
         newStd: new Daytime(l.newStd),
@@ -82,7 +84,6 @@ export default class Preplan extends PreplanHeader {
       })),
       changeLogsViewed: raw.autoArrangerState.changeLogsViewed
     };
-    this.flightRequirements = raw.flightRequirements.map(f => new FlightRequirement(f, this.aircraftRegisters));
   }
 
   /**

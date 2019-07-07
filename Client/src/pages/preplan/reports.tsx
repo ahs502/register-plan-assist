@@ -52,8 +52,8 @@ const ReportsPage: FC<ReportsPageProps> = ({ preplan }) => {
         selectedSection={preplanReport}
         onSectionSelect={selectedSection => history.push(`/preplan/${match.params.id}/reports/${(selectedSection as PreplanReport).path}`)}
       >
-        {preplanReport === proposalPreplanReport && <ProposalReport />}
-        {preplanReport === connectionsPpreplanReport && <ConnectionsReport />}
+        {preplanReport === proposalPreplanReport && <ProposalReport flights={preplan.flights} />}
+        {preplanReport === connectionsPpreplanReport && <ConnectionsReport preplanName={preplan.name} flights={preplan.flights} />}
       </SectionList>
     </Fragment>
   );

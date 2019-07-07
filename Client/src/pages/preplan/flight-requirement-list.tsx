@@ -208,8 +208,8 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = ({
                       <TableRow key={item.derivedId} hover={true}>
                         <TableCell>{Weekday[item.day]}</TableCell>
                         <TableCell>{item.scope.blockTime}</TableCell>
-                        <TableCell>{item.scope.aircraftSelection.allowedIdentities.map(a => a.name).join(' ,')}</TableCell>
-                        <TableCell>{item.scope.aircraftSelection.forbiddenIdentities.map(a => a.name).join(' ,')}</TableCell>
+                        <TableCell>{item.scope.aircraftSelection.allowedIdentities.map(a => a.name).join(', ')}</TableCell>
+                        <TableCell>{item.scope.aircraftSelection.forbiddenIdentities.map(a => a.name).join(', ')}</TableCell>
                         <TableCell align="center" className={classes.STDpadding}>
                           {item.scope.times.map(t => {
                             return (

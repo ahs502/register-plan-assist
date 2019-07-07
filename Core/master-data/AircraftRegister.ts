@@ -1,4 +1,4 @@
-import AircraftRegisterModel from '../models/master-data/AircraftRegisterModel';
+import AircraftRegisterModel from '@core/models/master-data/AircraftRegisterModel';
 import MasterDataItem, { MasterDataItems } from './MasterDataItem';
 import AircraftType from './AircraftType';
 import MasterData from './MasterData';

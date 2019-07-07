@@ -1,22 +1,24 @@
-import { MessageType } from '../types/auto-arranger-state';
+import MessageType from '@core/types/auto-arranger-state/MessageType';
+
+export interface MessageModel {
+  readonly type: MessageType;
+  readonly text: string;
+}
 
 export interface ChangeLogModel {
-  flightDerievedId: string;
-  oldStd: number;
-  oldAircraftRegisterId?: string;
-  newStd: number;
-  newAircraftRegisterId?: string;
+  readonly flightDerievedId: string;
+  readonly oldStd: number;
+  readonly oldAircraftRegisterId?: string;
+  readonly newStd: number;
+  readonly newAircraftRegisterId?: string;
 }
 
 export default interface AutoArrangerStateModel {
-  solving: boolean;
-  solvingStartDateTime?: string;
-  solvingDuration?: number;
-  message: {
-    type: MessageType;
-    text: string;
-  };
-  messageViewed: boolean;
-  changeLogs: readonly ChangeLogModel[];
-  changeLogsViewed: boolean;
+  readonly solving: boolean;
+  readonly solvingStartDateTime?: string;
+  readonly solvingDuration?: number;
+  readonly message?: MessageModel;
+  readonly messageViewed: boolean;
+  readonly changeLogs: readonly ChangeLogModel[];
+  readonly changeLogsViewed: boolean;
 }

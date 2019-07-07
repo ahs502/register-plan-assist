@@ -1,5 +1,5 @@
-import { MinimumGroundTimeMode } from '@core/types/auto-arranger-options';
 import AutoArrangerOptionsModel from '@core/models/AutoArrangerOptionsModel';
+import MinimumGroundTimeMode from '@core/types/auto-arranger-options/MinimumGroundTimeMode';
 
 export default interface AutoArrangerOptionsEntity {
   readonly minimumGroundTimeMode: MinimumGroundTimeMode;

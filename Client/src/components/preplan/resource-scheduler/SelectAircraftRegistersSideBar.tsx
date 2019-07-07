@@ -4,10 +4,11 @@ import { Clear as RemoveIcon, Check as CheckIcon } from '@material-ui/icons';
 import { makeStyles } from '@material-ui/styles';
 import SideBarContainer from './SideBarContainer';
 import classNames from 'classnames';
-import { PreplanAircraftRegisters } from 'src/view-models/PreplanAircraftRegister';
+import AircraftRegisterStatus from '@core/types/aircraft-register-options/AircraftRegisterStatus';
 import DummyAircraftRegisterModel from '@core/models/DummyAircraftRegisterModel';
-import { AircraftRegisterOptionsDictionary, AircraftRegisterStatus } from '@core/types/AircraftRegisterOptions';
+import { AircraftRegisterOptionsDictionaryModel } from '@core/models/AircraftRegisterOptionsModel';
 import MasterData, { Airport, AircraftType } from '@core/master-data';
+import { PreplanAircraftRegisters } from 'src/view-models/PreplanAircraftRegister';
 import Search, { filterOnProperties } from 'src/components/Search';
 
 const useStyles = makeStyles((theme: Theme) => ({
@@ -72,7 +73,7 @@ const aircraftRegisterStatusList: readonly { value: AircraftRegisterStatus; labe
 export interface SelectAircraftRegistersSideBarProps {
   initialSearch?: string;
   aircraftRegisters: PreplanAircraftRegisters;
-  onApply(dummyAircraftRegisters: readonly DummyAircraftRegisterModel[], aircraftRegisterOptionsDictionary: AircraftRegisterOptionsDictionary): void;
+  onApply(dummyAircraftRegisters: readonly DummyAircraftRegisterModel[], aircraftRegisterOptionsDictionary: AircraftRegisterOptionsDictionaryModel): void;
 }
 
 const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = ({ initialSearch, aircraftRegisters, onApply }) => {
@@ -94,7 +95,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
           id: a.id,
           name: a.name,
           groups: MasterData.all.aircraftGroups.items.filter(g => g.aircraftRegisters.filter(r => r.id === a.id)).map(g => g.name),
-          baseAirport: MasterData.all.airports.id[a.options.startingAirportId].name,
+          baseAirport: a.options.startingAirport ? a.options.startingAirport.name : '',
           status: a.options.status
         }));
       const dummyRegisters = aircraftRegisters.items
@@ -102,7 +103,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
         .map(a => ({
           id: a.id,
           name: a.name,
-          baseAirport: MasterData.all.airports.id[a.options.startingAirportId].name,
+          baseAirport: a.options.startingAirport ? a.options.startingAirport.name : '',
           status: a.options.status
         }));
       return {
@@ -132,7 +133,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
         }))
       )
       .reduce((a, l) => a.concat(l), [] as DummyAircraftRegisterModel[]);
-    const aircraftRegisterOptionsDictionary: AircraftRegisterOptionsDictionary = {};
+    const aircraftRegisterOptionsDictionary: AircraftRegisterOptionsDictionaryModel = {};
     list.forEach(t => {
       t.registers.forEach(
         r =>

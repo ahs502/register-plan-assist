@@ -4,9 +4,9 @@ import { ArrowForward as ArrowForwardIcon } from '@material-ui/icons';
 import { makeStyles } from '@material-ui/styles';
 import SideBarContainer from './SideBarContainer';
 import Search from 'src/components/Search';
-import { Flight } from 'src/view-models/FlightRequirement';
 import Weekday from '@core/types/Weekday';
 import { ChangeLog } from 'src/view-models/AutoArrangerState';
+import Flight from 'src/view-models/flight/Flight';
 
 const useStyles = makeStyles((theme: Theme) => ({
   searchWrapper: {

@@ -1,15 +1,14 @@
-import React, { FC, Fragment, useState, useContext } from 'react';
-import { Theme, Portal, Paper, Tabs, Tab, IconButton, Grid, TableHead, TableRow, TableCell, Table, TableBody, Typography, Switch, Backdrop, Button } from '@material-ui/core';
+import React, { FC, useState, useContext } from 'react';
+import { Theme, Paper, Tabs, Tab, IconButton, Grid, TableHead, TableRow, TableCell, Table, TableBody, Typography, Switch, Button } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import { NavBarToolsContainerContext } from 'src/pages/preplan';
-import FlightRequirement, { WeekdayFlightRequirement, FlightTime, FlightScope } from 'src/view-models/FlightRequirement';
 import { fade } from '@material-ui/core/styles';
 import Search from 'src/components/Search';
 import { DoneAll as FinilizedIcon, Add as AddIcon, Edit as EditIcon, Clear as ClearIcon, Done as DoneIcon } from '@material-ui/icons';
 import classNames from 'classnames';
 import Weekday from '@core/types/Weekday';
-import Daytime from '@core/types/Daytime';
-import FlightRequirementModel from '@core/models/FlightRequirementModel';
+import FlightRequirement from 'src/view-models/flight/FlightRequirement';
+import WeekdayFlightRequirement from 'src/view-models/flight/WeekdayFlightRequirement';
 
 const useStyles = makeStyles((theme: Theme) => ({
   contentPage: {

@@ -9,12 +9,11 @@ import FlightRequirementListPage from 'src/pages/preplan/flight-requirement-list
 import ReportsPage from 'src/pages/preplan/reports';
 import Preplan from 'src/view-models/Preplan';
 import DraggableDialog from 'src/components/DraggableDialog';
-import FlightRequirement, { FlightTime, FlightScope, WeekdayFlightRequirement, FlightDefinition } from 'src/view-models/FlightRequirement';
 import AircraftIdentity, { AircraftIdentityType } from '@core/types/AircraftIdentity';
 import FlightRequirementEditor from 'src/components/preplan/flight-requirement/FlightRequirementEditor';
-import Daytime from '@core/types/Daytime';
-import FlightRequirementModel, { FlightScopeModel } from '@core/models/FlightRequirementModel';
 import MasterData from '@core/master-data';
+import FlightRequirement from 'src/view-models/flight/FlightRequirement';
+import FlightTime from 'src/view-models/flight/FlightTime';
 
 const useStyles = makeStyles((theme: Theme) => ({
   flightRequirementStyle: {

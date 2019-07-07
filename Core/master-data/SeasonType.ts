@@ -1,4 +1,4 @@
-import SeasonTypeModel from '../models/master-data/SeasonTypeModel';
+import SeasonTypeModel from '@core/models/master-data/SeasonTypeModel';
 import MasterDataItem, { MasterDataItems } from './MasterDataItem';
 
 export default class SeasonType extends MasterDataItem {}

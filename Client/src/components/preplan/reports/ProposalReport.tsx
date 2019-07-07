@@ -1,7 +1,7 @@
 import React, { FC } from 'react';
 import { Theme } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
-import { Flight } from 'src/view-models/FlightRequirement';
+import Flight from 'src/view-models/flight/Flight';
 
 const useStyles = makeStyles((theme: Theme) => ({}));
 

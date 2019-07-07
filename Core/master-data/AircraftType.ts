@@ -1,4 +1,4 @@
-import AircraftTypeModel from '../models/master-data/AircraftTypeModel';
+import AircraftTypeModel from '@core/models/master-data/AircraftTypeModel';
 import MasterDataItem, { MasterDataItems } from './MasterDataItem';
 
 export default class AircraftType extends MasterDataItem {

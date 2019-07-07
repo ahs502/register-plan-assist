@@ -1,4 +1,4 @@
-import StcModel from '../models/master-data/StcModel';
+import StcModel from '@core/models/master-data/StcModel';
 import MasterDataItem, { MasterDataItems } from './MasterDataItem';
 
 export default class Stc extends MasterDataItem {

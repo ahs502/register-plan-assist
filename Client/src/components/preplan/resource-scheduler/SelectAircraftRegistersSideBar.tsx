@@ -4,10 +4,11 @@ import { Clear as RemoveIcon, Check as CheckIcon } from '@material-ui/icons';
 import { makeStyles } from '@material-ui/styles';
 import SideBarContainer from './SideBarContainer';
 import classNames from 'classnames';
-import { PreplanAircraftRegisters } from 'src/view-models/PreplanAircraftRegister';
+import AircraftRegisterStatus from '@core/types/aircraft-register-options/AircraftRegisterStatus';
 import DummyAircraftRegisterModel from '@core/models/DummyAircraftRegisterModel';
-import { AircraftRegisterOptionsDictionary, AircraftRegisterStatus } from '@core/types/AircraftRegisterOptions';
+import { AircraftRegisterOptionsDictionaryModel } from '@core/models/AircraftRegisterOptionsModel';
 import MasterData, { Airport, AircraftType } from '@core/master-data';
+import { PreplanAircraftRegisters } from 'src/view-models/PreplanAircraftRegister';
 import Search, { filterOnProperties } from 'src/components/Search';
 
 const useStyles = makeStyles((theme: Theme) => ({
@@ -72,7 +73,7 @@ const aircraftRegisterStatusList: readonly { value: AircraftRegisterStatus; labe
 export interface SelectAircraftRegistersSideBarProps {
   initialSearch?: string;
   aircraftRegisters: PreplanAircraftRegisters;
-  onApply(dummyAircraftRegisters: readonly DummyAircraftRegisterModel[], aircraftRegisterOptionsDictionary: AircraftRegisterOptionsDictionary): void;
+  onApply(dummyAircraftRegisters: readonly DummyAircraftRegisterModel[], aircraftRegisterOptionsDictionary: AircraftRegisterOptionsDictionaryModel): void;
 }
 
 const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = ({ initialSearch, aircraftRegisters, onApply }) => {
@@ -89,20 +90,20 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
 
     return MasterData.all.aircraftTypes.items.orderBy('displayOrder').map(t => {
       const registers = aircraftRegisters.items
-        .filter(a => !a.dummy && a.aircraftTypeId === t.id)
+        .filter(a => !a.dummy && a.aircraftType.id === t.id)
         .map(a => ({
           id: a.id,
           name: a.name,
-          groups: MasterData.all.aircraftGroups.items.filter(g => g.aircraftRegisterIds.includes(a.id)).map(g => g.name),
-          baseAirport: MasterData.all.airports.id[a.options.startingAirportId].name,
+          groups: MasterData.all.aircraftGroups.items.filter(g => g.aircraftRegisters.filter(r => r.id === a.id)).map(g => g.name),
+          baseAirport: a.options.startingAirport ? a.options.startingAirport.name : '',
           status: a.options.status
         }));
       const dummyRegisters = aircraftRegisters.items
-        .filter(a => a.dummy && a.aircraftTypeId === t.id)
+        .filter(a => a.dummy && a.aircraftType.id === t.id)
         .map(a => ({
           id: a.id,
           name: a.name,
-          baseAirport: MasterData.all.airports.id[a.options.startingAirportId].name,
+          baseAirport: a.options.startingAirport ? a.options.startingAirport.name : '',
           status: a.options.status
         }));
       return {
@@ -132,7 +133,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
         }))
       )
       .reduce((a, l) => a.concat(l), [] as DummyAircraftRegisterModel[]);
-    const aircraftRegisterOptionsDictionary: AircraftRegisterOptionsDictionary = {};
+    const aircraftRegisterOptionsDictionary: AircraftRegisterOptionsDictionaryModel = {};
     list.forEach(t => {
       t.registers.forEach(
         r =>
@@ -183,6 +184,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
               [classes.backupRegister]: addDummyRegisterFormModel.status === 'BACKUP',
               [classes.ignoredRegister]: addDummyRegisterFormModel.status === 'IGNORED'
             })}
+            hover={true}
           >
             <TableCell className={classes.nameCell}>
               <TextField
@@ -276,7 +278,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
     </TableHead>
   );
   const aircraftRegisterRow = (t: AircraftRegistersPerType, r: AircraftRegister) => (
-    <TableRow key={r.id} className={classNames({ [classes.backupRegister]: r.status === 'BACKUP', [classes.ignoredRegister]: r.status === 'IGNORED' })}>
+    <TableRow key={r.id} hover={true} className={classNames({ [classes.backupRegister]: r.status === 'BACKUP', [classes.ignoredRegister]: r.status === 'IGNORED' })}>
       <TableCell className={classes.nameCell}>
         <Typography variant="body2">{r.name}</Typography>
       </TableCell>
@@ -315,7 +317,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
     </TableRow>
   );
   const dummyAircraftRegisterRow = (t: AircraftRegistersPerType, r: DummyAircraftRegister) => (
-    <TableRow key={r.id} className={classNames({ [classes.backupRegister]: r.status === 'BACKUP', [classes.ignoredRegister]: r.status === 'IGNORED' })}>
+    <TableRow key={r.id} hover={true} className={classNames({ [classes.backupRegister]: r.status === 'BACKUP', [classes.ignoredRegister]: r.status === 'IGNORED' })}>
       <TableCell className={classes.nameCell}>
         <TextField
           value={r.name}

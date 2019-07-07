@@ -1,13 +1,13 @@
 import { Router } from 'express';
 import { Db, ObjectID, ClientSession } from 'mongodb';
-import { asyncMiddlewareWithDatabase, asyncMiddlewareWithTransaction } from '../utils/asyncMiddleware';
+import { asyncMiddlewareWithDatabase, asyncMiddlewareWithTransaction } from 'src/utils/asyncMiddleware';
 
 import PreplanValidator from '@core/validators/PreplanValidator';
 
 import PreplanModel, { PreplanHeaderModel } from '@core/models/PreplanModel';
 
 import PreplanEntity, { PreplanHeaderEntity, preplanHeaderProjection, convertPreplanHeaderEntityToModel, convertPreplanEntityToModel } from 'src/entities/PreplanEntity';
-import FlightRequirementEntity from 'src/entities/FlightRequirementEntity';
+import FlightRequirementEntity from 'src/entities/flight/FlightRequirementEntity';
 import AutoArrangerOptionsEntity from 'src/entities/AutoArrangerOptionsEntity';
 import { convertDummyAircraftRegisterEntityToModel } from 'src/entities/DummyAircraftRegisterEntity';
 
@@ -62,6 +62,15 @@ async function createEmptyHandler(db: Db, { name, startDate, endDate }) {
     simulationId: undefined,
     simulationName: undefined,
     autoArrangerOptions: undefined,
+    autoArrangerState: {
+      solving: false,
+      solvingStartDateTime: undefined,
+      solvingDuration: undefined,
+      message: undefined,
+      messageViewed: true,
+      changeLogs: [],
+      changeLogsViewed: true
+    },
     dummyAircraftRegisters: [],
     aircraftRegisterOptionsDictionary: {}
   };
@@ -99,6 +108,15 @@ async function cloneHandler(db: Db, session: ClientSession, { id, name, startDat
     simulationId: undefined,
     simulationName: undefined,
     autoArrangerOptions: sourcePreplan.autoArrangerOptions,
+    autoArrangerState: {
+      solving: false,
+      solvingStartDateTime: undefined,
+      solvingDuration: undefined,
+      message: undefined,
+      messageViewed: true,
+      changeLogs: [],
+      changeLogsViewed: true
+    },
     dummyAircraftRegisters: sourcePreplan.dummyAircraftRegisters,
     aircraftRegisterOptionsDictionary: sourcePreplan.aircraftRegisterOptionsDictionary
   };

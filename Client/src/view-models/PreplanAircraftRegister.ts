@@ -1,8 +1,10 @@
-import MasterData, { MasterDataItem, MasterDataItems, AircraftType, Airport } from '@core/master-data';
-import AircraftRegisterOptions, { AircraftRegisterOptionsDictionary, AircraftRegisterStatus } from '@core/types/AircraftRegisterOptions';
-import DummyAircraftRegisterModel from '@core/models/DummyAircraftRegisterModel';
+import AircraftRegisterStatus from '@core/types/aircraft-register-options/AircraftRegisterStatus';
 import AircraftIdentity from '@core/types/AircraftIdentity';
 import AircraftSelection from '@core/types/AircraftSelection';
+import DummyAircraftRegisterModel from '@core/models/DummyAircraftRegisterModel';
+import { AircraftRegisterOptionsDictionaryModel } from '@core/models/AircraftRegisterOptionsModel';
+import MasterData, { MasterDataItem, MasterDataItems, AircraftType } from '@core/master-data';
+import AircraftRegisterOptions, { AircraftRegisterOptionsDictionary } from './AircraftRegisterOptions';
 
 /**
  * An enhanced aircraft register capable of presenting both master data and dummy aircraft registers.
@@ -16,7 +18,7 @@ export default class PreplanAircraftRegister implements MasterDataItem {
   readonly id: string;
 
   readonly name: string;
-  readonly aircraftTypeId: string;
+  readonly aircraftType: AircraftType;
 
   /**
    * Whether this enhanced aircraft register is a dummy one or not.
@@ -25,29 +27,16 @@ export default class PreplanAircraftRegister implements MasterDataItem {
 
   readonly options: AircraftRegisterOptions;
 
-  constructor(id: string, name: string, aircraftTypeId: string, dummy: boolean, options?: AircraftRegisterOptions) {
+  constructor(id: string, name: string, aircraftType: AircraftType, dummy: boolean, options?: AircraftRegisterOptions) {
     this.id = id;
     this.name = name;
-    this.aircraftTypeId = aircraftTypeId;
+    this.aircraftType = aircraftType;
     this.dummy = dummy;
-    this.options = options || this.getDefaultOptions();
+    this.options = options || AircraftRegisterOptions.default;
   }
 
-  getAircraftType(): AircraftType {
-    return MasterData.all.aircraftTypes.id[this.aircraftTypeId];
-  }
   getMinimumGroundTime(date: Date, transit: boolean, international: boolean): number {
-    return this.getAircraftType().getMinimumGroundTime(date, transit, international);
-  }
-
-  getDefaultStartingAirport(): Airport {
-    return MasterData.all.airports.items.find(a => a.name === 'IKA')!; //TODO: Implement something better!
-  }
-  getDefaultOptions(): AircraftRegisterOptions {
-    return {
-      status: 'IGNORED',
-      startingAirportId: this.getDefaultStartingAirport().id
-    };
+    return this.aircraftType.getMinimumGroundTime(date, transit, international);
   }
 }
 
@@ -55,11 +44,10 @@ export default class PreplanAircraftRegister implements MasterDataItem {
  * Encapsulates all master data and dummy aircraft registers as a single collection.
  */
 export class PreplanAircraftRegisters extends MasterDataItems<PreplanAircraftRegister> {
-  constructor(dummyAircraftRegisters: readonly DummyAircraftRegisterModel[], aircraftRegisterOptionsDictionary: AircraftRegisterOptionsDictionary) {
-    let masterDataItems = MasterData.all.aircraftRegisters.items.map(
-      a => new PreplanAircraftRegister(a.id, a.name, a.aircraftTypeId, false, aircraftRegisterOptionsDictionary[a.id])
-    );
-    let dummyItems = dummyAircraftRegisters.map(a => new PreplanAircraftRegister(a.id, a.name, a.aircraftTypeId, true, aircraftRegisterOptionsDictionary[a.id]));
+  constructor(dummyAircraftRegisters: readonly DummyAircraftRegisterModel[], aircraftRegisterOptionsDictionary: AircraftRegisterOptionsDictionaryModel) {
+    const dictionary = new AircraftRegisterOptionsDictionary(aircraftRegisterOptionsDictionary);
+    let masterDataItems = MasterData.all.aircraftRegisters.items.map(a => new PreplanAircraftRegister(a.id, a.name, a.aircraftType, false, dictionary[a.id]));
+    let dummyItems = dummyAircraftRegisters.map(a => new PreplanAircraftRegister(a.id, a.name, MasterData.all.aircraftTypes.id[a.aircraftTypeId], true, dictionary[a.id]));
     super(masterDataItems.concat(dummyItems));
   }
 
@@ -71,19 +59,19 @@ export class PreplanAircraftRegisters extends MasterDataItems<PreplanAircraftReg
         break;
 
       case 'TYPE':
-        result = this.items.filter(a => a.aircraftTypeId === aircraftIdentity.entityId);
+        result = this.items.filter(a => a.aircraftType.id === aircraftIdentity.entityId);
         break;
 
       case 'TYPE_EXISTING':
-        result = this.items.filter(a => a.aircraftTypeId === aircraftIdentity.entityId && !a.dummy);
+        result = this.items.filter(a => a.aircraftType.id === aircraftIdentity.entityId && !a.dummy);
         break;
 
       case 'TYPE_DUMMY':
-        result = this.items.filter(a => a.aircraftTypeId === aircraftIdentity.entityId && a.dummy);
+        result = this.items.filter(a => a.aircraftType.id === aircraftIdentity.entityId && a.dummy);
         break;
 
       case 'GROUP':
-        result = MasterData.all.aircraftGroups.id[aircraftIdentity.entityId].aircraftRegisterIds.map(id => this.id[id]);
+        result = MasterData.all.aircraftGroups.id[aircraftIdentity.entityId].aircraftRegisters.map(a => this.id[a.id]);
         break;
 
       default:

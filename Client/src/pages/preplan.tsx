@@ -9,9 +9,11 @@ import FlightRequirementListPage from 'src/pages/preplan/flight-requirement-list
 import ReportsPage from 'src/pages/preplan/reports';
 import Preplan from 'src/view-models/Preplan';
 import DraggableDialog from 'src/components/DraggableDialog';
-import FlightRequirement, { FlightTime } from 'src/view-models/FlightRequirement';
-import AircraftIdentity from '@core/types/AircraftIdentity';
+import AircraftIdentity, { AircraftIdentityType } from '@core/types/AircraftIdentity';
 import FlightRequirementEditor from 'src/components/preplan/flight-requirement/FlightRequirementEditor';
+import MasterData from '@core/master-data';
+import FlightRequirement from 'src/view-models/flight/FlightRequirement';
+import FlightTime from 'src/view-models/flight/FlightTime';
 
 const useStyles = makeStyles((theme: Theme) => ({
   flightRequirementStyle: {
@@ -169,8 +171,252 @@ function getDummyPreplan(): Preplan {
     startDate: new Date().addDays(10).toJSON(),
     endDate: new Date().addDays(20).toJSON(),
     autoArrangerOptions: { minimumGroundTimeMode: 'AVERAGE', minimumGroundTimeOffset: 50 },
-    flightRequirements: [],
+    autoArrangerState: {
+      solving: true,
+      solvingStartDateTime: new Date().toString(),
+      solvingDuration: 185,
+      message: {
+        type: 'ERROR',
+        text: 'Message Text .... '
+      },
+      messageViewed: false,
+      changeLogs: [
+        {
+          flightDerievedId: '000#4',
+          oldStd: 156,
+          oldAircraftRegisterId: MasterData.all.aircraftRegisters.items[0].id,
+          newStd: 485,
+          newAircraftRegisterId: MasterData.all.aircraftRegisters.items[1].id
+        },
+        {
+          flightDerievedId: '000#5',
+          oldStd: 300,
+          oldAircraftRegisterId: MasterData.all.aircraftRegisters.items[2].id,
+          newStd: 720,
+          newAircraftRegisterId: MasterData.all.aircraftRegisters.items[3].id
+        }
+      ],
+      changeLogsViewed: true
+    },
+    flightRequirements: [
+      {
+        id: '000',
+        definition: {
+          label: 'DXB1',
+          stcId: MasterData.all.stcs.items[0].id,
+          flightNumber: 'W5 1234',
+          departureAirportId: MasterData.all.airports.items[0].id,
+          arrivalAirportId: MasterData.all.airports.items[1].id
+        },
+        scope: {
+          blockTime: 100,
+          times: [
+            {
+              stdLowerBound: 700,
+              stdUpperBound: 750
+            },
+            {
+              stdLowerBound: 900,
+              stdUpperBound: 950
+            }
+          ],
+          aircraftSelection: {
+            allowedIdentities: [
+              {
+                type: 'REGISTER' as AircraftIdentityType,
+                name: 'REG1',
+                entityId: MasterData.all.aircraftRegisters.items[0].id
+              }
+            ],
+            forbiddenIdentities: []
+          },
+          slot: true,
+          slotComment: 'some comment...',
+          required: true
+        },
+        days: [
+          {
+            scope: {
+              blockTime: 100,
+              times: [
+                {
+                  stdLowerBound: 700,
+                  stdUpperBound: 750
+                },
+                {
+                  stdLowerBound: 900,
+                  stdUpperBound: 950
+                }
+              ],
+              aircraftSelection: {
+                allowedIdentities: [
+                  {
+                    type: 'REGISTER' as AircraftIdentityType,
+                    name: 'REG1',
+                    entityId: MasterData.all.aircraftRegisters.items[0].id
+                  }
+                ],
+                forbiddenIdentities: []
+              },
+              slot: true,
+              slotComment: 'some comment...',
+              required: true
+            },
+            notes: 'some notes...',
+            day: 4,
+            flight: {
+              std: 730,
+              aircraftRegisterId: MasterData.all.aircraftRegisters.items[5].id
+            }
+          },
+          {
+            scope: {
+              blockTime: 100,
+              times: [
+                {
+                  stdLowerBound: 700,
+                  stdUpperBound: 750
+                },
+                {
+                  stdLowerBound: 900,
+                  stdUpperBound: 950
+                }
+              ],
+              aircraftSelection: {
+                allowedIdentities: [
+                  {
+                    type: 'REGISTER' as AircraftIdentityType,
+                    name: 'REG1',
+                    entityId: MasterData.all.aircraftRegisters.items[0].id
+                  }
+                ],
+                forbiddenIdentities: []
+              },
+              slot: true,
+              slotComment: 'some comment...',
+              required: true
+            },
+            notes: 'some notes...',
+            day: 5,
+            flight: {
+              std: 730,
+              aircraftRegisterId: MasterData.all.aircraftRegisters.items[6].id
+            }
+          }
+        ],
+        ignored: false
+      },
+      {
+        id: '001',
+        definition: {
+          label: 'DXB2',
+          stcId: MasterData.all.stcs.items[1].id,
+          flightNumber: 'W5 1235',
+          departureAirportId: MasterData.all.airports.items[3].id,
+          arrivalAirportId: MasterData.all.airports.items[4].id
+        },
+        scope: {
+          blockTime: 100,
+          times: [
+            {
+              stdLowerBound: 700,
+              stdUpperBound: 750
+            },
+            {
+              stdLowerBound: 900,
+              stdUpperBound: 950
+            }
+          ],
+          aircraftSelection: {
+            allowedIdentities: [
+              {
+                type: 'REGISTER' as AircraftIdentityType,
+                name: 'REG1',
+                entityId: MasterData.all.aircraftRegisters.items[0].id
+              }
+            ],
+            forbiddenIdentities: []
+          },
+          slot: true,
+          slotComment: 'some comment...',
+          required: true
+        },
+        days: [
+          {
+            scope: {
+              blockTime: 100,
+              times: [
+                {
+                  stdLowerBound: 700,
+                  stdUpperBound: 750
+                },
+                {
+                  stdLowerBound: 900,
+                  stdUpperBound: 950
+                }
+              ],
+              aircraftSelection: {
+                allowedIdentities: [
+                  {
+                    type: 'REGISTER' as AircraftIdentityType,
+                    name: 'REG1',
+                    entityId: MasterData.all.aircraftRegisters.items[0].id
+                  }
+                ],
+                forbiddenIdentities: []
+              },
+              slot: true,
+              slotComment: 'some comment...',
+              required: true
+            },
+            notes: 'some notes...',
+            day: 4,
+            flight: {
+              std: 730,
+              aircraftRegisterId: MasterData.all.aircraftRegisters.items[5].id
+            }
+          },
+          {
+            scope: {
+              blockTime: 100,
+              times: [
+                {
+                  stdLowerBound: 700,
+                  stdUpperBound: 750
+                },
+                {
+                  stdLowerBound: 900,
+                  stdUpperBound: 950
+                }
+              ],
+              aircraftSelection: {
+                allowedIdentities: [
+                  {
+                    type: 'REGISTER' as AircraftIdentityType,
+                    name: 'REG1',
+                    entityId: MasterData.all.aircraftRegisters.items[0].id
+                  }
+                ],
+                forbiddenIdentities: []
+              },
+              slot: true,
+              slotComment: 'some comment...',
+              required: true
+            },
+            notes: 'some notes...',
+            day: 5,
+            flight: {
+              std: 730,
+              aircraftRegisterId: MasterData.all.aircraftRegisters.items[6].id
+            }
+          }
+        ],
+        ignored: false
+      }
+    ],
     dummyAircraftRegisters: [],
     aircraftRegisterOptionsDictionary: {}
   });
 }
+
+//=============================================================================================

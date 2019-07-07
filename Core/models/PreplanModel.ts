@@ -1,7 +1,8 @@
-import { AircraftRegisterOptionsDictionary } from '../types/AircraftRegisterOptions';
 import AutoArrangerOptionsModel from './AutoArrangerOptionsModel';
 import DummyAircraftRegisterModel from './DummyAircraftRegisterModel';
-import FlightRequirementModel from './FlightRequirementModel';
+import FlightRequirementModel from './flight/FlightRequirementModel';
+import AutoArrangerStateModel from './AutoArrangerStateModel';
+import { AircraftRegisterOptionsDictionaryModel } from './AircraftRegisterOptionsModel';
 
 export interface PreplanHeaderModel {
   readonly id: string;
@@ -29,9 +30,25 @@ export interface PreplanHeaderModel {
 
 export default interface PreplanModel extends PreplanHeaderModel {
   readonly autoArrangerOptions?: AutoArrangerOptionsModel;
+  readonly autoArrangerState: AutoArrangerStateModel;
 
   readonly dummyAircraftRegisters: readonly DummyAircraftRegisterModel[];
-  readonly aircraftRegisterOptionsDictionary: AircraftRegisterOptionsDictionary;
+  readonly aircraftRegisterOptionsDictionary: AircraftRegisterOptionsDictionaryModel;
 
   readonly flightRequirements: readonly FlightRequirementModel[];
+}
+
+export interface NewPreplanHeaderModel {
+  readonly id: string;
+  readonly name: string;
+  readonly startDate: string;
+  readonly endDate: string;
+}
+
+export interface ModifyPreplanHeaderModel {
+  readonly id: string;
+  readonly name: string;
+  readonly published: boolean;
+  readonly startDate: string;
+  readonly endDate: string;
 }

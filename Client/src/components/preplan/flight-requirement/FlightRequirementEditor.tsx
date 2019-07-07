@@ -1,4 +1,4 @@
-import React, { FC, useState, useEffect, Fragment } from 'react';
+import React, { FC, useState, Fragment } from 'react';
 import {
   Theme,
   DialogTitle,
@@ -15,14 +15,13 @@ import {
   Checkbox
 } from '@material-ui/core';
 import { Clear as ClearIcon, Add as AddIcon, CheckBox } from '@material-ui/icons';
-import { makeStyles, useTheme } from '@material-ui/styles';
-import { Scope } from '@babel/traverse';
+import { makeStyles } from '@material-ui/styles';
 import { FlightRequirementModal } from 'src/pages/preplan';
-import Weekday from '@core/types/Weekday';
-import { FlightTime } from 'src/view-models/FlightRequirement';
 import DaysPicker from 'src/components/DaysPicker';
 import classNames from 'classnames';
+import Weekday from '@core/types/Weekday';
 import MasterData from '@core/master-data';
+import FlightTime from 'src/view-models/flight/FlightTime';
 
 const useStyles = makeStyles((theme: Theme) => ({
   allowTimeStyle: {

@@ -1,5 +1,5 @@
-import MasterDataModel from '../models/master-data/MasterDataModel';
-import AircraftIdentity from '../types/AircraftIdentity';
+import MasterDataModel from '@core/models/master-data/MasterDataModel';
+import AircraftIdentity from '@core/types/AircraftIdentity';
 
 import { AircraftTypes } from './AircraftType';
 import { AircraftRegisters } from './AircraftRegister';

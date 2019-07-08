@@ -1,4 +1,24 @@
+import Validation from '@core/utils/Validation';
+import MasterData from '@core/master-data';
+import DummyAircraftRegisterModel from '../DummyAircraftRegisterModel';
+
 export default interface FlightModel {
   readonly std: number;
   readonly aircraftRegisterId?: string;
+}
+
+export class FlightValidation extends Validation<'STD_EXISTS' | 'STD_IS_VALID' | 'STD_IS_NOT_NEGATIVE' | 'AIRCRAFT_REGISTER_ID_IS_VALID'> {
+  constructor(data: any, dummyAircraftRegisters: readonly DummyAircraftRegisterModel[]) {
+    super(validator =>
+      validator.object(data).do(({ std, aircraftRegisterId }) => {
+        validator
+          .check('STD_EXISTS', std || std === 0 || isNaN(std))
+          .check('STD_IS_VALID', () => !isNaN(std))
+          .check('STD_IS_NOT_NEGATIVE', () => std >= 0);
+        validator
+          .optional(aircraftRegisterId)
+          .check('AIRCRAFT_REGISTER_ID_IS_VALID', !!MasterData.all.aircraftRegisters.id[aircraftRegisterId] || dummyAircraftRegisters.some(a => a.id === aircraftRegisterId));
+      })
+    );
+  }
 }

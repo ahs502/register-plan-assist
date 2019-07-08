@@ -14,7 +14,7 @@ export default class FlightRequirement {
   constructor(raw: FlightRequirementModel, aircraftRegisters: PreplanAircraftRegisters) {
     this.id = raw.id;
     this.definition = new FlightDefinition(raw.definition);
-    this.scope = new FlightScope(raw.scope);
+    this.scope = new FlightScope(raw.scope, aircraftRegisters);
     this.days = raw.days.map(d => new WeekdayFlightRequirement(d, this, aircraftRegisters)).sortBy(d => d.day);
     this.ignored = raw.ignored;
   }

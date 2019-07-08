@@ -16,7 +16,7 @@ export default class WeekdayFlightRequirement {
   constructor(raw: WeekdayFlightRequirementModel, requirement: FlightRequirement, aircraftRegisters: PreplanAircraftRegisters) {
     this.derivedId = `${requirement.id}#${raw.day}`;
     this.requirement = requirement;
-    this.scope = new FlightScope(raw.scope);
+    this.scope = new FlightScope(raw.scope, aircraftRegisters);
     this.notes = raw.notes;
     this.day = raw.day;
     this.flight = new Flight(raw.flight, this, aircraftRegisters);

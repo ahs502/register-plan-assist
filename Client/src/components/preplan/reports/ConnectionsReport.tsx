@@ -139,7 +139,7 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName })
     connectionNumberExportData = result;
   };
 
-  const generatePlanExportData = () => {
+  const generateConnectionTableExportData = () => {
     const result: any[] = [];
     if (eastAirport && westAirport) {
       weekDay.forEach(w => {
@@ -177,8 +177,8 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName })
           const stas = arrivalToIran.map(flight => flight.std.minutes + flight.weekdayRequirement.scope.blockTime).sort(compareFunction);
           const stds = departureFromIran.map(flight => flight.std.minutes).sort(compareFunction);
 
-          if (stas.length <= 0) return;
-          model[airport.name] = Array.range(0, stas.length - 1)
+          if (stas.length <= 0 && stds.length <= 0) return;
+          model[airport.name] = Array.range(0, Math.max(stas.length, stds.length) - 1)
             .map(i => {
               return formatMinuteToString(stds[i]) + '-' + formatMinuteToString(stas[i]);
             })
@@ -223,23 +223,23 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName })
 
   const flightPerDay: { [index: number]: ConnectionModel } = {};
 
-  const cellOption = {
+  const detailCellOption = {
     textAlign: 'center',
     verticalAlign: 'center',
-    borderBottom: { color: '#bdbdbd', size: 1 },
-    borderLeft: { color: '#bdbdbd', size: 1 },
-    borderRight: { color: '#bdbdbd', size: 1 },
-    borderTop: { color: '#bdbdbd', size: 1 },
+    borderBottom: { color: '#BDBDBD', size: 1 },
+    borderLeft: { color: '#BDBDBD', size: 1 },
+    borderRight: { color: '#BDBDBD', size: 1 },
+    borderTop: { color: '#BDBDBD', size: 1 },
     fontSize: 9
   } as CellOptions;
 
   const headerCellOptions = {
     textAlign: 'center',
     verticalAlign: 'center',
-    borderBottom: { color: '#bdbdbd', size: 1 },
-    borderLeft: { color: '#bdbdbd', size: 1 },
-    borderRight: { color: '#bdbdbd', size: 1 },
-    borderTop: { color: '#bdbdbd', size: 1 },
+    borderBottom: { color: '#BDBDBD', size: 1 },
+    borderLeft: { color: '#BDBDBD', size: 1 },
+    borderRight: { color: '#BDBDBD', size: 1 },
+    borderTop: { color: '#BDBDBD', size: 1 },
     fontSize: 12,
     bold: true
   } as CellOptions;
@@ -292,13 +292,12 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName })
       return true;
     });
   });
-  generateConnectionNumberExportData();
-  generatePlanExportData();
 
-  //var f = new Flight({ std: 10 } as FlightModel,new WeekdayFlightRequirement({ scope: { blockTime: 10 }, day: 3, flight: { std: 10 } } as WeekdayFlightRequirementModel,new FlightRequirement({ definition: { departureAirportId: '', arrivalAirportId: '' } as FlightDefinitionModel } as FlightRequirementModel)));
+  generateConnectionNumberExportData();
+  generateConnectionTableExportData();
 
   return (
-    <div>
+    <Fragment>
       <InputLabel htmlFor="east-airport" className={classes.marginBottom1}>
         East Airport
       </InputLabel>
@@ -376,7 +375,7 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName })
           }}
         >
           <ExcelExportColumn
-            title=" "
+            title={preplanName}
             field="day"
             width={30}
             cellOptions={{ ...headerCellOptions, background: '#F4B084' }}
@@ -388,7 +387,7 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName })
               field={'from' + airport.name}
               title={airport.name}
               width={30}
-              cellOptions={{ ...cellOption, wrap: true }}
+              cellOptions={{ ...detailCellOption, wrap: true }}
               headerCellOptions={{ ...headerCellOptions, background: '#F4B084', color: '#000000' }}
             />
           ))}
@@ -398,7 +397,7 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName })
               field={airport.name}
               title={airport.name}
               width={54}
-              cellOptions={{ ...cellOption, wrap: true, background: '#FBE0CE' }}
+              cellOptions={{ ...detailCellOption, wrap: true, background: '#FBE0CE' }}
               headerCellOptions={{ ...headerCellOptions, background: '#F4B084', color: '#000000' }}
             />
           ))}
@@ -408,7 +407,7 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName })
               field={'to' + airport.name}
               title={airport.name}
               width={30}
-              cellOptions={{ ...cellOption, wrap: true }}
+              cellOptions={{ ...detailCellOption, wrap: true }}
               headerCellOptions={{ ...headerCellOptions, background: '#F4B084', color: '#000000' }}
             />
           ))}
@@ -464,8 +463,8 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName })
                   return (
                     <TableCell key={airport.id} className={classes.boarder}>
                       <Fragment>
-                        {Array.range(0, stas.length - 1).map(i => {
-                          return <div key={i}>{formatMinuteToString(stas[i])}</div>;
+                        {stas.map((sta, i) => {
+                          return <div key={i}>{formatMinuteToString(sta)}</div>;
                         })}
                       </Fragment>
                     </TableCell>
@@ -479,11 +478,11 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName })
                   const stas = arrivalToIran.map(flight => flight.std.minutes + flight.weekdayRequirement.scope.blockTime).sort(compareFunction);
                   const stds = departureFromIran.map(flight => flight.std.minutes).sort(compareFunction);
 
-                  if (stas.length <= 0) return <TableCell key={airport.id} className={classNames(classes.west, classes.boarder)} />;
+                  if (stas.length <= 0 && stds.length <= 0) return <TableCell key={airport.id} className={classNames(classes.west, classes.boarder)} />;
                   return (
                     <TableCell key={airport.id} className={classNames(classes.west, classes.boarder)}>
                       <Fragment>
-                        {Array.range(0, stas.length - 1).map(i => {
+                        {Array.range(0, Math.max(stas.length, stds.length) - 1).map(i => {
                           return (
                             <div key={i}>
                               {formatMinuteToString(stds[i])}&ndash;{formatMinuteToString(stas[i])}
@@ -502,8 +501,8 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName })
                   return (
                     <TableCell key={airport.id} className={classes.boarder}>
                       <Fragment>
-                        {Array.range(0, stds.length - 1).map(i => {
-                          return <div key={i}>{formatMinuteToString(stds[i])}</div>;
+                        {stds.map((std, i) => {
+                          return <div key={i}>{formatMinuteToString(std)}</div>;
                         })}
                       </Fragment>
                     </TableCell>
@@ -540,7 +539,8 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName })
         >
           <ExcelExportColumn
             field="airport"
-            title=" "
+            locked={false}
+            title={preplanName}
             width={100}
             cellOptions={{ ...headerCellOptions, background: '#C6EFCE', color: '#000000' }}
             headerCellOptions={{ ...headerCellOptions, background: '#C6EFCE', color: '#000000' }}
@@ -551,15 +551,17 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName })
               <ExcelExportColumn
                 field={'to' + wa.name}
                 title={'To ' + wa.name}
+                locked={false}
                 width={100}
-                cellOptions={{ ...cellOption, wrap: true, fontSize: 12 }}
+                cellOptions={{ ...detailCellOption, wrap: true, fontSize: 12 }}
                 headerCellOptions={{ ...headerCellOptions, background: '#C6EFCE', color: '#000000' }}
               />
               <ExcelExportColumn
                 field={'from' + wa.name}
                 title={'From ' + wa.name}
+                locked={false}
                 width={100}
-                cellOptions={{ ...cellOption, wrap: true, fontSize: 12, borderRight: { size: 2, color: '#000000' } }}
+                cellOptions={{ ...detailCellOption, wrap: true, fontSize: 12, borderRight: { size: 2, color: '#000000' } }}
                 headerCellOptions={{ ...headerCellOptions, background: '#C6EFCE', color: '#000000', borderRight: { size: 2, color: '#000000' } }}
               />
             </Fragment>
@@ -599,7 +601,7 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName })
           </TableBody>
         </Table>
       </div>
-    </div>
+    </Fragment>
   );
 };
 

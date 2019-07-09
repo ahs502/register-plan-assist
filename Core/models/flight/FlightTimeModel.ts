@@ -1,4 +1,4 @@
-import Validation from '@core/utils/Validation';
+import Validation from '@ahs502/validation';
 
 export default interface FlightTimeModel {
   readonly stdLowerBound: number;

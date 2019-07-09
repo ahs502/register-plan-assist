@@ -3,7 +3,6 @@ import DummyAircraftRegisterModel from './DummyAircraftRegisterModel';
 import FlightRequirementModel from './flight/FlightRequirementModel';
 import AutoArrangerStateModel from './AutoArrangerStateModel';
 import { AircraftRegisterOptionsDictionaryModel } from './AircraftRegisterOptionsModel';
-import Validation from '@core/utils/Validation';
 
 export interface PreplanHeaderModel {
   readonly id: string;

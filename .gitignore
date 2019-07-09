@@ -45,7 +45,6 @@ Thumbs.db
 ########################################################################
 
 # compiled output
-/Core/dist
 
 # dependencies
 /Core/node_modules

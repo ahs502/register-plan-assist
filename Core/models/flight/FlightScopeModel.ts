@@ -1,7 +1,7 @@
 import FlightTimeModel, { FlightTimeValidation } from './FlightTimeModel';
 import AircraftSelectionModel, { AircraftSelectionValidation } from '@core/models/AircraftSelectionModel';
-import Validation from '@core/utils/Validation';
 import DummyAircraftRegisterModel from '../DummyAircraftRegisterModel';
+import Validation from '@ahs502/validation';
 
 export interface FlightScopeModel {
   readonly blockTime: number;

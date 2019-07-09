@@ -1,8 +1,8 @@
 import FlightDefinitionModel, { FlightDefinitionValidation } from './FlightDefinitionModel';
 import { FlightScopeModel, FlightScopeValidation } from './FlightScopeModel';
 import WeekdayFlightRequirementModel, { WeekdayFlightRequirementValidation } from './WeekdayFlightRequirementModel';
-import Validation from '@core/utils/Validation';
 import DummyAircraftRegisterModel from '../DummyAircraftRegisterModel';
+import Validation from '@ahs502/validation';
 
 export default interface FlightRequirementModel {
   readonly id: string;

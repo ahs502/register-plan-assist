@@ -1,7 +1,7 @@
 import AircraftIdentityType from '@core/types/aircraft-identity/AircraftIdentityType';
-import Validation from '@core/utils/Validation';
 import MasterData from '@core/master-data';
 import DummyAircraftRegisterModel from './DummyAircraftRegisterModel';
+import Validation from '@ahs502/validation';
 
 export default interface AircraftIdentityModel {
   readonly type: AircraftIdentityType;

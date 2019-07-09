@@ -1,5 +1,5 @@
-import Validation from '@core/utils/Validation';
 import MasterData from '@core/master-data';
+import Validation from '@ahs502/validation';
 
 export default interface FlightDefinitionModel {
   readonly label: string;

@@ -296,6 +296,269 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName })
   generateConnectionNumberExportData();
   generateConnectionTableExportData();
 
+  const exportConnectionTable = (
+    <Fragment>
+      <Button
+        variant="outlined"
+        color="primary"
+        onClick={() => {
+          if (connectionTableExporter) {
+            const options = connectionTableExporter.workbookOptions();
+            const rows = options && options.sheets && options.sheets[0] && options.sheets[0].rows;
+            if (rows) {
+              rows.forEach(r => {
+                if (r.cells) {
+                  const numberOfNewLive = r.cells.map(c => (typeof c.value === 'string' ? c.value.split('\r\n').length : 0)).sort(compareFunction);
+                  r.height = 15 * numberOfNewLive[numberOfNewLive.length - 1] + 5;
+                }
+              });
+            }
+
+            connectionTableExporter.save(options);
+          }
+        }}
+      >
+        Export to Excel
+        <ExportToExcelIcon className={classes.transform180} />
+      </Button>
+
+      <ExcelExport
+        data={connectionTableExportData}
+        fileName="ConnectionTable.xlsx"
+        ref={exporter => {
+          connectionTableExporter = exporter;
+        }}
+      >
+        <ExcelExportColumn
+          title={preplanName}
+          field="day"
+          width={30}
+          cellOptions={{ ...headerCellOptions, background: '#F4B084' }}
+          headerCellOptions={{ ...headerCellOptions, background: '#F4B084' }}
+        />
+        {eastAirport.map(airport => (
+          <ExcelExportColumn
+            key={airport.id}
+            field={'from' + airport.name}
+            title={airport.name}
+            width={30}
+            cellOptions={{ ...detailCellOption, wrap: true }}
+            headerCellOptions={{ ...headerCellOptions, background: '#F4B084', color: '#000000' }}
+          />
+        ))}
+        {westAirport.map(airport => (
+          <ExcelExportColumn
+            key={airport.id}
+            field={airport.name}
+            title={airport.name}
+            width={54}
+            cellOptions={{ ...detailCellOption, wrap: true, background: '#FBE0CE' }}
+            headerCellOptions={{ ...headerCellOptions, background: '#F4B084', color: '#000000' }}
+          />
+        ))}
+        {eastAirport.map(airport => (
+          <ExcelExportColumn
+            key={airport.id}
+            field={'to' + airport.name}
+            title={airport.name}
+            width={30}
+            cellOptions={{ ...detailCellOption, wrap: true }}
+            headerCellOptions={{ ...headerCellOptions, background: '#F4B084', color: '#000000' }}
+          />
+        ))}
+      </ExcelExport>
+    </Fragment>
+  );
+
+  const connectionTable = (
+    <Table>
+      <TableHead>
+        <TableRow className={classes.header}>
+          <TableCell className={classes.boarder} />
+          <TableCell colSpan={eastAirport.length} align="center" className={classes.boarder}>
+            Arrival to IKA
+          </TableCell>
+          <TableCell colSpan={westAirport.length} className={classes.boarder} />
+
+          <TableCell colSpan={eastAirport.length} align="center" className={classes.boarder}>
+            Departure from IKA
+          </TableCell>
+        </TableRow>
+        <TableRow className={classes.airportHeader}>
+          <TableCell className={classNames(classes.header, classes.boarder)} />
+          {eastAirport.map(airport => (
+            <TableCell key={airport.id} className={classes.boarder}>
+              {airport.name}
+            </TableCell>
+          ))}
+          {westAirport.map(airport => (
+            <TableCell key={airport.id} className={classes.boarder}>
+              {airport.name}
+            </TableCell>
+          ))}
+          {eastAirport.map(airport => (
+            <TableCell key={airport.id} className={classes.boarder}>
+              {airport.name}
+            </TableCell>
+          ))}
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {weekDay.map(w => (
+          <TableRow key={w}>
+            <TableCell className={classNames(classes.header, classes.boarder)}>{Weekday[w]}</TableCell>
+            {eastAirport.map(airport => {
+              const flights = flightPerDay[w].eastAirportArrivalToIranFlight.filter(f => f.weekdayRequirement.definition.departureAirport.id === airport.id);
+              if (!flights || flights.length == 0) return <TableCell className={classes.boarder} key={airport.id} />;
+
+              const stas = flights
+                .map(flight => {
+                  return flight.std.minutes + flight.weekdayRequirement.scope.blockTime;
+                })
+                .sort(compareFunction);
+
+              return (
+                <TableCell key={airport.id} className={classes.boarder}>
+                  <Fragment>
+                    {stas.map((sta, i) => {
+                      return <div key={i}>{formatMinuteToString(sta)}</div>;
+                    })}
+                  </Fragment>
+                </TableCell>
+              );
+            })}
+
+            {westAirport.map(airport => {
+              const arrivalToIran = flightPerDay[w].westAirportArrivalToIranFlight.filter(f => f.weekdayRequirement.definition.departureAirport.id === airport.id);
+              const departureFromIran = flightPerDay[w].westAirportDepartureFromIranFlight.filter(f => f.weekdayRequirement.definition.arrivalAirport.id == airport.id);
+
+              const stas = arrivalToIran.map(flight => flight.std.minutes + flight.weekdayRequirement.scope.blockTime).sort(compareFunction);
+              const stds = departureFromIran.map(flight => flight.std.minutes).sort(compareFunction);
+
+              if (stas.length <= 0 && stds.length <= 0) return <TableCell key={airport.id} className={classNames(classes.west, classes.boarder)} />;
+              return (
+                <TableCell key={airport.id} className={classNames(classes.west, classes.boarder)}>
+                  <Fragment>
+                    {Array.range(0, Math.max(stas.length, stds.length) - 1).map(i => {
+                      return (
+                        <div key={i}>
+                          {formatMinuteToString(stds[i])}&ndash;{formatMinuteToString(stas[i])}
+                        </div>
+                      );
+                    })}
+                  </Fragment>
+                </TableCell>
+              );
+            })}
+
+            {eastAirport.map(airport => {
+              const flights = flightPerDay[w].eastAirportDepartureFromIranFlight.filter(f => f.weekdayRequirement.definition.arrivalAirport.id === airport.id);
+              if (!flights || flights.length == 0) return <TableCell className={classes.boarder} key={airport.id} />;
+              const stds = flights.map(flight => flight.std.minutes).sort(compareFunction);
+              return (
+                <TableCell key={airport.id} className={classes.boarder}>
+                  <Fragment>
+                    {stds.map((std, i) => {
+                      return <div key={i}>{formatMinuteToString(std)}</div>;
+                    })}
+                  </Fragment>
+                </TableCell>
+              );
+            })}
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+
+  const exportConnectionNumber = (
+    <Fragment>
+      <Button
+        variant="outlined"
+        color="primary"
+        onClick={() => {
+          //generateConnectionCountExportData();
+          if (connectionNumberExporter) connectionNumberExporter.save();
+        }}
+      >
+        Export to Excel
+        <ExportToExcelIcon className={classes.transform180} />
+      </Button>
+
+      <ExcelExport
+        data={connectionNumberExportData}
+        fileName="NumberOfConnection.xlsx"
+        ref={exporter => {
+          connectionNumberExporter = exporter;
+        }}
+      >
+        <ExcelExportColumn
+          field="airport"
+          locked={false}
+          title={preplanName}
+          width={100}
+          cellOptions={{ ...headerCellOptions, background: '#C6EFCE', color: '#000000' }}
+          headerCellOptions={{ ...headerCellOptions, background: '#C6EFCE', color: '#000000' }}
+        />
+
+        {westAirport.map(wa => (
+          <Fragment key={wa.id}>
+            <ExcelExportColumn
+              field={'to' + wa.name}
+              title={'To ' + wa.name}
+              locked={false}
+              width={100}
+              cellOptions={{ ...detailCellOption, wrap: true, fontSize: 12 }}
+              headerCellOptions={{ ...headerCellOptions, background: '#C6EFCE', color: '#000000' }}
+            />
+            <ExcelExportColumn
+              field={'from' + wa.name}
+              title={'From ' + wa.name}
+              locked={false}
+              width={100}
+              cellOptions={{ ...detailCellOption, wrap: true, fontSize: 12, borderRight: { size: 2, color: '#000000' } }}
+              headerCellOptions={{ ...headerCellOptions, background: '#C6EFCE', color: '#000000', borderRight: { size: 2, color: '#000000' } }}
+            />
+          </Fragment>
+        ))}
+      </ExcelExport>
+    </Fragment>
+  );
+
+  const connectionNumber = (
+    <Table>
+      <TableBody>
+        <TableRow>
+          <TableCell className={classNames(classes.connectionHeader, classes.boarder)} />
+          {westAirport.map(wa => (
+            <TableCell className={classNames(classes.connectionHeader, classes.boarder)} key={wa.id} colSpan={2} align="center">
+              <ConnectionIcon className={classes.connectionFrom} />
+              {wa.name}
+              <ConnectionIcon className={classes.connectionTo} />
+            </TableCell>
+          ))}
+        </TableRow>
+        {eastAirport.map(ea => (
+          <TableRow key={ea.id}>
+            <TableCell className={classNames(classes.connectionHeader, classes.boarder)} align="center">
+              {ea.name}
+            </TableCell>
+            {westAirport.map(wa => (
+              <Fragment key={wa.id}>
+                <TableCell className={classNames(classes.boarder, classes.removeRightBoarder)} align="center">
+                  {getNumberOfConnection(ea, wa, 'EasttoWest')}
+                </TableCell>
+                <TableCell className={classNames(classes.boarder, classes.removeLeftBoarder)} align="center">
+                  {getNumberOfConnection(wa, ea, 'WesttoEast')}
+                </TableCell>
+              </Fragment>
+            ))}
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+
   return (
     <Fragment>
       <InputLabel htmlFor="east-airport" className={classes.marginBottom1}>
@@ -342,265 +605,13 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName })
         value={maxConnectionTime}
         onChange={e => +e.target.value >= 0 && setMaxConnectionTime(+e.target.value)}
       />
-      <div className={classNames(classes.export, classes.marginBottom1)}>
-        <Button
-          variant="outlined"
-          color="primary"
-          onClick={() => {
-            if (connectionTableExporter) {
-              const options = connectionTableExporter.workbookOptions();
-              const rows = options && options.sheets && options.sheets[0] && options.sheets[0].rows;
-              if (rows) {
-                rows.forEach(r => {
-                  if (r.cells) {
-                    const numberOfNewLive = r.cells.map(c => (typeof c.value === 'string' ? c.value.split('\r\n').length : 0)).sort(compareFunction);
-                    r.height = 15 * numberOfNewLive[numberOfNewLive.length - 1] + 5;
-                  }
-                });
-              }
-
-              connectionTableExporter.save(options);
-            }
-          }}
-        >
-          Export to Excel
-          <ExportToExcelIcon className={classes.transform180} />
-        </Button>
-
-        <ExcelExport
-          data={connectionTableExportData}
-          fileName="ConnectionTable.xlsx"
-          ref={exporter => {
-            connectionTableExporter = exporter;
-          }}
-        >
-          <ExcelExportColumn
-            title={preplanName}
-            field="day"
-            width={30}
-            cellOptions={{ ...headerCellOptions, background: '#F4B084' }}
-            headerCellOptions={{ ...headerCellOptions, background: '#F4B084' }}
-          />
-          {eastAirport.map(airport => (
-            <ExcelExportColumn
-              key={airport.id}
-              field={'from' + airport.name}
-              title={airport.name}
-              width={30}
-              cellOptions={{ ...detailCellOption, wrap: true }}
-              headerCellOptions={{ ...headerCellOptions, background: '#F4B084', color: '#000000' }}
-            />
-          ))}
-          {westAirport.map(airport => (
-            <ExcelExportColumn
-              key={airport.id}
-              field={airport.name}
-              title={airport.name}
-              width={54}
-              cellOptions={{ ...detailCellOption, wrap: true, background: '#FBE0CE' }}
-              headerCellOptions={{ ...headerCellOptions, background: '#F4B084', color: '#000000' }}
-            />
-          ))}
-          {eastAirport.map(airport => (
-            <ExcelExportColumn
-              key={airport.id}
-              field={'to' + airport.name}
-              title={airport.name}
-              width={30}
-              cellOptions={{ ...detailCellOption, wrap: true }}
-              headerCellOptions={{ ...headerCellOptions, background: '#F4B084', color: '#000000' }}
-            />
-          ))}
-        </ExcelExport>
-      </div>
-      <div className={classes.tableContainer}>
-        <Table>
-          <TableHead>
-            <TableRow className={classes.header}>
-              <TableCell className={classes.boarder} />
-              <TableCell colSpan={eastAirport.length} align="center" className={classes.boarder}>
-                Arrival to IKA
-              </TableCell>
-              <TableCell colSpan={westAirport.length} className={classes.boarder} />
-
-              <TableCell colSpan={eastAirport.length} align="center" className={classes.boarder}>
-                Departure from IKA
-              </TableCell>
-            </TableRow>
-            <TableRow className={classes.airportHeader}>
-              <TableCell className={classNames(classes.header, classes.boarder)} />
-              {eastAirport.map(airport => (
-                <TableCell key={airport.id} className={classes.boarder}>
-                  {airport.name}
-                </TableCell>
-              ))}
-              {westAirport.map(airport => (
-                <TableCell key={airport.id} className={classes.boarder}>
-                  {airport.name}
-                </TableCell>
-              ))}
-              {eastAirport.map(airport => (
-                <TableCell key={airport.id} className={classes.boarder}>
-                  {airport.name}
-                </TableCell>
-              ))}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {weekDay.map(w => (
-              <TableRow key={w}>
-                <TableCell className={classNames(classes.header, classes.boarder)}>{Weekday[w]}</TableCell>
-                {eastAirport.map(airport => {
-                  const flights = flightPerDay[w].eastAirportArrivalToIranFlight.filter(f => f.weekdayRequirement.definition.departureAirport.id === airport.id);
-                  if (!flights || flights.length == 0) return <TableCell className={classes.boarder} key={airport.id} />;
-
-                  const stas = flights
-                    .map(flight => {
-                      return flight.std.minutes + flight.weekdayRequirement.scope.blockTime;
-                    })
-                    .sort(compareFunction);
-
-                  return (
-                    <TableCell key={airport.id} className={classes.boarder}>
-                      <Fragment>
-                        {stas.map((sta, i) => {
-                          return <div key={i}>{formatMinuteToString(sta)}</div>;
-                        })}
-                      </Fragment>
-                    </TableCell>
-                  );
-                })}
-
-                {westAirport.map(airport => {
-                  const arrivalToIran = flightPerDay[w].westAirportArrivalToIranFlight.filter(f => f.weekdayRequirement.definition.departureAirport.id === airport.id);
-                  const departureFromIran = flightPerDay[w].westAirportDepartureFromIranFlight.filter(f => f.weekdayRequirement.definition.arrivalAirport.id == airport.id);
-
-                  const stas = arrivalToIran.map(flight => flight.std.minutes + flight.weekdayRequirement.scope.blockTime).sort(compareFunction);
-                  const stds = departureFromIran.map(flight => flight.std.minutes).sort(compareFunction);
-
-                  if (stas.length <= 0 && stds.length <= 0) return <TableCell key={airport.id} className={classNames(classes.west, classes.boarder)} />;
-                  return (
-                    <TableCell key={airport.id} className={classNames(classes.west, classes.boarder)}>
-                      <Fragment>
-                        {Array.range(0, Math.max(stas.length, stds.length) - 1).map(i => {
-                          return (
-                            <div key={i}>
-                              {formatMinuteToString(stds[i])}&ndash;{formatMinuteToString(stas[i])}
-                            </div>
-                          );
-                        })}
-                      </Fragment>
-                    </TableCell>
-                  );
-                })}
-
-                {eastAirport.map(airport => {
-                  const flights = flightPerDay[w].eastAirportDepartureFromIranFlight.filter(f => f.weekdayRequirement.definition.arrivalAirport.id === airport.id);
-                  if (!flights || flights.length == 0) return <TableCell className={classes.boarder} key={airport.id} />;
-                  const stds = flights.map(flight => flight.std.minutes).sort(compareFunction);
-                  return (
-                    <TableCell key={airport.id} className={classes.boarder}>
-                      <Fragment>
-                        {stds.map((std, i) => {
-                          return <div key={i}>{formatMinuteToString(std)}</div>;
-                        })}
-                      </Fragment>
-                    </TableCell>
-                  );
-                })}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+      <div className={classNames(classes.export, classes.marginBottom1)}>{exportConnectionTable}</div>
+      <div className={classes.tableContainer}>{connectionTable}</div>
       <br />
       <br />
 
-      <div className={classes.export}>
-        <Button
-          variant="outlined"
-          color="primary"
-          onClick={() => {
-            //generateConnectionCountExportData();
-            if (connectionNumberExporter) connectionNumberExporter.save();
-          }}
-          className={classes.marginBottom1}
-        >
-          Export to Excel
-          <ExportToExcelIcon className={classes.transform180} />
-        </Button>
-
-        <ExcelExport
-          data={connectionNumberExportData}
-          fileName="NumberOfConnection.xlsx"
-          ref={exporter => {
-            connectionNumberExporter = exporter;
-          }}
-        >
-          <ExcelExportColumn
-            field="airport"
-            locked={false}
-            title={preplanName}
-            width={100}
-            cellOptions={{ ...headerCellOptions, background: '#C6EFCE', color: '#000000' }}
-            headerCellOptions={{ ...headerCellOptions, background: '#C6EFCE', color: '#000000' }}
-          />
-
-          {westAirport.map(wa => (
-            <Fragment key={wa.id}>
-              <ExcelExportColumn
-                field={'to' + wa.name}
-                title={'To ' + wa.name}
-                locked={false}
-                width={100}
-                cellOptions={{ ...detailCellOption, wrap: true, fontSize: 12 }}
-                headerCellOptions={{ ...headerCellOptions, background: '#C6EFCE', color: '#000000' }}
-              />
-              <ExcelExportColumn
-                field={'from' + wa.name}
-                title={'From ' + wa.name}
-                locked={false}
-                width={100}
-                cellOptions={{ ...detailCellOption, wrap: true, fontSize: 12, borderRight: { size: 2, color: '#000000' } }}
-                headerCellOptions={{ ...headerCellOptions, background: '#C6EFCE', color: '#000000', borderRight: { size: 2, color: '#000000' } }}
-              />
-            </Fragment>
-          ))}
-        </ExcelExport>
-      </div>
-      <div className={classes.tableContainer}>
-        <Table>
-          <TableBody>
-            <TableRow>
-              <TableCell className={classNames(classes.connectionHeader, classes.boarder)} />
-              {westAirport.map(wa => (
-                <TableCell className={classNames(classes.connectionHeader, classes.boarder)} key={wa.id} colSpan={2} align="center">
-                  <ConnectionIcon className={classes.connectionFrom} />
-                  {wa.name}
-                  <ConnectionIcon className={classes.connectionTo} />
-                </TableCell>
-              ))}
-            </TableRow>
-            {eastAirport.map(ea => (
-              <TableRow key={ea.id}>
-                <TableCell className={classNames(classes.connectionHeader, classes.boarder)} align="center">
-                  {ea.name}
-                </TableCell>
-                {westAirport.map(wa => (
-                  <Fragment key={wa.id}>
-                    <TableCell className={classNames(classes.boarder, classes.removeRightBoarder)} align="center">
-                      {getNumberOfConnection(ea, wa, 'EasttoWest')}
-                    </TableCell>
-                    <TableCell className={classNames(classes.boarder, classes.removeLeftBoarder)} align="center">
-                      {getNumberOfConnection(wa, ea, 'WesttoEast')}
-                    </TableCell>
-                  </Fragment>
-                ))}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+      <div className={classNames(classes.export, classes.marginBottom1)}>{exportConnectionNumber}</div>
+      <div className={classes.tableContainer}>{connectionNumber}</div>
     </Fragment>
   );
 };

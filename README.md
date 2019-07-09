@@ -1,4 +1,4 @@
-# Plan Assist
+# Register Plan Assist
 
 ## Build and run
 

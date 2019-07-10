@@ -78,9 +78,6 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
           <IconButton color="inherit" title="Reports">
             <MahanIcon type={MahanIconType.Chart} />
           </IconButton>
-          <LinkIconButton to="/master-data" color="inherit" title="Master Data">
-            <MahanIcon type={MahanIconType.TextFile} />
-          </LinkIconButton>
           {/* <Select
             classes={{ select: classes.formDaysSelect }}
             native

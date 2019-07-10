@@ -15,16 +15,16 @@ export class AircraftSelectionValidation extends Validation<
   }
 > {
   constructor(data: any, dummyAircraftRegisters: readonly DummyAircraftRegisterModel[]) {
-    super(validation =>
-      validation.object(data).do(({ allowedIdentities, forbiddenIdentities }) => {
-        validation.array(allowedIdentities).for((allowedIdentity, index) =>
-          validation
+    super(validator =>
+      validator.object(data).do(({ allowedIdentities, forbiddenIdentities }) => {
+        validator.array(allowedIdentities).for((allowedIdentity, index) =>
+          validator
             .object(allowedIdentity)
             .in('allowedIdentities', index)
             .set(() => new AircraftIdentityValidation(allowedIdentity, dummyAircraftRegisters))
         );
-        validation.array(forbiddenIdentities).for((forbiddenIdentity, index) =>
-          validation
+        validator.array(forbiddenIdentities).for((forbiddenIdentity, index) =>
+          validator
             .object(forbiddenIdentity)
             .in('forbiddenIdentities', index)
             .set(() => new AircraftIdentityValidation(forbiddenIdentity, dummyAircraftRegisters))

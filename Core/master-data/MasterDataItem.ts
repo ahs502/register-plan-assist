@@ -1,4 +1,4 @@
-import MasterDataItemModel from '../models/master-data/MasterDataItemModel';
+import MasterDataItemModel from '@core/models/master-data/MasterDataItemModel';
 
 /**
  * The minimum common contents of any master data item.

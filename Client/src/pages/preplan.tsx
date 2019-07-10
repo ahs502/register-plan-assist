@@ -9,12 +9,12 @@ import FlightRequirementListPage from 'src/pages/preplan/flight-requirement-list
 import ReportsPage from 'src/pages/preplan/reports';
 import Preplan from 'src/view-models/Preplan';
 import DraggableDialog from 'src/components/DraggableDialog';
-import FlightRequirement, { FlightTime, FlightScope, WeekdayFlightRequirement, FlightDefinition } from 'src/view-models/FlightRequirement';
-import AircraftIdentity, { AircraftIdentityType } from '@core/types/AircraftIdentity';
+import AircraftIdentity from 'src/view-models/AircraftIdentity';
 import FlightRequirementEditor from 'src/components/preplan/flight-requirement/FlightRequirementEditor';
-import Daytime from '@core/types/Daytime';
-import FlightRequirementModel, { FlightScopeModel } from '@core/models/FlightRequirementModel';
 import MasterData from '@core/master-data';
+import FlightRequirement from 'src/view-models/flight/FlightRequirement';
+import FlightTime from 'src/view-models/flight/FlightTime';
+import AircraftIdentityType from '@core/types/aircraft-identity/AircraftIdentityType';
 
 const useStyles = makeStyles((theme: Theme) => ({
   flightRequirementStyle: {
@@ -172,6 +172,33 @@ function getDummyPreplan(): Preplan {
     startDate: new Date().addDays(10).toJSON(),
     endDate: new Date().addDays(20).toJSON(),
     autoArrangerOptions: { minimumGroundTimeMode: 'AVERAGE', minimumGroundTimeOffset: 50 },
+    autoArrangerState: {
+      solving: true,
+      solvingStartDateTime: new Date().toString(),
+      solvingDuration: 185,
+      message: {
+        type: 'ERROR',
+        text: 'Message Text .... '
+      },
+      messageViewed: false,
+      changeLogs: [
+        {
+          flightDerievedId: '000#4',
+          oldStd: 156,
+          oldAircraftRegisterId: MasterData.all.aircraftRegisters.items[0].id,
+          newStd: 485,
+          newAircraftRegisterId: MasterData.all.aircraftRegisters.items[1].id
+        },
+        {
+          flightDerievedId: '000#5',
+          oldStd: 300,
+          oldAircraftRegisterId: MasterData.all.aircraftRegisters.items[2].id,
+          newStd: 720,
+          newAircraftRegisterId: MasterData.all.aircraftRegisters.items[3].id
+        }
+      ],
+      changeLogsViewed: true
+    },
     flightRequirements: [
       {
         id: '000',

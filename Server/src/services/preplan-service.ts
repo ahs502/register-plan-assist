@@ -2,12 +2,10 @@ import { Router } from 'express';
 import { Db, ObjectID, ClientSession } from 'mongodb';
 import { asyncMiddlewareWithDatabase, asyncMiddlewareWithTransaction } from 'src/utils/asyncMiddleware';
 
-import PreplanValidator from '@core/validators/PreplanValidator';
-
 import PreplanModel, { PreplanHeaderModel } from '@core/models/PreplanModel';
 
 import PreplanEntity, { PreplanHeaderEntity, preplanHeaderProjection, convertPreplanHeaderEntityToModel, convertPreplanEntityToModel } from 'src/entities/PreplanEntity';
-import FlightRequirementEntity from 'src/entities/FlightRequirementEntity';
+import FlightRequirementEntity from 'src/entities/flight/FlightRequirementEntity';
 import AutoArrangerOptionsEntity from 'src/entities/AutoArrangerOptionsEntity';
 import { convertDummyAircraftRegisterEntityToModel } from 'src/entities/DummyAircraftRegisterEntity';
 
@@ -44,7 +42,7 @@ async function getAllHeadersHandler(db: Db, {}) {
 }
 
 async function createEmptyHandler(db: Db, { name, startDate, endDate }) {
-  PreplanValidator.createEmptyValidate(name, startDate, endDate).throwIfErrorsExsit();
+  // PreplanValidator.createEmptyValidate(name, startDate, endDate).throwIfErrorsExsit();
 
   const preplan: PreplanEntity = {
     name,
@@ -62,6 +60,15 @@ async function createEmptyHandler(db: Db, { name, startDate, endDate }) {
     simulationId: undefined,
     simulationName: undefined,
     autoArrangerOptions: undefined,
+    autoArrangerState: {
+      solving: false,
+      solvingStartDateTime: undefined,
+      solvingDuration: undefined,
+      message: undefined,
+      messageViewed: true,
+      changeLogs: [],
+      changeLogsViewed: true
+    },
     dummyAircraftRegisters: [],
     aircraftRegisterOptionsDictionary: {}
   };
@@ -73,7 +80,7 @@ async function createEmptyHandler(db: Db, { name, startDate, endDate }) {
 }
 
 async function cloneHandler(db: Db, session: ClientSession, { id, name, startDate, endDate }) {
-  PreplanValidator.cloneValidate(name, startDate, endDate).throwIfErrorsExsit();
+  // PreplanValidator.cloneValidate(name, startDate, endDate).throwIfErrorsExsit();
 
   const sourcePreplan: PreplanEntity | null = await db.collection('preplans').findOne({ _id: ObjectID.createFromHexString(id) }, { session });
   if (!sourcePreplan) throw 'Preplan is not found.';
@@ -99,6 +106,15 @@ async function cloneHandler(db: Db, session: ClientSession, { id, name, startDat
     simulationId: undefined,
     simulationName: undefined,
     autoArrangerOptions: sourcePreplan.autoArrangerOptions,
+    autoArrangerState: {
+      solving: false,
+      solvingStartDateTime: undefined,
+      solvingDuration: undefined,
+      message: undefined,
+      messageViewed: true,
+      changeLogs: [],
+      changeLogsViewed: true
+    },
     dummyAircraftRegisters: sourcePreplan.dummyAircraftRegisters,
     aircraftRegisterOptionsDictionary: sourcePreplan.aircraftRegisterOptionsDictionary
   };
@@ -135,7 +151,7 @@ async function getHandler(db: Db, { id }) {
 }
 
 async function editHeaderHandler(db: Db, { id, name, published, startDate, endDate }) {
-  PreplanValidator.editHeaderValidate(name, startDate, endDate).throwIfErrorsExsit();
+  // PreplanValidator.editHeaderValidate(name, startDate, endDate).throwIfErrorsExsit();
 
   const result = await db
     .collection('preplans')
@@ -175,7 +191,7 @@ async function removeHandler(db: Db, session: ClientSession, { id }) {
 }
 
 async function updateAutoArrangerOptionsHandler(db: Db, { id, autoArrangerOptions }) {
-  PreplanValidator.updateAutoArrangerOptionsValidate(autoArrangerOptions).throwIfErrorsExsit();
+  // PreplanValidator.updateAutoArrangerOptionsValidate(autoArrangerOptions).throwIfErrorsExsit();
 
   const data: AutoArrangerOptionsEntity = {
     minimumGroundTimeMode: autoArrangerOptions.minimumGroundTimeMode,
@@ -239,7 +255,7 @@ async function addOrEditFlightRequirementHandler(db: Db, { id, flightRequirement
   if (!preplan) throw 'Preplan is not found.';
 
   const dummyAircraftRegisters = preplan.dummyAircraftRegisters.map(convertDummyAircraftRegisterEntityToModel);
-  PreplanValidator.addOrEditFlightRequirementValidate(flightRequirement, dummyAircraftRegisters).throwIfErrorsExsit();
+  // PreplanValidator.addOrEditFlightRequirementValidate(flightRequirement, dummyAircraftRegisters).throwIfErrorsExsit();
 
   // const data:FlightRequirementEntity={
   //   _id:flightRequirement.id&&ObjectID.createFromHexString(flightRequirement.id),

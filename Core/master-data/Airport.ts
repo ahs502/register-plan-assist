@@ -1,4 +1,4 @@
-import AirportModel from '../models/master-data/AirportModel';
+import AirportModel from '@core/models/master-data/AirportModel';
 import MasterDataItem, { MasterDataItems } from './MasterDataItem';
 
 export default class Airport extends MasterDataItem {

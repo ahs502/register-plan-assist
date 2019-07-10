@@ -12,7 +12,8 @@ import SelectAircraftRegistersSideBar from 'src/components/preplan/resource-sche
 import SettingsSideBar from 'src/components/preplan/resource-scheduler/SettingsSideBar';
 import ResourceSchedulerView from 'src/components/preplan/resource-scheduler/ResourceSchedulerView';
 import Preplan from 'src/view-models/Preplan';
-import FlightRequirement, { WeekdayFlightRequirement } from 'src/view-models/FlightRequirement';
+import FlightRequirement from 'src/view-models/flight/FlightRequirement';
+import WeekdayFlightRequirement from 'src/view-models/flight/WeekdayFlightRequirement';
 import useRouter from 'src/utils/useRouter';
 
 const useStyles = makeStyles((theme: Theme) => ({
@@ -77,9 +78,6 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
           <IconButton color="inherit" title="Reports">
             <MahanIcon type={MahanIconType.Chart} />
           </IconButton>
-          <LinkIconButton to="/master-data" color="inherit" title="Master Data">
-            <MahanIcon type={MahanIconType.TextFile} />
-          </LinkIconButton>
           {/* <Select
             classes={{ select: classes.formDaysSelect }}
             native
@@ -138,7 +136,9 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
         {sideBar.sideBar === 'SEARCH_FLIGHTS' && (
           <SearchFlightsSideBar initialSearch={sideBar.initialSearch} flights={preplan.flights} onClick={flight => alert('not implemented.')} />
         )}
-        {sideBar.sideBar === 'AUTO_ARRANGER_CHANGE_LOG' && <AutoArrangerChangeLogSideBar initialSearch={sideBar.initialSearch} />}
+        {sideBar.sideBar === 'AUTO_ARRANGER_CHANGE_LOG' && (
+          <AutoArrangerChangeLogSideBar initialSearch={sideBar.initialSearch} changeLogs={preplan.autoArrangerState.changeLogs} onClick={flight => alert('not implemented.')} />
+        )}
         {sideBar.sideBar === 'OBJECTIONS' && <ErrorsAndWarningsSideBar initialSearch={sideBar.initialSearch} objections={[]} />}
       </Drawer>
 

@@ -4,6 +4,7 @@ const del = require('del');
 
 gulp.task('clean', () => del('dist/**'));
 
+gulp.task('install-core', run('npm install', { cwd: './Core' }));
 gulp.task('install-server', run('npm install', { cwd: './Server' }));
 gulp.task('install-client', run('npm install', { cwd: './Client' }));
 
@@ -11,7 +12,6 @@ gulp.task('build-server', run('npm run build', { cwd: './Server' }));
 gulp.task('build-client', run('npm run build', { cwd: './Client' }));
 
 gulp.task('dist', gulp.series(() => gulp.src('Server/dist/**').pipe(gulp.dest('dist')), () => gulp.src('Client/build/**').pipe(gulp.dest('dist/public'))));
-
 gulp.task('build', gulp.series('clean', 'build-server', 'build-client', 'dist'));
 
 gulp.task(

@@ -1,5 +1,5 @@
-import MasterDataModel from '../models/master-data/MasterDataModel';
-import AircraftIdentity from '../types/AircraftIdentity';
+import MasterDataModel from '@core/models/master-data/MasterDataModel';
+// import AircraftIdentity from '@core/../Client/src/view-models/AircraftIdentity';
 
 import { AircraftTypes } from './AircraftType';
 import { AircraftRegisters } from './AircraftRegister';
@@ -24,13 +24,13 @@ export default class MasterData {
   readonly aircraftGroups: AircraftGroups;
   readonly constraints: Constraints;
 
-  /**
-   * All available aircraft identifiers for master data declarations,
-   * including all aircraft registers/types/groups by their names and
-   * all existing or dummy portion of each aircraft types by their names
-   * followed by a '&lowbar;EXISTING' or '&lowbar;DUMMY' postfix.
-   */
-  readonly aircraftIdentities: readonly AircraftIdentity[];
+  // /**
+  //  * All available aircraft identifiers for master data declarations,
+  //  * including all aircraft registers/types/groups by their names and
+  //  * all existing or dummy portion of each aircraft types by their names
+  //  * followed by a '&lowbar;EXISTING' or '&lowbar;DUMMY' postfix.
+  //  */
+  // readonly aircraftIdentities: readonly AircraftIdentity[];
 
   private constructor(
     aircraftTypes: AircraftTypes,
@@ -51,12 +51,12 @@ export default class MasterData {
     this.aircraftGroups = aircraftGroups;
     this.constraints = constraints;
 
-    this.aircraftIdentities = ([] as AircraftIdentity[])
-      .concat(this.aircraftRegisters.items.map(a => ({ type: 'REGISTER', name: a.name, entityId: a.id })))
-      .concat(this.aircraftTypes.items.map(a => ({ type: 'TYPE', name: a.name, entityId: a.id })))
-      .concat(this.aircraftTypes.items.map(a => ({ type: 'TYPE_EXISTING', name: a.name + '_EXISTING', entityId: a.id })))
-      .concat(this.aircraftTypes.items.map(a => ({ type: 'TYPE_DUMMY', name: a.name + '_DUMMY', entityId: a.id })))
-      .concat(this.aircraftGroups.items.map(a => ({ type: 'GROUP', name: a.name, entityId: a.id })));
+    // this.aircraftIdentities = ([] as AircraftIdentity[])
+    //   .concat(this.aircraftRegisters.items.map(a => ({ type: 'REGISTER', name: a.name, entityId: a.id })))
+    //   .concat(this.aircraftTypes.items.map(a => ({ type: 'TYPE', name: a.name, entityId: a.id })))
+    //   .concat(this.aircraftTypes.items.map(a => ({ type: 'TYPE_EXISTING', name: a.name + '_EXISTING', entityId: a.id })))
+    //   .concat(this.aircraftTypes.items.map(a => ({ type: 'TYPE_DUMMY', name: a.name + '_DUMMY', entityId: a.id })))
+    //   .concat(this.aircraftGroups.items.map(a => ({ type: 'GROUP', name: a.name, entityId: a.id })));
   }
 
   /**

@@ -1,4 +1,4 @@
-import ConstraintModel from '../models/master-data/ConstraintModel';
+import ConstraintModel from '@core/models/master-data/ConstraintModel';
 import MasterDataItem, { MasterDataItems } from './MasterDataItem';
 
 export default class Constraint extends MasterDataItem {

@@ -57,6 +57,7 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
   const classes = useStyles();
 
   const numberOfObjections: number = 12; //TODO: Not implemented.
+  const flights = preplan.flights; // For performance improvement.
 
   return (
     <Fragment>
@@ -136,16 +137,27 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
             }}
           />
         )}
-        {sideBar.sideBar === 'SEARCH_FLIGHTS' && (
-          <SearchFlightsSideBar initialSearch={sideBar.initialSearch} flights={preplan.flights} onClick={flight => alert('not implemented.')} />
-        )}
+        {sideBar.sideBar === 'SEARCH_FLIGHTS' && <SearchFlightsSideBar initialSearch={sideBar.initialSearch} flights={flights} onClick={flight => alert('not implemented.')} />}
         {sideBar.sideBar === 'AUTO_ARRANGER_CHANGE_LOG' && (
           <AutoArrangerChangeLogSideBar initialSearch={sideBar.initialSearch} changeLogs={preplan.autoArrangerState.changeLogs} onClick={flight => alert('not implemented.')} />
         )}
         {sideBar.sideBar === 'OBJECTIONS' && <ErrorsAndWarningsSideBar initialSearch={sideBar.initialSearch} objections={[]} />}
       </Drawer>
 
-      <ResourceSchedulerView />
+      <ResourceSchedulerView
+        startDate={preplan.startDate}
+        readonly={false}
+        flights={flights}
+        aircraftRegisters={preplan.aircraftRegisters}
+        changeLogs={preplan.autoArrangerState.changeLogs}
+        selectedFlight={undefined}
+        onFlightContextMenu={(flight, pageX, pageY) => alert(`Flight ${flight.derivedId} @ ${pageX}:${pageY}\nNot implemented.`)}
+        onFlightDragAndDrop={(flight, newStd, newAircraftRegister) =>
+          alert(`D&D flight ${flight.derivedId} to ${newStd.toString()} with ${newAircraftRegister ? newAircraftRegister.name : '???'}\nNot implemented.`)
+        }
+        onFlightMouseHover={flight => console.log('Mouse on', flight.derivedId)}
+        onFreeSpaceMouseHover={(aircraftRegister, day, time, previousFlight, nextFlight) => console.log('Mouse on free space...')}
+      />
       <div className={classes.statusBar}>Status Bar</div>
     </Fragment>
   );

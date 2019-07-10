@@ -16,6 +16,7 @@ export default class Flight {
   readonly arrivalAirport: Airport;
   readonly day: number;
   readonly notes: string;
+  readonly blockTime: number;
   readonly std: Daytime;
   readonly aircraftRegister?: PreplanAircraftRegister;
 
@@ -30,6 +31,7 @@ export default class Flight {
     this.arrivalAirport = weekdayRequiremnet.definition.arrivalAirport;
     this.day = weekdayRequiremnet.day;
     this.notes = weekdayRequiremnet.notes;
+    this.blockTime = weekdayRequiremnet.scope.blockTime;
     this.std = new Daytime(raw.std);
     this.aircraftRegister = raw.aircraftRegisterId ? aircraftRegisters.id[raw.aircraftRegisterId] : undefined;
   }

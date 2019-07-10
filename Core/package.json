@@ -9,10 +9,11 @@
   "author": "Mahan Air",
   "license": "ISC",
   "dependencies": {
-    "@ahs502/validation": "^1.0.2"
+    "@ahs502/validation": "^2.0.1"
   },
   "devDependencies": {
-    "npm-check-updates": "^3.1.17",
+    "@types/node": "^12.6.2",
+    "npm-check-updates": "^3.1.18",
     "typescript": "^3.5.3"
   }
 }

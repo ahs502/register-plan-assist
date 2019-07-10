@@ -10,12 +10,12 @@ export default interface AircraftIdentityModel {
 }
 
 export class AircraftIdentityValidation extends Validation<'TYPE_EXISTS' | 'TYPE_IS_VALID' | 'NAME_EXISTS' | 'NAME_IS_VALID' | 'ENTITY_ID_EXISTS' | 'ENTITY_ID_IS_VALID'> {
-  constructor(data: any, dummyAircraftRegisters: readonly DummyAircraftRegisterModel[]) {
+  constructor(aircraftIdentity: AircraftIdentityModel, dummyAircraftRegisters: readonly DummyAircraftRegisterModel[]) {
     super(validator =>
-      validator.object(data).do(({ type, name, entityId }) => {
-        validator.check('TYPE_EXISTS', type).check('TYPE_IS_VALID', () => ['REGISTER', 'TYPE', 'TYPE_EXISTING', 'TYPE_DUMMY', 'GROUP'].includes(type));
-        validator.check('NAME_EXISTS', name).check({ badge: 'NAME_IS_VALID', message: 'Only letters, digits, _, + and - characters.' }, () => /^[A-Z0-9_+-]+$/.test(name));
-        validator.check('ENTITY_ID_EXISTS', entityId).check('ENTITY_ID_IS_VALID', () => {
+      validator.object(aircraftIdentity).do(({ type, name, entityId }) => {
+        validator.check('TYPE_EXISTS', !!type).check('TYPE_IS_VALID', () => ['REGISTER', 'TYPE', 'TYPE_EXISTING', 'TYPE_DUMMY', 'GROUP'].includes(type));
+        validator.check('NAME_EXISTS', !!name).check({ badge: 'NAME_IS_VALID', message: 'Only letters, digits, _, + and - characters.' }, () => /^[A-Z0-9_+-]+$/.test(name));
+        validator.check('ENTITY_ID_EXISTS', !!entityId).check('ENTITY_ID_IS_VALID', () => {
           switch (type) {
             case 'REGISTER':
               return !!MasterData.all.aircraftRegisters.id[entityId] || dummyAircraftRegisters.some(r => r.id === entityId);

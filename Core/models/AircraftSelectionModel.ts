@@ -14,21 +14,15 @@ export class AircraftSelectionValidation extends Validation<
     readonly forbiddenIdentities: readonly AircraftIdentityValidation[];
   }
 > {
-  constructor(data: any, dummyAircraftRegisters: readonly DummyAircraftRegisterModel[]) {
+  constructor(aircraftSelection: AircraftSelectionModel, dummyAircraftRegisters: readonly DummyAircraftRegisterModel[]) {
     super(validator =>
-      validator.object(data).do(({ allowedIdentities, forbiddenIdentities }) => {
-        validator.array(allowedIdentities).for((allowedIdentity, index) =>
-          validator
-            .object(allowedIdentity)
-            .in('allowedIdentities', index)
-            .set(() => new AircraftIdentityValidation(allowedIdentity, dummyAircraftRegisters))
-        );
-        validator.array(forbiddenIdentities).for((forbiddenIdentity, index) =>
-          validator
-            .object(forbiddenIdentity)
-            .in('forbiddenIdentities', index)
-            .set(() => new AircraftIdentityValidation(forbiddenIdentity, dummyAircraftRegisters))
-        );
+      validator.object(aircraftSelection).do(({ allowedIdentities, forbiddenIdentities }) => {
+        validator
+          .array(allowedIdentities)
+          .each((allowedIdentity, index) => validator.into('allowedIdentities', index).set(() => new AircraftIdentityValidation(allowedIdentity, dummyAircraftRegisters)));
+        validator
+          .array(forbiddenIdentities)
+          .each((forbiddenIdentity, index) => validator.into('forbiddenIdentities', index).set(() => new AircraftIdentityValidation(forbiddenIdentity, dummyAircraftRegisters)));
       })
     );
   }

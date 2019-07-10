@@ -1,10 +1,6 @@
-export type EnvType = 'development' | 'test' | 'production';
+import Env from '@core/types/Env';
 
-export interface ClientConfig {
-  env: EnvType;
-  ouathApi: string;
-  ouathIssuer: string;
-  ouathResourceName: string;
-  ouathClientId: string;
-  ouathLang: string;
+export default interface ClientConfig {
+  env: Env;
+  oauth: { issuer: string; api: string; clientId: string; resourceName: string; lang: string };
 }

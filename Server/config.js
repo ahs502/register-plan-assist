@@ -6,6 +6,12 @@ var config = {
     clientId: '2bb9d5f1-4101-4d28-afa9-47f475b7a0cc',
     resourceName: 'prod-ffp',
     lang: 'En'
+  },
+  sqlServer: {
+    server: 'swmhndevappssql',
+    database: 'FlightApps_dev',
+    username: 'MahanAppsServiceAccount',
+    password: 'a45V6DPQZAHUpXz'
   }
 };
 

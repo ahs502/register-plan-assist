@@ -73,7 +73,7 @@ export default class Daytime {
     if (!this.isValid()) return new Date(NaN);
     let minutes = this.minutes % 60,
       hours = (this.minutes - minutes) / 60,
-      result = baseDate || new Date(0);
+      result = baseDate ? new Date(baseDate) : new Date(0);
     result.setUTCHours(hours, minutes, 0, 0);
     return result;
   }

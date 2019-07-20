@@ -9,7 +9,7 @@ import FlightRequirementListPage from 'src/pages/preplan/flight-requirement-list
 import ReportsPage from 'src/pages/preplan/reports';
 import Preplan from 'src/view-models/Preplan';
 import DraggableDialog from 'src/components/DraggableDialog';
-import AircraftIdentity from 'src/view-models/AircraftIdentity';
+import PreplanAircraftIdentity from 'src/view-models/PreplanAircraftIdentity';
 import FlightRequirementEditor from 'src/components/preplan/flight-requirement/FlightRequirementEditor';
 import MasterData from '@core/master-data';
 import FlightRequirement from 'src/view-models/flight/FlightRequirement';
@@ -38,8 +38,8 @@ export type FlightRequirementModal = {
   arrivalAirportId?: string;
   blockTime?: number;
   times?: Partial<FlightTime>[];
-  allowedAircraftIdentities?: Partial<AircraftIdentity>[];
-  forbiddenAircraftIdentities?: Partial<AircraftIdentity>[];
+  allowedAircraftIdentities?: Partial<PreplanAircraftIdentity>[];
+  forbiddenAircraftIdentities?: Partial<PreplanAircraftIdentity>[];
   slot?: boolean;
   slotComments?: string;
   required?: boolean;

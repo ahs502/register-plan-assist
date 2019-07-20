@@ -64,29 +64,31 @@ export default class MasterData {
    * @param raw A JSON object containing partially the raw retrieved data for some/all master data collections.
    */
   static recieve(raw: MasterDataModel) {
-    MasterData.all = new MasterData(
-      AircraftTypes.parse(raw.aircraftTypes) || MasterData.all.aircraftTypes,
-      AircraftRegisters.parse(raw.aircraftRegisters) || MasterData.all.aircraftRegisters,
-      Airports.parse(raw.airports) || MasterData.all.airports,
-      SeasonTypes.parse(raw.seasonTypes) || MasterData.all.seasonTypes,
-      Seasons.parse(raw.seasons) || MasterData.all.seasons,
-      Stcs.parse(raw.stcs) || MasterData.all.stcs,
-      AircraftGroups.parse(raw.aircraftGroups) || MasterData.all.aircraftGroups,
-      Constraints.parse(raw.constraints) || MasterData.all.constraints
-    );
+    const aircraftTypes = AircraftTypes.parse(raw.aircraftTypes) || MasterData.all.aircraftTypes;
+    const aircraftRegisters = AircraftRegisters.parse(aircraftTypes, raw.aircraftRegisters) || MasterData.all.aircraftRegisters;
+    const airports = Airports.parse(raw.airports) || MasterData.all.airports;
+    const seasonTypes = SeasonTypes.parse(raw.seasonTypes) || MasterData.all.seasonTypes;
+    const seasons = Seasons.parse(seasonTypes, raw.seasons) || MasterData.all.seasons;
+    const stcs = Stcs.parse(raw.stcs) || MasterData.all.stcs;
+    const aircraftGroups = AircraftGroups.parse(aircraftRegisters, raw.aircraftGroups) || MasterData.all.aircraftGroups;
+    const constraints = Constraints.parse(airports, aircraftRegisters, aircraftTypes, aircraftGroups, seasonTypes, raw.constraints) || MasterData.all.constraints;
+
+    MasterData.all = new MasterData(aircraftTypes, aircraftRegisters, airports, seasonTypes, seasons, stcs, aircraftGroups, constraints);
   }
 
   /**
    * The singleton object containing all master data collections data.
    */
-  static all: MasterData = new MasterData(
-    AircraftTypes.parse([])!,
-    AircraftRegisters.parse([])!,
-    Airports.parse([])!,
-    SeasonTypes.parse([])!,
-    Seasons.parse([])!,
-    Stcs.parse([])!,
-    AircraftGroups.parse([])!,
-    Constraints.parse([])!
-  );
+  static all: MasterData = (() => {
+    const aircraftTypes = AircraftTypes.parse([]);
+    const aircraftRegisters = AircraftRegisters.parse(aircraftTypes, []);
+    const airports = Airports.parse([]);
+    const seasonTypes = SeasonTypes.parse([]);
+    const seasons = Seasons.parse(seasonTypes, []);
+    const stcs = Stcs.parse([]);
+    const aircraftGroups = AircraftGroups.parse(aircraftRegisters, []);
+    const constraints = Constraints.parse(airports, aircraftRegisters, aircraftTypes, aircraftGroups, seasonTypes, []);
+
+    return new MasterData(aircraftTypes, aircraftRegisters, airports, seasonTypes, seasons, stcs, aircraftGroups, constraints);
+  })();
 }

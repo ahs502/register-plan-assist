@@ -1,6 +1,6 @@
-import AircraftIdentity from './AircraftIdentity';
-import AircraftSelectionModel from '@core/models/AircraftSelectionModel';
+import PreplanAircraftIdentity from './PreplanAircraftIdentity';
 import PreplanAircraftRegister, { PreplanAircraftRegisters } from './PreplanAircraftRegister';
+import PreplanAircraftSelectionModel from '@core/models/PreplanAircraftSelectionModel';
 
 /**
  * A data structure describing a range of aircraft registers.
@@ -8,19 +8,19 @@ import PreplanAircraftRegister, { PreplanAircraftRegisters } from './PreplanAirc
  * in at least one of the allowed aircraft identities while it is not
  * included in any of the forbidden aircraft identities.
  */
-export default class AircraftSelection {
-  readonly allowedIdentities: readonly AircraftIdentity[];
-  readonly forbiddenIdentities: readonly AircraftIdentity[];
+export default class PreplanAircraftSelection {
+  readonly allowedIdentities: readonly PreplanAircraftIdentity[];
+  readonly forbiddenIdentities: readonly PreplanAircraftIdentity[];
 
-  constructor(raw: AircraftSelectionModel, aircraftRegisters: PreplanAircraftRegisters) {
-    this.allowedIdentities = raw.allowedIdentities.map(i => AircraftIdentity.parse(i, aircraftRegisters));
-    this.forbiddenIdentities = raw.forbiddenIdentities.map(i => AircraftIdentity.parse(i, aircraftRegisters));
+  constructor(raw: PreplanAircraftSelectionModel, aircraftRegisters: PreplanAircraftRegisters) {
+    this.allowedIdentities = raw.allowedIdentities.map(i => PreplanAircraftIdentity.parse(i, aircraftRegisters));
+    this.forbiddenIdentities = raw.forbiddenIdentities.map(i => PreplanAircraftIdentity.parse(i, aircraftRegisters));
   }
 
   /**
    * Returns all allowed and included corresponding preplan aircraft registers.
    */
-  resolveIncluded(): readonly PreplanAircraftRegister[] {
+  resolveIncluded(): PreplanAircraftRegister[] {
     const allowed = new Set<PreplanAircraftRegister>();
     this.allowedIdentities.forEach(i => i.resolve().forEach(r => allowed.add(r)));
     this.forbiddenIdentities.forEach(i => i.resolve().forEach(r => allowed.delete(r)));

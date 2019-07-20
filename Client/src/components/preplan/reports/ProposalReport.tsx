@@ -1,5 +1,5 @@
 import React, { FC, Fragment, useState, useEffect } from 'react';
-import { Theme, InputLabel, TextField, TableHead, TableCell, Table, TableRow, TableBody, Button, Typography, Select } from '@material-ui/core';
+import { Theme, InputLabel, TextField, TableHead, TableCell, Table, TableRow, TableBody, Button } from '@material-ui/core';
 import { red } from '@material-ui/core/colors';
 import { makeStyles } from '@material-ui/styles';
 import MasterData, { Airport } from '@core/master-data';
@@ -65,6 +65,16 @@ const mhd = allAirports.find(a => a.name === 'MHD')!;
 const ker = allAirports.find(a => a.name === 'KER')!;
 const allBaseAirport = [ika, thr, mhd, ker];
 
+const formatDate = (date: Date): string => {
+  let day = '' + date.getDate(),
+    year = date.getFullYear();
+  const month = date.toLocaleString('default', { month: 'short' }).toUpperCase();
+
+  day = day.padStart(2, '0');
+
+  return [day, month, year].join('/');
+};
+
 enum FlightType {
   'Domestic',
   'International'
@@ -76,11 +86,6 @@ interface ProposalReportProps {
   fromDate: Date;
   toDate: Date;
 }
-
-// interface ReportModel {
-//   label: string;
-//   flattenFlightRequirments: FlattenFlightRequirment[];
-// }
 
 interface FlattenFlightRequirment {
   [index: string]: string | number | Airport | number[] | Daytime;
@@ -146,54 +151,11 @@ const compareFunction = (a: number, b: number): number => {
   return 0;
 };
 
-const groupBy = <T extends {}>(
-  list: readonly T[],
-  selector: string | ((item: T) => string | number),
-  returnArray: boolean | undefined,
-  converter: ((item: T) => any) | undefined
-): { [index: string]: T[]; [index: number]: T[] } => {
-  if (list.length === 0) return {};
-
-  var groupedObj: { [index: string]: T[]; [index: number]: T[] } = {};
-
-  selector = selector || ((item: any) => item);
-
-  if (typeof selector === 'string') {
-    var prop = selector;
-    selector = (item: any) => item[prop];
-  }
-
-  if (typeof selector !== 'function') return {};
-
-  list.forEach(item => {
-    if (typeof selector !== 'function') return;
-    var value = selector(item);
-    if (!value) return;
-    if (!groupedObj[value]) {
-      groupedObj[value] = [];
-    }
-    groupedObj[value].push(typeof converter === 'function' ? converter(item) : item);
-  });
-
-  return groupedObj;
-
-  // if (!returnArray) return groupedObj;
-
-  // const result = Object.keys(groupedObj).map(function(k) {
-  //   if (groupedObj.hasOwnProperty(k)) {
-  //     return groupedObj[k];
-  //   }
-  // });
-
-  // return result || T[];
-};
-
 const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequirments, preplanName, fromDate, toDate }) => {
   const [baseAirport, setBaseAirport] = useState<Airport>(ika);
   const [startDate, setStartDate] = useState<Date>(new Date(Date.parse('2019-07-06')));
   const [endDate, setEndDate] = useState<Date>(new Date(Date.parse('2019-07-14')));
   const [flightType, setFlightType] = useState<FlightType>(FlightType.International);
-  //const [reportModels, setReportModels] = useState<ReportModel[]>([]);
   const [flattenFlightRequirment, setFlattenFlightRequirment] = useState<FlattenFlightRequirment[]>([]);
 
   let proposalExporter: ExcelExport | null;
@@ -205,7 +167,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
     borderLeft: { color: '#BDBDBD', size: 1 },
     borderRight: { color: '#BDBDBD', size: 1 },
     borderTop: { color: '#BDBDBD', size: 1 },
-    fontSize: 12
+    fontSize: 14
   } as CellOptions;
 
   const headerCellOptions = {
@@ -215,7 +177,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
     borderLeft: { color: '#BDBDBD', size: 1 },
     borderRight: { color: '#BDBDBD', size: 1 },
     borderTop: { color: '#BDBDBD', size: 1 },
-    fontSize: 12,
+    fontSize: 14,
     color: '#000000',
     bold: true
   } as CellOptions;
@@ -295,9 +257,9 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
               std: current.std,
               note: current.note,
               localStd: formatDateToString(localStd),
-              localSta: formatDateToString(localSta),
-              utcStd: formatDateToString(utcStd),
-              utcSta: formatDateToString(utcSta),
+              localSta: formatDateToString(localSta) + (diffLocalStdandLocalSta < 0 ? '*' : diffLocalStdandLocalSta > 0 ? '#' : ''),
+              utcStd: formatDateToString(utcStd) + (diffLocalStdandUtcStd < 0 ? '*' : diffLocalStdandUtcStd > 0 ? '#' : ''),
+              utcSta: formatDateToString(utcSta) + (diffLocalStdandUtcSta < 0 ? '*' : diffLocalStdandUtcSta > 0 ? '#' : ''),
               diffLocalStdandUtcStd: diffLocalStdandUtcStd,
               diffLocalStdandLocalSta: diffLocalStdandLocalSta,
               diffLocalStdandUtcSta: diffLocalStdandUtcSta,
@@ -344,8 +306,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
   };
 
   useEffect(() => {
-    const res = generateReportDataModel();
-    setFlattenFlightRequirment(res);
+    setFlattenFlightRequirment( generateReportDataModel());
   }, [baseAirport, startDate, endDate, flightType]);
 
   return (
@@ -411,11 +372,22 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
           if (proposalExporter) {
             const options = proposalExporter.workbookOptions();
             const rows = options && options.sheets && options.sheets[0] && options.sheets[0].rows;
+
             if (rows) {
               rows[0] && (rows[0].height = 30);
               rows[1] && (rows[1].height = 30);
+              if (rows[2]) {
+                rows[2].height = 35;
+                if (rows[2].cells) {
+                  rows[2].cells[2].colSpan = 2;
+                  rows[2].cells[4].colSpan = 2;
+                  rows[2].cells.remove(rows[2].cells[5]);
+                  rows[2].cells.remove(rows[2].cells[3]);
+                }
+              }
+
               rows.forEach((r, index, self) => {
-                if (!r.cells || r.cells.length === 0 || index <= 1) return;
+                if (!r.cells || r.cells.length === 0 || index <= 2) return;
                 if (
                   index > 0 &&
                   index < self.length - 1 &&
@@ -432,9 +404,8 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
                     c.borderBottom = { color: '#000000', size: 3 };
                   });
               });
-
               rows.forEach((r, index) => {
-                if (index === 1 || !r.cells) return;
+                if (index === 1 || index === 2 || !r.cells) return;
                 r.cells.remove(r.cells[r.cells.length - 1]);
               });
             }
@@ -454,187 +425,193 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
           proposalExporter = exporter;
         }}
       >
-        <ExcelExportColumnGroup title={'Base ' + baseAirport.name} headerCellOptions={{ ...headerCellOptions, background: '#F4B084' }}>
-          <ExcelExportColumn
-            title="F/N"
-            field="flightNumber"
-            width={70}
-            cellOptions={{ ...detailCellOption, borderLeft: { color: '#000000', size: 3 } }}
-            headerCellOptions={{
-              ...headerCellOptions,
-              background: '#F4B084',
-              borderLeft: { color: '#000000', size: 3 },
-              borderTop: { color: '#000000', size: 3 },
-              borderBottom: { color: '#000000', size: 3 }
-            }}
-          />
-          <ExcelExportColumn
-            title="ROUTE"
-            field="route"
-            width={80}
-            cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 } }}
-            headerCellOptions={{
-              ...headerCellOptions,
-              background: '#F4B084',
-              borderRight: { color: '#000000', size: 3 },
-              borderTop: { color: '#000000', size: 3 },
-              borderBottom: { color: '#000000', size: 3 }
-            }}
-          />
-          <ExcelExportColumn
-            title="LCL"
-            field="localStd"
-            width={70}
-            cellOptions={{ ...detailCellOption, borderLeft: { color: '#000000', size: 3 } }}
-            headerCellOptions={{
-              ...headerCellOptions,
-              background: '#F4B084',
-              borderLeft: { color: '#000000', size: 3 },
-              borderTop: { color: '#000000', size: 3 },
-              borderBottom: { color: '#000000', size: 3 }
-            }}
-          />
-          <ExcelExportColumn
-            title="LCL"
-            field="localSta"
-            width={70}
-            cellOptions={{ ...detailCellOption }}
-            headerCellOptions={{
-              ...headerCellOptions,
-              background: '#F4B084',
-              borderRight: { color: '#000000', size: 3 },
-              borderTop: { color: '#000000', size: 3 },
-              borderBottom: { color: '#000000', size: 3 }
-            }}
-          />
-          <ExcelExportColumn
-            title="UTC"
-            field="utcStd"
-            width={70}
-            cellOptions={{ ...detailCellOption, color: '#F44336' }}
-            headerCellOptions={{
-              ...headerCellOptions,
-              background: '#F4B084',
-              color: '#F44336',
-              borderLeft: { color: '#000000', size: 3 },
-              borderTop: { color: '#000000', size: 3 },
-              borderBottom: { color: '#000000', size: 3 }
-            }}
-          />
-          <ExcelExportColumn
-            title="UTC"
-            field="utcSta"
-            width={70}
-            cellOptions={{ ...detailCellOption, color: '#F44336', borderRight: { color: '#000000', size: 3 } }}
-            headerCellOptions={{
-              ...headerCellOptions,
-              background: '#F4B084',
-              color: '#F44336',
-              borderRight: { color: '#000000', size: 3 },
-              borderTop: { color: '#000000', size: 3 },
-              borderBottom: { color: '#000000', size: 3 }
-            }}
-          />
+        <ExcelExportColumnGroup
+          title={'Propoal Schedule from ' + formatDate(startDate) + ' till ' + formatDate(endDate)}
+          headerCellOptions={{ ...headerCellOptions, background: '#FFFFFF' }}
+        >
+          <ExcelExportColumnGroup title={'Base ' + baseAirport.name} headerCellOptions={{ ...headerCellOptions, background: '#F4B084' }}>
+            <ExcelExportColumn
+              title="F/N"
+              field="flightNumber"
+              width={50}
+              cellOptions={{ ...detailCellOption, borderLeft: { color: '#000000', size: 3 } }}
+              headerCellOptions={{
+                ...headerCellOptions,
+                background: '#F4B084',
+                borderLeft: { color: '#000000', size: 3 },
+                borderTop: { color: '#000000', size: 3 },
+                borderBottom: { color: '#000000', size: 3 }
+              }}
+            />
+            <ExcelExportColumn
+              title="ROUTE"
+              field="route"
+              width={80}
+              cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 } }}
+              headerCellOptions={{
+                ...headerCellOptions,
+                background: '#F4B084',
+                borderRight: { color: '#000000', size: 3 },
+                borderTop: { color: '#000000', size: 3 },
+                borderBottom: { color: '#000000', size: 3 }
+              }}
+            />
 
-          <ExcelExportColumn
-            title={['Sat', '6'].join('\r\n')}
-            field="weekDay0"
-            width={50}
-            cellOptions={{ ...detailCellOption, borderLeft: { color: '#000000', size: 3 } }}
-            headerCellOptions={{
-              ...headerCellOptions,
-              wrap: true,
-              background: '#F4B084',
-              borderLeft: { color: '#000000', size: 3 },
-              borderTop: { color: '#000000', size: 3 },
-              borderBottom: { color: '#000000', size: 3 }
-            }}
-          />
+            <ExcelExportColumn
+              title="LCL"
+              field="localStd"
+              width={50}
+              cellOptions={{ ...detailCellOption }}
+              headerCellOptions={{
+                ...headerCellOptions,
+                background: '#F4B084',
+                borderLeft: { color: '#000000', size: 3 },
+                borderTop: { color: '#000000', size: 3 },
+                borderBottom: { color: '#000000', size: 3 }
+              }}
+            />
+            <ExcelExportColumn
+              title=" "
+              field="localSta"
+              width={50}
+              cellOptions={{ ...detailCellOption }}
+              headerCellOptions={{
+                ...headerCellOptions,
+                background: '#F4B084',
+                borderTop: { color: '#000000', size: 3 },
+                borderBottom: { color: '#000000', size: 3 }
+              }}
+            />
 
-          <ExcelExportColumn
-            title={['Sun', '7'].join('\r\n')}
-            field="weekDay1"
-            width={50}
-            cellOptions={{ ...detailCellOption }}
-            headerCellOptions={{ ...headerCellOptions, wrap: true, background: '#F4B084', borderTop: { color: '#000000', size: 3 }, borderBottom: { color: '#000000', size: 3 } }}
-          />
+            <ExcelExportColumn
+              title="UTC"
+              field="utcStd"
+              width={50}
+              cellOptions={{ ...detailCellOption, color: '#F44336' }}
+              headerCellOptions={{
+                ...headerCellOptions,
+                background: '#F4B084',
+                color: '#F44336',
+                borderTop: { color: '#000000', size: 3 },
+                borderBottom: { color: '#000000', size: 3 }
+              }}
+            />
+            <ExcelExportColumn
+              title="UTC"
+              field="utcSta"
+              width={50}
+              cellOptions={{ ...detailCellOption, color: '#F44336', borderRight: { color: '#000000', size: 3 } }}
+              headerCellOptions={{
+                ...headerCellOptions,
+                background: '#F4B084',
+                color: '#F44336',
+                borderRight: { color: '#000000', size: 3 },
+                borderTop: { color: '#000000', size: 3 },
+                borderBottom: { color: '#000000', size: 3 }
+              }}
+            />
 
-          <ExcelExportColumn
-            title={['Mon', '1'].join('\r\n')}
-            field="weekDay2"
-            width={50}
-            cellOptions={{ ...detailCellOption }}
-            headerCellOptions={{ ...headerCellOptions, wrap: true, background: '#F4B084', borderTop: { color: '#000000', size: 3 }, borderBottom: { color: '#000000', size: 3 } }}
-          />
+            <ExcelExportColumn
+              title={['Sat', '6'].join('\r\n')}
+              field="weekDay0"
+              width={30}
+              cellOptions={{ ...detailCellOption, borderLeft: { color: '#000000', size: 3 } }}
+              headerCellOptions={{
+                ...headerCellOptions,
+                wrap: true,
+                background: '#F4B084',
+                borderLeft: { color: '#000000', size: 3 },
+                borderTop: { color: '#000000', size: 3 },
+                borderBottom: { color: '#000000', size: 3 }
+              }}
+            />
 
-          <ExcelExportColumn
-            title={['Thu', '2'].join('\r\n')}
-            field="weekDay3"
-            width={50}
-            cellOptions={{ ...detailCellOption }}
-            headerCellOptions={{ ...headerCellOptions, wrap: true, background: '#F4B084', borderTop: { color: '#000000', size: 3 }, borderBottom: { color: '#000000', size: 3 } }}
-          />
+            <ExcelExportColumn
+              title={['Sun', '7'].join('\r\n')}
+              field="weekDay1"
+              width={30}
+              cellOptions={{ ...detailCellOption }}
+              headerCellOptions={{ ...headerCellOptions, wrap: true, background: '#F4B084', borderTop: { color: '#000000', size: 3 }, borderBottom: { color: '#000000', size: 3 } }}
+            />
 
-          <ExcelExportColumn
-            title={['Wed', '3'].join('\r\n')}
-            field="weekDay4"
-            width={50}
-            cellOptions={{ ...detailCellOption }}
-            headerCellOptions={{ ...headerCellOptions, wrap: true, background: '#F4B084', borderTop: { color: '#000000', size: 3 }, borderBottom: { color: '#000000', size: 3 } }}
-          />
+            <ExcelExportColumn
+              title={['Mon', '1'].join('\r\n')}
+              field="weekDay2"
+              width={40}
+              cellOptions={{ ...detailCellOption }}
+              headerCellOptions={{ ...headerCellOptions, wrap: true, background: '#F4B084', borderTop: { color: '#000000', size: 3 }, borderBottom: { color: '#000000', size: 3 } }}
+            />
 
-          <ExcelExportColumn
-            title={['Thu', '4'].join('\r\n')}
-            field="weekDay5"
-            width={50}
-            cellOptions={{ ...detailCellOption }}
-            headerCellOptions={{ ...headerCellOptions, wrap: true, background: '#F4B084', borderTop: { color: '#000000', size: 3 }, borderBottom: { color: '#000000', size: 3 } }}
-          />
+            <ExcelExportColumn
+              title={['Thu', '2'].join('\r\n')}
+              field="weekDay3"
+              width={30}
+              cellOptions={{ ...detailCellOption }}
+              headerCellOptions={{ ...headerCellOptions, wrap: true, background: '#F4B084', borderTop: { color: '#000000', size: 3 }, borderBottom: { color: '#000000', size: 3 } }}
+            />
 
-          <ExcelExportColumn
-            title={['Fri', '5'].join('\r\n')}
-            field="weekDay6"
-            width={50}
-            cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 } }}
-            headerCellOptions={{
-              ...headerCellOptions,
-              wrap: true,
-              background: '#F4B084',
-              borderRight: { color: '#000000', size: 3 },
-              borderTop: { color: '#000000', size: 3 },
-              borderBottom: { color: '#000000', size: 3 }
-            }}
-          />
+            <ExcelExportColumn
+              title={['Wed', '3'].join('\r\n')}
+              field="weekDay4"
+              width={40}
+              cellOptions={{ ...detailCellOption }}
+              headerCellOptions={{ ...headerCellOptions, wrap: true, background: '#F4B084', borderTop: { color: '#000000', size: 3 }, borderBottom: { color: '#000000', size: 3 } }}
+            />
 
-          <ExcelExportColumn
-            title="DUR."
-            field="formatedBlockTime"
-            width={70}
-            cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 }, borderLeft: { color: '#000000', size: 3 } }}
-            headerCellOptions={{
-              ...headerCellOptions,
-              background: '#F4B084',
-              borderRight: { color: '#000000', size: 3 },
-              borderLeft: { color: '#000000', size: 3 },
-              borderTop: { color: '#000000', size: 3 },
-              borderBottom: { color: '#000000', size: 3 }
-            }}
-          />
+            <ExcelExportColumn
+              title={['Thu', '4'].join('\r\n')}
+              field="weekDay5"
+              width={30}
+              cellOptions={{ ...detailCellOption }}
+              headerCellOptions={{ ...headerCellOptions, wrap: true, background: '#F4B084', borderTop: { color: '#000000', size: 3 }, borderBottom: { color: '#000000', size: 3 } }}
+            />
 
-          <ExcelExportColumn
-            title="Note"
-            field="note"
-            width={200}
-            cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 }, borderLeft: { color: '#000000', size: 3 } }}
-            headerCellOptions={{
-              ...headerCellOptions,
-              background: '#F4B084',
-              borderRight: { color: '#000000', size: 3 },
-              borderLeft: { color: '#000000', size: 3 },
-              borderTop: { color: '#000000', size: 3 },
-              borderBottom: { color: '#000000', size: 3 }
-            }}
-          />
+            <ExcelExportColumn
+              title={['Fri', '5'].join('\r\n')}
+              field="weekDay6"
+              width={30}
+              cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 } }}
+              headerCellOptions={{
+                ...headerCellOptions,
+                wrap: true,
+                background: '#F4B084',
+                borderRight: { color: '#000000', size: 3 },
+                borderTop: { color: '#000000', size: 3 },
+                borderBottom: { color: '#000000', size: 3 }
+              }}
+            />
+
+            <ExcelExportColumn
+              title="DUR."
+              field="formatedBlockTime"
+              width={50}
+              cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 }, borderLeft: { color: '#000000', size: 3 } }}
+              headerCellOptions={{
+                ...headerCellOptions,
+                background: '#F4B084',
+                borderRight: { color: '#000000', size: 3 },
+                borderLeft: { color: '#000000', size: 3 },
+                borderTop: { color: '#000000', size: 3 },
+                borderBottom: { color: '#000000', size: 3 }
+              }}
+            />
+
+            <ExcelExportColumn
+              title={['NOTE', '(base on domestic/lcl)'].join('\r\n')}
+              field="note"
+              width={150}
+              cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 }, borderLeft: { color: '#000000', size: 3 } }}
+              headerCellOptions={{
+                ...headerCellOptions,
+                wrap: true,
+                background: '#F4B084',
+                borderRight: { color: '#000000', size: 3 },
+                borderLeft: { color: '#000000', size: 3 },
+                borderTop: { color: '#000000', size: 3 },
+                borderBottom: { color: '#000000', size: 3 }
+              }}
+            />
+          </ExcelExportColumnGroup>
         </ExcelExportColumnGroup>
         <ExcelExportColumn title="label" field="label" />
       </ExcelExport>
@@ -707,23 +684,18 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
                 {f.localStd}
               </TableCell>
               <TableCell className={classes.boarder} align="center">
-                <div className={f.diffLocalStdandLocalSta < 0 ? classes.diffContainer : ''}>
+                <div className={f.diffLocalStdandLocalSta !== 0 ? classes.diffContainer : ''}>
                   <span>{f.localSta}</span>
-                  <span className={f.diffLocalStdandLocalSta < 0 ? classes.diffFont : ''}>
-                    {f.diffLocalStdandLocalSta < 0 ? '\u204E' : f.diffLocalStdandLocalSta > 0 ? '#' : ''}
-                  </span>
                 </div>
               </TableCell>
               <TableCell className={classNames(classes.boarder, classes.utc)} align="center">
-                <div className={f.diffLocalStdandLocalSta < 0 ? classes.diffContainer : ''}>
+                <div className={f.diffLocalStdandUtcStd !== 0 ? classes.diffContainer : ''}>
                   <span>{f.utcStd}</span>
-                  <span className={f.diffLocalStdandUtcStd < 0 ? classes.diffFont : ''}>{f.diffLocalStdandUtcStd < 0 ? '\u204E' : f.diffLocalStdandUtcStd > 0 ? '#' : ''}</span>
                 </div>
               </TableCell>
               <TableCell className={classNames(classes.boarder, classes.utc)} align="center">
-                <div className={f.diffLocalStdandLocalSta < 0 ? classes.diffContainer : ''}>
+                <div className={f.diffLocalStdandUtcSta !== 0 ? classes.diffContainer : ''}>
                   <span>{f.utcSta}</span>
-                  <span className={f.diffLocalStdandUtcSta < 0 ? classes.diffFont : ''}>{f.diffLocalStdandUtcSta < 0 ? '\u204E' : f.diffLocalStdandUtcSta > 0 ? '#' : ''}</span>
                 </div>
               </TableCell>
               <TableCell align="center" className={classes.boarder}>

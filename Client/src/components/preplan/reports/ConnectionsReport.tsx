@@ -1,4 +1,4 @@
-import React, { FC, useState, Fragment } from 'react';
+import React, { FC, useState, Fragment, useEffect } from 'react';
 import { Theme, InputLabel, TextField, TableHead, TableCell, Table, TableRow, TableBody, Button } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import MasterData, { Airport } from '@core/master-data';
@@ -7,7 +7,7 @@ import Weekday from '@core/types/Weekday';
 import MultiSelect from 'src/components/MultiSelect';
 import classNames from 'classnames';
 import { CallMade as ConnectionIcon, Publish as ExportToExcelIcon } from '@material-ui/icons';
-import { ExcelExport, ExcelExportColumn } from '@progress/kendo-react-excel-export';
+import { ExcelExport, ExcelExportColumn, ExcelExportColumnGroup } from '@progress/kendo-react-excel-export';
 import { CellOptions } from '@progress/kendo-react-excel-export/dist/npm/ooxml/CellOptionsInterface';
 
 const allAirports = MasterData.all.airports.items;
@@ -90,21 +90,74 @@ type connectionDirection = 'WesttoEast' | 'EasttoWest';
 const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName }) => {
   const defaultWestAirport = ['BCN', 'DXB', 'ESB', 'EVN', 'GYD', 'IST', 'MXP', 'VKO'];
   const defaultEastAirpot = ['BKK', 'CAN', 'DEL', 'BOM', 'KUL', 'LHE', 'PEK', 'PVG'];
-  const [eastAirport, setEastAriport] = useState<readonly Airport[]>(allAirports.filter(a => defaultEastAirpot.indexOf(a.name) != -1));
-  const [westAirport, setWestAriport] = useState<readonly Airport[]>(allAirports.filter(a => defaultWestAirport.indexOf(a.name) != -1));
+  const [eastAirport, setEastAriport] = useState<readonly Airport[]>(allAirports.filter(a => defaultEastAirpot.indexOf(a.name) !== -1));
+  const [westAirport, setWestAriport] = useState<readonly Airport[]>(allAirports.filter(a => defaultWestAirport.indexOf(a.name) !== -1));
   const [maxConnectionTime, setMaxConnectionTime] = useState<number>(5);
   const [minConnectionTime, setMinConnectionTime] = useState<number>(1);
+  const [flightPerDay, setFlightPerDay] = useState<{ [index: number]: ConnectionModel }>({});
+  const [connectionTableExportData, setConnectionTableExportData] = useState<{ [index: number]: string | number }[]>([]);
+  const [connectionNumberExportData, setConnectionNumberExportData] = useState<{ [index: number]: string | number }[]>([]);
   const weekDay = Array.range(0, 6);
 
   let connectionNumberExporter: ExcelExport | null;
-  let connectionNumberExportData: any[] = [];
   let connectionTableExporter: ExcelExport | null;
-  let connectionTableExportData: any[] = [];
 
-  // useEffect(() => {
-  //   generateConnectionCountExportData();
-  //   generatePlanExportData();
-  // }, [eastAirport, westAirport, minConnectionTime, maxConnectionTime]);
+  useEffect(() => {
+    const result: { [index: number]: ConnectionModel } = {};
+    weekDay.forEach(w => {
+      result[w] = {
+        eastAirportArrivalToIranFlight: [],
+        eastAirportDepartureFromIranFlight: [],
+        westAirportArrivalToIranFlight: [],
+        westAirportDepartureFromIranFlight: []
+      } as ConnectionModel;
+
+      if (!eastAirport || !westAirport) return;
+
+      result[w].eastAirportArrivalToIranFlight = flights.filter(f => {
+        var airportValidation = eastAirport.some(airport => f.weekdayRequirement.definition.departureAirport.id === airport.id);
+        if (!airportValidation) return false;
+
+        const departureWeekDay = f.weekdayRequirement.day;
+        const sta = f.std.minutes + f.weekdayRequirement.scope.blockTime;
+        const arrivalWeekDay = sta <= 1440 ? departureWeekDay : (departureWeekDay + 1) % 7;
+        if (arrivalWeekDay !== w) return false;
+
+        return true;
+      });
+
+      result[w].eastAirportDepartureFromIranFlight = flights.filter(f => {
+        var airportValidation = eastAirport.some(airport => f.weekdayRequirement.definition.arrivalAirport.id === airport.id);
+        if (!airportValidation) return false;
+        if (f.weekdayRequirement.day !== w) return false;
+        return true;
+      });
+
+      result[w].westAirportArrivalToIranFlight = flights.filter(f => {
+        var airportValidation = westAirport.some(airport => f.weekdayRequirement.definition.departureAirport.id === airport.id);
+        if (!airportValidation) return false;
+
+        const departureWeekDay = f.weekdayRequirement.day;
+        const sta = f.std.minutes + f.weekdayRequirement.scope.blockTime;
+        const arrivalWeekDay = sta <= 1440 ? departureWeekDay : (departureWeekDay + 1) % 7;
+        if (arrivalWeekDay !== w) return false;
+
+        return true;
+      });
+
+      result[w].westAirportDepartureFromIranFlight = flights.filter(f => {
+        var airportValidation = westAirport.some(airport => f.weekdayRequirement.definition.arrivalAirport.id === airport.id);
+        if (!airportValidation) return false;
+        if (f.weekdayRequirement.day !== w) return false;
+        return true;
+      });
+
+      setFlightPerDay(result);
+    });
+
+    setConnectionNumberExportData(generateConnectionNumberExportData(result));
+    setConnectionTableExportData(generateConnectionTableExportData(result));
+  }, [eastAirport, westAirport, minConnectionTime, maxConnectionTime]);
 
   const classes = useStyles();
 
@@ -119,16 +172,16 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName })
     return 0;
   };
 
-  const generateConnectionNumberExportData = () => {
-    const result: any[] = [];
+  const generateConnectionNumberExportData = (connectionModel: { [index: number]: ConnectionModel }): { [index: number]: string | number }[] => {
+    const result: { [index: number]: string | number }[] = [];
     if (eastAirport && westAirport) {
       eastAirport.forEach(ea => {
         const connection: any = {};
         connection['airport'] = ea.name;
 
         westAirport.forEach(wa => {
-          const eastToWest = getNumberOfConnection(ea, wa, 'EasttoWest');
-          const westToEast = getNumberOfConnection(wa, ea, 'WesttoEast');
+          const eastToWest = getNumberOfConnection(ea, wa, 'EasttoWest', connectionModel);
+          const westToEast = getNumberOfConnection(wa, ea, 'WesttoEast', connectionModel);
 
           connection['to' + wa.name] = eastToWest;
           connection['from' + wa.name] = westToEast;
@@ -136,18 +189,19 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName })
         result.push(connection);
       });
     }
-    connectionNumberExportData = result;
+    return result;
   };
 
-  const generateConnectionTableExportData = () => {
-    const result: any[] = [];
+  const generateConnectionTableExportData = (connectionModel: { [index: number]: ConnectionModel }): { [index: number]: string | number }[] => {
+    const result: { [index: number]: string | number }[] = [];
     if (eastAirport && westAirport) {
       weekDay.forEach(w => {
+        if (!connectionModel[w]) return;
         const model: any = {};
         model['day'] = Weekday[w].toUpperCase().substring(0, 3);
 
         eastAirport.forEach(airport => {
-          const flights = flightPerDay[w].eastAirportArrivalToIranFlight.filter(f => f.weekdayRequirement.definition.departureAirport.id === airport.id);
+          const flights = connectionModel[w].eastAirportArrivalToIranFlight.filter(f => f.weekdayRequirement.definition.departureAirport.id === airport.id);
           if (!flights || flights.length == 0) return;
 
           const stas = flights
@@ -159,7 +213,7 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName })
         });
 
         eastAirport.forEach(airport => {
-          const flights = flightPerDay[w].eastAirportDepartureFromIranFlight.filter(f => f.weekdayRequirement.definition.arrivalAirport.id === airport.id);
+          const flights = connectionModel[w].eastAirportDepartureFromIranFlight.filter(f => f.weekdayRequirement.definition.arrivalAirport.id === airport.id);
           if (!flights || flights.length == 0) return;
 
           const stds = flights
@@ -171,8 +225,8 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName })
         });
 
         westAirport.forEach(airport => {
-          const arrivalToIran = flightPerDay[w].westAirportArrivalToIranFlight.filter(f => f.weekdayRequirement.definition.departureAirport.id === airport.id);
-          const departureFromIran = flightPerDay[w].westAirportDepartureFromIranFlight.filter(f => f.weekdayRequirement.definition.arrivalAirport.id == airport.id);
+          const arrivalToIran = connectionModel[w].westAirportArrivalToIranFlight.filter(f => f.weekdayRequirement.definition.departureAirport.id === airport.id);
+          const departureFromIran = connectionModel[w].westAirportDepartureFromIranFlight.filter(f => f.weekdayRequirement.definition.arrivalAirport.id == airport.id);
 
           const stas = arrivalToIran.map(flight => flight.std.minutes + flight.weekdayRequirement.scope.blockTime).sort(compareFunction);
           const stds = departureFromIran.map(flight => flight.std.minutes).sort(compareFunction);
@@ -188,22 +242,29 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName })
         result.push(model);
       });
     }
-    connectionTableExportData = result;
+
+    return result;
   };
 
-  const getNumberOfConnection = (departureAirport: Airport, arrivalAriport: Airport, direction: connectionDirection): number => {
+  const getNumberOfConnection = (
+    departureAirport: Airport,
+    arrivalAriport: Airport,
+    direction: connectionDirection,
+    connectionModel: { [index: number]: ConnectionModel }
+  ): number => {
     let firstFligths: Flight[] = [];
     let secoundFlights: Flight[] = [];
 
     let result: number = 0;
 
     weekDay.forEach(w => {
+      if (!connectionModel[w]) return;
       if (direction === 'EasttoWest') {
-        firstFligths = flightPerDay[w].eastAirportArrivalToIranFlight.filter(f => f.weekdayRequirement.definition.departureAirport.id === departureAirport.id);
-        secoundFlights = flightPerDay[w].westAirportDepartureFromIranFlight.filter(f => f.weekdayRequirement.definition.arrivalAirport.id === arrivalAriport.id);
+        firstFligths = connectionModel[w].eastAirportArrivalToIranFlight.filter(f => f.weekdayRequirement.definition.departureAirport.id === departureAirport.id);
+        secoundFlights = connectionModel[w].westAirportDepartureFromIranFlight.filter(f => f.weekdayRequirement.definition.arrivalAirport.id === arrivalAriport.id);
       } else {
-        firstFligths = flightPerDay[w].westAirportArrivalToIranFlight.filter(f => f.weekdayRequirement.definition.departureAirport.id === departureAirport.id);
-        secoundFlights = flightPerDay[w].eastAirportDepartureFromIranFlight.filter(f => f.weekdayRequirement.definition.arrivalAirport.id === arrivalAriport.id);
+        firstFligths = connectionModel[w].westAirportArrivalToIranFlight.filter(f => f.weekdayRequirement.definition.departureAirport.id === departureAirport.id);
+        secoundFlights = connectionModel[w].eastAirportDepartureFromIranFlight.filter(f => f.weekdayRequirement.definition.arrivalAirport.id === arrivalAriport.id);
       }
 
       if (
@@ -220,8 +281,6 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName })
 
     return result;
   };
-
-  const flightPerDay: { [index: number]: ConnectionModel } = {};
 
   const detailCellOption = {
     textAlign: 'center',
@@ -243,58 +302,6 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName })
     fontSize: 12,
     bold: true
   } as CellOptions;
-
-  weekDay.forEach(w => {
-    flightPerDay[w] = {
-      eastAirportArrivalToIranFlight: [],
-      eastAirportDepartureFromIranFlight: [],
-      westAirportArrivalToIranFlight: [],
-      westAirportDepartureFromIranFlight: []
-    } as ConnectionModel;
-
-    if (!eastAirport || !westAirport) return;
-
-    flightPerDay[w].eastAirportArrivalToIranFlight = flights.filter(f => {
-      var airportValidation = eastAirport.some(airport => f.weekdayRequirement.definition.departureAirport.id === airport.id);
-      if (!airportValidation) return false;
-
-      const departureWeekDay = f.weekdayRequirement.day;
-      const sta = f.std.minutes + f.weekdayRequirement.scope.blockTime;
-      const arrivalWeekDay = sta <= 1440 ? departureWeekDay : (departureWeekDay + 1) % 7;
-      if (arrivalWeekDay !== w) return false;
-
-      return true;
-    });
-
-    flightPerDay[w].eastAirportDepartureFromIranFlight = flights.filter(f => {
-      var airportValidation = eastAirport.some(airport => f.weekdayRequirement.definition.arrivalAirport.id === airport.id);
-      if (!airportValidation) return false;
-      if (f.weekdayRequirement.day !== w) return false;
-      return true;
-    });
-
-    flightPerDay[w].westAirportArrivalToIranFlight = flights.filter(f => {
-      var airportValidation = westAirport.some(airport => f.weekdayRequirement.definition.departureAirport.id === airport.id);
-      if (!airportValidation) return false;
-
-      const departureWeekDay = f.weekdayRequirement.day;
-      const sta = f.std.minutes + f.weekdayRequirement.scope.blockTime;
-      const arrivalWeekDay = sta <= 1440 ? departureWeekDay : (departureWeekDay + 1) % 7;
-      if (arrivalWeekDay !== w) return false;
-
-      return true;
-    });
-
-    flightPerDay[w].westAirportDepartureFromIranFlight = flights.filter(f => {
-      var airportValidation = westAirport.some(airport => f.weekdayRequirement.definition.arrivalAirport.id === airport.id);
-      if (!airportValidation) return false;
-      if (f.weekdayRequirement.day !== w) return false;
-      return true;
-    });
-  });
-
-  generateConnectionNumberExportData();
-  generateConnectionTableExportData();
 
   const exportConnectionTable = (
     <Fragment>
@@ -408,6 +415,7 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName })
           <TableRow key={w}>
             <TableCell className={classNames(classes.header, classes.boarder)}>{Weekday[w]}</TableCell>
             {eastAirport.map(airport => {
+              if (!flightPerDay[w]) return <TableCell />;
               const flights = flightPerDay[w].eastAirportArrivalToIranFlight.filter(f => f.weekdayRequirement.definition.departureAirport.id === airport.id);
               if (!flights || flights.length == 0) return <TableCell className={classes.boarder} key={airport.id} />;
 
@@ -429,6 +437,7 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName })
             })}
 
             {westAirport.map(airport => {
+              if (!flightPerDay[w]) return <TableCell />;
               const arrivalToIran = flightPerDay[w].westAirportArrivalToIranFlight.filter(f => f.weekdayRequirement.definition.departureAirport.id === airport.id);
               const departureFromIran = flightPerDay[w].westAirportDepartureFromIranFlight.filter(f => f.weekdayRequirement.definition.arrivalAirport.id == airport.id);
 
@@ -452,6 +461,7 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName })
             })}
 
             {eastAirport.map(airport => {
+              if (!flightPerDay[w]) return <TableCell />;
               const flights = flightPerDay[w].eastAirportDepartureFromIranFlight.filter(f => f.weekdayRequirement.definition.arrivalAirport.id === airport.id);
               if (!flights || flights.length == 0) return <TableCell className={classes.boarder} key={airport.id} />;
               const stds = flights.map(flight => flight.std.minutes).sort(compareFunction);
@@ -477,8 +487,16 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName })
         variant="outlined"
         color="primary"
         onClick={() => {
-          //generateConnectionCountExportData();
-          if (connectionNumberExporter) connectionNumberExporter.save();
+          if (connectionNumberExporter) {
+            const options = connectionNumberExporter.workbookOptions();
+            const rows = options && options.sheets && options.sheets[0] && options.sheets[0].rows;
+
+            if (rows && rows[0] && rows[1] && rows[1].cells && rows[0].cells) {
+              rows[0].cells[0].rowSpan = 1;
+              rows.remove(rows[1]);
+            }
+            connectionNumberExporter.save(options);
+          }
         }}
       >
         Export to Excel
@@ -502,10 +520,10 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName })
         />
 
         {westAirport.map(wa => (
-          <Fragment key={wa.id}>
+          <ExcelExportColumnGroup title={'↗     ' + wa.name + '     ↘'} key={wa.id} headerCellOptions={{ ...headerCellOptions, background: '#C6EFCE', color: '#000000' }}>
             <ExcelExportColumn
               field={'to' + wa.name}
-              title={'To ' + wa.name}
+              title={' '}
               locked={false}
               width={100}
               cellOptions={{ ...detailCellOption, wrap: true, fontSize: 12 }}
@@ -513,13 +531,13 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName })
             />
             <ExcelExportColumn
               field={'from' + wa.name}
-              title={'From ' + wa.name}
+              title={' '}
               locked={false}
               width={100}
               cellOptions={{ ...detailCellOption, wrap: true, fontSize: 12, borderRight: { size: 2, color: '#000000' } }}
               headerCellOptions={{ ...headerCellOptions, background: '#C6EFCE', color: '#000000', borderRight: { size: 2, color: '#000000' } }}
             />
-          </Fragment>
+          </ExcelExportColumnGroup>
         ))}
       </ExcelExport>
     </Fragment>
@@ -546,10 +564,10 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName })
             {westAirport.map(wa => (
               <Fragment key={wa.id}>
                 <TableCell className={classNames(classes.boarder, classes.removeRightBoarder)} align="center">
-                  {getNumberOfConnection(ea, wa, 'EasttoWest')}
+                  {getNumberOfConnection(ea, wa, 'EasttoWest', flightPerDay)}
                 </TableCell>
                 <TableCell className={classNames(classes.boarder, classes.removeLeftBoarder)} align="center">
-                  {getNumberOfConnection(wa, ea, 'WesttoEast')}
+                  {getNumberOfConnection(wa, ea, 'WesttoEast', flightPerDay)}
                 </TableCell>
               </Fragment>
             ))}
@@ -591,6 +609,12 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName })
         }}
       />
       <br />
+
+      <div className={classNames(classes.export, classes.marginBottom1)}>{exportConnectionTable}</div>
+      <div className={classes.tableContainer}>{connectionTable}</div>
+      <br />
+      <br />
+
       <TextField
         className={classNames(classes.marginBottom2, classes.connectionTime)}
         label="Minimum Connection Time"
@@ -605,10 +629,6 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName })
         value={maxConnectionTime}
         onChange={e => +e.target.value >= 0 && setMaxConnectionTime(+e.target.value)}
       />
-      <div className={classNames(classes.export, classes.marginBottom1)}>{exportConnectionTable}</div>
-      <div className={classes.tableContainer}>{connectionTable}</div>
-      <br />
-      <br />
 
       <div className={classNames(classes.export, classes.marginBottom1)}>{exportConnectionNumber}</div>
       <div className={classes.tableContainer}>{connectionNumber}</div>

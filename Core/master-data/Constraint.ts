@@ -157,6 +157,7 @@ export interface AircraftRestrictionOnAirportsConstraintData {
   readonly airports: readonly Airport[];
   readonly never: boolean;
   readonly aircraftSelection: AircraftSelection;
+  readonly required: boolean;
 }
 function convertAircraftRestrictionOnAirportsConstraintDataFromModel(
   data: AircraftRestrictionOnAirportsConstraintDataModel,
@@ -168,7 +169,8 @@ function convertAircraftRestrictionOnAirportsConstraintDataFromModel(
   return {
     airports: data.airportIds.map(id => airports.id[id]),
     never: data.never,
-    aircraftSelection: new AircraftSelection(data.aircraftSelection, aircraftRegisters, aircraftTypes, aircraftGroups)
+    aircraftSelection: new AircraftSelection(data.aircraftSelection, aircraftRegisters, aircraftTypes, aircraftGroups),
+    required: data.required
   };
 }
 

@@ -21,6 +21,7 @@ export interface AircraftRestrictionOnAirportsConstraintDataModel {
   readonly airportIds: readonly string[];
   readonly never: boolean;
   readonly aircraftSelection: AircraftSelectionModel;
+  readonly required: boolean;
 }
 export interface BlickTimeRestrictionOnAircraftsConstraintDataModel {
   readonly maximumBlockTime: number;

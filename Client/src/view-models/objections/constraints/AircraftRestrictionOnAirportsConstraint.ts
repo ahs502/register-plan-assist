@@ -7,6 +7,7 @@ export default class AircraftRestrictionOnAirportsConstraint extends Constraint 
   readonly airports: readonly Airport[];
   readonly never: boolean;
   readonly aircraftSelection: AircraftSelection;
+  readonly required: boolean;
 
   constructor(masterDataConstraint: MasterDataConstraint) {
     super(
@@ -23,5 +24,6 @@ export default class AircraftRestrictionOnAirportsConstraint extends Constraint 
     this.airports = data.airports;
     this.never = data.never;
     this.aircraftSelection = data.aircraftSelection;
+    this.required = data.required;
   }
 }

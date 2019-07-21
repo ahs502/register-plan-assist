@@ -1,7 +1,7 @@
 import apiRequest from 'src/utils/apiRequest';
 import PreplanModel, { PreplanHeaderModel } from '@core/models/PreplanModel';
 import AutoArrangerOptions from '@core/models/AutoArrangerOptionsModel';
-import FlightRequirementModel from '@core/models/flight/FlightRequirementModel';
+import FlightRequirementModel from '@core/models/flights/FlightRequirementModel';
 import ServerResult from './ServerResult';
 
 const request = apiRequest.bind(null, 'preplan');

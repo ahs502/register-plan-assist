@@ -1,8 +1,8 @@
 import PreplanModel, { PreplanHeaderModel } from '@core/models/PreplanModel';
 import { PreplanAircraftRegisters } from './PreplanAircraftRegister';
 import AutoArrangerState from './AutoArrangerState';
-import FlightRequirement from './flight/FlightRequirement';
-import Flight from './flight/Flight';
+import FlightRequirement from './flights/FlightRequirement';
+import Flight from './flights/Flight';
 import AutoArrangerOptions from './AutoArrangerOptions';
 
 export class PreplanHeader {

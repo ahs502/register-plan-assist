@@ -7,8 +7,8 @@ import Search from 'src/components/Search';
 import { DoneAll as FinilizedIcon, Add as AddIcon, Edit as EditIcon, Clear as ClearIcon, Done as DoneIcon } from '@material-ui/icons';
 import classNames from 'classnames';
 import Weekday from '@core/types/Weekday';
-import FlightRequirement from 'src/view-models/flight/FlightRequirement';
-import WeekdayFlightRequirement from 'src/view-models/flight/WeekdayFlightRequirement';
+import FlightRequirement from 'src/view-models/flights/FlightRequirement';
+import WeekdayFlightRequirement from 'src/view-models/flights/WeekdayFlightRequirement';
 
 const useStyles = makeStyles((theme: Theme) => ({
   contentPage: {

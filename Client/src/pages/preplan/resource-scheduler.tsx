@@ -12,8 +12,8 @@ import SelectAircraftRegistersSideBar from 'src/components/preplan/resource-sche
 import SettingsSideBar from 'src/components/preplan/resource-scheduler/SettingsSideBar';
 import ResourceSchedulerView from 'src/components/preplan/resource-scheduler/ResourceSchedulerView';
 import Preplan from 'src/view-models/Preplan';
-import FlightRequirement from 'src/view-models/flight/FlightRequirement';
-import WeekdayFlightRequirement from 'src/view-models/flight/WeekdayFlightRequirement';
+import FlightRequirement from 'src/view-models/flights/FlightRequirement';
+import WeekdayFlightRequirement from 'src/view-models/flights/WeekdayFlightRequirement';
 import useRouter from 'src/utils/useRouter';
 
 const useStyles = makeStyles((theme: Theme) => ({

@@ -3,7 +3,7 @@ import WeekdayFlightRequirement from './WeekdayFlightRequirement';
 import { Stc, Airport } from '@core/master-data';
 import Daytime from '@core/types/Daytime';
 import PreplanAircraftRegister, { PreplanAircraftRegisters } from 'src/view-models/PreplanAircraftRegister';
-import FlightModel from '@core/models/flight/FlightModel';
+import FlightModel from '@core/models/flights/FlightModel';
 
 export default class Flight {
   readonly requirement: FlightRequirement;

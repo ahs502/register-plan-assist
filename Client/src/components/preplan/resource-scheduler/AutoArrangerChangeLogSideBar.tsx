@@ -6,7 +6,7 @@ import SideBarContainer from './SideBarContainer';
 import Search from 'src/components/Search';
 import Weekday from '@core/types/Weekday';
 import { ChangeLog } from 'src/view-models/AutoArrangerState';
-import Flight from 'src/view-models/flight/Flight';
+import Flight from 'src/view-models/flights/Flight';
 
 const useStyles = makeStyles((theme: Theme) => ({
   searchWrapper: {

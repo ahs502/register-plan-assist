@@ -1,6 +1,6 @@
 import AutoArrangerOptionsModel from './AutoArrangerOptionsModel';
 import DummyAircraftRegisterModel from './DummyAircraftRegisterModel';
-import FlightRequirementModel from './flight/FlightRequirementModel';
+import FlightRequirementModel from './flights/FlightRequirementModel';
 import AutoArrangerStateModel from './AutoArrangerStateModel';
 import { AircraftRegisterOptionsDictionaryModel } from './AircraftRegisterOptionsModel';
 

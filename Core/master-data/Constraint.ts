@@ -1,9 +1,9 @@
 import ConstraintModel, {
-  LemaBizuConstraintDataModel,
-  HanaConstraintDataModel,
-  KanjuConstraintDataModel,
-  BartokConstraintDataModel,
-  AlisoConstraintDataModel
+  AircraftRestrictionOnAirportsConstraintDataModel,
+  BlickTimeRestrictionOnAircraftsConstraintDataModel,
+  RouteSequenceRestrictionOnAirportsConstraintDataModel,
+  AirportRestrictionOnAircraftsConstraintDataModel,
+  AirportAllocationPriorityForAircraftsConstraintDataModel
 } from '@core/models/master-data/ConstraintModel';
 import MasterDataItem, { MasterDataItems } from './MasterDataItem';
 import ConstraintTemplateType from '@core/types/ConstraintTemplateType';
@@ -19,7 +19,12 @@ import Weekday from '@core/types/Weekday';
 export default class Constraint extends MasterDataItem {
   readonly description: string;
   readonly type: ConstraintTemplateType;
-  readonly data: LemaBizuConstraintData | HanaConstraintData | KanjuConstraintData | BartokConstraintData | AlisoConstraintData;
+  readonly data:
+    | AircraftRestrictionOnAirportsConstraintData
+    | BlickTimeRestrictionOnAircraftsConstraintData
+    | RouteSequenceRestrictionOnAirportsConstraintData
+    | AirportRestrictionOnAircraftsConstraintData
+    | AirportAllocationPriorityForAircraftsConstraintData;
   readonly details: string;
   readonly fromDate?: Date;
   readonly toDate?: Date;
@@ -43,9 +48,15 @@ export default class Constraint extends MasterDataItem {
     this.days = raw.days;
 
     switch (raw.type) {
-      case 'LemaBizu':
+      case 'AIRCRAFT_RESTRICTION_ON_AIRPORTS':
         {
-          const data = (this.data = convertLemaBizuConstraintDataFromModel(raw.data as LemaBizuConstraintDataModel, airports, aircraftRegisters, aircraftTypes, aircraftGroups));
+          const data = (this.data = convertAircraftRestrictionOnAirportsConstraintDataFromModel(
+            raw.data as AircraftRestrictionOnAirportsConstraintDataModel,
+            airports,
+            aircraftRegisters,
+            aircraftTypes,
+            aircraftGroups
+          ));
           this.description = `When planning the flights of airport${getPluralS(data.airports)} ${convertNameArrayToString(data.airports.map(a => a.name))}, ${
             data.never ? 'never' : 'only'
           } use ${convertAircraftIdentityArrayToString(data.aircraftSelection.allowedIdentities)}${convertAircraftIdentityArrayToString(
@@ -55,34 +66,47 @@ export default class Constraint extends MasterDataItem {
         }
         break;
 
-      case 'Hana':
+      case 'BLOCK_TIME_RESTRICTION_ON_AIRCRAFTS':
         {
-          const data = (this.data = convertHanaConstraintDataFromModel(raw.data as HanaConstraintDataModel, aircraftRegisters, aircraftTypes, aircraftGroups));
+          const data = (this.data = convertBlickTimeRestrictionOnAircraftsConstraintDataFromModel(
+            raw.data as BlickTimeRestrictionOnAircraftsConstraintDataModel,
+            aircraftRegisters,
+            aircraftTypes,
+            aircraftGroups
+          ));
           this.description = `When planning flights longer than ${data.maximumBlockTime} minutes, never use ${convertAircraftIdentityArrayToString(
             data.aircraftSelection.allowedIdentities
           )}${convertAircraftIdentityArrayToString(data.aircraftSelection.forbiddenIdentities, ' except for ')}.${extractDateFilter()}`;
         }
         break;
 
-      case 'Kanju':
+      case 'ROUTE_SEQUENCE_RESTRICTION_ON_AIRPORTS':
         {
-          const data = (this.data = convertKanjuConstraintDataFromModel(raw.data as KanjuConstraintDataModel, airports));
+          const data = (this.data = convertRouteSequenceRestrictionOnAirportsConstraintDataFromModel(raw.data as RouteSequenceRestrictionOnAirportsConstraintDataModel, airports));
           this.description = `Never plan the flights of airport ${data.airport.name} right after the flights of airport ${data.nextAirport.name}.${extractDateFilter()}`;
         }
         break;
 
-      case 'Bartok':
+      case 'AIRPORT_RESTRICTION_ON_AIRCRAFTS':
         {
-          const data = (this.data = convertBartokConstraintDataFromModel(raw.data as BartokConstraintDataModel, airports, aircraftRegisters));
+          const data = (this.data = convertAirportRestrictionOnAircraftsConstraintDataFromModel(
+            raw.data as AirportRestrictionOnAircraftsConstraintDataModel,
+            airports,
+            aircraftRegisters
+          ));
           this.description = `Never assign the aircraft register ${data.aircraftRegister.name} to the flights of any airport, except for ${
             data.airport.name
           }.${extractDateFilter()}`;
         }
         break;
 
-      case 'Aliso':
+      case 'AIRPORT_ALLOCATION_PRIORITY_FOR_AIRCRAFTS':
         {
-          const data = (this.data = convertAlisoConstraintDataFromModel(raw.data as AlisoConstraintDataModel, airports, aircraftRegisters));
+          const data = (this.data = convertAirportAllocationPriorityForAircraftsConstraintDataFromModel(
+            raw.data as AirportAllocationPriorityForAircraftsConstraintDataModel,
+            airports,
+            aircraftRegisters
+          ));
           this.description = `Assign the aircraft register${getPluralS(data.aircraftRegisters)} ${convertNameArrayToString(
             data.aircraftRegisters.map(r => r.name)
           )} to the flights of airport${getPluralS(data.airports)} ${convertNameArrayToString(
@@ -129,18 +153,18 @@ export default class Constraint extends MasterDataItem {
   }
 }
 
-export interface LemaBizuConstraintData {
+export interface AircraftRestrictionOnAirportsConstraintData {
   readonly airports: readonly Airport[];
   readonly never: boolean;
   readonly aircraftSelection: AircraftSelection;
 }
-function convertLemaBizuConstraintDataFromModel(
-  data: LemaBizuConstraintDataModel,
+function convertAircraftRestrictionOnAirportsConstraintDataFromModel(
+  data: AircraftRestrictionOnAirportsConstraintDataModel,
   airports: Airports,
   aircraftRegisters: AircraftRegisters,
   aircraftTypes: AircraftTypes,
   aircraftGroups: AircraftGroups
-): LemaBizuConstraintData {
+): AircraftRestrictionOnAirportsConstraintData {
   return {
     airports: data.airportIds.map(id => airports.id[id]),
     never: data.never,
@@ -148,49 +172,60 @@ function convertLemaBizuConstraintDataFromModel(
   };
 }
 
-export interface HanaConstraintData {
+export interface BlickTimeRestrictionOnAircraftsConstraintData {
   readonly maximumBlockTime: number;
   readonly aircraftSelection: AircraftSelection;
 }
-function convertHanaConstraintDataFromModel(
-  data: HanaConstraintDataModel,
+function convertBlickTimeRestrictionOnAircraftsConstraintDataFromModel(
+  data: BlickTimeRestrictionOnAircraftsConstraintDataModel,
   aircraftRegisters: AircraftRegisters,
   aircraftTypes: AircraftTypes,
   aircraftGroups: AircraftGroups
-): HanaConstraintData {
+): BlickTimeRestrictionOnAircraftsConstraintData {
   return {
     maximumBlockTime: data.maximumBlockTime,
     aircraftSelection: new AircraftSelection(data.aircraftSelection, aircraftRegisters, aircraftTypes, aircraftGroups)
   };
 }
 
-export interface KanjuConstraintData {
+export interface RouteSequenceRestrictionOnAirportsConstraintData {
   readonly airport: Airport;
   readonly nextAirport: Airport;
 }
-function convertKanjuConstraintDataFromModel(data: KanjuConstraintDataModel, airports: Airports): KanjuConstraintData {
+function convertRouteSequenceRestrictionOnAirportsConstraintDataFromModel(
+  data: RouteSequenceRestrictionOnAirportsConstraintDataModel,
+  airports: Airports
+): RouteSequenceRestrictionOnAirportsConstraintData {
   return {
     airport: airports.id[data.airportId],
     nextAirport: airports.id[data.nextAirportId]
   };
 }
 
-export interface BartokConstraintData {
+export interface AirportRestrictionOnAircraftsConstraintData {
   readonly aircraftRegister: AircraftRegister;
   readonly airport: Airport;
 }
-function convertBartokConstraintDataFromModel(data: BartokConstraintDataModel, airports: Airports, aircraftRegisters: AircraftRegisters): BartokConstraintData {
+function convertAirportRestrictionOnAircraftsConstraintDataFromModel(
+  data: AirportRestrictionOnAircraftsConstraintDataModel,
+  airports: Airports,
+  aircraftRegisters: AircraftRegisters
+): AirportRestrictionOnAircraftsConstraintData {
   return {
     aircraftRegister: aircraftRegisters.id[data.aircraftRegisterId],
     airport: airports.id[data.airportId]
   };
 }
 
-export interface AlisoConstraintData {
+export interface AirportAllocationPriorityForAircraftsConstraintData {
   readonly aircraftRegisters: readonly AircraftRegister[];
   readonly airports: readonly Airport[];
 }
-function convertAlisoConstraintDataFromModel(data: AlisoConstraintDataModel, airports: Airports, aircraftRegisters: AircraftRegisters): AlisoConstraintData {
+function convertAirportAllocationPriorityForAircraftsConstraintDataFromModel(
+  data: AirportAllocationPriorityForAircraftsConstraintDataModel,
+  airports: Airports,
+  aircraftRegisters: AircraftRegisters
+): AirportAllocationPriorityForAircraftsConstraintData {
   return {
     aircraftRegisters: data.aircraftRegisterIds.map(id => aircraftRegisters.id[id]),
     airports: data.airportIds.map(id => airports.id[id])

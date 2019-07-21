@@ -1,7 +1,7 @@
 import FlightRequirement from './FlightRequirement';
 import FlightScope from './FlightScope';
 import Flight from './Flight';
-import WeekdayFlightRequirementModel from '@core/models/flight/WeekdayFlightRequirementModel';
+import WeekdayFlightRequirementModel from '@core/models/flights/WeekdayFlightRequirementModel';
 import { PreplanAircraftRegisters } from 'src/view-models/PreplanAircraftRegister';
 import FlightDefinition from './FlightDefinition';
 

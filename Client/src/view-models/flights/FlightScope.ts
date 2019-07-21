@@ -1,4 +1,4 @@
-import { FlightScopeModel } from '@core/models/flight/FlightScopeModel';
+import { FlightScopeModel } from '@core/models/flights/FlightScopeModel';
 import PreplanAircraftSelection from 'src/view-models/PreplanAircraftSelection';
 import FlightTime from './FlightTime';
 import { PreplanAircraftRegisters } from '../PreplanAircraftRegister';

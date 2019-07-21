@@ -12,8 +12,8 @@ import DraggableDialog from 'src/components/DraggableDialog';
 import PreplanAircraftIdentity from 'src/view-models/PreplanAircraftIdentity';
 import FlightRequirementEditor from 'src/components/preplan/flight-requirement/FlightRequirementEditor';
 import MasterData from '@core/master-data';
-import FlightRequirement from 'src/view-models/flight/FlightRequirement';
-import FlightTime from 'src/view-models/flight/FlightTime';
+import FlightRequirement from 'src/view-models/flights/FlightRequirement';
+import FlightTime from 'src/view-models/flights/FlightTime';
 import AircraftIdentityType from '@core/types/aircraft-identity/AircraftIdentityType';
 
 const useStyles = makeStyles((theme: Theme) => ({

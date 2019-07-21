@@ -1,5 +1,5 @@
 import MasterData, { Stc, Airport } from '@core/master-data';
-import FlightDefinitionModel from '@core/models/flight/FlightDefinitionModel';
+import FlightDefinitionModel from '@core/models/flights/FlightDefinitionModel';
 
 export default class FlightDefinition {
   readonly label: string;

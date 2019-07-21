@@ -1,6 +1,6 @@
 import { default as MasterDataConstraint, RouteSequenceRestrictionOnAirportsConstraintData } from '@core/master-data/Constraint';
 import Constraint from './Constraint';
-import ConstraintTemplate from 'src/view-models/objections/ConstraintTemplate';
+import ConstraintTemplate from 'src/view-models/constraints/ConstraintTemplate';
 import { Airport } from '@core/master-data';
 
 export default class RouteSequenceRestrictionOnAirportsConstraint extends Constraint implements RouteSequenceRestrictionOnAirportsConstraintData {

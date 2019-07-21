@@ -1,6 +1,6 @@
 import { default as MasterDataConstraint, AirportRestrictionOnAircraftsConstraintData } from '@core/master-data/Constraint';
 import Constraint from './Constraint';
-import ConstraintTemplate from 'src/view-models/objections/ConstraintTemplate';
+import ConstraintTemplate from 'src/view-models/constraints/ConstraintTemplate';
 import { Airport, AircraftRegister } from '@core/master-data';
 
 export default class AirportRestrictionOnAircraftsConstraint extends Constraint implements AirportRestrictionOnAircraftsConstraintData {

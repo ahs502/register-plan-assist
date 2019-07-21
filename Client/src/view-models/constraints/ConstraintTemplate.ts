@@ -1,16 +1,16 @@
 import ConstraintTemplateType from '@core/types/ConstraintTemplateType';
 import { Constraint as MasterDataConstraint } from '@core/master-data';
-import Constraint from './constraints/Constraint';
+import Constraint from 'src/view-models/constraints/Constraint';
 
-import AircraftRestrictionOnAirportsConstraint from './constraints/AircraftRestrictionOnAirportsConstraint';
-import BlickTimeRestrictionOnAircraftsConstraint from './constraints/BlickTimeRestrictionOnAircraftsConstraint';
-import RouteSequenceRestrictionOnAirportsConstraint from './constraints/RouteSequenceRestrictionOnAirportsConstraint';
-import AirportAllocationPriorityForAircraftsConstraint from './constraints/AirportAllocationPriorityForAircraftsConstraint';
-import FlightRequirementRestrictionOnFlightsConstraint from './constraints/FlightRequirementRestrictionOnFlightsConstraint';
-import AirportSequenceRestrictionOnFlightsConstraint from './constraints/AirportSequenceRestrictionOnFlightsConstraint';
-import NoConflictionOnFlightsConstraint from './constraints/NoConflictionOnFlightsConstraint';
-import MinimumGroundTimeBetweenFlightsConstraint from './constraints/MinimumGroundTimeBetweenFlightsConstraint';
-import ValidPeriodCheckOnAircraftsConstraint from './constraints/ValidPeriodCheckOnAircraftsConstraint';
+import AircraftRestrictionOnAirportsConstraint from 'src/view-models/constraints/AircraftRestrictionOnAirportsConstraint';
+import BlickTimeRestrictionOnAircraftsConstraint from 'src/view-models/constraints/BlickTimeRestrictionOnAircraftsConstraint';
+import RouteSequenceRestrictionOnAirportsConstraint from 'src/view-models/constraints/RouteSequenceRestrictionOnAirportsConstraint';
+import AirportAllocationPriorityForAircraftsConstraint from 'src/view-models/constraints/AirportAllocationPriorityForAircraftsConstraint';
+import FlightRequirementRestrictionOnFlightsConstraint from 'src/view-models/constraints/FlightRequirementRestrictionOnFlightsConstraint';
+import AirportSequenceRestrictionOnFlightsConstraint from 'src/view-models/constraints/AirportSequenceRestrictionOnFlightsConstraint';
+import NoConflictionOnFlightsConstraint from 'src/view-models/constraints/NoConflictionOnFlightsConstraint';
+import MinimumGroundTimeBetweenFlightsConstraint from 'src/view-models/constraints/MinimumGroundTimeBetweenFlightsConstraint';
+import ValidPeriodCheckOnAircraftsConstraint from 'src/view-models/constraints/ValidPeriodCheckOnAircraftsConstraint';
 
 interface NonGeneralConstraintConstructor {
   new (masterDataConstraint: MasterDataConstraint): Constraint;

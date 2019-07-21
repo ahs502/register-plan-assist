@@ -1,6 +1,6 @@
 import { Constraint as MasterDataConstraint } from '@core/master-data';
-import Constraint from './constraints/Constraint';
-import ConstraintTemplate from './ConstraintTemplate';
+import Constraint from 'src/view-models/constraints/Constraint';
+import ConstraintTemplate from 'src/view-models/constraints/ConstraintTemplate';
 import Preplan from 'src/view-models/Preplan';
 
 export default class ObjectionSystem {

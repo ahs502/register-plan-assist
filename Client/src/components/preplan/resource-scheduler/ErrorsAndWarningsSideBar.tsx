@@ -4,7 +4,7 @@ import { makeStyles } from '@material-ui/styles';
 import Search, { filterOnProperties } from 'src/components/Search';
 import SideBarContainer from './SideBarContainer';
 import ErrorsAndWarningsList from './ErrorsAndWarningsList';
-import Objection from 'src/view-models/Objection';
+import Objection from 'src/view-models/objections/Objection';
 
 const useStyles = makeStyles((theme: Theme) => ({
   error: {

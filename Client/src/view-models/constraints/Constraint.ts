@@ -1,4 +1,4 @@
-import ConstraintTemplate from 'src/view-models/objections/ConstraintTemplate';
+import ConstraintTemplate from 'src/view-models/constraints/ConstraintTemplate';
 import { SeasonType } from '@core/master-data';
 
 export default abstract class Constraint {

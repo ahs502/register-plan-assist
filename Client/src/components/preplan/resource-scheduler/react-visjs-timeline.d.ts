@@ -7,6 +7,8 @@ declare module 'react-visjs-timeline' {
     items: DataSet;
     options: TimelineOptions;
     contextmenuHandler(props: any): void;
+    mouseMoveHandler(props: any): void;
+    mouseOverHandler(props:any):?void;
   }
 
   export default class Timeline extends Component<TimelineProps> {}

@@ -156,7 +156,7 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
           alert(`D&D flight ${flight.derivedId} to ${newStd.toString()} with ${newAircraftRegister ? newAircraftRegister.name : '???'}\nNot implemented.`)
         }
         onFlightMouseHover={flight => console.log('Mouse on', flight.derivedId)}
-        onFreeSpaceMouseHover={(aircraftRegister, day, time, previousFlight, nextFlight) => console.log('Mouse on free space...')}
+        onFreeSpaceMouseHover={(aircraftRegister, previousFlight, nextFlight) => console.log('Mouse on free space...')}
       />
       <div className={classes.statusBar}>Status Bar</div>
     </Fragment>

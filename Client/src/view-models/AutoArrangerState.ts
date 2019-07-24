@@ -1,7 +1,7 @@
 import Daytime from '@core/types/Daytime';
 import MessageType from '@core/types/auto-arranger-state/MessageType';
 import AutoArrangerStateModel, { ChangeLogModel, MessageModel } from '@core/models/AutoArrangerStateModel';
-import Flight from './flight/Flight';
+import Flight from './flights/Flight';
 import PreplanAircraftRegister, { PreplanAircraftRegisters } from './PreplanAircraftRegister';
 
 export class Message {

@@ -1,10 +1,9 @@
-import AircraftRegisterStatus from '@core/types/aircraft-register-options/AircraftRegisterStatus';
-import AircraftIdentity from '@core/types/AircraftIdentity';
-import AircraftSelection from '@core/types/AircraftSelection';
 import DummyAircraftRegisterModel from '@core/models/DummyAircraftRegisterModel';
 import { AircraftRegisterOptionsDictionaryModel } from '@core/models/AircraftRegisterOptionsModel';
-import MasterData, { MasterDataItem, MasterDataItems, AircraftType } from '@core/master-data';
+import MasterData, { MasterDataItem, MasterDataItems, AircraftType, AircraftGroup } from '@core/master-data';
 import AircraftRegisterOptions, { AircraftRegisterOptionsDictionary } from './AircraftRegisterOptions';
+import AircraftIdentity from '@core/master-data/AircraftIdentity';
+import AircraftSelection from '@core/master-data/AircraftSelection';
 
 /**
  * An enhanced aircraft register capable of presenting both master data and dummy aircraft registers.
@@ -51,47 +50,26 @@ export class PreplanAircraftRegisters extends MasterDataItems<PreplanAircraftReg
     super(masterDataItems.concat(dummyItems));
   }
 
-  resolveAircraftIdentity(aircraftIdentity: AircraftIdentity, status: AircraftRegisterStatus = 'INCLUDED'): readonly PreplanAircraftRegister[] {
-    let result: PreplanAircraftRegister[];
+  resolveAircraftIdentity(aircraftIdentity: AircraftIdentity): readonly PreplanAircraftRegister[] {
     switch (aircraftIdentity.type) {
       case 'REGISTER':
-        result = [this.id[aircraftIdentity.entityId]];
-        break;
-
+        return [this.id[aircraftIdentity.entity.id]];
       case 'TYPE':
-        result = this.items.filter(a => a.aircraftType.id === aircraftIdentity.entityId);
-        break;
-
+        return this.items.filter(r => r.aircraftType.id === aircraftIdentity.entity.id);
       case 'TYPE_EXISTING':
-        result = this.items.filter(a => a.aircraftType.id === aircraftIdentity.entityId && !a.dummy);
-        break;
-
+        return this.items.filter(r => r.aircraftType.id === aircraftIdentity.entity.id && !r.dummy);
       case 'TYPE_DUMMY':
-        result = this.items.filter(a => a.aircraftType.id === aircraftIdentity.entityId && a.dummy);
-        break;
-
+        return this.items.filter(r => r.aircraftType.id === aircraftIdentity.entity.id && r.dummy);
       case 'GROUP':
-        result = MasterData.all.aircraftGroups.id[aircraftIdentity.entityId].aircraftRegisters.map(a => this.id[a.id]);
-        break;
-
+        return (aircraftIdentity.entity as AircraftGroup).aircraftRegisters.map(r => this.id[r.id]);
       default:
-        result = [];
+        throw 'Invalid aircraft identity type.';
     }
-    return result.filter(a => a.options.status === status);
   }
-
-  resolveAircraftSelection(aircraftSelection: AircraftSelection): ReadonlyArray<PreplanAircraftRegister> {
-    let result: PreplanAircraftRegister[] = [];
-    aircraftSelection.allowedIdentities.forEach(i => this.resolveAircraftIdentity(i).forEach(a => result.includes(a) || result.push(a)));
-    aircraftSelection.forbiddenIdentities.forEach(i => this.resolveAircraftIdentity(i).forEach(a => result.includes(a) && result.remove(a)));
+  resolveAircraftSelection(aircraftSelection: AircraftSelection): readonly PreplanAircraftRegister[] {
+    const result: PreplanAircraftRegister[] = [];
+    aircraftSelection.allowedIdentities.forEach(i => this.resolveAircraftIdentity(i).forEach(r => result.includes(r) || result.push(r)));
+    aircraftSelection.forbiddenIdentities.forEach(i => this.resolveAircraftIdentity(i).forEach(r => result.includes(r) && result.remove(r)));
     return result;
-  }
-
-  findBackupFromAircraftSelection(aircraftSelection: AircraftSelection): PreplanAircraftRegister | undefined {
-    let allowed: PreplanAircraftRegister[] = [];
-    let forbidden: PreplanAircraftRegister[] = [];
-    aircraftSelection.allowedIdentities.forEach(i => this.resolveAircraftIdentity(i).forEach(a => allowed.includes(a) || allowed.push(a)));
-    aircraftSelection.forbiddenIdentities.forEach(i => this.resolveAircraftIdentity(i).forEach(a => forbidden.includes(a) || forbidden.push(a)));
-    return allowed.find(a => !forbidden.includes(a)) || allowed[0];
   }
 }

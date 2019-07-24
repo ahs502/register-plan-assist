@@ -1,4 +1,5 @@
 import '@core/utils/extensions.implementation';
+import '@core/utils/validation-init';
 
 import * as path from 'path';
 import * as http from 'http';

@@ -12,8 +12,8 @@ import SelectAircraftRegistersSideBar from 'src/components/preplan/resource-sche
 import SettingsSideBar from 'src/components/preplan/resource-scheduler/SettingsSideBar';
 import ResourceSchedulerView from 'src/components/preplan/resource-scheduler/ResourceSchedulerView';
 import Preplan from 'src/view-models/Preplan';
-import FlightRequirement from 'src/view-models/flight/FlightRequirement';
-import WeekdayFlightRequirement from 'src/view-models/flight/WeekdayFlightRequirement';
+import FlightRequirement from 'src/view-models/flights/FlightRequirement';
+import WeekdayFlightRequirement from 'src/view-models/flights/WeekdayFlightRequirement';
 import useRouter from 'src/utils/useRouter';
 import Flight from 'src/view-models/flight/Flight';
 import Daytime from '@core/types/Daytime';
@@ -82,9 +82,6 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
           <IconButton color="inherit" title="Reports">
             <MahanIcon type={MahanIconType.Chart} />
           </IconButton>
-          <LinkIconButton to="/master-data" color="inherit" title="Master Data">
-            <MahanIcon type={MahanIconType.TextFile} />
-          </LinkIconButton>
           {/* <Select
             classes={{ select: classes.formDaysSelect }}
             native

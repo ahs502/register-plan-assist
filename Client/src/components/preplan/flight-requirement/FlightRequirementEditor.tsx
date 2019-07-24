@@ -24,7 +24,7 @@ import classNames from 'classnames';
 import Weekday from '@core/types/Weekday';
 import RSX from '@core/types/RSX';
 import MasterData from '@core/master-data';
-import FlightTime from 'src/view-models/flight/FlightTime';
+import FlightTime from 'src/view-models/flights/FlightTime';
 
 const useStyles = makeStyles((theme: Theme) => ({
   allowTimeStyle: {

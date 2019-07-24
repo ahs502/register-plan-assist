@@ -1,44 +1,47 @@
 {
-  "name": "planassist-client",
+  "name": "register-plan-assist-client",
   "version": "1.0.0",
   "private": true,
   "scripts": {
     "start": "react-app-rewired start",
     "build": "react-app-rewired build",
     "test": "react-app-rewired test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "ncu": "ncu"
   },
   "dependencies": {
-    "@material-ui/core": "^4.0.1",
-    "@material-ui/icons": "^4.0.1",
-    "@material-ui/styles": "^4.0.1",
+    "@ahs502/validation": "^2.3.0",
+    "@material-ui/core": "^4.2.0",
+    "@material-ui/icons": "^4.2.1",
+    "@material-ui/styles": "^4.2.0",
     "classnames": "^2.2.6",
     "react": "^16.8.6",
     "react-dom": "^16.8.6",
     "react-draggable": "^3.3.0",
-    "react-router-dom": "^5.0.0",
-    "react-select": "^3.0.3",
-    "typeface-roboto": "0.0.54",
     "@types/vis": "^4.21.18",
     "react-visjs-timeline": "^1.5.0",
-    "vis": "^4.21.0"
+    "vis": "^4.21.0",
+    "react-router-dom": "^5.0.1",
+    "react-select": "^3.0.4",
+    "typeface-roboto": "0.0.54"
   },
   "devDependencies": {
-    "@types/classnames": "^2.2.8",
-    "@types/jest": "^24.0.13",
-    "@types/node": "^12.0.4",
-    "@types/react": "^16.8.19",
+    "@types/classnames": "^2.2.9",
+    "@types/jest": "^24.0.15",
+    "@types/node": "^12.6.2",
+    "@types/react": "^16.8.23",
     "@types/react-dom": "^16.8.4",
-    "@types/react-router-dom": "^4.3.3",
-    "@types/react-select": "^2.0.19",
-    "customize-cra": "^0.2.13",
+    "@types/react-router-dom": "^4.3.4",
+    "@types/react-select": "^3.0.0",
+    "customize-cra": "^0.2.14",
     "http-proxy-middleware": "^0.19.1",
+    "npm-check-updates": "^3.1.20",
     "react-app-rewired": "^2.1.3",
     "react-scripts": "^3.0.1",
-    "typescript": "^3.5.1",
     "@types/vis": "^4.21.18",
     "react-visjs-timeline": "^1.5.0",
-    "vis": "^4.21.0"
+    "vis": "^4.21.0",
+    "typescript": "^3.5.3"
   },
   "eslintConfig": {
     "extends": "react-app"

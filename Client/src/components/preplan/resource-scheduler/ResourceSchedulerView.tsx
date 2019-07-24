@@ -9,6 +9,7 @@ import { TimelineOptions, DataItem, DataGroup } from 'vis';
 import '../../../../../node_modules/vis/dist/vis.css';
 import Timeline from 'react-visjs-timeline';
 import 'src/visjs.css';
+import { AircraftRegisterOptionsDictionary } from 'src/view-models/AircraftRegisterOptions';
 const useStyles = makeStyles((theme: Theme) => ({
   root: {
     width: '100%',
@@ -28,7 +29,7 @@ export interface ResourceSchedulerViewProps {
   onFlightContextMenu(flight: Flight, pageX: number, pageY: number): void;
   onFlightDragAndDrop(flight: Flight, newStd: Daytime, newAircraftRegister: PreplanAircraftRegister): void;
   onFlightMouseHover(flight: Flight): void;
-  onFreeSpaceMouseHover(aircraftRegister: PreplanAircraftRegister, previousFlight: Flight | null, nextFlight: Flight | null): void;
+  onFreeSpaceMouseHover(aircraftRegister: PreplanAircraftRegister | null, previousFlight: Flight | null, nextFlight: Flight | null): void;
 }
 
 const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = ({
@@ -94,7 +95,6 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = ({
     var endMinutes = end.getMinutes();
     return {
       id: f.derivedId,
-
       start: start,
       end: end,
       flight: f,
@@ -177,9 +177,8 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = ({
   return (
     <Timeline
       mouseMoveHandler={props => {
-        // console.log(aircraftRegisters.items.find(item => item.id === props.group));
-        // console.log(props);
         const adjacentItem = findAdjacentFlights(items, props.group, props.time);
+        onFreeSpaceMouseHover(aircraftRegisters.items.filter(item => item.id === props.group)[0], adjacentItem[0], adjacentItem[1]);
       }}
       mouseOverHandler={props => {
         // onFreeSpaceMouseHover(AircraftRegisterOptionsDictionary[props.group], adjacentItem[0]&&adjacentItem[0].flight , adjacentItem[1].flight);

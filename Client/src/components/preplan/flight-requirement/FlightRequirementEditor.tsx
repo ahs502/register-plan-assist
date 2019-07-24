@@ -3,7 +3,6 @@ import {
   Theme,
   DialogTitle,
   DialogContent,
-  DialogContentText,
   TextField,
   DialogActions,
   Button,
@@ -12,14 +11,18 @@ import {
   IconButton,
   Switch,
   FormControlLabel,
-  Checkbox
+  Checkbox,
+  FormControl,
+  InputLabel,
+  Select
 } from '@material-ui/core';
-import { Clear as ClearIcon, Add as AddIcon, CheckBox } from '@material-ui/icons';
+import { Clear as ClearIcon, Add as AddIcon } from '@material-ui/icons';
 import { makeStyles } from '@material-ui/styles';
 import { FlightRequirementModal } from 'src/pages/preplan';
 import DaysPicker from 'src/components/DaysPicker';
 import classNames from 'classnames';
 import Weekday from '@core/types/Weekday';
+import RSX from '@core/types/RSX';
 import MasterData from '@core/master-data';
 import FlightTime from 'src/view-models/flight/FlightTime';
 
@@ -71,21 +74,14 @@ const FlightRequirementEditor: FC<FlightRequirementEditorProps> = ({ model, mode
   model.times.push({} as FlightTime);
 
   const [flightRequirement, setFlightRequirement] = useState<FlightRequirementModal>(model);
-  //const scope = selectedDay ? flightRequirement.Days. : flightRequirement.scope;
-
-  // All state or reducer hooks:
 
   const classes = useStyles();
-  // All third party hooks:
 
-  // All functions with inner use:
-
-  // Make the virtual DOM:
   return (
     <Fragment>
       <DialogTitle id="form-dialog-title">{titleMessage[mode]}</DialogTitle>
       <DialogContent>
-        <Grid container spacing={4}>
+        <Grid container spacing={3}>
           <Grid item xs={12}>
             <Grid container spacing={2}>
               <Grid item xs={12}>
@@ -93,11 +89,30 @@ const FlightRequirementEditor: FC<FlightRequirementEditorProps> = ({ model, mode
                   Flight Information
                 </Typography>
               </Grid>
-              <Grid item xs={6}>
+              <Grid item xs={4}>
                 <TextField fullWidth label="Label" />
               </Grid>
-              <Grid item xs={6}>
-                <TextField fullWidth label="Flight Number" />
+              <Grid item xs={4}>
+                <FormControl>
+                  <InputLabel htmlFor="age-native-simple">RSX</InputLabel>
+                  {/* <Select
+                    native
+                    value={state.age}
+                    onChange={handleChange('age')}
+                    inputProps={{
+                      name: 'age',
+                      id: 'age-native-simple'
+                    }}
+                  >
+                    <option value="" />
+                    <option value={10}>Ten</option>
+                    <option value={20}>Twenty</option>
+                    <option value={30}>Thirty</option>
+                  </Select> */}
+                </FormControl>
+              </Grid>
+              <Grid item xs={4}>
+                <TextField fullWidth label="Category" />
               </Grid>
               <Grid item xs={4}>
                 <TextField label="Departure" />
@@ -106,7 +121,13 @@ const FlightRequirementEditor: FC<FlightRequirementEditorProps> = ({ model, mode
                 <TextField label="Arrival" />
               </Grid>
               <Grid item xs={4}>
-                <TextField label="Block Time" />
+                <TextField label="Flight Number" />
+              </Grid>
+              <Grid item xs={6}>
+                <TextField fullWidth label="BlockTime" />
+              </Grid>
+              <Grid item xs={6}>
+                <TextField fullWidth label="STC" />
               </Grid>
             </Grid>
           </Grid>
@@ -199,12 +220,11 @@ const FlightRequirementEditor: FC<FlightRequirementEditorProps> = ({ model, mode
                   Extra Information
                 </Typography>
               </Grid>
-              <Grid item xs={9}>
-                <TextField label="STC" />
-                {/* <ItemPicker sources={stc} fieldName="name" label="STC" /> */}
+              <Grid item xs={6}>
+                <FormControlLabel control={<Checkbox color="primary" />} label="Departure Permision" />
               </Grid>
-              <Grid item xs={3}>
-                <FormControlLabel control={<Checkbox color="primary" />} label="Slot" />
+              <Grid item xs={6}>
+                <FormControlLabel control={<Checkbox color="primary" />} label="Arrival Permision" />
               </Grid>
               <Grid item xs={12}>
                 <TextField fullWidth label="Comment" />

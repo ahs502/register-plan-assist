@@ -1,4 +1,4 @@
-import React, { FC, Fragment, useState, useContext } from 'react';
+import React, { FC, Fragment, useState, useContext, useEffect } from 'react';
 import { Theme, IconButton, Select, OutlinedInput, Badge, Drawer, Portal } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import { DoneAll as FinilizedIcon, LockOutlined as LockIcon, LockOpenOutlined as LockOpenIcon, Search as SearchIcon, SettingsOutlined as SettingsIcon } from '@material-ui/icons';
@@ -15,6 +15,8 @@ import Preplan from 'src/view-models/Preplan';
 import FlightRequirement from 'src/view-models/flight/FlightRequirement';
 import WeekdayFlightRequirement from 'src/view-models/flight/WeekdayFlightRequirement';
 import useRouter from 'src/utils/useRouter';
+import Flight from 'src/view-models/flight/Flight';
+import Daytime from '@core/types/Daytime';
 
 const useStyles = makeStyles((theme: Theme) => ({
   sideBarBackdrop: {
@@ -52,6 +54,7 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
   const [allFlightsFreezed, setAllFlightsFreezed] = useState(() => false); //TODO: Initialize from preplan flights.
   const navBarToolsContainer = useContext(NavBarToolsContainerContext);
 
+  const [statusBarText, setStatusBarText] = useState('');
   const { match } = useRouter<{ id: string }>();
 
   const classes = useStyles();
@@ -156,11 +159,27 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
           alert(`D&D flight ${flight.derivedId} to ${newStd.toString()} with ${newAircraftRegister ? newAircraftRegister.name : '???'}\nNot implemented.`)
         }
         onFlightMouseHover={flight => console.log('Mouse on', flight.derivedId)}
-        onFreeSpaceMouseHover={(aircraftRegister, previousFlight, nextFlight) => console.log('Mouse on free space...')}
+        onFreeSpaceMouseHover={
+          (aircraftRegister, previousFlight, nextFlight) =>
+            setStatusBarText(`${previousFlight ? previousFlight.arrivalAirport.name : ''} ${calculateFreeSpaceTime(previousFlight, nextFlight).toString()}`)
+          // console.log(`Mouse on free space... ${previousFlight && previousFlight.std} ${nextFlight && nextFlight.std}`)
+        }
       />
-      <div className={classes.statusBar}>Status Bar</div>
+      <div className={classes.statusBar}>{statusBarText}</div>
     </Fragment>
   );
 };
 
 export default ResourceSchedulerPage;
+
+const calculateFreeSpaceTime = (previousFlight: Flight | null, nextFlight: Flight | null): Daytime => {
+  if (previousFlight && nextFlight)
+    return new Daytime(nextFlight.day * 24 * 60 + nextFlight.std.minutes - (previousFlight.day * 24 * 60 + previousFlight.std.minutes + previousFlight.blockTime));
+  else if (nextFlight) {
+    return new Daytime(nextFlight.day * 24 * 60 + nextFlight.std.minutes);
+  } else if (previousFlight) {
+    return new Daytime(7 * 24 * 60 - (previousFlight.day * 24 * 60 + previousFlight.std.minutes + previousFlight.blockTime));
+  } else {
+    return new Daytime(0);
+  }
+};

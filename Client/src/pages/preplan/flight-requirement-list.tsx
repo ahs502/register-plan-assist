@@ -9,6 +9,8 @@ import classNames from 'classnames';
 import Weekday from '@core/types/Weekday';
 import FlightRequirement from 'src/view-models/flight/FlightRequirement';
 import WeekdayFlightRequirement from 'src/view-models/flight/WeekdayFlightRequirement';
+import TablePagination from '@material-ui/core/TablePagination';
+import TablePaginationActions from 'src/components/PaginationAction';
 
 const useStyles = makeStyles((theme: Theme) => ({
   contentPage: {
@@ -44,6 +46,10 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
   STDpadding: {
     padding: theme.spacing(0)
+  },
+  divContent: {
+    justifyContent: 'center',
+    display: 'flex'
   }
 }));
 
@@ -75,12 +81,16 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = ({
   onEditWeekdayFlightRequirement
 }) => {
   console.log(flightRequirements);
+
   const navBarToolsContainer = useContext(NavBarToolsContainerContext);
   const [tab, setTab] = useState<Tab>('ALL');
   const [searchValue, setSearchValue] = useState<readonly string[]>([]);
   const [numberOfAllFR, setNumberOfAllFr] = useState(0);
   const [numberOfIgnoreFR, setNumberOfIgnoreFr] = useState(0);
   const [filterFlightRequirment, setFilterFlightRequirment] = useState<ReadonlyArray<FlightRequirement>>(flightRequirements);
+  const [pageNumber, setPageNumber] = useState(0);
+  const [rowPerPage, setRowPerPage] = useState(10);
+
   const classes = useStyles();
 
   const handleChange = <T extends {}>(list: ReadonlyArray<T>, item: T, propertyName: keyof T, newValue: any, settter: (value: React.SetStateAction<ReadonlyArray<T>>) => void) => {
@@ -106,6 +116,7 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = ({
   const filterFlightRequiermentBySelectedTab = (filterItem: ReadonlyArray<FlightRequirement>, t: Tab) => {
     setNumberOfAllFr(filterItem.length);
     setNumberOfIgnoreFr(filterItem.filter(fr => fr.ignored === true).length);
+    setPageNumber(0);
 
     if (t === 'ALL') return setFilterFlightRequirment(filterItem);
     if (t === 'INCLUDE') return setFilterFlightRequirment(filterItem.filter(fr => fr.ignored === false));
@@ -139,7 +150,7 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = ({
         </IconButton>
       </Tabs>
 
-      {filterFlightRequirment.map(d => {
+      {filterFlightRequirment.slice(pageNumber * rowPerPage, (pageNumber + 1) * rowPerPage).map(d => {
         return (
           <Paper key={d.id} className={classNames(classes.flightRequirmentStyle, d.ignored && classes.paperDisableStyle)}>
             <Grid container direction="row" justify="space-between" alignItems="center" className={classes.flightDefinitionStyle}>
@@ -245,6 +256,22 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = ({
           </Paper>
         );
       })}
+      <div />
+      <TablePagination
+        classes={{ root: classes.divContent }}
+        rowsPerPageOptions={[5, 10, 25, 50]}
+        count={filterFlightRequirment.length}
+        onChangePage={(e, n) => {
+          setPageNumber(n);
+        }}
+        page={pageNumber}
+        rowsPerPage={rowPerPage}
+        onChangeRowsPerPage={e => {
+          setRowPerPage(+e.target.value);
+          setPageNumber(0);
+        }}
+        ActionsComponent={TablePaginationActions}
+      />
     </div>
   );
 };

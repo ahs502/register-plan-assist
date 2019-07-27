@@ -1,6 +1,6 @@
 import PreplanAircraftIdentity from './PreplanAircraftIdentity';
 import PreplanAircraftRegister, { PreplanAircraftRegisters } from './PreplanAircraftRegister';
-import PreplanAircraftSelectionModel from '@core/models/PreplanAircraftSelectionModel';
+import AircraftSelectionModel from '@core/models/AircraftSelectionModel';
 
 /**
  * A data structure describing a range of aircraft registers.
@@ -12,7 +12,7 @@ export default class PreplanAircraftSelection {
   readonly allowedIdentities: readonly PreplanAircraftIdentity[];
   readonly forbiddenIdentities: readonly PreplanAircraftIdentity[];
 
-  constructor(raw: PreplanAircraftSelectionModel, aircraftRegisters: PreplanAircraftRegisters) {
+  constructor(raw: AircraftSelectionModel, aircraftRegisters: PreplanAircraftRegisters) {
     this.allowedIdentities = raw.allowedIdentities.map(i => PreplanAircraftIdentity.parse(i, aircraftRegisters));
     this.forbiddenIdentities = raw.forbiddenIdentities.map(i => PreplanAircraftIdentity.parse(i, aircraftRegisters));
   }

@@ -15,7 +15,7 @@ import Preplan from 'src/view-models/Preplan';
 import FlightRequirement from 'src/view-models/flights/FlightRequirement';
 import WeekdayFlightRequirement from 'src/view-models/flights/WeekdayFlightRequirement';
 import useRouter from 'src/utils/useRouter';
-import Flight from 'src/view-models/flight/Flight';
+import Flight from 'src/view-models/flights/Flight';
 import Daytime from '@core/types/Daytime';
 
 const useStyles = makeStyles((theme: Theme) => ({

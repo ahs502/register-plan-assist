@@ -1,12 +1,12 @@
 import React, { FC } from 'react';
 import { Theme } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
-import Flight from 'src/view-models/flight/Flight';
+import Flight from 'src/view-models/flights/Flight';
 import Daytime from '@core/types/Daytime';
 import PreplanAircraftRegister, { PreplanAircraftRegisters } from 'src/view-models/PreplanAircraftRegister';
 import { ChangeLog } from 'src/view-models/AutoArrangerState';
 import { TimelineOptions, DataItem, DataGroup } from 'vis';
-import '../../../../../node_modules/vis/dist/vis.css';
+// import '../../../../../node_modules/vis/dist/vis.css';
 import Timeline from 'react-visjs-timeline';
 import 'src/visjs.css';
 import { AircraftRegisterOptionsDictionary } from 'src/view-models/AircraftRegisterOptions';

@@ -1,4 +1,4 @@
-import { FlightScopeModel } from '@core/models/flight/FlightScopeModel';
+import { FlightScopeModel } from '@core/models/flights/FlightScopeModel';
 import FlightTimeEntity, { convertFlightTimeEntityToModel } from './FlightTimeEntity';
 import AircraftSelectionEntity, { convertAircraftSelectionEnitityToModel } from '../AircraftSelectionEntity';
 

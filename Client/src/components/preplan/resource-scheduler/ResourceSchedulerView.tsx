@@ -112,7 +112,7 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = ({
         </div>
           <div >
             ${f.required ? 'R' : ''} |
-            ${f.slot ? 'S' : ''} |
+            ${f.arrivalPermission && f.departurePermission ? '' : 'P'} |
             ${Math.random() >= 0.5 ? '<i class="icon-locked"></i>' : ''} 
         </div>
         <div>
@@ -131,7 +131,7 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = ({
       departure: f.departureAirport.name,
       freez: true,
       required: f.required,
-      slot: f.slot,
+      slot: f.arrivalPermission && f.departurePermission,
       label: f.label
     };
   });

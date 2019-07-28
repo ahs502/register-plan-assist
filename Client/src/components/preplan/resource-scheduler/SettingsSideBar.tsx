@@ -5,7 +5,6 @@ import SideBarContainer from './SideBarContainer';
 import MinimumGroundTimeMode from '@core/types/auto-arranger-options/MinimumGroundTimeMode';
 import AutoArrangerOptionsModel from '@core/models/AutoArrangerOptionsModel';
 import AutoArrangerOptions from 'src/view-models/AutoArrangerOptions';
-import PreplanValidator from '@core/validators/PreplanValidator';
 
 const useStyles = makeStyles((theme: Theme) => ({
   formControl: {
@@ -42,10 +41,7 @@ const SettingsSideBar: FC<SettingsSideBarProps> = ({ autoArrangerOptions, onAppl
       label="Auto-Arranger Options"
       onApply={() => {
         const autoArrangerOptions: AutoArrangerOptionsModel = { minimumGroundTimeMode, minimumGroundTimeOffset };
-        const validation = PreplanValidator.updateAutoArrangerOptionsValidate(autoArrangerOptions);
-        if (validation.ok) {
-          onApply(autoArrangerOptions);
-        }
+        onApply(autoArrangerOptions);
       }}
     >
       <Typography variant="body1">Minimum Ground Time</Typography>

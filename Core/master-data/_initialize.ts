@@ -579,10 +579,6 @@ MasterData.recieve({
       { id: '3', name: 'هواپیماهایی که نیاز به APU دارن', aircraftRegisterIds: ['7092902880000000573', '7092902880000000296', '7092902880000000304', '7092902880000000970'] },
       
     ],
-    constraints: [
-      { id: '1', name: 'Dont plan APU INOP for PEK and PVG' },
-      { id: '2', name: 'MMA & MMB must not get to China' },
-      { id: '3', name: 'Never plan DUS | BEG | VAR with aircraft type A346'},
-    ],
+    constraints: [],
   })
   

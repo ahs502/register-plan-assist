@@ -1,12 +1,13 @@
 import React, { FC, useState } from 'react';
-import { Theme, TableHead, Tab, TableRow, TableCell, Table, TableBody } from '@material-ui/core';
+import { Theme, TableHead, Tab, TableRow, TableCell, Table, TableBody, TablePagination } from '@material-ui/core';
 import { ArrowForward as ArrowForwardIcon } from '@material-ui/icons';
 import { makeStyles } from '@material-ui/styles';
 import SideBarContainer from './SideBarContainer';
 import Search from 'src/components/Search';
 import Weekday from '@core/types/Weekday';
 import { ChangeLog } from 'src/view-models/AutoArrangerState';
-import Flight from 'src/view-models/flight/Flight';
+import TablePaginationActions from 'src/components/PaginationAction';
+import Flight from 'src/view-models/flights/Flight';
 
 const useStyles = makeStyles((theme: Theme) => ({
   searchWrapper: {
@@ -21,6 +22,10 @@ const useStyles = makeStyles((theme: Theme) => ({
   tableCell: {
     paddingRight: theme.spacing(0.5),
     paddingLeft: theme.spacing(0.5)
+  },
+  divContent: {
+    justifyContent: 'center',
+    display: 'flex'
   }
 }));
 
@@ -32,6 +37,8 @@ export interface AutoArrangerChangeLogSideBarProps {
 
 const AutoArrangerChangeLogSideBar: FC<AutoArrangerChangeLogSideBarProps> = ({ initialSearch, changeLogs, onClick }) => {
   const [filteredChangeLogs, setfilteredChangeLogs] = useState(changeLogs);
+  const [pageNumber, setPageNumber] = useState(0);
+  const [rowPerPage, setRowPerPage] = useState(10);
 
   const classes = useStyles();
 
@@ -73,7 +80,7 @@ const AutoArrangerChangeLogSideBar: FC<AutoArrangerChangeLogSideBarProps> = ({ i
           </TableRow>
         </TableHead>
         <TableBody>
-          {filteredChangeLogs.map(c => (
+          {filteredChangeLogs.slice(pageNumber * rowPerPage, (pageNumber + 1) * rowPerPage).map(c => (
             <TableRow key={c.flight.derivedId} onClick={() => onClick(c.flight)} hover={true}>
               <TableCell classes={{ root: classes.tableCell }}>
                 <div className={classes.flightCell}>
@@ -105,6 +112,22 @@ const AutoArrangerChangeLogSideBar: FC<AutoArrangerChangeLogSideBarProps> = ({ i
           ))}
         </TableBody>
       </Table>
+
+      <TablePagination
+        classes={{ root: classes.divContent }}
+        rowsPerPageOptions={[5, 10, 25, 50]}
+        count={filteredChangeLogs.length}
+        onChangePage={(e, n) => {
+          setPageNumber(n);
+        }}
+        page={pageNumber}
+        rowsPerPage={rowPerPage}
+        onChangeRowsPerPage={e => {
+          setRowPerPage(+e.target.value);
+          setPageNumber(0);
+        }}
+        ActionsComponent={TablePaginationActions}
+      />
     </SideBarContainer>
   );
 };

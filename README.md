@@ -1,4 +1,4 @@
-# Plan Assist
+# Register Plan Assist
 
 ## Build and run
 
@@ -6,7 +6,7 @@
 
 To prepare the project for development, after _clone_:
 
-    $ npm i
+    $ npm install
 
 To run both the server and the client and watch (restart) them for changes _(Also open browser on client port)_:
 
@@ -18,6 +18,16 @@ The default server port is **3000** and the default client port is **4000** but 
 
 > The node environment will be **development** in this approach.
 
+#### Upgrade Dependencies
+
+To check available updates for all dependencies:
+
+    $ npm run check-updates
+
+To check and install available updates for all dependencies:
+
+    $ npm run install-updates
+
 ### Build
 
 To build into `./dist` folder, after _clone_:
@@ -28,7 +38,7 @@ To build into `./dist` folder, after _clone_:
 
 To setup the project on the `./dist` folder, after _build_:
 
-    dist$ npm i
+    dist$ npm install
 
 then, to run it:
 

@@ -1,5 +1,5 @@
 import React, { ReactElement } from 'react';
-import { ActionMeta } from 'react-select/lib/types';
+import { ActionMeta } from 'react-select/src/types';
 import MuiReactSelect, { MuiReactSelectProps } from './MuiReactSelect';
 
 export interface MultiSelectProps<T extends {}> extends MuiReactSelectProps<T> {

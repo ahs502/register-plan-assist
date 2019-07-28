@@ -1,10 +1,13 @@
 import React, { FC, useState } from 'react';
-import { Theme, TableRow, TableCell, Table, TableHead, TableBody } from '@material-ui/core';
+import { Theme, TableRow, TableCell, Table, TableHead, TableBody, TablePagination, IconButton } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import SideBarContainer from './SideBarContainer';
 import Search from 'src/components/Search';
 import Weekday from '@core/types/Weekday';
-import Flight from 'src/view-models/flight/Flight';
+
+import TablePaginationActions from 'src/components/PaginationAction';
+
+import Flight from 'src/view-models/flights/Flight';
 
 const useStyles = makeStyles((theme: Theme) => ({
   searchWrapper: {
@@ -12,6 +15,15 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
   tableCell: {
     paddingRight: theme.spacing(1)
+  },
+  divContent: {
+    justifyContent: 'center',
+    display: 'flex'
+  },
+  pagination: {
+    flexShrink: 0,
+    color: theme.palette.text.secondary,
+    marginLeft: theme.spacing(2.5)
   }
 }));
 
@@ -23,8 +35,22 @@ export interface SearchFlightsSideBarProps {
 
 const SearchFlightsSideBar: FC<SearchFlightsSideBarProps> = ({ initialSearch, flights, onClick }) => {
   const [filteredFlights, setFilteredFlights] = useState<readonly Flight[]>(flights);
+  const [pageNumber, setPageNumber] = useState(0);
+  const [rowPerPage, setRowPerPage] = useState(10);
 
   const classes = useStyles();
+
+  function filterFlights(flights: readonly Flight[], query: readonly string[]) {
+    setPageNumber(0);
+    if (!query.length) return flights;
+    return flights.filter(f => {
+      const values = [f.label, f.arrivalAirport.name, f.departureAirport.name, f.flightNumber, f.aircraftRegister ? f.aircraftRegister.name : ''].map(s => s.toLowerCase());
+      for (let j = 0; j < query.length; ++j) {
+        if (values.some(s => s.includes(query[j]))) return true;
+      }
+      return false;
+    });
+  }
 
   return (
     <SideBarContainer label="Search Flights">
@@ -42,7 +68,7 @@ const SearchFlightsSideBar: FC<SearchFlightsSideBarProps> = ({ initialSearch, fl
           </TableRow>
         </TableHead>
         <TableBody>
-          {filteredFlights.map(f => {
+          {filteredFlights.slice(pageNumber * rowPerPage, (pageNumber + 1) * rowPerPage).map(f => {
             return (
               <TableRow key={f.derivedId} onClick={() => onClick(f)} hover={true}>
                 <TableCell classes={{ root: classes.tableCell }}> {f.flightNumber}</TableCell>
@@ -57,19 +83,24 @@ const SearchFlightsSideBar: FC<SearchFlightsSideBarProps> = ({ initialSearch, fl
           })}
         </TableBody>
       </Table>
+
+      <TablePagination
+        classes={{ root: classes.divContent }}
+        rowsPerPageOptions={[5, 10, 25, 50]}
+        count={filteredFlights.length}
+        onChangePage={(e, n) => {
+          setPageNumber(n);
+        }}
+        page={pageNumber}
+        rowsPerPage={rowPerPage}
+        onChangeRowsPerPage={e => {
+          setRowPerPage(+e.target.value);
+          setPageNumber(0);
+        }}
+        ActionsComponent={TablePaginationActions}
+      />
     </SideBarContainer>
   );
 };
 
 export default SearchFlightsSideBar;
-
-function filterFlights(flights: readonly Flight[], query: readonly string[]) {
-  if (!query.length) return flights;
-  return flights.filter(f => {
-    const values = [f.label, f.arrivalAirport.name, f.departureAirport.name, f.flightNumber, f.aircraftRegister ? f.aircraftRegister.name : ''].map(s => s.toLowerCase());
-    for (let j = 0; j < query.length; ++j) {
-      if (values.some(s => s.includes(query[j]))) return true;
-    }
-    return false;
-  });
-}

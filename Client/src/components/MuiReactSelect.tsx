@@ -5,15 +5,15 @@ import { emphasize } from '@material-ui/core/styles/colorManipulator';
 import { makeStyles, useTheme } from '@material-ui/styles';
 import { Cancel as CancelIcon } from '@material-ui/icons';
 import Select from 'react-select';
-import { Props as StateManagerProps } from 'react-select/lib/stateManager';
-import { Props as SelectProps } from 'react-select/lib/Select';
-import { ValueContainerProps } from 'react-select/lib/components/containers';
-import { ControlProps } from 'react-select/lib/components/Control';
-import { MenuProps, NoticeProps } from 'react-select/lib/components/Menu';
-import { MultiValueProps } from 'react-select/lib/components/MultiValue';
-import { OptionProps } from 'react-select/lib/components/Option';
-import { PlaceholderProps } from 'react-select/lib/components/Placeholder';
-import { SingleValueProps } from 'react-select/lib/components/SingleValue';
+import { Props as StateManagerProps } from 'react-select/src/stateManager';
+import { Props as SelectProps } from 'react-select/src/Select';
+import { ValueContainerProps } from 'react-select/src/components/containers';
+import { ControlProps } from 'react-select/src/components/Control';
+import { MenuProps, NoticeProps } from 'react-select/src/components/Menu';
+import { MultiValueProps } from 'react-select/src/components/MultiValue';
+import { OptionProps } from 'react-select/src/components/Option';
+import { PlaceholderProps } from 'react-select/src/components/Placeholder';
+import { SingleValueProps } from 'react-select/src/components/SingleValue';
 import classNames from 'classnames';
 
 const useStyles = makeStyles((theme: Theme) => ({

@@ -5,6 +5,9 @@ export { default as MasterDataItem, MasterDataItems } from './MasterDataItem';
 import MasterData from './MasterData';
 export default MasterData;
 
+export { default as AircraftIdentity } from './AircraftIdentity';
+export { default as AircraftSelection } from './AircraftSelection';
+
 export { default as AircraftType, AircraftTypes } from './AircraftType';
 export { default as AircraftRegister, AircraftRegisters } from './AircraftRegister';
 export { default as Airport, Airports } from './Airport';

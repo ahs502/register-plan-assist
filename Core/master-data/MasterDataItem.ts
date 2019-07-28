@@ -6,12 +6,10 @@ import MasterDataItemModel from '@core/models/master-data/MasterDataItemModel';
 export default abstract class MasterDataItem {
   readonly id: string;
   readonly name: string;
-  readonly description?: string;
 
-  constructor(raw: MasterDataItemModel, description?: string) {
+  constructor(raw: MasterDataItemModel) {
     this.id = raw.id;
     this.name = raw.name;
-    description && (this.description = description);
   }
 }
 

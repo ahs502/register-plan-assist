@@ -3,7 +3,7 @@ import { Theme, InputLabel, TextField, TableHead, TableCell, Table, TableRow, Ta
 import { red } from '@material-ui/core/colors';
 import { makeStyles } from '@material-ui/styles';
 import MasterData, { Airport } from '@core/master-data';
-import FlightRequirement from 'src/view-models/flight/FlightRequirement';
+import FlightRequirement from 'src/view-models/flights/FlightRequirement';
 import { FiberManualRecord as BulletIcon } from '@material-ui/icons';
 import Daytime from '@core/types/Daytime';
 import { Publish as ExportToExcelIcon } from '@material-ui/icons';
@@ -278,7 +278,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
             blocktime: d.scope.blockTime,
             day: d.day,
             std: d.flight.std,
-            note: d.scope.slotComment,
+            note: d.notes,
             aircraftType: d.flight.aircraftRegister && d.flight.aircraftRegister.aircraftType.name,
             category: f.definition.category
           }));

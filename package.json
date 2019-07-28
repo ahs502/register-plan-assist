@@ -1,15 +1,18 @@
 {
-  "name": "planassist",
+  "name": "register-plan-assist",
   "version": "1.0.0",
   "private": true,
   "description": "Intelligent Flight Scheduler",
   "scripts": {
-    "postinstall": "gulp install-server && gulp install-client",
+    "postinstall": "gulp install-core && gulp install-server && gulp install-client",
     "prebuild": "npm install",
     "build": "gulp build",
     "start": "concurrently -k -p \"[{index}] [{time}] [{name}]\" -n \"Server,Client\" -c \"blue,green\" \"gulp dev-server\" \"gulp dev-client\"",
     "test": "npm --prefix Client test && npm --prefix Server test",
-    "gulp": "gulp"
+    "check-updates": "npm run ncu && npm run ncu --prefix Core && npm run ncu --prefix Server && npm run ncu --prefix Client",
+    "install-updates": "npm run ncu -- -u && npm run ncu --prefix Core -- -u && npm run ncu --prefix Server -- -u && npm run ncu --prefix Client -- -u && npm install",
+    "gulp": "gulp",
+    "ncu": "ncu"
   },
   "repository": {
     "type": "git",
@@ -18,10 +21,16 @@
   "author": "Mahan Air",
   "license": "ISC",
   "devDependencies": {
-    "@types/gulp": "^4.0.6",
-    "concurrently": "^4.1.0",
-    "del": "^4.1.0",
-    "gulp": "^4.0.1",
-    "gulp-run-command": "0.0.9"
+    "@types/gulp": "^4.0.6"
+  },
+  "dependencies": {
+    "@types/vis": "^4.21.18",
+    "react-visjs-timeline": "^1.5.0",
+    "vis": "^4.21.0",
+    "concurrently": "^4.1.1",
+    "del": "^5.0.0",
+    "gulp": "^4.0.2",
+    "gulp-run-command": "0.0.9",
+    "npm-check-updates": "^3.1.20"
   }
 }

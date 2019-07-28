@@ -202,8 +202,8 @@ const compareFunction = (a: number, b: number): number => {
 
 const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequirments, preplanName, fromDate, toDate }) => {
   const [baseAirport, setBaseAirport] = useState<Airport>(ika);
-  const [startDate, setStartDate] = useState<Date>(new Date(Date.parse('2019-07-06')));
-  const [endDate, setEndDate] = useState<Date>(new Date(Date.parse('2019-07-14')));
+  const [startDate, setStartDate] = useState<Date>(fromDate); //TODO: REMOVE
+  const [endDate, setEndDate] = useState<Date>(toDate); //TODO: REMOVE
   const [flightType, setFlightType] = useState<FlightType>(FlightType.International);
   const [flattenFlightRequirment, setFlattenFlightRequirment] = useState<FlattenFlightRequirment[]>([]);
   const [dataProvider, setDataProvider] = useState<DataProvider[]>([]);

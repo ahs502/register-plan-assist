@@ -1,4 +1,4 @@
-import FlightTimeModel from '@core/models/flight/FlightTimeModel';
+import FlightTimeModel from '@core/models/flights/FlightTimeModel';
 
 export default interface FlightTimeEntity {
   readonly stdLowerBound: number;

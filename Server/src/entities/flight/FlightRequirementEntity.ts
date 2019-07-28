@@ -1,5 +1,5 @@
 import { ObjectID } from 'mongodb';
-import FlightRequirementModel from '@core/models/flight/FlightRequirementModel';
+import FlightRequirementModel from '@core/models/flights/FlightRequirementModel';
 import FlightDefinitionEntity, { convertFlightDefinitionEntityToModel } from './FlightDefinitionEntity';
 import FlightScopeEntity, { convertFlightScopeEntityToModel } from './FlightScopeEntity';
 import WeekdayFlightRequirementEntity, { convertWeekdayFlightRequirementEntityToModel } from './WeekdayFlightRequirementEntity';

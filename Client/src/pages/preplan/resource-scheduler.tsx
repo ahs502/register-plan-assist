@@ -44,18 +44,18 @@ type SideBar = 'SETTINGS' | 'SELECT_AIRCRAFT_REGISTERS' | 'SEARCH_FLIGHTS' | 'AU
 
 export interface ResourceSchedulerPageProps {
   preplan: Preplan;
-  onEditFlightRequirement: (flightRequirement: FlightRequirement) => void;
-  onEditWeekdayFlightRequirement: (weekdayFlightRequirement: WeekdayFlightRequirement) => void;
+  onEditFlight(flight: Flight): void;
+  onEditFlightRequirement(flightRequirement: FlightRequirement): void;
+  onEditWeekdayFlightRequirement(weekdayFlightRequirement: WeekdayFlightRequirement): void;
 }
 
-const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
+const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEditFlight, onEditFlightRequirement, onEditWeekdayFlightRequirement }) => {
   const [sideBar, setSideBar] = useState<{ sideBar?: SideBar; open: boolean; initialSearch?: string }>({ open: false });
   const [autoArrangerRunning, setAutoArrangerRunning] = useState(() => false); //TODO: Initialize by data from server.
   const [allFlightsFreezed, setAllFlightsFreezed] = useState(() => false); //TODO: Initialize from preplan flights.
   const navBarToolsContainer = useContext(NavBarToolsContainerContext);
 
   const [statusBarText, setStatusBarText] = useState('');
-  const { match } = useRouter<{ id: string }>();
 
   const classes = useStyles();
 
@@ -76,7 +76,7 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
           <IconButton color="inherit" onClick={() => alert('Not implemented.')} title={allFlightsFreezed ? 'Unfreeze All Flights' : 'Freeze All Flights'}>
             {allFlightsFreezed ? <LockOpenIcon /> : <LockIcon />}
           </IconButton>
-          <LinkIconButton color="inherit" to={'/preplan/' + match.params.id + '/flight-requirement-list'} title="Flight Requirments">
+          <LinkIconButton color="inherit" to={`/preplan/${preplan.id}/flight-requirement-list`} title="Flight Requirments">
             <MahanIcon type={MahanIconType.FlightIcon} />
           </LinkIconButton>
           <IconButton color="inherit" title="Reports">

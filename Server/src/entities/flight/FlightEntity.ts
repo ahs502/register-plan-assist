@@ -1,4 +1,4 @@
-import FlightModel from '@core/models/flight/FlightModel';
+import FlightModel from '@core/models/flights/FlightModel';
 
 export default interface FlightEntity {
   readonly std: number;

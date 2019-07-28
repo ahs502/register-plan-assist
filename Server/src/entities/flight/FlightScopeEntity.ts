@@ -16,8 +16,9 @@ export function convertFlightScopeEntityToModel(data: FlightScopeEntity): Flight
     blockTime: data.blockTime,
     times: data.times.map(convertFlightTimeEntityToModel),
     aircraftSelection: convertAircraftSelectionEnitityToModel(data.aircraftSelection),
-    slot: data.slot,
-    slotComment: data.slotComment,
+    departurePermission: true,
+    arrivalPermission: true,
+    rsx: 'REAL',
     required: data.required
   };
 }

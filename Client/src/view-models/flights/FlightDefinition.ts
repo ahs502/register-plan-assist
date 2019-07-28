@@ -3,6 +3,7 @@ import FlightDefinitionModel from '@core/models/flights/FlightDefinitionModel';
 
 export default class FlightDefinition {
   readonly label: string;
+  readonly category: string;
   readonly stc: Stc;
   readonly flightNumber: string;
   readonly departureAirport: Airport;
@@ -10,6 +11,7 @@ export default class FlightDefinition {
 
   constructor(raw: FlightDefinitionModel) {
     this.label = raw.label;
+    this.category = raw.category;
     this.stc = MasterData.all.stcs.id[raw.stcId];
     this.flightNumber = raw.flightNumber;
     this.departureAirport = MasterData.all.airports.id[raw.departureAirportId];

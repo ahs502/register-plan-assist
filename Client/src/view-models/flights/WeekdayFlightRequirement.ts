@@ -10,6 +10,7 @@ export default class WeekdayFlightRequirement {
   readonly derivedId: string;
   readonly scope: FlightScope;
   readonly notes: string;
+  readonly freezed: boolean;
   readonly day: number;
   readonly flight: Flight;
 
@@ -18,6 +19,7 @@ export default class WeekdayFlightRequirement {
     this.requirement = requirement;
     this.scope = new FlightScope(raw.scope, aircraftRegisters);
     this.notes = raw.notes;
+    this.freezed = raw.freezed;
     this.day = raw.day;
     this.flight = new Flight(raw.flight, this, aircraftRegisters);
   }

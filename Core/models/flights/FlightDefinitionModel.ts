@@ -3,12 +3,14 @@ import Validation from '@ahs502/validation';
 
 export default interface FlightDefinitionModel {
   readonly label: string;
+  readonly category: string;
   readonly stcId: string;
   readonly flightNumber: string;
   readonly departureAirportId: string;
   readonly arrivalAirportId: string;
 }
 
+//TODO: Check for category too:
 export class FlightDefinitionValidation extends Validation<
   | 'LABEL_EXISTS'
   | 'LABEL_IS_VALID'

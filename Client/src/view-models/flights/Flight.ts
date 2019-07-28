@@ -17,10 +17,9 @@ export default class Flight {
   readonly day: number;
   readonly notes: string;
   readonly blockTime: number;
+  readonly required: boolean;
   readonly std: Daytime;
   readonly aircraftRegister?: PreplanAircraftRegister;
-  readonly slot: boolean;
-  readonly required: boolean;
 
   constructor(raw: FlightModel, weekdayRequiremnet: WeekdayFlightRequirement, aircraftRegisters: PreplanAircraftRegisters) {
     this.requirement = weekdayRequiremnet.requirement;
@@ -34,9 +33,8 @@ export default class Flight {
     this.day = weekdayRequiremnet.day;
     this.notes = weekdayRequiremnet.notes;
     this.blockTime = weekdayRequiremnet.scope.blockTime;
+    this.required = weekdayRequiremnet.scope.required;
     this.std = new Daytime(raw.std);
     this.aircraftRegister = raw.aircraftRegisterId ? aircraftRegisters.id[raw.aircraftRegisterId] : undefined;
-    this.slot = weekdayRequiremnet.scope.slot;
-    this.required = weekdayRequiremnet.scope.required;
   }
 }

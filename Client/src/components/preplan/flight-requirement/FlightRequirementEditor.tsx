@@ -22,7 +22,6 @@ import { FlightRequirementModal } from 'src/pages/preplan';
 import DaysPicker from 'src/components/DaysPicker';
 import classNames from 'classnames';
 import Weekday from '@core/types/Weekday';
-import RSX from '@core/types/RSX';
 import MasterData from '@core/master-data';
 import FlightTime from 'src/view-models/flights/FlightTime';
 

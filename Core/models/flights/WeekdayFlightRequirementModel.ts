@@ -6,10 +6,12 @@ import Validation from '@ahs502/validation';
 export default interface WeekdayFlightRequirementModel {
   readonly scope: FlightScopeModel;
   readonly notes: string;
+  readonly freezed: boolean;
   readonly day: number;
   readonly flight: FlightModel;
 }
 
+//TODO: Check for freezed too:
 export class WeekdayFlightRequirementValidation extends Validation<
   'NOTES_IS_VALID' | 'DAY_IS_VALID',
   {

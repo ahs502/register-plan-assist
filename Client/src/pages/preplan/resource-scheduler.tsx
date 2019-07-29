@@ -14,7 +14,6 @@ import ResourceSchedulerView from 'src/components/preplan/resource-scheduler/Res
 import Preplan from 'src/view-models/Preplan';
 import FlightRequirement from 'src/view-models/flights/FlightRequirement';
 import WeekdayFlightRequirement from 'src/view-models/flights/WeekdayFlightRequirement';
-import useRouter from 'src/utils/useRouter';
 import Flight from 'src/view-models/flights/Flight';
 import Daytime from '@core/types/Daytime';
 
@@ -82,7 +81,8 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
           <IconButton color="inherit" title="Reports">
             <MahanIcon type={MahanIconType.Chart} />
           </IconButton>
-          {/* <Select
+          {/*
+            <Select
             classes={{ select: classes.formDaysSelect }}
             native
             value={this.state.numberOfDays}
@@ -96,7 +96,8 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
             <option value={3}>Three Days</option>
             <option value={7}>Seven Days</option>
             <option value={8}>Eight Days</option>
-          </Select> */}
+          </Select>
+          */}
           <IconButton color="inherit" onClick={() => setSideBar({ sideBar: 'AUTO_ARRANGER_CHANGE_LOG', open: true })} title="Auto Arrange Change Log">
             <MahanIcon type={MahanIconType.Change} />
           </IconButton>

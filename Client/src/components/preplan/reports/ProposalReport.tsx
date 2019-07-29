@@ -12,6 +12,7 @@ import { CellOptions } from '@progress/kendo-react-excel-export/dist/npm/ooxml/C
 import classNames from 'classnames';
 import AutoComplete from 'src/components/AutoComplete';
 import Preplan from 'src/view-models/Preplan';
+import Weekday from '@core/types/Weekday';
 
 const useStyles = makeStyles((theme: Theme) => ({
   marginBottom1: {
@@ -66,6 +67,10 @@ const useStyles = makeStyles((theme: Theme) => ({
   rsx: {
     padding: 0,
     fontSize: 40
+  },
+  category: {
+    fontFamily: '"Segoe UI","Tahoma"',
+    backgroundColor: theme.palette.grey[300]
   }
 }));
 
@@ -107,7 +112,7 @@ interface ProposalReportProps {
 }
 
 interface FlattenFlightRequirment {
-  [index: string]: string | number | Airport | number[] | Daytime | boolean | FlattenFlightRequirment[];
+  [index: string]: string | number | Airport | number[] | Daytime | boolean | FlattenFlightRequirment[] | string[];
   flightNumber: string;
   departureAirport: Airport;
   arrivalAirport: Airport;
@@ -117,6 +122,7 @@ interface FlattenFlightRequirment {
   formatedBlockTime: string;
   days: number[];
   utcDays: number[];
+  notes: string[];
   note: string;
   localStd: string;
   localSta: string;
@@ -141,8 +147,10 @@ interface FlattenFlightRequirment {
   realFrequency: number;
   standbyFrequency: number;
   extraFrequency: number;
-  internationalPermission: string;
-  domensticPermission: string;
+  destinationPermissionsWeekDay: string[];
+  destinationPermissions: string;
+  domesticPermissionsWeekDay: string[];
+  domesticPermissions: string;
   category: string;
   nextFlights: FlattenFlightRequirment[];
   previousFlights: FlattenFlightRequirment[];
@@ -190,15 +198,6 @@ const compareFunction = (a: number, b: number): number => {
   if (a < b) return -1;
   return 0;
 };
-
-// const findNextFlight = (flights: FlattenFlightRequirment[], current: FlattenFlightRequirment) : FlattenFlightRequirment | undefined =>{
-//   let result :FlattenFlightRequirment  ;
-
-//   const returnFlights = flights.find(f => f.departureAirport.id === current.arrivalAirport.id && ((f.std.minutes )||()));
-//   if(!returnFlights || returnFlights.length === 0) return undefined;
-
-//   return result;
-// }
 
 const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequirments, preplanName, fromDate, toDate }) => {
   const [baseAirport, setBaseAirport] = useState<Airport>(ika);
@@ -280,7 +279,10 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
             std: d.flight.std,
             note: d.notes,
             aircraftType: d.flight.aircraftRegister && d.flight.aircraftRegister.aircraftType.name,
-            category: f.definition.category
+            category: f.definition.category,
+            arrivalPermission: Math.random() > 0.5 ? d.scope.arrivalPermission : !d.scope.arrivalPermission,
+            departurePermission: Math.random() > 0.5 ? d.scope.departurePermission : !d.scope.departurePermission,
+            rsx: d.scope.rsx
           }));
         })
         .flat();
@@ -297,9 +299,40 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
           );
           if (existFlatten) {
             const weekDay = (current.day + existFlatten.diffLocalStdandUtcStd + 7) % 7;
-            existFlatten.days.indexOf(weekDay) === -1 && existFlatten.days.push(weekDay);
+            if (existFlatten.days.indexOf(weekDay) === -1) {
+              existFlatten.days.push(weekDay);
+
+              let domesticToDestination = current.departureAirport.id === baseAirport.id;
+              if (!domesticToDestination) {
+                domesticToDestination = !current.departureAirport.international;
+              }
+
+              if (!current.departurePermission) {
+                domesticToDestination ? existFlatten.domesticPermissionsWeekDay.push(Weekday[weekDay]) : existFlatten.destinationPermissionsWeekDay.push(Weekday[weekDay]);
+              }
+
+              if (!current.arrivalPermission) {
+                const arrivalWeekDay = existFlatten.diffLocalStdandLocalSta > 0 ? (weekDay + 1) % 7 : weekDay;
+                domesticToDestination
+                  ? existFlatten.destinationPermissionsWeekDay.push(Weekday[arrivalWeekDay])
+                  : existFlatten.domesticPermissionsWeekDay.push(Weekday[arrivalWeekDay]);
+              }
+            }
             existFlatten.utcDays.indexOf(current.day) === -1 && existFlatten.utcDays.push(current.day);
-            existFlatten['weekDay' + weekDay.toString()] = Math.random() > 0.1 ? '●' : Math.random() > 0.5 ? 'STB' : 'EXT';
+            existFlatten.notes.indexOf(current.note) === -1 && existFlatten.notes.push(current.note);
+            existFlatten['weekDay' + weekDay.toString()] = current.rsx === 'REAL' ? '●' : current.rsx.toString();
+            switch (current.rsx) {
+              case 'REAL':
+                existFlatten.realFrequency++;
+                break;
+              case 'EXT':
+                existFlatten.extraFrequency++;
+                break;
+              case 'STB1':
+              case 'STB2':
+                existFlatten.standbyFrequency++;
+                break;
+            }
           } else {
             const utcStd = current.std.toDate(baseDate);
             const localStd = current.departureAirport.convertUtcToLocal(utcStd);
@@ -312,6 +345,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
             const diffLocalStdandLocalSta = localStd.getUTCDay() - localSta.getUTCDay();
 
             const weekDay = (current.day + diffLocalStdandUtcStd + 7) % 7;
+            const arrivalWeekDay = diffLocalStdandLocalSta > 0 ? (weekDay + 1) % 7 : weekDay;
 
             const flatten = {
               flightNumber: normalizeFlightNumber(current.flightNumber),
@@ -323,9 +357,9 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
               utcDays: [current.day],
               std: current.std,
               sta: new Daytime(utcSta),
-              note: current.note,
+              notes: [current.note],
               localStd: formatDateToString(localStd),
-              localSta: formatDateToString(localSta) + (diffLocalStdandLocalSta < 0 ? '*' : diffLocalStdandLocalSta > 0 ? '#' : ''),
+              localSta: formatDateToString(localSta) + (diffLocalStdandLocalSta < 0 ? '*' : ''),
               utcStd: formatDateToString(utcStd) + (diffLocalStdandUtcStd < 0 ? '*' : diffLocalStdandUtcStd > 0 ? '#' : ''),
               utcSta: formatDateToString(utcSta) + (diffLocalStdandUtcSta < 0 ? '*' : diffLocalStdandUtcSta > 0 ? '#' : ''),
               diffLocalStdandUtcStd: diffLocalStdandUtcStd,
@@ -333,13 +367,29 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
               diffLocalStdandUtcSta: diffLocalStdandUtcSta,
               route: current.departureAirport.name + '–' + current.arrivalAirport.name,
               aircraftType: current.aircraftType,
-              internationalPermission: Math.random() > 0.5 ? 'OK' : 'NOT OK',
-              domensticPermission: Math.random() > 0.5 ? 'OK' : 'NOT OK',
+              domesticPermissionsWeekDay: !current.departurePermission ? ([Weekday[weekDay]] as string[]) : ([] as string[]),
+              destinationPermissionsWeekDay: !current.arrivalPermission ? ([Weekday[arrivalWeekDay]] as string[]) : ([] as string[]),
               label: m,
-              category: current.category
+              category: current.category,
+              realFrequency: 0,
+              extraFrequency: 0,
+              standbyFrequency: 0
             } as FlattenFlightRequirment;
 
-            flatten['weekDay' + weekDay.toString()] = Math.random() > 0.1 ? '●' : Math.random() > 0.5 ? 'STB' : 'EXT';
+            flatten['weekDay' + weekDay.toString()] = current.rsx === 'REAL' ? '●' : current.rsx.toString();
+
+            switch (current.rsx) {
+              case 'REAL':
+                flatten.realFrequency++;
+                break;
+              case 'EXT':
+                flatten.extraFrequency++;
+                break;
+              case 'STB1':
+              case 'STB2':
+                flatten.standbyFrequency++;
+                break;
+            }
 
             acc.push(flatten);
           }
@@ -430,16 +480,21 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
         )
         .join(',');
 
-      const realFrequency = Math.floor(Math.random() * 6);
-      const standbyFrequency = Math.floor(Math.random() * 3);
-      const extraFrequency = Math.floor(Math.random() * 2);
-
-      temp[0].realFrequency = realFrequency;
-      temp[0].standbyFrequency = standbyFrequency;
-      temp[0].extraFrequency = extraFrequency;
-
       temp.forEach(n => {
         n.parentRoute = route;
+        n.note = n.notes.join(',');
+        n.destinationPermissions =
+          n.destinationPermissionsWeekDay.length === 0
+            ? 'OK'
+            : n.destinationPermissionsWeekDay.length === n.days.length
+            ? 'NOT OK'
+            : 'NOT OK for: ' + n.destinationPermissionsWeekDay.map(w => w.substring(0, 3)).join(',');
+        n.domesticPermissions =
+          n.domesticPermissionsWeekDay.length === 0
+            ? 'OK'
+            : n.domesticPermissionsWeekDay.length === n.days.length
+            ? 'NOT OK'
+            : 'NOT OK for: ' + n.domesticPermissionsWeekDay.map(w => w.substring(0, 3)).join(',');
         result.push(n);
       });
     });
@@ -459,21 +514,22 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
       const realFrequency = flatFlightRequirments
         .map(f => f.realFrequency)
         .reduce((acc, current) => {
-          acc += +current ? +current : 0;
+          acc += +current ? +current / 2 : 0;
           return acc;
         }, 0);
       const standbyFrequency = flatFlightRequirments
         .map(f => f.standbyFrequency)
         .reduce((acc, current) => {
-          acc += +current ? +current : 0;
+          acc += +current ? +current / 2 : 0;
           return acc;
         }, 0);
       const extraFrequency = flatFlightRequirments
         .map(f => f.extraFrequency)
         .reduce((acc, current) => {
-          acc += +current ? +current : 0;
+          acc += +current ? +current / 2 : 0;
           return acc;
         }, 0);
+
       const frequency: number[] = [] as number[];
       realFrequency && frequency.push(realFrequency);
       standbyFrequency && frequency.push(standbyFrequency);
@@ -766,7 +822,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
             <ExcelExportColumn
               title="LCL"
               field="localStd"
-              width={35}
+              width={30}
               cellOptions={{ ...detailCellOption }}
               headerCellOptions={{
                 ...headerCellOptions,
@@ -779,7 +835,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
             <ExcelExportColumn
               title="LCL"
               field="localSta"
-              width={35}
+              width={30}
               cellOptions={{ ...detailCellOption }}
               headerCellOptions={{
                 ...headerCellOptions,
@@ -792,7 +848,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
             <ExcelExportColumn
               title="UTC"
               field="utcStd"
-              width={35}
+              width={30}
               cellOptions={{ ...detailCellOption, color: '#F44336' }}
               headerCellOptions={{
                 ...headerCellOptions,
@@ -805,7 +861,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
             <ExcelExportColumn
               title="UTC"
               field="utcSta"
-              width={35}
+              width={30}
               cellOptions={{ ...detailCellOption, color: '#F44336', borderRight: { color: '#000000', size: 3 } }}
               headerCellOptions={{
                 ...headerCellOptions,
@@ -890,7 +946,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
             <ExcelExportColumn
               title="DUR."
               field="formatedBlockTime"
-              width={35}
+              width={30}
               cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 }, borderLeft: { color: '#000000', size: 3 } }}
               headerCellOptions={{
                 ...headerCellOptions,
@@ -923,7 +979,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
             {showSlot && (
               <ExcelExportColumn
                 title={['INTL.', 'SLOT(UTC)'].join('\r\n')}
-                field="internationalPermission"
+                field="arrivalPermissions"
                 width={85}
                 cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 }, borderLeft: { color: '#000000', size: 3 } }}
                 headerCellOptions={{
@@ -940,7 +996,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
             {showSlot && (
               <ExcelExportColumn
                 title={['DOM.', 'SLOT(LCL)'].join('\r\n')}
-                field="domensticPermission"
+                field="departurePermissions"
                 width={70}
                 cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 }, borderLeft: { color: '#000000', size: 3 } }}
                 headerCellOptions={{
@@ -1086,7 +1142,9 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
             <Fragment>
               {d.value && (
                 <TableRow>
-                  <TableCell>{d.value}</TableCell>
+                  <TableCell className={classes.category} colSpan={19}>
+                    {d.value}
+                  </TableCell>
                 </TableRow>
               )}
               {d.items.map((f, index, self) => (
@@ -1117,7 +1175,6 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
                     </div>
                   </TableCell>
                   <TableCell align="center" className={classNames(classes.boarder, classes.rsx)}>
-                    {/* {f.days.indexOf(0) !== -1 ? <BulletIcon className={classes.bullet} /> : undefined} */}
                     {f.weekDay0}
                   </TableCell>
                   <TableCell align="center" className={classNames(classes.boarder, classes.rsx)}>
@@ -1150,11 +1207,11 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
                   {showSlot && (
                     <Fragment>
                       <TableCell className={classes.boarder} align="center">
-                        {f.internationalPermission}
+                        {f.destinationPermissions}
                       </TableCell>
 
                       <TableCell className={classes.boarder} align="center">
-                        {f.domensticPermission}
+                        {f.domesticPermissions}
                       </TableCell>
                     </Fragment>
                   )}

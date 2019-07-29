@@ -18,8 +18,10 @@
   "license": "ISC",
   "dependencies": {
     "@ahs502/validation": "^2.0.1",
+    "@types/simple-oauth2": "^2.2.1",
     "colors": "^1.3.3",
     "express": "^4.17.1",
+    "simple-oauth2": "^2.2.1",
     "tedious": "^6.2.0"
   },
   "devDependencies": {

@@ -6,12 +6,13 @@ import theme from './theme';
 import { HashRouter as Router, Switch, Route, Redirect } from 'react-router-dom';
 import PreplanListPage from './pages/preplan-list';
 import PreplanPage from './pages/preplan';
-
+import Authorize from './components/Authorize';
 import AppBar from './components/AppBar';
 
 const App: FC = () => (
   <ThemeProvider theme={theme}>
     <Router>
+      <Authorize />
       <AppBar user={{ displayName: 'Moradi' }} />
       <Switch>
         <Redirect exact from="/" to="/preplan-list" />

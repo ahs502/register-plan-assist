@@ -20,31 +20,43 @@ function createConnection() {
   });
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////
-
 export interface SqlParameter {
   name: string;
   type: TediousType;
   value: any;
   options?: ParameterOptions;
 }
+export interface TableColumn {
+  name: string;
+  type: TediousType;
+  length?: number;
+}
+
+function getJsonResult(rows: { value: any; metadata: { colName: string } }[][]): any[] {
+  return rows.map(row => {
+    const record: any = {};
+    row.forEach(field => {
+      record[field.metadata.colName] = field.value;
+    });
+    return record;
+  });
+}
 
 function runQuery<T extends any = any>(connection: Connection, query: string, ...parameters: SqlParameter[]): Promise<readonly T[]> {
   return new Promise((resolve, reject) => {
     const request = new TediousRequest(query, (error, rowCount, rows) => {
       if (error) return reject(error);
-      resolve(rows);
+      resolve(getJsonResult(rows));
     });
     parameters.forEach(p => request.addParameter(p.name, p.type, p.value, p.options));
     connection.execSql(request);
   });
 }
-
 function runSp<T extends any = any>(connection: Connection, sp: string, ...parameters: SqlParameter[]): Promise<readonly T[]> {
   return new Promise((resolve, reject) => {
     const request = new TediousRequest(sp, (error, rowCount, rows) => {
       if (error) return reject(error);
-      resolve(rows);
+      resolve(getJsonResult(rows));
     });
     parameters.forEach(p => request.addParameter(p.name, p.type, p.value, p.options));
     connection.callProcedure(request);
@@ -124,11 +136,62 @@ export enum IsolationLevel {
   Snapshot = ISOLATION_LEVEL.SNAPSHOT
 }
 
+interface AccessQueryParams {
+  param(name: string, type: TediousType, value: any, options?: ParameterOptions): SqlParameter;
+  intParam(name: string, value: string | number | null, options?: ParameterOptions): SqlParameter;
+  bigIntParam(name: string, value: bigint | string | null, options?: ParameterOptions): SqlParameter;
+  varCharParam(name: string, value: string | null, length?: number, options?: ParameterOptions): SqlParameter;
+  nVarCharParam(name: string, value: string | null, length: number, options?: ParameterOptions): SqlParameter;
+  dateTimeParam(name: string, value: string | null, options?: ParameterOptions): SqlParameter;
+  bitParam(name: string, value: string | null, options?: ParameterOptions): SqlParameter;
+  tableparam(name: string, columns: readonly TableColumn[], rows: readonly any[][], options?: ParameterOptions): SqlParameter;
+}
 export interface Access {
   req: Request;
   types: TediousTypes;
-  runQuery: (query: string, ...parameters: SqlParameter[]) => Promise<readonly any[]>;
-  runSp: (sp: string, ...parameters: SqlParameter[]) => Promise<readonly any[]>;
+  runQuery: {
+    (query: string, ...parameters: SqlParameter[]): Promise<readonly any[]>;
+  } & AccessQueryParams;
+  runSp: {
+    (sp: string, ...parameters: SqlParameter[]): Promise<readonly any[]>;
+  } & AccessQueryParams;
+}
+
+function attachHelperFunctions(f: any): any {
+  f.param = param;
+  f.bigIntParam = bigIntParam;
+  f.intParam = intParam;
+  f.varCharParam = varCharParam;
+  f.nVarCharParam = nVarCharParam;
+  f.dateTimeParam = dateTimeParam;
+  f.tableParam = tableParam;
+  f.bitParam = bitParam;
+  return f;
+
+  function param(name: string, type: TediousType, value: any, options?: ParameterOptions): SqlParameter {
+    return { name, type, value, options };
+  }
+  function intParam(name: string, value: string | number | null, options?: ParameterOptions): SqlParameter {
+    return { name, type: TYPES.Int, value, options };
+  }
+  function bigIntParam(name: string, value: string | null, options?: ParameterOptions): SqlParameter {
+    return { name, type: TYPES.BigInt, value: value, options };
+  }
+  function varCharParam(name: string, value: string | null, length: number, options?: ParameterOptions): SqlParameter {
+    return { name, type: TYPES.VarChar, value, options: length ? { length: length } : options };
+  }
+  function nVarCharParam(name: string, value: string | null, length: number, options?: ParameterOptions): SqlParameter {
+    return { name, type: TYPES.NVarChar, value, options: length ? { length: length } : options };
+  }
+  function dateTimeParam(name: string, value: Date | string | null, options?: ParameterOptions): SqlParameter {
+    return { name, type: TYPES.VarChar, value: typeof value === 'string' ? value : value.toJSON(), options: { ...options, length: 15 } };
+  }
+  function bitParam(name: string, value: boolean | null, options?: ParameterOptions): SqlParameter {
+    return { name, type: TYPES.Bit, value, options };
+  }
+  function tableParam(name: string, columns: readonly TableColumn[], rows: readonly any[][], options?: ParameterOptions): SqlParameter {
+    return { name, type: TYPES.TVP, value: { columns, rows }, options };
+  }
 }
 
 export function withAccess(req: Request, task: (access: Access) => Promise<unknown>): Promise<unknown> {
@@ -137,13 +200,15 @@ export function withAccess(req: Request, task: (access: Access) => Promise<unkno
     connection.on('connect', async error => {
       if (error) return reject(error);
       try {
-        await task({
+        const boundRunQuery = runQuery.bind(null, connection);
+        const boundRunSp = runSp.bind(null, connection);
+        const result = await task({
           req,
           types: TYPES,
-          runQuery: runQuery.bind(null, connection),
-          runSp: runSp.bind(null, connection)
+          runQuery: attachHelperFunctions(boundRunQuery),
+          runSp: attachHelperFunctions(boundRunSp)
         });
-        resolve();
+        resolve(result);
       } catch (error) {
         reject(error);
       }
@@ -164,11 +229,13 @@ export function withTransactionalAccess(
         async (error, done) => {
           if (error) return reject(error);
           try {
+            const boundRunQuery = runQuery.bind(null, connection);
+            const boundRunSp = runSp.bind(null, connection);
             await task({
               req,
               types: TYPES,
-              runQuery: runQuery.bind(null, connection),
-              runSp: runSp.bind(null, connection)
+              runQuery: attachHelperFunctions(boundRunQuery),
+              runSp: attachHelperFunctions(boundRunSp)
             });
             done(null, err => (err ? reject(err) : resolve()));
           } catch (error) {

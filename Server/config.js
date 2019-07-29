@@ -1,15 +1,15 @@
 var config = {
   env: 'development',
   oauth: {
-    issuer: 'https://accounts.mahan.aero',
-    api: 'https://ffp.mahan.aero',
-    clientId: '2bb9d5f1-4101-4d28-afa9-47f475b7a0cc',
-    resourceName: 'prod-ffp',
+    issuer: 'https://login.mahan.aero/adfs/oauth2/authorize',
+    api: 'http://localhost:4200',
+    clientId: 'b3ca0b10-f75f-4a3b-b7f8-278b1bd6fc2a',
+    resourceName: 'dev-rpa',
     lang: 'En'
   },
   sqlServer: {
     server: 'swmhndevappssql',
-    database: 'FlightApps_dev',
+    database: 'FlightApps_vNext_RPA',
     username: 'MahanAppsServiceAccount',
     password: 'a45V6DPQZAHUpXz'
   }

@@ -4,7 +4,6 @@ import { red } from '@material-ui/core/colors';
 import { makeStyles } from '@material-ui/styles';
 import MasterData, { Airport } from '@core/master-data';
 import FlightRequirement from 'src/view-models/flights/FlightRequirement';
-import { FiberManualRecord as BulletIcon } from '@material-ui/icons';
 import Daytime from '@core/types/Daytime';
 import { Publish as ExportToExcelIcon } from '@material-ui/icons';
 import { ExcelExport, ExcelExportColumn, ExcelExportColumnGroup } from '@progress/kendo-react-excel-export';
@@ -13,6 +12,7 @@ import classNames from 'classnames';
 import AutoComplete from 'src/components/AutoComplete';
 import Preplan from 'src/view-models/Preplan';
 import Weekday from '@core/types/Weekday';
+import Rsx, { Rsxes } from '@core/types/flight-requirement/Rsx';
 
 const useStyles = makeStyles((theme: Theme) => ({
   marginBottom1: {
@@ -71,6 +71,14 @@ const useStyles = makeStyles((theme: Theme) => ({
   category: {
     fontFamily: '"Segoe UI","Tahoma"',
     backgroundColor: theme.palette.grey[300]
+  },
+  noPermission: {
+    color: red[600]
+  },
+  halfPermission: {
+    position: 'relative',
+    top: 2,
+    fontSize: 26
   }
 }));
 
@@ -81,6 +89,10 @@ const mhd = allAirports.find(a => a.name === 'MHD')!;
 const ker = allAirports.find(a => a.name === 'KER')!;
 const allBaseAirport = [ika, thr, mhd, ker];
 const group = [{ field: 'category' }];
+const circle = '●';
+const emptyCircle = '○';
+const leftHalfBlackCircle = '◐';
+const rightHalfBlackCircle = '◑';
 
 const allPreplan: Preplan[] = []; //TODO: Remove
 allPreplan.sort((a, b) => {
@@ -88,16 +100,8 @@ allPreplan.sort((a, b) => {
   if (a.lastEditDateTime < b.lastEditDateTime) return -1;
   return 0;
 });
+
 allPreplan.unshift({} as Preplan);
-const formatDate = (date: Date): string => {
-  let day = '' + date.getDate(),
-    year = date.getFullYear();
-  const month = date.toLocaleString('default', { month: 'short' }).toUpperCase();
-
-  day = day.padStart(2, '0');
-
-  return [day, month, year].join('/');
-};
 
 enum FlightType {
   'Domestic',
@@ -113,6 +117,7 @@ interface ProposalReportProps {
 
 interface FlattenFlightRequirment {
   [index: string]: string | number | Airport | number[] | Daytime | boolean | FlattenFlightRequirment[] | string[];
+  id: number;
   flightNumber: string;
   departureAirport: Airport;
   arrivalAirport: Airport;
@@ -147,13 +152,28 @@ interface FlattenFlightRequirment {
   realFrequency: number;
   standbyFrequency: number;
   extraFrequency: number;
-  destinationPermissionsWeekDay: string[];
-  destinationPermissions: string;
-  domesticPermissionsWeekDay: string[];
-  domesticPermissions: string;
+  destinationNoPermissionsWeekDay: number[];
+  destinationNoPermissions: string;
+  domesticNoPermissionsWeekDay: number[];
+  domesticNoPermissions: string;
   category: string;
   nextFlights: FlattenFlightRequirment[];
   previousFlights: FlattenFlightRequirment[];
+}
+
+interface DailyFlightRequirment {
+  flightNumber: string;
+  arrivalAirport: Airport;
+  departureAirport: Airport;
+  blocktime: number;
+  day: number;
+  std: Daytime;
+  note: string;
+  aircraftType: string;
+  category: string;
+  arrivalPermission: boolean;
+  departurePermission: boolean;
+  rsx: Rsx;
 }
 
 interface DataProvider {
@@ -163,49 +183,13 @@ interface DataProvider {
   aggregates: any;
 }
 
-const normalizeFlightNumber = (flightNumber: string): string => {
-  if (flightNumber && flightNumber.toUpperCase().startsWith('W5')) return flightNumber.substring(2).trim();
-  return flightNumber;
-};
-
-const formatMinuteToString = (minutes: number): string => {
-  if (!minutes) return '';
-  return (
-    Math.floor(minutes / 60)
-      .toString()
-      .padStart(2, '0') +
-    ':' +
-    (minutes % 60).toString().padStart(2, '0')
-  );
-};
-
-const formatDateToString = (date: Date): string => {
-  if (!date) return '';
-  return (
-    date
-      .getUTCHours()
-      .toString()
-      .padStart(2, '0') +
-    date
-      .getUTCMinutes()
-      .toString()
-      .padStart(2, '0')
-  );
-};
-
-const compareFunction = (a: number, b: number): number => {
-  if (a > b) return 1;
-  if (a < b) return -1;
-  return 0;
-};
-
 const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequirments, preplanName, fromDate, toDate }) => {
   const [baseAirport, setBaseAirport] = useState<Airport>(ika);
   const [startDate, setStartDate] = useState<Date>(fromDate); //TODO: REMOVE
   const [endDate, setEndDate] = useState<Date>(toDate); //TODO: REMOVE
   const [flightType, setFlightType] = useState<FlightType>(FlightType.International);
-  const [flattenFlightRequirment, setFlattenFlightRequirment] = useState<FlattenFlightRequirment[]>([]);
   const [dataProvider, setDataProvider] = useState<DataProvider[]>([]);
+  const [flattenFlightRequirments, setFlattenFlightRequirments] = useState<FlattenFlightRequirment[]>([]);
   const [targetPreplan, setTargetPreplan] = useState<Preplan>();
   const [showType, setShowType] = useState(false);
   const [showFrequency, setShowFrequency] = useState(false);
@@ -242,234 +226,25 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
 
   const generateReportDataModel = (): FlattenFlightRequirment[] => {
     const result: FlattenFlightRequirment[] = [];
+
     if (!baseAirport || !startDate || !endDate || startDate < fromDate || startDate > toDate || endDate < fromDate || endDate > toDate) return [];
 
-    const labels = flightRequirments
-      .filter(f => {
-        return (
-          (f.definition.departureAirport.id === baseAirport.id || f.definition.arrivalAirport.id === baseAirport.id) &&
-          ((f.definition.departureAirport.id === baseAirport.id && f.definition.arrivalAirport.international === (flightType === FlightType.International)) ||
-            (f.definition.arrivalAirport.id === baseAirport.id && f.definition.departureAirport.international === (flightType === FlightType.International)))
-        );
-      })
-      .sort((first, second) => {
-        const firstLabel = first.definition.label;
-        const secondLabel = second.definition.label;
-        return firstLabel > secondLabel ? 1 : firstLabel < secondLabel ? -1 : 0;
-      })
-      .map(f => f.definition.label)
-      .filter((value, index, self) => {
-        return self.indexOf(value) === index;
-      });
+    let labels = getLabels(flightRequirments, baseAirport, flightType);
 
     const baseDate = new Date(new Date((startDate.getTime() + endDate.getTime()) / 2));
 
     labels.forEach(m => {
-      const temp: FlattenFlightRequirment[] = [];
+      const dailyFlightRequirments = createDailyFlightRequirment(flightRequirments, m);
+      const flattenFlightRequirmentList = createFlattenFlightRequirmentsFromDailyFlightRequirment(dailyFlightRequirments, baseAirport, baseDate, m);
+      flattenFlightRequirmentList.sort((a, b) => compareFunction(a.std.minutes, b.std.minutes));
 
-      const flattenFlightRequirments = flightRequirments
-        .filter(f => f.definition.label === m)
-        .map(f => {
-          return f.days.map(d => ({
-            flightNumber: f.definition.flightNumber,
-            arrivalAirport: f.definition.arrivalAirport,
-            departureAirport: f.definition.departureAirport,
-            blocktime: d.scope.blockTime,
-            day: d.day,
-            std: d.flight.std,
-            note: d.notes,
-            aircraftType: d.flight.aircraftRegister && d.flight.aircraftRegister.aircraftType.name,
-            category: f.definition.category,
-            arrivalPermission: Math.random() > 0.5 ? d.scope.arrivalPermission : !d.scope.arrivalPermission,
-            departurePermission: Math.random() > 0.5 ? d.scope.departurePermission : !d.scope.departurePermission,
-            rsx: d.scope.rsx
-          }));
-        })
-        .flat();
-
-      const flattenFlightRequirmentList = flattenFlightRequirments.reduce(
-        (acc, current) => {
-          const existFlatten = acc.find(
-            f =>
-              f.arrivalAirport.id === current.arrivalAirport.id &&
-              f.departureAirport.id === current.departureAirport.id &&
-              f.blocktime === current.blocktime &&
-              f.flightNumber === normalizeFlightNumber(current.flightNumber) &&
-              f.std.minutes === current.std.minutes
-          );
-          if (existFlatten) {
-            const weekDay = (current.day + existFlatten.diffLocalStdandUtcStd + 7) % 7;
-            if (existFlatten.days.indexOf(weekDay) === -1) {
-              existFlatten.days.push(weekDay);
-
-              let domesticToDestination = current.departureAirport.id === baseAirport.id;
-              if (!domesticToDestination) {
-                domesticToDestination = !current.departureAirport.international;
-              }
-
-              if (!current.departurePermission) {
-                domesticToDestination ? existFlatten.domesticPermissionsWeekDay.push(Weekday[weekDay]) : existFlatten.destinationPermissionsWeekDay.push(Weekday[weekDay]);
-              }
-
-              if (!current.arrivalPermission) {
-                const arrivalWeekDay = existFlatten.diffLocalStdandLocalSta > 0 ? (weekDay + 1) % 7 : weekDay;
-                domesticToDestination
-                  ? existFlatten.destinationPermissionsWeekDay.push(Weekday[arrivalWeekDay])
-                  : existFlatten.domesticPermissionsWeekDay.push(Weekday[arrivalWeekDay]);
-              }
-            }
-            existFlatten.utcDays.indexOf(current.day) === -1 && existFlatten.utcDays.push(current.day);
-            existFlatten.notes.indexOf(current.note) === -1 && existFlatten.notes.push(current.note);
-            existFlatten['weekDay' + weekDay.toString()] = current.rsx === 'REAL' ? '●' : current.rsx.toString();
-            switch (current.rsx) {
-              case 'REAL':
-                existFlatten.realFrequency++;
-                break;
-              case 'EXT':
-                existFlatten.extraFrequency++;
-                break;
-              case 'STB1':
-              case 'STB2':
-                existFlatten.standbyFrequency++;
-                break;
-            }
-          } else {
-            const utcStd = current.std.toDate(baseDate);
-            const localStd = current.departureAirport.convertUtcToLocal(utcStd);
-            const utcSta = current.std.toDate(baseDate);
-            utcSta.addMinutes(current.blocktime);
-            const localSta = current.arrivalAirport.convertUtcToLocal(utcSta);
-
-            const diffLocalStdandUtcStd = localStd.getUTCDay() - utcStd.getUTCDay();
-            const diffLocalStdandUtcSta = localStd.getUTCDay() - utcSta.getUTCDay();
-            const diffLocalStdandLocalSta = localStd.getUTCDay() - localSta.getUTCDay();
-
-            const weekDay = (current.day + diffLocalStdandUtcStd + 7) % 7;
-            const arrivalWeekDay = diffLocalStdandLocalSta > 0 ? (weekDay + 1) % 7 : weekDay;
-
-            const flatten = {
-              flightNumber: normalizeFlightNumber(current.flightNumber),
-              arrivalAirport: current.arrivalAirport,
-              departureAirport: current.departureAirport,
-              blocktime: current.blocktime,
-              formatedBlockTime: formatMinuteToString(current.blocktime),
-              days: [weekDay],
-              utcDays: [current.day],
-              std: current.std,
-              sta: new Daytime(utcSta),
-              notes: [current.note],
-              localStd: formatDateToString(localStd),
-              localSta: formatDateToString(localSta) + (diffLocalStdandLocalSta < 0 ? '*' : ''),
-              utcStd: formatDateToString(utcStd) + (diffLocalStdandUtcStd < 0 ? '*' : diffLocalStdandUtcStd > 0 ? '#' : ''),
-              utcSta: formatDateToString(utcSta) + (diffLocalStdandUtcSta < 0 ? '*' : diffLocalStdandUtcSta > 0 ? '#' : ''),
-              diffLocalStdandUtcStd: diffLocalStdandUtcStd,
-              diffLocalStdandLocalSta: diffLocalStdandLocalSta,
-              diffLocalStdandUtcSta: diffLocalStdandUtcSta,
-              route: current.departureAirport.name + '–' + current.arrivalAirport.name,
-              aircraftType: current.aircraftType,
-              domesticPermissionsWeekDay: !current.departurePermission ? ([Weekday[weekDay]] as string[]) : ([] as string[]),
-              destinationPermissionsWeekDay: !current.arrivalPermission ? ([Weekday[arrivalWeekDay]] as string[]) : ([] as string[]),
-              label: m,
-              category: current.category,
-              realFrequency: 0,
-              extraFrequency: 0,
-              standbyFrequency: 0
-            } as FlattenFlightRequirment;
-
-            flatten['weekDay' + weekDay.toString()] = current.rsx === 'REAL' ? '●' : current.rsx.toString();
-
-            switch (current.rsx) {
-              case 'REAL':
-                flatten.realFrequency++;
-                break;
-              case 'EXT':
-                flatten.extraFrequency++;
-                break;
-              case 'STB1':
-              case 'STB2':
-                flatten.standbyFrequency++;
-                break;
-            }
-
-            acc.push(flatten);
-          }
-
-          return acc;
-        },
-        [] as FlattenFlightRequirment[]
-      );
+      findNextAndPreviousFlightRequirment(flattenFlightRequirmentList);
 
       flattenFlightRequirmentList.sort((a, b) => compareFunction(a.std.minutes, b.std.minutes));
 
-      flattenFlightRequirmentList.forEach(f => {
-        f.nextFlights = [];
-        f.previousFlights = [];
-      });
-      flattenFlightRequirmentList.forEach((current, i, self) => {
-        current.utcDays.forEach(d => {
-          const arrivalDay = (d + (current.std.minutes > current.sta.minutes ? 1 : 0)) % 7;
+      const sortedFlattenFlightRequirments = sortFlattenFlightRequirment(flattenFlightRequirmentList, baseAirport);
 
-          let nextFlight = self.find(f => {
-            return f.departureAirport.id === current.arrivalAirport.id && (f.std.minutes > current.sta.minutes && f.utcDays.some(dd => dd === arrivalDay));
-          });
-
-          let dayDiff = 1;
-
-          if (!nextFlight) {
-            for (dayDiff = 1; dayDiff < 7; dayDiff++) {
-              nextFlight = self.find(f => {
-                return f.departureAirport.id === current.arrivalAirport.id && f.utcDays.some(dd => dd === (arrivalDay + dayDiff) % 7);
-              });
-
-              if (nextFlight) {
-                nextFlight.utcDays.remove((arrivalDay + dayDiff) % 7);
-                break;
-              }
-            }
-          } else {
-            nextFlight.utcDays.remove(arrivalDay);
-          }
-
-          if (nextFlight) {
-            if (dayDiff <= 3) {
-              if (current.nextFlights.indexOf(nextFlight) === -1) current.nextFlights.push(nextFlight);
-              if (nextFlight.previousFlights.indexOf(current) === -1) nextFlight.previousFlights.push(current);
-            } else {
-              if (current.previousFlights.indexOf(nextFlight) === -1) current.previousFlights.push(nextFlight);
-              if (nextFlight.nextFlights.indexOf(current) === -1) nextFlight.nextFlights.push(current);
-            }
-          }
-        });
-      });
-
-      flattenFlightRequirmentList.sort((a, b) => compareFunction(a.std.minutes, b.std.minutes));
-
-      while (flattenFlightRequirmentList.length > 0) {
-        let flightRequirment = flattenFlightRequirmentList.find(f => f.departureAirport.id === baseAirport.id);
-        let minIndex = flattenFlightRequirmentList.length;
-        if (flightRequirment) {
-          const insertedPreviousFlight = temp.filter(f => f.previousFlights.some(n => n === flightRequirment));
-          if (insertedPreviousFlight && insertedPreviousFlight.length > 0) {
-            const x = insertedPreviousFlight.map(f => temp.indexOf(f));
-            minIndex = Math.min(...x);
-          }
-          temp.splice(minIndex, 0, flightRequirment);
-
-          flattenFlightRequirmentList.remove(flightRequirment);
-
-          flightRequirment.nextFlights.forEach(f => {
-            if (temp.indexOf(f) > 0) return;
-            minIndex++;
-            temp.splice(minIndex, 0, f);
-            flattenFlightRequirmentList.remove(f);
-          });
-        } else {
-          flattenFlightRequirmentList.forEach(n => temp.push(n));
-          break;
-        }
-      }
-
-      const route = temp
+      const parentRoute = sortedFlattenFlightRequirments
         .map(t => t.route)
         .reduce(
           (acc, current) => {
@@ -480,69 +255,16 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
         )
         .join(',');
 
-      temp.forEach(n => {
-        n.parentRoute = route;
-        n.note = n.notes.join(',');
-        n.destinationPermissions =
-          n.destinationPermissionsWeekDay.length === 0
-            ? 'OK'
-            : n.destinationPermissionsWeekDay.length === n.days.length
-            ? 'NOT OK'
-            : 'NOT OK for: ' + n.destinationPermissionsWeekDay.map(w => w.substring(0, 3)).join(',');
-        n.domesticPermissions =
-          n.domesticPermissionsWeekDay.length === 0
-            ? 'OK'
-            : n.domesticPermissionsWeekDay.length === n.days.length
-            ? 'NOT OK'
-            : 'NOT OK for: ' + n.domesticPermissionsWeekDay.map(w => w.substring(0, 3)).join(',');
-        result.push(n);
-      });
+      geratePermissionMassage(sortedFlattenFlightRequirments, parentRoute, result);
     });
 
-    const parentRoute = result
-      .map(r => r.parentRoute)
-      .reduce(
-        (acc, current) => {
-          if (acc.indexOf(current) === -1) acc.push(current);
-          return acc;
-        },
-        [] as string[]
-      );
-
-    parentRoute.forEach(r => {
-      const flatFlightRequirments = result.filter(f => f.parentRoute === r);
-      const realFrequency = flatFlightRequirments
-        .map(f => f.realFrequency)
-        .reduce((acc, current) => {
-          acc += +current ? +current / 2 : 0;
-          return acc;
-        }, 0);
-      const standbyFrequency = flatFlightRequirments
-        .map(f => f.standbyFrequency)
-        .reduce((acc, current) => {
-          acc += +current ? +current / 2 : 0;
-          return acc;
-        }, 0);
-      const extraFrequency = flatFlightRequirments
-        .map(f => f.extraFrequency)
-        .reduce((acc, current) => {
-          acc += +current ? +current / 2 : 0;
-          return acc;
-        }, 0);
-
-      const frequency: number[] = [] as number[];
-      realFrequency && frequency.push(realFrequency);
-      standbyFrequency && frequency.push(standbyFrequency);
-      extraFrequency && frequency.push(extraFrequency);
-      flatFlightRequirments[0].frequency = frequency.join('+');
-    });
+    calculateFrequency(result);
 
     return result;
   };
 
   useEffect(() => {
     const flat = generateReportDataModel();
-    setFlattenFlightRequirment(flat);
     const groupObject = flat.reduce(
       (acc, current) => {
         const category = current.category;
@@ -553,11 +275,14 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
       {} as any
     );
 
-    const result = Object.keys(groupObject).map(function(k) {
-      if (groupObject.hasOwnProperty(k)) {
-        return { field: 'category', items: groupObject[k], value: k, aggregates: {} } as DataProvider;
-      }
-    }) as DataProvider[];
+    setFlattenFlightRequirments(flat);
+    const result = Object.keys(groupObject)
+      .sort()
+      .map(function(k) {
+        if (groupObject.hasOwnProperty(k)) {
+          return { field: 'category', items: groupObject[k], value: k, aggregates: {} } as DataProvider;
+        }
+      }) as DataProvider[];
 
     setDataProvider(result);
   }, [baseAirport, startDate, endDate, flightType, showType, showSlot, showFrequency]);
@@ -683,6 +408,10 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
         color="primary"
         onClick={() => {
           if (proposalExporter) {
+            const headerWeekDayCellNumbers = [5, 6, 7, 8, 9, 10, 11];
+            const weekDaySaturdayCellNumber = 7;
+            const idColumnNumber = 18;
+            const numberOfHiddenColumn = 3;
             const options = proposalExporter.workbookOptions();
             const rows = options && options.sheets && options.sheets[0] && options.sheets[0].rows;
 
@@ -697,13 +426,9 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
                   rows[2].cells.remove(rows[2].cells[6]);
                   rows[2].cells.remove(rows[2].cells[4]);
 
-                  rows[2].cells.find(c => c.value && c.value.toString().startsWith('Sat'))!.fontFamily = 'Times New Roman';
-                  rows[2].cells.find(c => c.value && c.value.toString().startsWith('Sun'))!.fontFamily = 'Times New Roman';
-                  rows[2].cells.find(c => c.value && c.value.toString().startsWith('Mon'))!.fontFamily = 'Times New Roman';
-                  rows[2].cells.find(c => c.value && c.value.toString().startsWith('Tue'))!.fontFamily = 'Times New Roman';
-                  rows[2].cells.find(c => c.value && c.value.toString().startsWith('Wed'))!.fontFamily = 'Times New Roman';
-                  rows[2].cells.find(c => c.value && c.value.toString().startsWith('Thu'))!.fontFamily = 'Times New Roman';
-                  rows[2].cells.find(c => c.value && c.value.toString().startsWith('Fri'))!.fontFamily = 'Times New Roman';
+                  headerWeekDayCellNumbers.forEach(c => {
+                    if (rows && rows[2] && rows[2].cells && rows[2].cells[c]) rows[2].cells[c].fontFamily = 'Times New Roman';
+                  });
                 }
               }
 
@@ -712,11 +437,8 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
 
                 if (index > 0 && index < self.length - 1 && self && self[index - 1] && self[index - 1].cells) {
                   const previousFlightRequirment = self[index - 1] as any;
-                  if (previousFlightRequirment.type === 'group-header') {
-                    return;
-                  }
 
-                  if (previousFlightRequirment.cells) {
+                  if (previousFlightRequirment.type === 'data' && previousFlightRequirment.cells) {
                     const currentLabel = r.cells[r.cells.length - 1].value;
                     const previousLabel = previousFlightRequirment.cells[previousFlightRequirment.cells.length - 1].value;
 
@@ -757,16 +479,27 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
                     c.borderTop = { color: '#000000', size: 3 };
                   });
                 }
+
+                if (raw.type === 'data') {
+                  const id = r.cells![idColumnNumber].value;
+                  const model = flattenFlightRequirments.find(f => f.id === id)!;
+                  const weekdayWithoutPermission = model.domesticNoPermissionsWeekDay.concat(model.destinationNoPermissionsWeekDay).distinct();
+
+                  weekdayWithoutPermission.forEach(c => {
+                    r!.cells![weekDaySaturdayCellNumber + c].color = '#e53935';
+                  });
+                }
               });
 
               rows.forEach((r, index) => {
                 if (index === 1 || index === 2 || !r.cells) return;
                 const row = r as any;
                 if (row.type === 'group-header') {
-                  r.cells[0].colSpan = r.cells[0].colSpan! - 2;
+                  r.cells[0].colSpan = r.cells[0].colSpan! - numberOfHiddenColumn;
                 } else {
-                  r.cells.remove(r.cells[r.cells.length - 1]);
-                  r.cells.remove(r.cells[r.cells.length - 1]);
+                  for (let index = 0; index < numberOfHiddenColumn; index++) {
+                    r.cells.remove(r.cells[r.cells.length - 1]);
+                  }
                 }
               });
             }
@@ -793,7 +526,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
         >
           <ExcelExportColumnGroup title={'Base ' + baseAirport.name} headerCellOptions={{ ...headerCellOptions, background: '#F4B084' }}>
             <ExcelExportColumn
-              title="F/N"
+              title={'F/N'}
               field="flightNumber"
               width={31}
               cellOptions={{ ...detailCellOption, borderLeft: { color: '#000000', size: 3 } }}
@@ -957,7 +690,6 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
                 borderBottom: { color: '#000000', size: 3 }
               }}
             />
-            {/* <ExcelExportColumn field="category" title="Category" hidden={true} /> */}
             {showNote && (
               <ExcelExportColumn
                 title={['NOTE', '(base on domestic/lcl)'].join('\r\n')}
@@ -979,7 +711,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
             {showSlot && (
               <ExcelExportColumn
                 title={['INTL.', 'SLOT(UTC)'].join('\r\n')}
-                field="arrivalPermissions"
+                field="destinationNoPermissions"
                 width={85}
                 cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 }, borderLeft: { color: '#000000', size: 3 } }}
                 headerCellOptions={{
@@ -996,7 +728,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
             {showSlot && (
               <ExcelExportColumn
                 title={['DOM.', 'SLOT(LCL)'].join('\r\n')}
-                field="departurePermissions"
+                field="domesticNoPermissions"
                 width={70}
                 cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 }, borderLeft: { color: '#000000', size: 3 } }}
                 headerCellOptions={{
@@ -1048,7 +780,8 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
             )}
           </ExcelExportColumnGroup>
         </ExcelExportColumnGroup>
-        <ExcelExportColumn title="Company" field="category" hidden={true} />
+        <ExcelExportColumn title="Category" field="category" hidden={true} />
+        <ExcelExportColumn title="id" field="id" />
         <ExcelExportColumn title="parentRoute" field="parentRoute" />
         <ExcelExportColumn title="label" field="label" />
       </ExcelExport>
@@ -1139,11 +872,11 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
 
         <TableBody>
           {dataProvider.map(d => (
-            <Fragment>
+            <Fragment key={d.value}>
               {d.value && (
                 <TableRow>
                   <TableCell className={classes.category} colSpan={19}>
-                    {d.value}
+                    Category: {d.value}
                   </TableCell>
                 </TableRow>
               )}
@@ -1174,26 +907,26 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
                       <span>{f.utcSta}</span>
                     </div>
                   </TableCell>
-                  <TableCell align="center" className={classNames(classes.boarder, classes.rsx)}>
-                    {f.weekDay0}
+                  <TableCell align="center" className={classNames(classes.boarder, classes.rsx, noPermission(f, 0) ? classes.noPermission : '')}>
+                    <div className={halfPermission(f, 0) ? classes.halfPermission : ''}>{f.weekDay0}</div>
                   </TableCell>
-                  <TableCell align="center" className={classNames(classes.boarder, classes.rsx)}>
-                    {f.weekDay1}
+                  <TableCell align="center" className={classNames(classes.boarder, classes.rsx, noPermission(f, 1) ? classes.noPermission : '')}>
+                    <div className={halfPermission(f, 1) ? classes.halfPermission : ''}>{f.weekDay1}</div>
                   </TableCell>
-                  <TableCell align="center" className={classNames(classes.boarder, classes.rsx)}>
-                    {f.weekDay2}
+                  <TableCell align="center" className={classNames(classes.boarder, classes.rsx, noPermission(f, 2) ? classes.noPermission : '')}>
+                    <div className={halfPermission(f, 2) ? classes.halfPermission : ''}>{f.weekDay2}</div>
                   </TableCell>
-                  <TableCell align="center" className={classNames(classes.boarder, classes.rsx)}>
-                    {f.weekDay3}
+                  <TableCell align="center" className={classNames(classes.boarder, classes.rsx, noPermission(f, 3) ? classes.noPermission : '')}>
+                    <div className={halfPermission(f, 3) ? classes.halfPermission : ''}>{f.weekDay3}</div>
                   </TableCell>
-                  <TableCell align="center" className={classNames(classes.boarder, classes.rsx)}>
-                    {f.weekDay4}
+                  <TableCell align="center" className={classNames(classes.boarder, classes.rsx, noPermission(f, 4) ? classes.noPermission : '')}>
+                    <div className={halfPermission(f, 4) ? classes.halfPermission : ''}>{f.weekDay4}</div>
                   </TableCell>
-                  <TableCell align="center" className={classNames(classes.boarder, classes.rsx)}>
-                    {f.weekDay5}
+                  <TableCell align="center" className={classNames(classes.boarder, classes.rsx, noPermission(f, 5) ? classes.noPermission : '')}>
+                    <div className={halfPermission(f, 5) ? classes.halfPermission : ''}>{f.weekDay5}</div>
                   </TableCell>
-                  <TableCell align="center" className={classNames(classes.boarder, classes.rsx)}>
-                    {f.weekDay6}
+                  <TableCell align="center" className={classNames(classes.boarder, classes.rsx, noPermission(f, 6) ? classes.noPermission : '')}>
+                    <div className={halfPermission(f, 6) ? classes.halfPermission : ''}>{f.weekDay6}</div>
                   </TableCell>
                   <TableCell align="center" className={classes.boarder}>
                     {formatMinuteToString(f.blocktime)}
@@ -1207,11 +940,11 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
                   {showSlot && (
                     <Fragment>
                       <TableCell className={classes.boarder} align="center">
-                        {f.destinationPermissions}
+                        {f.destinationNoPermissions}
                       </TableCell>
 
                       <TableCell className={classes.boarder} align="center">
-                        {f.domesticPermissions}
+                        {f.domesticNoPermissions}
                       </TableCell>
                     </Fragment>
                   )}
@@ -1237,3 +970,366 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
 };
 
 export default ProposalReport;
+
+function calculateFrequency(result: FlattenFlightRequirment[]) {
+  const parentRoutes = result
+    .map(r => r.parentRoute)
+    .reduce(
+      (acc, current) => {
+        if (acc.indexOf(current) === -1) acc.push(current);
+        return acc;
+      },
+      [] as string[]
+    );
+  parentRoutes.forEach(r => {
+    const flatFlightRequirments = result.filter(f => f.parentRoute === r);
+    const realFrequency = flatFlightRequirments
+      .map(f => f.realFrequency)
+      .reduce((acc, current) => {
+        acc += +current ? +current / 2 : 0;
+        return acc;
+      }, 0);
+    const standbyFrequency = flatFlightRequirments
+      .map(f => f.standbyFrequency)
+      .reduce((acc, current) => {
+        acc += +current ? +current / 2 : 0;
+        return acc;
+      }, 0);
+    const extraFrequency = flatFlightRequirments
+      .map(f => f.extraFrequency)
+      .reduce((acc, current) => {
+        acc += +current ? +current / 2 : 0;
+        return acc;
+      }, 0);
+    const frequency: number[] = [] as number[];
+    realFrequency && frequency.push(realFrequency);
+    standbyFrequency && frequency.push(standbyFrequency);
+    extraFrequency && frequency.push(extraFrequency);
+    flatFlightRequirments[0].frequency = frequency.join('+');
+  });
+}
+
+function geratePermissionMassage(sortedFlattenFlightRequirments: FlattenFlightRequirment[], parentRoute: string, result: FlattenFlightRequirment[]) {
+  sortedFlattenFlightRequirments.forEach(n => {
+    n.parentRoute = parentRoute;
+    n.note = n.notes.join(',');
+    n.destinationNoPermissions =
+      n.destinationNoPermissionsWeekDay.length === 0
+        ? 'OK'
+        : n.destinationNoPermissionsWeekDay.length === n.days.length
+        ? 'NOT OK'
+        : 'NOT OK for: ' + n.destinationNoPermissionsWeekDay.map(w => Weekday[w].substring(0, 3)).join(',');
+    n.domesticNoPermissions =
+      n.domesticNoPermissionsWeekDay.length === 0
+        ? 'OK'
+        : n.domesticNoPermissionsWeekDay.length === n.days.length
+        ? 'NOT OK'
+        : 'NOT OK for: ' + n.domesticNoPermissionsWeekDay.map(w => Weekday[w].substring(0, 3)).join(',');
+    result.push(n);
+  });
+}
+
+function findNextAndPreviousFlightRequirment(flattenFlightRequirmentList: FlattenFlightRequirment[]) {
+  flattenFlightRequirmentList.forEach(f => {
+    f.nextFlights = [];
+    f.previousFlights = [];
+  });
+
+  flattenFlightRequirmentList.forEach((current, i, self) => {
+    current.utcDays.forEach(d => {
+      const arrivalDay = (d + (current.std.minutes > current.sta.minutes ? 1 : 0)) % 7;
+      let nextFlight = self.find(f => {
+        return f.departureAirport.id === current.arrivalAirport.id && (f.std.minutes > current.sta.minutes && f.utcDays.some(dd => dd === arrivalDay));
+      });
+      let dayDiff = 1;
+      if (!nextFlight) {
+        for (dayDiff = 1; dayDiff < 7; dayDiff++) {
+          nextFlight = self.find(f => {
+            return f.departureAirport.id === current.arrivalAirport.id && f.utcDays.some(dd => dd === (arrivalDay + dayDiff) % 7);
+          });
+          if (nextFlight) {
+            nextFlight.utcDays.remove((arrivalDay + dayDiff) % 7);
+            break;
+          }
+        }
+      } else {
+        nextFlight.utcDays.remove(arrivalDay);
+      }
+      if (nextFlight) {
+        if (dayDiff <= 3) {
+          if (current.nextFlights.indexOf(nextFlight) === -1) current.nextFlights.push(nextFlight);
+          if (nextFlight.previousFlights.indexOf(current) === -1) nextFlight.previousFlights.push(current);
+        } else {
+          if (current.previousFlights.indexOf(nextFlight) === -1) current.previousFlights.push(nextFlight);
+          if (nextFlight.nextFlights.indexOf(current) === -1) nextFlight.nextFlights.push(current);
+        }
+      }
+    });
+  });
+}
+
+function createDailyFlightRequirment(flightRequirments: readonly FlightRequirement[], m: string) {
+  return flightRequirments
+    .filter(f => f.definition.label === m)
+    .map(f => {
+      return f.days.map(
+        d =>
+          ({
+            flightNumber: f.definition.flightNumber,
+            arrivalAirport: f.definition.arrivalAirport,
+            departureAirport: f.definition.departureAirport,
+            blocktime: d.scope.blockTime,
+            day: d.day,
+            std: d.flight.std,
+            note: d.notes,
+            aircraftType: d.flight.aircraftRegister && d.flight.aircraftRegister.aircraftType.name,
+            category: f.definition.category,
+            arrivalPermission: Math.random() > 0.25 ? d.scope.arrivalPermission : !d.scope.arrivalPermission,
+            departurePermission: Math.random() > 0.25 ? d.scope.departurePermission : !d.scope.departurePermission,
+            rsx: d.scope.rsx
+          } as DailyFlightRequirment)
+      );
+    })
+    .flat();
+}
+
+function sortFlattenFlightRequirment(flattenFlightRequirmentList: FlattenFlightRequirment[], baseAirport: Airport) {
+  const temp: FlattenFlightRequirment[] = [];
+
+  while (flattenFlightRequirmentList.length > 0) {
+    let flightRequirment = flattenFlightRequirmentList.find(f => f.departureAirport.id === baseAirport.id);
+    let minIndex = flattenFlightRequirmentList.length;
+    if (flightRequirment) {
+      const insertedPreviousFlight = temp.filter(f => f.previousFlights.some(n => n === flightRequirment));
+      if (insertedPreviousFlight && insertedPreviousFlight.length > 0) {
+        const x = insertedPreviousFlight.map(f => temp.indexOf(f));
+        minIndex = Math.min(...x);
+      }
+      temp.splice(minIndex, 0, flightRequirment);
+
+      flattenFlightRequirmentList.remove(flightRequirment);
+
+      flightRequirment.nextFlights.forEach(f => {
+        if (temp.indexOf(f) > 0) return;
+        minIndex++;
+        temp.splice(minIndex, 0, f);
+        flattenFlightRequirmentList.remove(f);
+      });
+    } else {
+      flattenFlightRequirmentList.forEach(n => temp.push(n));
+      break;
+    }
+  }
+  return temp;
+}
+
+function createFlattenFlightRequirmentsFromDailyFlightRequirment(dailyFlightRequirments: DailyFlightRequirment[], baseAirport: Airport, baseDate: Date, label: string) {
+  let id = 0;
+  return dailyFlightRequirments.reduce(
+    (acc, current) => {
+      const existFlatten = acc.find(
+        f =>
+          f.arrivalAirport.id === current.arrivalAirport.id &&
+          f.departureAirport.id === current.departureAirport.id &&
+          f.blocktime === current.blocktime &&
+          f.flightNumber === normalizeFlightNumber(current.flightNumber) &&
+          f.std.minutes === current.std.minutes
+      );
+      if (existFlatten) {
+        updateFlattenFlightRequirment(existFlatten, current, baseAirport);
+      } else {
+        const flatten = createFlattenFlightRequirment(current, baseDate, baseAirport, label, id);
+        id++;
+        acc.push(flatten);
+      }
+
+      return acc;
+    },
+    [] as FlattenFlightRequirment[]
+  );
+}
+
+function getLabels(flightRequirments: readonly FlightRequirement[], baseAirport: Airport, flightType: FlightType) {
+  return flightRequirments
+    .filter(f => {
+      return (
+        (f.definition.departureAirport.id === baseAirport.id || f.definition.arrivalAirport.id === baseAirport.id) &&
+        ((f.definition.departureAirport.id === baseAirport.id && f.definition.arrivalAirport.international === (flightType === FlightType.International)) ||
+          (f.definition.arrivalAirport.id === baseAirport.id && f.definition.departureAirport.international === (flightType === FlightType.International)))
+      );
+    })
+    .sort((first, second) => {
+      const firstLabel = first.definition.label;
+      const secondLabel = second.definition.label;
+      return firstLabel > secondLabel ? 1 : firstLabel < secondLabel ? -1 : 0;
+    })
+    .map(f => f.definition.label)
+    .filter((value, index, self) => {
+      return self.indexOf(value) === index;
+    });
+}
+
+function createFlattenFlightRequirment(dailyFlightRequirment: DailyFlightRequirment, date: Date, baseAirport: Airport, label: string, idCounter: number) {
+  const utcStd = dailyFlightRequirment.std.toDate(date);
+  const localStd = dailyFlightRequirment.departureAirport.convertUtcToLocal(utcStd);
+  const utcSta = dailyFlightRequirment.std.toDate(date);
+  utcSta.addMinutes(dailyFlightRequirment.blocktime);
+  const localSta = dailyFlightRequirment.arrivalAirport.convertUtcToLocal(utcSta);
+  let diffLocalStdandUtcStd = localStd.getUTCDay() - utcStd.getUTCDay();
+  let diffLocalStdandUtcSta = localStd.getUTCDay() - utcSta.getUTCDay();
+  let diffLocalStdandLocalSta = localStd.getUTCDay() - localSta.getUTCDay();
+
+  if (diffLocalStdandUtcStd > 1) diffLocalStdandUtcStd = -1;
+  if (diffLocalStdandUtcStd < -1) diffLocalStdandUtcStd = 1;
+
+  if (diffLocalStdandUtcSta > 1) diffLocalStdandUtcSta = -1;
+  if (diffLocalStdandUtcSta < -1) diffLocalStdandUtcSta = 1;
+
+  if (diffLocalStdandLocalSta > 1) diffLocalStdandLocalSta = -1;
+  if (diffLocalStdandLocalSta < -1) diffLocalStdandLocalSta = 1;
+
+  const flatten = {
+    id: idCounter,
+    flightNumber: normalizeFlightNumber(dailyFlightRequirment.flightNumber),
+    arrivalAirport: dailyFlightRequirment.arrivalAirport,
+    departureAirport: dailyFlightRequirment.departureAirport,
+    blocktime: dailyFlightRequirment.blocktime,
+    formatedBlockTime: formatMinuteToString(dailyFlightRequirment.blocktime),
+    days: [] as number[],
+    utcDays: [] as number[],
+    std: dailyFlightRequirment.std,
+    sta: new Daytime(utcSta),
+    notes: [] as string[],
+    localStd: formatDateToString(localStd),
+    localSta: formatDateToString(localSta) + (diffLocalStdandLocalSta < 0 ? '*' : ''),
+    utcStd: formatDateToString(utcStd) + (diffLocalStdandUtcStd < 0 ? '*' : diffLocalStdandUtcStd > 0 ? '#' : ''),
+    utcSta: formatDateToString(utcSta) + (diffLocalStdandUtcSta < 0 ? '*' : diffLocalStdandUtcSta > 0 ? '#' : ''),
+    diffLocalStdandUtcStd: diffLocalStdandUtcStd,
+    diffLocalStdandLocalSta: diffLocalStdandLocalSta,
+    diffLocalStdandUtcSta: diffLocalStdandUtcSta,
+    route: dailyFlightRequirment.departureAirport.name + '–' + dailyFlightRequirment.arrivalAirport.name,
+    aircraftType: dailyFlightRequirment.aircraftType,
+    domesticNoPermissionsWeekDay: [] as number[],
+    destinationNoPermissionsWeekDay: [] as number[],
+    label: label,
+    category: dailyFlightRequirment.category,
+    realFrequency: 0,
+    extraFrequency: 0,
+    standbyFrequency: 0
+  } as FlattenFlightRequirment;
+
+  updateFlattenFlightRequirment(flatten, dailyFlightRequirment, baseAirport);
+  return flatten;
+}
+
+function updateFlattenFlightRequirment(flattenFlight: FlattenFlightRequirment, dialyFlightRequirment: DailyFlightRequirment, baseAirport: Airport) {
+  const weekDay = (dialyFlightRequirment.day + flattenFlight.diffLocalStdandUtcStd + 7) % 7;
+
+  let domesticToDestination = dialyFlightRequirment.departureAirport.id === baseAirport.id;
+  if (!domesticToDestination) {
+    domesticToDestination = !dialyFlightRequirment.departureAirport.international;
+  }
+
+  if (flattenFlight.days.indexOf(weekDay) === -1) {
+    flattenFlight.days.push(weekDay);
+
+    if (!dialyFlightRequirment.departurePermission) {
+      domesticToDestination ? flattenFlight.domesticNoPermissionsWeekDay.push(weekDay) : flattenFlight.destinationNoPermissionsWeekDay.push(weekDay);
+    }
+
+    if (!dialyFlightRequirment.arrivalPermission) {
+      const arrivalWeekDay = flattenFlight.diffLocalStdandLocalSta > 0 ? (weekDay + 1) % 7 : weekDay;
+      domesticToDestination ? flattenFlight.destinationNoPermissionsWeekDay.push(arrivalWeekDay) : flattenFlight.domesticNoPermissionsWeekDay.push(arrivalWeekDay);
+    }
+  }
+
+  flattenFlight.utcDays.indexOf(dialyFlightRequirment.day) === -1 && flattenFlight.utcDays.push(dialyFlightRequirment.day);
+  flattenFlight.notes.indexOf(dialyFlightRequirment.note) === -1 && flattenFlight.notes.push(dialyFlightRequirment.note);
+  flattenFlight['weekDay' + weekDay.toString()] = calculateDayCharacter();
+  switch (dialyFlightRequirment.rsx) {
+    case 'REAL':
+      flattenFlight.realFrequency++;
+      break;
+    case 'EXT':
+      flattenFlight.extraFrequency++;
+      break;
+    case 'STB1':
+    case 'STB2':
+      flattenFlight.standbyFrequency++;
+      break;
+  }
+
+  return flattenFlight;
+
+  function calculateDayCharacter(): string | number | boolean | Airport | number[] | Daytime | FlattenFlightRequirment[] | string[] {
+    if (dialyFlightRequirment.rsx === 'REAL') {
+      if (dialyFlightRequirment.departurePermission && dialyFlightRequirment.arrivalPermission) return circle;
+      if (!dialyFlightRequirment.departurePermission && !dialyFlightRequirment.arrivalPermission) return emptyCircle;
+      if (!dialyFlightRequirment.departurePermission) return domesticToDestination ? leftHalfBlackCircle : rightHalfBlackCircle;
+      return domesticToDestination ? rightHalfBlackCircle : leftHalfBlackCircle;
+    } else {
+      return dialyFlightRequirment.rsx.toString();
+    }
+  }
+}
+
+function normalizeFlightNumber(flightNumber: string) {
+  if (flightNumber && flightNumber.toUpperCase().startsWith('W5 ')) {
+    const flightNumberWithOutW5 = flightNumber.substring(3);
+    if (flightNumberWithOutW5.startsWith('0')) return flightNumberWithOutW5.substring(1);
+    return flightNumberWithOutW5;
+  }
+
+  return flightNumber;
+}
+
+function formatMinuteToString(minutes: number) {
+  if (!minutes) return '';
+  return (
+    Math.floor(minutes / 60)
+      .toString()
+      .padStart(2, '0') +
+    ':' +
+    (minutes % 60).toString().padStart(2, '0')
+  );
+}
+
+function formatDateToString(date: Date) {
+  if (!date) return '';
+  return (
+    date
+      .getUTCHours()
+      .toString()
+      .padStart(2, '0') +
+    date
+      .getUTCMinutes()
+      .toString()
+      .padStart(2, '0')
+  );
+}
+
+function compareFunction(a: number, b: number) {
+  if (a > b) return 1;
+  if (a < b) return -1;
+  return 0;
+}
+
+function noPermission(flattenFlightRequirment: FlattenFlightRequirment, day: number) {
+  return flattenFlightRequirment.destinationNoPermissionsWeekDay.some(a => a === day) || flattenFlightRequirment.domesticNoPermissionsWeekDay.some(a => a === day);
+}
+
+function halfPermission(flattenFlightRequirment: FlattenFlightRequirment, day: number) {
+  const destinationPermission = flattenFlightRequirment.destinationNoPermissionsWeekDay.some(a => a === day);
+  const domesticPermission = flattenFlightRequirment.domesticNoPermissionsWeekDay.some(a => a === day);
+  return (destinationPermission && !domesticPermission) || (!destinationPermission && domesticPermission);
+}
+
+function formatDate(date: Date) {
+  let day = '' + date.getDate(),
+    year = date.getFullYear();
+  const month = date.toLocaleString('default', { month: 'short' }).toUpperCase();
+
+  day = day.padStart(2, '0');
+
+  return [day, month, year].join('/');
+}

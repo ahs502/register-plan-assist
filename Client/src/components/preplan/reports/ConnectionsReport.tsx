@@ -11,6 +11,7 @@ import { ExcelExport, ExcelExportColumn, ExcelExportColumnGroup } from '@progres
 import { CellOptions } from '@progress/kendo-react-excel-export/dist/npm/ooxml/CellOptionsInterface';
 
 const allAirports = MasterData.all.airports.items;
+const ika = allAirports.find(a => a.name === 'IKA')!;
 
 const useStyles = makeStyles((theme: Theme) => ({
   west: {
@@ -70,12 +71,17 @@ const useStyles = makeStyles((theme: Theme) => ({
   connectionTime: {
     width: 200,
     marginRight: theme.spacing(1)
+  },
+  marginRight1: {
+    marginRight: theme.spacing(1)
   }
 }));
 
 interface ConnectionsReportProps {
   flights: readonly Flight[];
   preplanName: string;
+  fromDate: Date;
+  toDate: Date;
 }
 
 interface ConnectionModel {
@@ -87,16 +93,17 @@ interface ConnectionModel {
 
 type connectionDirection = 'WesttoEast' | 'EasttoWest';
 
-const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName }) => {
+const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, fromDate, toDate }) => {
   const defaultWestAirport = ['BCN', 'DXB', 'ESB', 'EVN', 'GYD', 'IST', 'MXP', 'VKO'];
   const defaultEastAirpot = ['BKK', 'CAN', 'DEL', 'BOM', 'KUL', 'LHE', 'PEK', 'PVG'];
-  const [eastAirport, setEastAriport] = useState<readonly Airport[]>(allAirports.filter(a => defaultEastAirpot.indexOf(a.name) !== -1));
-  const [westAirport, setWestAriport] = useState<readonly Airport[]>(allAirports.filter(a => defaultWestAirport.indexOf(a.name) !== -1));
-  const [maxConnectionTime, setMaxConnectionTime] = useState<number>(5);
-  const [minConnectionTime, setMinConnectionTime] = useState<number>(1);
-  const [flightPerDay, setFlightPerDay] = useState<{ [index: number]: ConnectionModel }>({});
-  const [connectionTableExportData, setConnectionTableExportData] = useState<{ [index: number]: string | number }[]>([]);
-  const [connectionNumberExportData, setConnectionNumberExportData] = useState<{ [index: number]: string | number }[]>([]);
+  const [eastAirport, setEastAriport] = useState<readonly Airport[]>(allAirports.filter(a => defaultEastAirpot.indexOf(a.name) !== -1).orderBy('name'));
+  const [westAirport, setWestAriport] = useState<readonly Airport[]>(allAirports.filter(a => defaultWestAirport.indexOf(a.name) !== -1).orderBy('name'));
+  const [maxConnectionTime, setMaxConnectionTime] = useState<number>(300);
+  const [minConnectionTime, setMinConnectionTime] = useState<number>(70);
+  const [startDate, setStartDate] = useState(fromDate);
+  const [endDate, setEndDate] = useState(toDate);
+  const [connectionTableDataModel, setConnectionTableDataModel] = useState<{ [index: string]: any }[]>([]);
+  const [connectionNumberDataModel, setConnectionNumberDataModel] = useState<{ [index: string]: any }[]>([]);
   const weekDay = Array.range(0, 6);
 
   let connectionNumberExporter: ExcelExport | null;
@@ -151,19 +158,27 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName })
         if (f.weekdayRequirement.day !== w) return false;
         return true;
       });
-
-      setFlightPerDay(result);
     });
 
-    setConnectionNumberExportData(generateConnectionNumberExportData(result));
-    setConnectionTableExportData(generateConnectionTableExportData(result));
-  }, [eastAirport, westAirport, minConnectionTime, maxConnectionTime]);
+    setConnectionNumberDataModel(generateConnectionNumberDataModel(result));
+    setConnectionTableDataModel(generateConnectionTableDataModel(result));
+  }, [eastAirport, westAirport, minConnectionTime, maxConnectionTime, startDate, endDate]);
 
   const classes = useStyles();
 
-  const formatMinuteToString = (minutes: number): string => {
-    if (!minutes) return '';
-    return (Math.floor(minutes / 60) % 24).toString().padStart(2, '0') + (minutes % 60).toString().padStart(2, '0');
+  const formatUTCDateToLocal = (date: Date): string => {
+    if (!date) return '';
+    const localDate = ika.convertUtcToLocal(date);
+    return (
+      localDate
+        .getUTCHours()
+        .toString()
+        .padStart(2, '0') +
+      localDate
+        .getUTCMinutes()
+        .toString()
+        .padStart(2, '0')
+    );
   };
 
   const compareFunction = (a: number, b: number): number => {
@@ -172,7 +187,7 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName })
     return 0;
   };
 
-  const generateConnectionNumberExportData = (connectionModel: { [index: number]: ConnectionModel }): { [index: number]: string | number }[] => {
+  const generateConnectionNumberDataModel = (connectionModel: { [index: number]: ConnectionModel }): { [index: number]: string | number }[] => {
     const result: { [index: number]: string | number }[] = [];
     if (eastAirport && westAirport) {
       eastAirport.forEach(ea => {
@@ -192,8 +207,10 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName })
     return result;
   };
 
-  const generateConnectionTableExportData = (connectionModel: { [index: number]: ConnectionModel }): { [index: number]: string | number }[] => {
-    const result: { [index: number]: string | number }[] = [];
+  const generateConnectionTableDataModel = (connectionModel: { [index: number]: ConnectionModel }): { [index: number]: string | number }[] => {
+    const result: { [index: string]: any }[] = [];
+    const baseDate = new Date(new Date((startDate.getTime() + endDate.getTime()) / 2));
+
     if (eastAirport && westAirport) {
       weekDay.forEach(w => {
         if (!connectionModel[w]) return;
@@ -206,35 +223,39 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName })
 
           const stas = flights
             .map(flight => {
-              return flight.std.minutes + flight.weekdayRequirement.scope.blockTime;
+              const date = flight.std.toDate(baseDate);
+              date.addMinutes(flight.weekdayRequirement.scope.blockTime);
+              return date;
             })
-            .sort(compareFunction);
-          model['from' + airport.name] = stas.map(a => formatMinuteToString(a)).join('\r\n');
+            .sort((a, b) => compareFunction(a.getTime(), b.getTime()));
+          model['from' + airport.name] = stas.map(a => formatUTCDateToLocal(a)).join('\r\n');
         });
 
         eastAirport.forEach(airport => {
           const flights = connectionModel[w].eastAirportDepartureFromIranFlight.filter(f => f.weekdayRequirement.definition.arrivalAirport.id === airport.id);
           if (!flights || flights.length == 0) return;
 
-          const stds = flights
-            .map(flight => {
-              return flight.std.minutes;
-            })
-            .sort(compareFunction);
-          model['to' + airport.name] = stds.map(a => formatMinuteToString(a)).join('\r\n');
+          const stds = flights.map(flight => flight.std.toDate(baseDate)).sort((a, b) => compareFunction(a.getTime(), b.getTime()));
+          model['to' + airport.name] = stds.map(a => formatUTCDateToLocal(a)).join('\r\n');
         });
 
         westAirport.forEach(airport => {
           const arrivalToIran = connectionModel[w].westAirportArrivalToIranFlight.filter(f => f.weekdayRequirement.definition.departureAirport.id === airport.id);
           const departureFromIran = connectionModel[w].westAirportDepartureFromIranFlight.filter(f => f.weekdayRequirement.definition.arrivalAirport.id == airport.id);
 
-          const stas = arrivalToIran.map(flight => flight.std.minutes + flight.weekdayRequirement.scope.blockTime).sort(compareFunction);
-          const stds = departureFromIran.map(flight => flight.std.minutes).sort(compareFunction);
+          const stas = arrivalToIran
+            .map(flight => {
+              const date = flight.std.toDate(baseDate);
+              date.addMinutes(flight.weekdayRequirement.scope.blockTime);
+              return date;
+            })
+            .sort((a, b) => compareFunction(a.getTime(), b.getTime()));
+          const stds = departureFromIran.map(flight => flight.std.toDate(baseDate)).sort((a, b) => compareFunction(a.getTime(), b.getTime()));
 
           if (stas.length <= 0 && stds.length <= 0) return;
           model[airport.name] = Array.range(0, Math.max(stas.length, stds.length) - 1)
             .map(i => {
-              return formatMinuteToString(stds[i]) + '-' + formatMinuteToString(stas[i]);
+              return formatUTCDateToLocal(stds[i]) + '–' + formatUTCDateToLocal(stas[i]);
             })
             .join('\r\n');
         });
@@ -270,9 +291,7 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName })
       if (
         firstFligths.some(ff => {
           const sta = (ff.std.minutes + ff.weekdayRequirement.scope.blockTime) % 1440;
-          return secoundFlights.some(
-            sf => sf.std.minutes < sta + maxConnectionTime * 60 && sf.std.minutes > sta + minConnectionTime * 60 && ff.arrivalAirport.id === sf.departureAirport.id
-          );
+          return secoundFlights.some(sf => sf.std.minutes < sta + maxConnectionTime && sf.std.minutes > sta + minConnectionTime && ff.arrivalAirport.id === sf.departureAirport.id);
         })
       ) {
         result++;
@@ -300,8 +319,26 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName })
     borderRight: { color: '#BDBDBD', size: 1 },
     borderTop: { color: '#BDBDBD', size: 1 },
     fontSize: 12,
+    color: '#000000',
     bold: true
   } as CellOptions;
+
+  const columnGroupCellOptions = {
+    textAlign: 'center',
+    verticalAlign: 'center',
+    borderBottom: { color: '#BDBDBD', size: 1 },
+    borderLeft: { color: '#BDBDBD', size: 1 },
+    borderRight: { color: '#BDBDBD', size: 1 },
+    borderTop: { color: '#BDBDBD', size: 1 },
+    fontSize: 12,
+    color: '#000000',
+    bold: true,
+    background: '#F4B084'
+  } as CellOptions;
+
+  const numberOfConnectionExcelStyle = {
+    headerCellOption: { ...headerCellOptions, background: '#C6EFCE' }
+  };
 
   const exportConnectionTable = (
     <Fragment>
@@ -330,49 +367,56 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName })
       </Button>
 
       <ExcelExport
-        data={connectionTableExportData}
-        fileName="ConnectionTable.xlsx"
+        data={connectionTableDataModel}
+        fileName={preplanName + ' ConnectionTable.xlsx'}
         ref={exporter => {
           connectionTableExporter = exporter;
         }}
       >
         <ExcelExportColumn
-          title={preplanName}
+          title={' '}
           field="day"
           width={30}
           cellOptions={{ ...headerCellOptions, background: '#F4B084' }}
           headerCellOptions={{ ...headerCellOptions, background: '#F4B084' }}
         />
-        {eastAirport.map(airport => (
-          <ExcelExportColumn
-            key={airport.id}
-            field={'from' + airport.name}
-            title={airport.name}
-            width={30}
-            cellOptions={{ ...detailCellOption, wrap: true }}
-            headerCellOptions={{ ...headerCellOptions, background: '#F4B084', color: '#000000' }}
-          />
-        ))}
-        {westAirport.map(airport => (
-          <ExcelExportColumn
-            key={airport.id}
-            field={airport.name}
-            title={airport.name}
-            width={54}
-            cellOptions={{ ...detailCellOption, wrap: true, background: '#FBE0CE' }}
-            headerCellOptions={{ ...headerCellOptions, background: '#F4B084', color: '#000000' }}
-          />
-        ))}
-        {eastAirport.map(airport => (
-          <ExcelExportColumn
-            key={airport.id}
-            field={'to' + airport.name}
-            title={airport.name}
-            width={30}
-            cellOptions={{ ...detailCellOption, wrap: true }}
-            headerCellOptions={{ ...headerCellOptions, background: '#F4B084', color: '#000000' }}
-          />
-        ))}
+
+        <ExcelExportColumnGroup title="Arrival to IKA" headerCellOptions={columnGroupCellOptions}>
+          {eastAirport.map(airport => (
+            <ExcelExportColumn
+              key={airport.id}
+              field={'from' + airport.name}
+              title={airport.name}
+              width={30}
+              cellOptions={{ ...detailCellOption, wrap: true }}
+              headerCellOptions={{ ...headerCellOptions, background: '#F4B084' }}
+            />
+          ))}
+        </ExcelExportColumnGroup>
+        <ExcelExportColumnGroup title={preplanName + ' CONNECTIONS'} headerCellOptions={columnGroupCellOptions}>
+          {westAirport.map(airport => (
+            <ExcelExportColumn
+              key={airport.id}
+              field={airport.name}
+              title={airport.name}
+              width={54}
+              cellOptions={{ ...detailCellOption, wrap: true, background: '#FBE0CE' }}
+              headerCellOptions={{ ...headerCellOptions, background: '#F4B084' }}
+            />
+          ))}
+        </ExcelExportColumnGroup>
+        <ExcelExportColumnGroup title="Departure from IKA" headerCellOptions={columnGroupCellOptions}>
+          {eastAirport.map(airport => (
+            <ExcelExportColumn
+              key={airport.id}
+              field={'to' + airport.name}
+              title={airport.name}
+              width={30}
+              cellOptions={{ ...detailCellOption, wrap: true }}
+              headerCellOptions={{ ...headerCellOptions, background: '#F4B084' }}
+            />
+          ))}
+        </ExcelExportColumnGroup>
       </ExcelExport>
     </Fragment>
   );
@@ -399,7 +443,7 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName })
             </TableCell>
           ))}
           {westAirport.map(airport => (
-            <TableCell key={airport.id} className={classes.boarder}>
+            <TableCell key={airport.id} className={classNames(classes.boarder)}>
               {airport.name}
             </TableCell>
           ))}
@@ -411,70 +455,31 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName })
         </TableRow>
       </TableHead>
       <TableBody>
-        {weekDay.map(w => (
-          <TableRow key={w}>
-            <TableCell className={classNames(classes.header, classes.boarder)}>{Weekday[w]}</TableCell>
-            {eastAirport.map(airport => {
-              if (!flightPerDay[w]) return <TableCell />;
-              const flights = flightPerDay[w].eastAirportArrivalToIranFlight.filter(f => f.weekdayRequirement.definition.departureAirport.id === airport.id);
-              if (!flights || flights.length == 0) return <TableCell className={classes.boarder} key={airport.id} />;
-
-              const stas = flights
-                .map(flight => {
-                  return flight.std.minutes + flight.weekdayRequirement.scope.blockTime;
-                })
-                .sort(compareFunction);
-
-              return (
-                <TableCell key={airport.id} className={classes.boarder}>
-                  <Fragment>
-                    {stas.map((sta, i) => {
-                      return <div key={i}>{formatMinuteToString(sta)}</div>;
-                    })}
-                  </Fragment>
-                </TableCell>
-              );
-            })}
-
-            {westAirport.map(airport => {
-              if (!flightPerDay[w]) return <TableCell />;
-              const arrivalToIran = flightPerDay[w].westAirportArrivalToIranFlight.filter(f => f.weekdayRequirement.definition.departureAirport.id === airport.id);
-              const departureFromIran = flightPerDay[w].westAirportDepartureFromIranFlight.filter(f => f.weekdayRequirement.definition.arrivalAirport.id == airport.id);
-
-              const stas = arrivalToIran.map(flight => flight.std.minutes + flight.weekdayRequirement.scope.blockTime).sort(compareFunction);
-              const stds = departureFromIran.map(flight => flight.std.minutes).sort(compareFunction);
-
-              if (stas.length <= 0 && stds.length <= 0) return <TableCell key={airport.id} className={classNames(classes.west, classes.boarder)} />;
-              return (
-                <TableCell key={airport.id} className={classNames(classes.west, classes.boarder)}>
-                  <Fragment>
-                    {Array.range(0, Math.max(stas.length, stds.length) - 1).map(i => {
-                      return (
-                        <div key={i}>
-                          {formatMinuteToString(stds[i])}&ndash;{formatMinuteToString(stas[i])}
-                        </div>
-                      );
-                    })}
-                  </Fragment>
-                </TableCell>
-              );
-            })}
-
-            {eastAirport.map(airport => {
-              if (!flightPerDay[w]) return <TableCell />;
-              const flights = flightPerDay[w].eastAirportDepartureFromIranFlight.filter(f => f.weekdayRequirement.definition.arrivalAirport.id === airport.id);
-              if (!flights || flights.length == 0) return <TableCell className={classes.boarder} key={airport.id} />;
-              const stds = flights.map(flight => flight.std.minutes).sort(compareFunction);
-              return (
-                <TableCell key={airport.id} className={classes.boarder}>
-                  <Fragment>
-                    {stds.map((std, i) => {
-                      return <div key={i}>{formatMinuteToString(std)}</div>;
-                    })}
-                  </Fragment>
-                </TableCell>
-              );
-            })}
+        {connectionTableDataModel.map((ct, index) => (
+          <TableRow key={index}>
+            <TableCell className={classNames(classes.header, classes.boarder)}>{ct['day']}</TableCell>
+            {eastAirport.map(a => (
+              <TableCell key={'from' + a.name} className={classes.boarder}>
+                <Fragment>{ct['from' + a.name] && ct['from' + a.name].split('\r\n').map((n: any) => <div>{n}</div>)}</Fragment>
+              </TableCell>
+            ))}
+            {westAirport.map(a => (
+              <TableCell className={classNames(classes.west, classes.boarder)} key={a.name}>
+                <Fragment>
+                  {ct[a.name] &&
+                    ct[a.name].split('\r\n').map((n: any) => (
+                      <div>
+                        {n.split('–')[0]}–{n.split('–')[1]}
+                      </div>
+                    ))}
+                </Fragment>
+              </TableCell>
+            ))}
+            {eastAirport.map(a => (
+              <TableCell key={'to' + a.name} className={classes.boarder}>
+                <Fragment>{ct['to' + a.name] && ct['to' + a.name].split('\r\n').map((n: any) => <div>{n}</div>)}</Fragment>
+              </TableCell>
+            ))}
           </TableRow>
         ))}
       </TableBody>
@@ -491,9 +496,21 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName })
             const options = connectionNumberExporter.workbookOptions();
             const rows = options && options.sheets && options.sheets[0] && options.sheets[0].rows;
 
-            if (rows && rows[0] && rows[1] && rows[1].cells && rows[0].cells) {
-              rows[0].cells[0].rowSpan = 1;
-              rows.remove(rows[1]);
+            if (rows) {
+              rows.forEach(r => {
+                const row = r as any;
+                if (row.type === 'data') {
+                  r.cells!.forEach(c => {
+                    if (c.value === 0) c.color = '#C4BD97';
+                  });
+                }
+              });
+
+              const lastRowCells = rows[rows.length - 1].cells!;
+              for (let index = 1; index < lastRowCells.length; index++) {
+                const cell = lastRowCells[index];
+                cell.borderBottom = { color: '#000000', size: 2 };
+              }
             }
             connectionNumberExporter.save(options);
           }
@@ -504,8 +521,8 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName })
       </Button>
 
       <ExcelExport
-        data={connectionNumberExportData}
-        fileName="NumberOfConnection.xlsx"
+        data={connectionNumberDataModel}
+        fileName={preplanName + ' NumberOfConnection.xlsx'}
         ref={exporter => {
           connectionNumberExporter = exporter;
         }}
@@ -513,32 +530,43 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName })
         <ExcelExportColumn
           field="airport"
           locked={false}
-          title={preplanName}
-          width={100}
-          cellOptions={{ ...headerCellOptions, background: '#C6EFCE', color: '#000000' }}
-          headerCellOptions={{ ...headerCellOptions, background: '#C6EFCE', color: '#000000' }}
+          title={' '}
+          width={50}
+          cellOptions={numberOfConnectionExcelStyle.headerCellOption}
+          headerCellOptions={numberOfConnectionExcelStyle.headerCellOption}
         />
 
-        {westAirport.map(wa => (
-          <ExcelExportColumnGroup title={'↗     ' + wa.name + '     ↘'} key={wa.id} headerCellOptions={{ ...headerCellOptions, background: '#C6EFCE', color: '#000000' }}>
-            <ExcelExportColumn
-              field={'to' + wa.name}
-              title={' '}
-              locked={false}
-              width={100}
-              cellOptions={{ ...detailCellOption, wrap: true, fontSize: 12 }}
-              headerCellOptions={{ ...headerCellOptions, background: '#C6EFCE', color: '#000000' }}
-            />
-            <ExcelExportColumn
-              field={'from' + wa.name}
-              title={' '}
-              locked={false}
-              width={100}
-              cellOptions={{ ...detailCellOption, wrap: true, fontSize: 12, borderRight: { size: 2, color: '#000000' } }}
-              headerCellOptions={{ ...headerCellOptions, background: '#C6EFCE', color: '#000000', borderRight: { size: 2, color: '#000000' } }}
-            />
-          </ExcelExportColumnGroup>
-        ))}
+        <ExcelExportColumnGroup title={preplanName + ' Number of Connection'} headerCellOptions={numberOfConnectionExcelStyle.headerCellOption}>
+          {westAirport.map(wa => (
+            <ExcelExportColumnGroup
+              title={wa.name}
+              key={wa.id}
+              headerCellOptions={{
+                ...numberOfConnectionExcelStyle.headerCellOption,
+                borderLeft: { size: 2, color: '#000000' },
+                borderRight: { size: 2, color: '#000000' },
+                borderTop: { size: 2, color: '#000000' }
+              }}
+            >
+              <ExcelExportColumn
+                field={'to' + wa.name}
+                title={'↗'}
+                locked={false}
+                width={50}
+                cellOptions={{ ...detailCellOption, wrap: true, fontSize: 12, borderLeft: { size: 2, color: '#000000' } }}
+                headerCellOptions={{ ...numberOfConnectionExcelStyle.headerCellOption, borderLeft: { size: 2, color: '#000000' } }}
+              />
+              <ExcelExportColumn
+                field={'from' + wa.name}
+                title={'↘'}
+                locked={false}
+                width={50}
+                cellOptions={{ ...detailCellOption, wrap: true, fontSize: 12, borderRight: { size: 2, color: '#000000' } }}
+                headerCellOptions={{ ...numberOfConnectionExcelStyle.headerCellOption, borderRight: { size: 2, color: '#000000' } }}
+              />
+            </ExcelExportColumnGroup>
+          ))}
+        </ExcelExportColumnGroup>
       </ExcelExport>
     </Fragment>
   );
@@ -556,18 +584,18 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName })
             </TableCell>
           ))}
         </TableRow>
-        {eastAirport.map(ea => (
-          <TableRow key={ea.id}>
+        {connectionNumberDataModel.map(cn => (
+          <TableRow key={cn['airport']}>
             <TableCell className={classNames(classes.connectionHeader, classes.boarder)} align="center">
-              {ea.name}
+              {cn['airport']}
             </TableCell>
             {westAirport.map(wa => (
               <Fragment key={wa.id}>
                 <TableCell className={classNames(classes.boarder, classes.removeRightBoarder)} align="center">
-                  {getNumberOfConnection(ea, wa, 'EasttoWest', flightPerDay)}
+                  {cn['to' + wa.name]}
                 </TableCell>
                 <TableCell className={classNames(classes.boarder, classes.removeLeftBoarder)} align="center">
-                  {getNumberOfConnection(wa, ea, 'WesttoEast', flightPerDay)}
+                  {cn['from' + wa.name]}
                 </TableCell>
               </Fragment>
             ))}
@@ -590,7 +618,7 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName })
         getOptionLabel={r => r.name}
         getOptionValue={r => r.id}
         onSelect={value => {
-          setEastAriport(value || []);
+          setEastAriport(value ? value.orderBy('name') : []);
         }}
         className={classes.marginBottom1}
       />
@@ -605,9 +633,36 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName })
         getOptionLabel={r => r.name}
         getOptionValue={r => r.id}
         onSelect={value => {
-          setWestAriport(value || []);
+          setWestAriport(value ? value.orderBy('name') : []);
         }}
       />
+
+      <TextField
+        className={classNames(classes.marginRight1, classes.marginBottom2)}
+        label=" Start Date"
+        onChange={e => {
+          const value = e.target.value;
+          if (!value) return;
+          const ticks = Date.parse(value);
+          if (ticks) {
+            setStartDate(new Date(ticks));
+          }
+        }}
+      />
+
+      <TextField
+        className={classNames(classes.marginRight1, classes.marginBottom2)}
+        label="End Date"
+        onChange={e => {
+          const value = e.target.value;
+          if (!value) return;
+          const ticks = Date.parse(value);
+          if (ticks) {
+            setEndDate(new Date(ticks));
+          }
+        }}
+      />
+
       <br />
 
       <div className={classNames(classes.export, classes.marginBottom1)}>{exportConnectionTable}</div>
@@ -618,16 +673,32 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName })
       <TextField
         className={classNames(classes.marginBottom2, classes.connectionTime)}
         label="Minimum Connection Time"
-        type="number"
-        value={minConnectionTime}
-        onChange={e => +e.target.value >= 0 && setMinConnectionTime(+e.target.value)}
+        type="text"
+        value={
+          Math.floor(minConnectionTime / 60)
+            .toString()
+            .padStart(2, '0') + (minConnectionTime % 60).toString().padStart(2, '0')
+        }
+        onChange={e => {
+          const hour = +e.target.value.substr(0, 2);
+          const minutes = +e.target.value.substr(2, 2);
+          setMinConnectionTime(hour * 60 + minutes);
+        }}
       />
       <TextField
         className={classNames(classes.marginBottom2, classes.connectionTime)}
         label="Maximum Connection Time"
-        type="number"
-        value={maxConnectionTime}
-        onChange={e => +e.target.value >= 0 && setMaxConnectionTime(+e.target.value)}
+        type="text"
+        value={
+          Math.floor(maxConnectionTime / 60)
+            .toString()
+            .padStart(2, '0') + (maxConnectionTime % 60).toString().padStart(2, '0')
+        }
+        onChange={e => {
+          const hour = +e.target.value.substr(0, 2);
+          const minutes = +e.target.value.substr(2, 2);
+          setMaxConnectionTime(hour * 60 + minutes);
+        }}
       />
 
       <div className={classNames(classes.export, classes.marginBottom1)}>{exportConnectionNumber}</div>

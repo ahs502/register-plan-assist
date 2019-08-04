@@ -55,7 +55,9 @@ const ReportsPage: FC<ReportsPageProps> = ({ preplan }) => {
         {preplanReport === proposalPreplanReport && (
           <ProposalReport flightRequirments={preplan.flightRequirements} preplanName={preplan.name} fromDate={preplan.startDate} toDate={preplan.endDate} />
         )}
-        {preplanReport === connectionsPpreplanReport && <ConnectionsReport preplanName={preplan.name} flights={preplan.flights} />}
+        {preplanReport === connectionsPpreplanReport && (
+          <ConnectionsReport preplanName={preplan.name} flights={preplan.flights} fromDate={preplan.startDate} toDate={preplan.endDate} />
+        )}
       </SectionList>
     </Fragment>
   );

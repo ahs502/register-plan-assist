@@ -10,7 +10,7 @@ import { ExcelExport, ExcelExportColumn, ExcelExportColumnGroup } from '@progres
 import { CellOptions } from '@progress/kendo-react-excel-export/dist/npm/ooxml/CellOptionsInterface';
 import classNames from 'classnames';
 import AutoComplete from 'src/components/AutoComplete';
-import Preplan from 'src/view-models/Preplan';
+import Preplan, { PreplanHeader } from 'src/view-models/Preplan';
 import Weekday from '@core/types/Weekday';
 import Rsx, { Rsxes } from '@core/types/flight-requirement/Rsx';
 
@@ -94,15 +94,6 @@ const emptyCircle = '○';
 const leftHalfBlackCircle = '◐';
 const rightHalfBlackCircle = '◑';
 
-const allPreplan: Preplan[] = []; //TODO: Remove
-allPreplan.sort((a, b) => {
-  if (a.lastEditDateTime > b.lastEditDateTime) return -1;
-  if (a.lastEditDateTime < b.lastEditDateTime) return -1;
-  return 0;
-});
-
-allPreplan.unshift({} as Preplan);
-
 enum FlightType {
   'Domestic',
   'International'
@@ -117,7 +108,7 @@ interface ProposalReportProps {
 
 interface FlattenFlightRequirment {
   [index: string]: string | number | Airport | number[] | Daytime | boolean | FlattenFlightRequirment[] | string[];
-  id: number;
+  id: string;
   flightNumber: string;
   departureAirport: Airport;
   arrivalAirport: Airport;
@@ -146,6 +137,13 @@ interface FlattenFlightRequirment {
   weekDay4: string;
   weekDay5: string;
   weekDay6: string;
+  rsxWeekDay0: Rsx;
+  rsxWeekDay1: Rsx;
+  rsxWeekDay2: Rsx;
+  rsxWeekDay3: Rsx;
+  rsxWeekDay4: Rsx;
+  rsxWeekDay5: Rsx;
+  rsxWeekDay6: Rsx;
   change: boolean;
   aircraftType: string;
   frequency: string;
@@ -183,18 +181,42 @@ interface DataProvider {
   aggregates: any;
 }
 
+interface FliterModel {
+  baseAirport: Airport;
+  startDate: Date;
+  endDate: Date;
+  flightType: FlightType;
+  showType: boolean;
+  showSlot: boolean;
+  showNote: boolean;
+  showFrequency: boolean;
+  showReal: boolean;
+  showSTB1: boolean;
+  showSTB2: boolean;
+  showExtra: boolean;
+}
+
 const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequirments, preplanName, fromDate, toDate }) => {
-  const [baseAirport, setBaseAirport] = useState<Airport>(ika);
-  const [startDate, setStartDate] = useState<Date>(fromDate); //TODO: REMOVE
-  const [endDate, setEndDate] = useState<Date>(toDate); //TODO: REMOVE
-  const [flightType, setFlightType] = useState<FlightType>(FlightType.International);
   const [dataProvider, setDataProvider] = useState<DataProvider[]>([]);
+  const [preplanHeaders, setPreplanHeaders] = useState<ReadonlyArray<Readonly<PreplanHeader>>>([]);
   const [flattenFlightRequirments, setFlattenFlightRequirments] = useState<FlattenFlightRequirment[]>([]);
   const [targetPreplan, setTargetPreplan] = useState<Preplan>();
-  const [showType, setShowType] = useState(false);
-  const [showFrequency, setShowFrequency] = useState(false);
-  const [showNote, setShowNote] = useState(true);
-  const [showSlot, setShowSlot] = useState(true);
+  const [filterModel, setFilterModel] = useState<FliterModel>({
+    baseAirport: ika,
+    startDate: fromDate,
+    endDate: toDate,
+    flightType: FlightType.International,
+    showType: false,
+    showSlot: true,
+    showNote: true,
+    showFrequency: false,
+    showReal: true,
+    showSTB1: true,
+    showSTB2: false,
+    showExtra: false
+  } as FliterModel);
+
+  if (!preplanHeaders.length) setPreplanHeaders(getDummyPreplanHeaders()); //TODO: Remove this line later.
 
   let proposalExporter: ExcelExport | null;
 
@@ -224,7 +246,10 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
 
   const classes = useStyles();
 
-  const generateReportDataModel = (): FlattenFlightRequirment[] => {
+  const generateReportDataModel = (
+    { baseAirport, startDate, endDate, flightType, showReal, showSTB1, showSTB2, showExtra }: FliterModel,
+    flightRequirments: readonly FlightRequirement[]
+  ): FlattenFlightRequirment[] => {
     const result: FlattenFlightRequirment[] = [];
 
     if (!baseAirport || !startDate || !endDate || startDate < fromDate || startDate > toDate || endDate < fromDate || endDate > toDate) return [];
@@ -234,7 +259,8 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
     const baseDate = new Date(new Date((startDate.getTime() + endDate.getTime()) / 2));
 
     labels.forEach(m => {
-      const dailyFlightRequirments = createDailyFlightRequirment(flightRequirments, m);
+      let dailyFlightRequirments = createDailyFlightRequirment(flightRequirments, m);
+      dailyFlightRequirments = fliterDailyFlightRequirmentByRSX(dailyFlightRequirments, showReal, showSTB1, showSTB2, showExtra);
       const flattenFlightRequirmentList = createFlattenFlightRequirmentsFromDailyFlightRequirment(dailyFlightRequirments, baseAirport, baseDate, m);
       flattenFlightRequirmentList.sort((a, b) => compareFunction(a.std.minutes, b.std.minutes));
 
@@ -264,7 +290,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
   };
 
   useEffect(() => {
-    const flat = generateReportDataModel();
+    const flat = generateReportDataModel(filterModel, flightRequirments);
     const groupObject = flat.reduce(
       (acc, current) => {
         const category = current.category;
@@ -285,7 +311,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
       }) as DataProvider[];
 
     setDataProvider(result);
-  }, [baseAirport, startDate, endDate, flightType, showType, showSlot, showFrequency]);
+  }, [filterModel]);
 
   return (
     <Fragment>
@@ -297,7 +323,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
           <select
             id="base-airport"
             onChange={event => {
-              setBaseAirport(allBaseAirport[+event.target.value]);
+              setFilterModel({ ...filterModel, baseAirport: allBaseAirport[+event.target.value] });
             }}
             className={classes.marginBottom1}
           >
@@ -315,12 +341,12 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
           <select
             id="flight-type"
             onChange={(event: React.ChangeEvent<HTMLSelectElement>) => {
-              setFlightType(event.target.value === 'Domestic' ? FlightType.Domestic : FlightType.International);
-
-              setShowSlot(event.target.value !== 'Domestic');
-              setShowNote(event.target.value !== 'Domestic');
-              setShowType(event.target.value === 'Domestic');
-              setShowFrequency(event.target.value === 'Domestic');
+              filterModel.flightType = event.target.value === 'Domestic' ? FlightType.Domestic : FlightType.International;
+              filterModel.showSlot = event.target.value !== 'Domestic';
+              filterModel.showNote = event.target.value !== 'Domestic';
+              filterModel.showType = event.target.value === 'Domestic';
+              filterModel.showFrequency = event.target.value === 'Domestic';
+              setFilterModel({ ...filterModel });
             }}
             className={classes.marginBottom1}
           >
@@ -336,7 +362,9 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
               const value = e.target.value;
               if (!value) return;
               const ticks = Date.parse(value);
-              if (ticks) setStartDate(new Date(ticks));
+              if (ticks) {
+                setFilterModel({ ...filterModel, startDate: new Date(ticks) });
+              }
             }}
           />
         </Grid>
@@ -348,7 +376,9 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
               const value = e.target.value;
               if (!value) return;
               const ticks = Date.parse(value);
-              if (ticks) setEndDate(new Date(ticks));
+              if (ticks) {
+                setFilterModel({ ...filterModel, endDate: new Date(ticks) });
+              }
             }}
           />
         </Grid>
@@ -356,7 +386,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
         <Grid item xs={6}>
           <FormControlLabel
             value="start"
-            control={<Checkbox checked={showSlot} onChange={e => setShowSlot(e.target.checked)} color="primary" />}
+            control={<Checkbox checked={filterModel.showSlot} onChange={e => setFilterModel({ ...filterModel, showSlot: e.target.checked })} color="primary" />}
             label="Show Slot"
             labelPlacement="start"
           />
@@ -365,7 +395,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
         <Grid item xs={6}>
           <FormControlLabel
             value="start"
-            control={<Checkbox checked={showNote} onChange={e => setShowNote(e.target.checked)} color="primary" />}
+            control={<Checkbox checked={filterModel.showNote} onChange={e => setFilterModel({ ...filterModel, showNote: e.target.checked })} color="primary" />}
             label="Show Note"
             labelPlacement="start"
           />
@@ -374,7 +404,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
         <Grid item xs={6}>
           <FormControlLabel
             value="start"
-            control={<Checkbox checked={showType} onChange={e => setShowType(e.target.checked)} color="primary" />}
+            control={<Checkbox checked={filterModel.showType} onChange={e => setFilterModel({ ...filterModel, showType: e.target.checked })} color="primary" />}
             label="Show Type"
             labelPlacement="start"
           />
@@ -383,19 +413,55 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
         <Grid item xs={6}>
           <FormControlLabel
             value="start"
-            control={<Checkbox checked={showFrequency} onChange={e => setShowFrequency(e.target.checked)} color="primary" />}
+            control={<Checkbox checked={filterModel.showFrequency} onChange={e => setFilterModel({ ...filterModel, showFrequency: e.target.checked })} color="primary" />}
             label="Show Frequency"
+            labelPlacement="start"
+          />
+        </Grid>
+
+        <Grid item xs={6}>
+          <FormControlLabel
+            value="start"
+            control={<Checkbox checked={filterModel.showReal} onChange={e => setFilterModel({ ...filterModel, showReal: e.target.checked })} color="primary" />}
+            label="Show Real"
+            labelPlacement="start"
+          />
+        </Grid>
+
+        <Grid item xs={6}>
+          <FormControlLabel
+            value="start"
+            control={<Checkbox checked={filterModel.showSTB1} onChange={e => setFilterModel({ ...filterModel, showSTB1: e.target.checked })} color="primary" />}
+            label="Show STB1"
+            labelPlacement="start"
+          />
+        </Grid>
+
+        <Grid item xs={6}>
+          <FormControlLabel
+            value="start"
+            control={<Checkbox checked={filterModel.showSTB2} onChange={e => setFilterModel({ ...filterModel, showSTB2: e.target.checked })} color="primary" />}
+            label="Show STB2"
+            labelPlacement="start"
+          />
+        </Grid>
+
+        <Grid item xs={6}>
+          <FormControlLabel
+            value="start"
+            control={<Checkbox checked={filterModel.showExtra} onChange={e => setFilterModel({ ...filterModel, showExtra: e.target.checked })} color="primary" />}
+            label="Show EXT"
             labelPlacement="start"
           />
         </Grid>
 
         <Grid item xs={12}>
           <AutoComplete
-            options={allPreplan}
+            options={preplanHeaders}
             getOptionLabel={l => l.name}
             getOptionValue={l => l.id}
             onSelect={s => {
-              setTargetPreplan(s);
+              //setTargetPreplan(s);
             }}
           />
         </Grid>
@@ -410,12 +476,20 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
           if (proposalExporter) {
             const headerWeekDayCellNumbers = [5, 6, 7, 8, 9, 10, 11];
             const weekDaySaturdayCellNumber = 7;
-            const idColumnNumber = 18;
             const numberOfHiddenColumn = 3;
             const options = proposalExporter.workbookOptions();
             const rows = options && options.sheets && options.sheets[0] && options.sheets[0].rows;
 
-            if (rows) {
+            if (rows && rows.length > 0) {
+              let idColumnNumber = 0;
+              for (let index = 0; index < rows[0].cells!.length; index++) {
+                const element = rows[0].cells![index];
+                if (element.value && element.colSpan) {
+                  idColumnNumber += element.colSpan;
+                  if (element.value === 'id') break;
+                }
+              }
+
               rows[0] && (rows[0].height = 30);
               rows[1] && (rows[1].height = 30);
               if (rows[2]) {
@@ -515,16 +589,16 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
       <ExcelExport
         data={dataProvider}
         group={group}
-        fileName={"Proposal  '" + preplanName + "' " + new Date().format('~D$') + '.xlsx'}
+        fileName={"Proposal  '" + preplanName + "'-" + filterModel.baseAirport.name + '-' + FlightType[filterModel.flightType] + '-' + new Date().format('~D$') + '.xlsx'}
         ref={exporter => {
           proposalExporter = exporter;
         }}
       >
         <ExcelExportColumnGroup
-          title={'Propoal Schedule from ' + formatDate(startDate) + ' till ' + formatDate(endDate)}
+          title={'Propoal Schedule from ' + formatDate(filterModel.startDate) + ' till ' + formatDate(filterModel.endDate)}
           headerCellOptions={{ ...headerCellOptions, background: '#FFFFFF' }}
         >
-          <ExcelExportColumnGroup title={'Base ' + baseAirport.name} headerCellOptions={{ ...headerCellOptions, background: '#F4B084' }}>
+          <ExcelExportColumnGroup title={'Base ' + filterModel.baseAirport.name} headerCellOptions={{ ...headerCellOptions, background: '#F4B084' }}>
             <ExcelExportColumn
               title={'F/N'}
               field="flightNumber"
@@ -609,7 +683,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
             <ExcelExportColumn
               title={['Sat', '6'].join('\r\n')}
               field="weekDay0"
-              width={22}
+              width={26}
               cellOptions={{ ...detailCellOption, borderLeft: { color: '#000000', size: 3 } }}
               headerCellOptions={{
                 ...headerCellOptions,
@@ -624,7 +698,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
             <ExcelExportColumn
               title={['Sun', '7'].join('\r\n')}
               field="weekDay1"
-              width={22}
+              width={26}
               cellOptions={{ ...detailCellOption }}
               headerCellOptions={{ ...headerCellOptions, wrap: true, background: '#F4B084', borderTop: { color: '#000000', size: 3 }, borderBottom: { color: '#000000', size: 3 } }}
             />
@@ -632,7 +706,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
             <ExcelExportColumn
               title={['Mon', '1'].join('\r\n')}
               field="weekDay2"
-              width={24}
+              width={26}
               cellOptions={{ ...detailCellOption }}
               headerCellOptions={{ ...headerCellOptions, wrap: true, background: '#F4B084', borderTop: { color: '#000000', size: 3 }, borderBottom: { color: '#000000', size: 3 } }}
             />
@@ -640,7 +714,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
             <ExcelExportColumn
               title={['Tue', '2'].join('\r\n')}
               field="weekDay3"
-              width={22}
+              width={26}
               cellOptions={{ ...detailCellOption }}
               headerCellOptions={{ ...headerCellOptions, wrap: true, background: '#F4B084', borderTop: { color: '#000000', size: 3 }, borderBottom: { color: '#000000', size: 3 } }}
             />
@@ -656,7 +730,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
             <ExcelExportColumn
               title={['Thu', '4'].join('\r\n')}
               field="weekDay5"
-              width={22}
+              width={26}
               cellOptions={{ ...detailCellOption }}
               headerCellOptions={{ ...headerCellOptions, wrap: true, background: '#F4B084', borderTop: { color: '#000000', size: 3 }, borderBottom: { color: '#000000', size: 3 } }}
             />
@@ -664,7 +738,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
             <ExcelExportColumn
               title={['Fri', '5'].join('\r\n')}
               field="weekDay6"
-              width={22}
+              width={26}
               cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 } }}
               headerCellOptions={{
                 ...headerCellOptions,
@@ -690,7 +764,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
                 borderBottom: { color: '#000000', size: 3 }
               }}
             />
-            {showNote && (
+            {filterModel.showNote && (
               <ExcelExportColumn
                 title={['NOTE', '(base on domestic/lcl)'].join('\r\n')}
                 field="note"
@@ -708,7 +782,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
               />
             )}
 
-            {showSlot && (
+            {filterModel.showSlot && (
               <ExcelExportColumn
                 title={['INTL.', 'SLOT(UTC)'].join('\r\n')}
                 field="destinationNoPermissions"
@@ -725,7 +799,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
                 }}
               />
             )}
-            {showSlot && (
+            {filterModel.showSlot && (
               <ExcelExportColumn
                 title={['DOM.', 'SLOT(LCL)'].join('\r\n')}
                 field="domesticNoPermissions"
@@ -743,7 +817,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
               />
             )}
 
-            {showType && (
+            {filterModel.showType && (
               <ExcelExportColumn
                 title="Type"
                 field="aircraftType"
@@ -761,7 +835,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
               />
             )}
 
-            {showFrequency && (
+            {filterModel.showFrequency && (
               <ExcelExportColumn
                 title="Fre"
                 field="frequency"
@@ -790,7 +864,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
         <TableHead>
           <TableRow>
             <TableCell className={classes.boarder} align="center" colSpan={19}>
-              {baseAirport ? 'Base ' + baseAirport.name : ''}
+              {filterModel.baseAirport ? 'Base ' + filterModel.baseAirport.name : ''}
             </TableCell>
           </TableRow>
           <TableRow className={classes.borderBottom}>
@@ -837,13 +911,13 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
             <TableCell className={classes.boarder} align="center">
               DUR.
             </TableCell>
-            {showNote && (
+            {filterModel.showNote && (
               <TableCell className={classes.boarder} align="center">
                 <div>NOTE</div>
                 <div>(base on domestic/lcl)</div>
               </TableCell>
             )}
-            {showSlot && (
+            {filterModel.showSlot && (
               <Fragment>
                 <TableCell className={classes.boarder} align="center">
                   <div>INTL.</div>
@@ -856,13 +930,13 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
                 </TableCell>
               </Fragment>
             )}
-            {showType && (
+            {filterModel.showType && (
               <TableCell className={classes.boarder} align="center">
                 Type
               </TableCell>
             )}
 
-            {showFrequency && (
+            {filterModel.showFrequency && (
               <TableCell className={classes.boarder} align="center">
                 Fre
               </TableCell>
@@ -907,37 +981,37 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
                       <span>{f.utcSta}</span>
                     </div>
                   </TableCell>
-                  <TableCell align="center" className={classNames(classes.boarder, classes.rsx, noPermission(f, 0) ? classes.noPermission : '')}>
-                    <div className={halfPermission(f, 0) ? classes.halfPermission : ''}>{f.weekDay0}</div>
+                  <TableCell align="center" className={classNames(classes.boarder, isRealFlight(f, 0) ? classes.rsx : '', noPermission(f, 0) ? classes.noPermission : '')}>
+                    <div className={isRealFlight(f, 0) && halfPermission(f, 0) ? classes.halfPermission : ''}>{f.weekDay0}</div>
                   </TableCell>
-                  <TableCell align="center" className={classNames(classes.boarder, classes.rsx, noPermission(f, 1) ? classes.noPermission : '')}>
-                    <div className={halfPermission(f, 1) ? classes.halfPermission : ''}>{f.weekDay1}</div>
+                  <TableCell align="center" className={classNames(classes.boarder, isRealFlight(f, 1) ? classes.rsx : '', noPermission(f, 1) ? classes.noPermission : '')}>
+                    <div className={isRealFlight(f, 1) && halfPermission(f, 1) ? classes.halfPermission : ''}>{f.weekDay1}</div>
                   </TableCell>
-                  <TableCell align="center" className={classNames(classes.boarder, classes.rsx, noPermission(f, 2) ? classes.noPermission : '')}>
-                    <div className={halfPermission(f, 2) ? classes.halfPermission : ''}>{f.weekDay2}</div>
+                  <TableCell align="center" className={classNames(classes.boarder, isRealFlight(f, 2) ? classes.rsx : '', noPermission(f, 2) ? classes.noPermission : '')}>
+                    <div className={isRealFlight(f, 2) && halfPermission(f, 2) ? classes.halfPermission : ''}>{f.weekDay2}</div>
                   </TableCell>
-                  <TableCell align="center" className={classNames(classes.boarder, classes.rsx, noPermission(f, 3) ? classes.noPermission : '')}>
-                    <div className={halfPermission(f, 3) ? classes.halfPermission : ''}>{f.weekDay3}</div>
+                  <TableCell align="center" className={classNames(classes.boarder, isRealFlight(f, 3) ? classes.rsx : '', noPermission(f, 3) ? classes.noPermission : '')}>
+                    <div className={isRealFlight(f, 3) && halfPermission(f, 3) ? classes.halfPermission : ''}>{f.weekDay3}</div>
                   </TableCell>
-                  <TableCell align="center" className={classNames(classes.boarder, classes.rsx, noPermission(f, 4) ? classes.noPermission : '')}>
-                    <div className={halfPermission(f, 4) ? classes.halfPermission : ''}>{f.weekDay4}</div>
+                  <TableCell align="center" className={classNames(classes.boarder, isRealFlight(f, 4) ? classes.rsx : '', noPermission(f, 4) ? classes.noPermission : '')}>
+                    <div className={isRealFlight(f, 4) && halfPermission(f, 4) ? classes.halfPermission : ''}>{f.weekDay4}</div>
                   </TableCell>
-                  <TableCell align="center" className={classNames(classes.boarder, classes.rsx, noPermission(f, 5) ? classes.noPermission : '')}>
-                    <div className={halfPermission(f, 5) ? classes.halfPermission : ''}>{f.weekDay5}</div>
+                  <TableCell align="center" className={classNames(classes.boarder, isRealFlight(f, 5) ? classes.rsx : '', noPermission(f, 5) ? classes.noPermission : '')}>
+                    <div className={isRealFlight(f, 5) && halfPermission(f, 5) ? classes.halfPermission : ''}>{f.weekDay5}</div>
                   </TableCell>
-                  <TableCell align="center" className={classNames(classes.boarder, classes.rsx, noPermission(f, 6) ? classes.noPermission : '')}>
-                    <div className={halfPermission(f, 6) ? classes.halfPermission : ''}>{f.weekDay6}</div>
+                  <TableCell align="center" className={classNames(classes.boarder, isRealFlight(f, 6) ? classes.rsx : '', noPermission(f, 6) ? classes.noPermission : '')}>
+                    <div className={isRealFlight(f, 6) && halfPermission(f, 6) ? classes.halfPermission : ''}>{f.weekDay6}</div>
                   </TableCell>
                   <TableCell align="center" className={classes.boarder}>
                     {formatMinuteToString(f.blocktime)}
                   </TableCell>
-                  {showNote && (
+                  {filterModel.showNote && (
                     <TableCell align="center" className={classes.boarder}>
                       {f.note}
                     </TableCell>
                   )}
 
-                  {showSlot && (
+                  {filterModel.showSlot && (
                     <Fragment>
                       <TableCell className={classes.boarder} align="center">
                         {f.destinationNoPermissions}
@@ -948,13 +1022,13 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
                       </TableCell>
                     </Fragment>
                   )}
-                  {showType && (
+                  {filterModel.showType && (
                     <TableCell className={classes.boarder} align="center">
                       {f.aircraftType}
                     </TableCell>
                   )}
 
-                  {showFrequency && (
+                  {filterModel.showFrequency && (
                     <TableCell className={classes.boarder} align="center">
                       {f.frequency}
                     </TableCell>
@@ -1124,7 +1198,6 @@ function sortFlattenFlightRequirment(flattenFlightRequirmentList: FlattenFlightR
 }
 
 function createFlattenFlightRequirmentsFromDailyFlightRequirment(dailyFlightRequirments: DailyFlightRequirment[], baseAirport: Airport, baseDate: Date, label: string) {
-  let id = 0;
   return dailyFlightRequirments.reduce(
     (acc, current) => {
       const existFlatten = acc.find(
@@ -1138,8 +1211,8 @@ function createFlattenFlightRequirmentsFromDailyFlightRequirment(dailyFlightRequ
       if (existFlatten) {
         updateFlattenFlightRequirment(existFlatten, current, baseAirport);
       } else {
-        const flatten = createFlattenFlightRequirment(current, baseDate, baseAirport, label, id);
-        id++;
+        const flatten = createFlattenFlightRequirment(current, baseDate, baseAirport, label);
+
         acc.push(flatten);
       }
 
@@ -1169,7 +1242,7 @@ function getLabels(flightRequirments: readonly FlightRequirement[], baseAirport:
     });
 }
 
-function createFlattenFlightRequirment(dailyFlightRequirment: DailyFlightRequirment, date: Date, baseAirport: Airport, label: string, idCounter: number) {
+function createFlattenFlightRequirment(dailyFlightRequirment: DailyFlightRequirment, date: Date, baseAirport: Airport, label: string) {
   const utcStd = dailyFlightRequirment.std.toDate(date);
   const localStd = dailyFlightRequirment.departureAirport.convertUtcToLocal(utcStd);
   const utcSta = dailyFlightRequirment.std.toDate(date);
@@ -1189,7 +1262,10 @@ function createFlattenFlightRequirment(dailyFlightRequirment: DailyFlightRequirm
   if (diffLocalStdandLocalSta < -1) diffLocalStdandLocalSta = 1;
 
   const flatten = {
-    id: idCounter,
+    id:
+      Math.random()
+        .toString(36)
+        .substring(2) + Date.now().toString(36),
     flightNumber: normalizeFlightNumber(dailyFlightRequirment.flightNumber),
     arrivalAirport: dailyFlightRequirment.arrivalAirport,
     departureAirport: dailyFlightRequirment.departureAirport,
@@ -1246,6 +1322,7 @@ function updateFlattenFlightRequirment(flattenFlight: FlattenFlightRequirment, d
   flattenFlight.utcDays.indexOf(dialyFlightRequirment.day) === -1 && flattenFlight.utcDays.push(dialyFlightRequirment.day);
   flattenFlight.notes.indexOf(dialyFlightRequirment.note) === -1 && flattenFlight.notes.push(dialyFlightRequirment.note);
   flattenFlight['weekDay' + weekDay.toString()] = calculateDayCharacter();
+  flattenFlight['rswWeekDay' + weekDay.toString()] = dialyFlightRequirment.rsx;
   switch (dialyFlightRequirment.rsx) {
     case 'REAL':
       flattenFlight.realFrequency++;
@@ -1271,6 +1348,12 @@ function updateFlattenFlightRequirment(flattenFlight: FlattenFlightRequirment, d
       return dialyFlightRequirment.rsx.toString();
     }
   }
+}
+
+function fliterDailyFlightRequirmentByRSX(dailyFlightRequirment: readonly DailyFlightRequirment[], showReal: boolean, showSTB1: boolean, showSTB2: boolean, showExtra: boolean) {
+  return dailyFlightRequirment.filter(f => {
+    return (showReal && f.rsx === 'REAL') || (showSTB1 && f.rsx === 'STB1') || (showSTB2 && f.rsx === 'STB2') || (showExtra && f.rsx === 'EXT');
+  });
 }
 
 function normalizeFlightNumber(flightNumber: string) {
@@ -1324,6 +1407,10 @@ function halfPermission(flattenFlightRequirment: FlattenFlightRequirment, day: n
   return (destinationPermission && !domesticPermission) || (!destinationPermission && domesticPermission);
 }
 
+function isRealFlight(flattenFlightRequirment: FlattenFlightRequirment, day: number) {
+  return flattenFlightRequirment['rswWeekDay' + day.toString()] === 'REAL';
+}
+
 function formatDate(date: Date) {
   let day = '' + date.getDate(),
     year = date.getFullYear();
@@ -1332,4 +1419,111 @@ function formatDate(date: Date) {
   day = day.padStart(2, '0');
 
   return [day, month, year].join('/');
+}
+
+function getDummyPreplanHeaders(): PreplanHeader[] {
+  return [
+    {
+      id: '123',
+      name: 'S20 International Final',
+      published: true,
+      finalized: false,
+      userId: '1001',
+      userName: 'MAHANAIR961234',
+      userDisplayName: 'Moradi',
+      parentPreplanId: '122',
+      parentPreplanName: 'S19 International Default',
+      creationDateTime: new Date(),
+      lastEditDateTime: new Date(),
+      startDate: new Date(2019, 1, 1),
+      endDate: new Date(2019, 7, 1),
+      simulationId: '32847321984',
+      simulationName: 'S19 International Simulation'
+    },
+    {
+      id: '124',
+      name: 'S21 International Final',
+      published: false,
+      finalized: true,
+      userId: '1001',
+      userName: 'MAHANAIR961234',
+      userDisplayName: 'Moradi',
+      parentPreplanId: '122',
+      parentPreplanName: 'S19 International Default',
+      creationDateTime: new Date(),
+      lastEditDateTime: new Date(),
+      startDate: new Date(2019, 1, 1),
+      endDate: new Date(2019, 7, 1),
+      simulationId: '32847321984',
+      simulationName: 'S19 International Simulation'
+    },
+    {
+      id: '125',
+      name: 'S19 International Final',
+      published: true,
+      finalized: false,
+      userId: '1002',
+      userName: 'MAHANAIR961234',
+      userDisplayName: 'Moradi',
+      parentPreplanId: '122',
+      parentPreplanName: 'S19 International Default',
+      creationDateTime: new Date(),
+      lastEditDateTime: new Date(),
+      startDate: new Date(2019, 1, 1),
+      endDate: new Date(2019, 7, 1),
+      simulationId: '32847321984',
+      simulationName: 'S19 International Simulation'
+    },
+    {
+      id: '126',
+      name: 'S19 International Final',
+      published: true,
+      finalized: true,
+      userId: '1002',
+      userName: 'MAHANAIR961234',
+      userDisplayName: 'Moradi',
+      parentPreplanId: '122',
+      parentPreplanName: 'S19 International Default',
+      creationDateTime: new Date(),
+      lastEditDateTime: new Date(),
+      startDate: new Date(2019, 1, 1),
+      endDate: new Date(2019, 7, 1),
+      simulationId: '32847321984',
+      simulationName: 'S19 International Simulation'
+    },
+    {
+      id: '127',
+      name: 'S19 International Final',
+      published: true,
+      finalized: true,
+      userId: '1003',
+      userName: 'MAHANAIR961234',
+      userDisplayName: 'Moradi',
+      parentPreplanId: '122',
+      parentPreplanName: 'S19 International Default',
+      creationDateTime: new Date(),
+      lastEditDateTime: new Date(),
+      startDate: new Date(2019, 1, 1),
+      endDate: new Date(2019, 7, 1),
+      simulationId: '32847321984',
+      simulationName: 'S19 International Simulation'
+    },
+    {
+      id: '128',
+      name: 'S19 International Final',
+      published: true,
+      finalized: true,
+      userId: '1003',
+      userName: 'MAHANAIR961234',
+      userDisplayName: 'Moradi',
+      parentPreplanId: '122',
+      parentPreplanName: 'S19 International Default',
+      creationDateTime: new Date(),
+      lastEditDateTime: new Date(),
+      startDate: new Date(2019, 1, 1),
+      endDate: new Date(2019, 7, 1),
+      simulationId: '32847321984',
+      simulationName: 'S19 International Simulation'
+    }
+  ];
 }

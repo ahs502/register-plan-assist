@@ -74,6 +74,9 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
   marginRight1: {
     marginRight: theme.spacing(1)
+  },
+  zeroNumberOfConnection: {
+    color: '#C4BD97'
   }
 }));
 
@@ -98,8 +101,8 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
   const defaultEastAirpot = ['BKK', 'CAN', 'DEL', 'BOM', 'KUL', 'LHE', 'PEK', 'PVG'];
   const [eastAirport, setEastAriport] = useState<readonly Airport[]>(allAirports.filter(a => defaultEastAirpot.indexOf(a.name) !== -1).orderBy('name'));
   const [westAirport, setWestAriport] = useState<readonly Airport[]>(allAirports.filter(a => defaultWestAirport.indexOf(a.name) !== -1).orderBy('name'));
-  const [maxConnectionTime, setMaxConnectionTime] = useState<number>(300);
-  const [minConnectionTime, setMinConnectionTime] = useState<number>(70);
+  const [maxConnectionTime, setMaxConnectionTime] = useState<string>('0500');
+  const [minConnectionTime, setMinConnectionTime] = useState<string>('0110');
   const [startDate, setStartDate] = useState(fromDate);
   const [endDate, setEndDate] = useState(toDate);
   const [connectionTableDataModel, setConnectionTableDataModel] = useState<{ [index: string]: any }[]>([]);
@@ -291,7 +294,12 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
       if (
         firstFligths.some(ff => {
           const sta = (ff.std.minutes + ff.weekdayRequirement.scope.blockTime) % 1440;
-          return secoundFlights.some(sf => sf.std.minutes < sta + maxConnectionTime && sf.std.minutes > sta + minConnectionTime && ff.arrivalAirport.id === sf.departureAirport.id);
+          return secoundFlights.some(
+            sf =>
+              sf.std.minutes < sta + converteHHMMtoTotalMinute(maxConnectionTime) &&
+              sf.std.minutes > sta + converteHHMMtoTotalMinute(minConnectionTime) &&
+              ff.arrivalAirport.id === sf.departureAirport.id
+          );
         })
       ) {
         result++;
@@ -536,7 +544,10 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
           headerCellOptions={numberOfConnectionExcelStyle.headerCellOption}
         />
 
-        <ExcelExportColumnGroup title={preplanName + ' Number of Connection'} headerCellOptions={numberOfConnectionExcelStyle.headerCellOption}>
+        <ExcelExportColumnGroup
+          title={preplanName + ' Number of Connection (Minimum Connection Time: ' + minConnectionTime + ' Maximum Connection Time: ' + maxConnectionTime + ')'}
+          headerCellOptions={numberOfConnectionExcelStyle.headerCellOption}
+        >
           {westAirport.map(wa => (
             <ExcelExportColumnGroup
               title={wa.name}
@@ -591,10 +602,10 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
             </TableCell>
             {westAirport.map(wa => (
               <Fragment key={wa.id}>
-                <TableCell className={classNames(classes.boarder, classes.removeRightBoarder)} align="center">
+                <TableCell className={classNames(classes.boarder, classes.removeRightBoarder, !cn['to' + wa.name] ? classes.zeroNumberOfConnection : '')} align="center">
                   {cn['to' + wa.name]}
                 </TableCell>
-                <TableCell className={classNames(classes.boarder, classes.removeLeftBoarder)} align="center">
+                <TableCell className={classNames(classes.boarder, classes.removeLeftBoarder, !cn['from' + wa.name] ? classes.zeroNumberOfConnection : '')} align="center">
                   {cn['from' + wa.name]}
                 </TableCell>
               </Fragment>
@@ -674,30 +685,18 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
         className={classNames(classes.marginBottom2, classes.connectionTime)}
         label="Minimum Connection Time"
         type="text"
-        value={
-          Math.floor(minConnectionTime / 60)
-            .toString()
-            .padStart(2, '0') + (minConnectionTime % 60).toString().padStart(2, '0')
-        }
+        value={minConnectionTime}
         onChange={e => {
-          const hour = +e.target.value.substr(0, 2);
-          const minutes = +e.target.value.substr(2, 2);
-          setMinConnectionTime(hour * 60 + minutes);
+          setMinConnectionTime(e.target.value);
         }}
       />
       <TextField
         className={classNames(classes.marginBottom2, classes.connectionTime)}
         label="Maximum Connection Time"
         type="text"
-        value={
-          Math.floor(maxConnectionTime / 60)
-            .toString()
-            .padStart(2, '0') + (maxConnectionTime % 60).toString().padStart(2, '0')
-        }
+        value={maxConnectionTime}
         onChange={e => {
-          const hour = +e.target.value.substr(0, 2);
-          const minutes = +e.target.value.substr(2, 2);
-          setMaxConnectionTime(hour * 60 + minutes);
+          setMaxConnectionTime(e.target.value);
         }}
       />
 
@@ -708,3 +707,16 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
 };
 
 export default ConnectionsReport;
+function converteTotalMinuteToHHMM(totalMinute: number): string {
+  return totalMinute
+    ? Math.floor(totalMinute / 60)
+        .toString()
+        .padStart(2, '0') + (totalMinute % 60).toString().padStart(2, '0')
+    : totalMinute.toString();
+}
+
+function converteHHMMtoTotalMinute(HHMM: string): number {
+  const hour = +HHMM.substr(0, 2);
+  const minutes = +HHMM.substr(2, 2);
+  return hour * 60 + minutes;
+}

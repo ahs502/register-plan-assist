@@ -12,7 +12,13 @@ import classNames from 'classnames';
 import AutoComplete from 'src/components/AutoComplete';
 import Preplan, { PreplanHeader } from 'src/view-models/Preplan';
 import Weekday from '@core/types/Weekday';
-import Rsx, { Rsxes } from '@core/types/flight-requirement/Rsx';
+import Rsx from '@core/types/flight-requirement/Rsx';
+import AircraftIdentityType from '@core/types/aircraft-identity/AircraftIdentityType';
+import { WorkbookSheetRow } from '@progress/kendo-ooxml';
+
+const color = {
+  changeStatus: { background: '#FFFFCC' }
+};
 
 const useStyles = makeStyles((theme: Theme) => ({
   marginBottom1: {
@@ -79,6 +85,12 @@ const useStyles = makeStyles((theme: Theme) => ({
     position: 'relative',
     top: 2,
     fontSize: 26
+  },
+  changeStatus: {
+    backgroundColor: color.changeStatus.background
+  },
+  realBoarder: {
+    backgroundColor: '#FFC7CE'
   }
 }));
 
@@ -89,10 +101,13 @@ const mhd = allAirports.find(a => a.name === 'MHD')!;
 const ker = allAirports.find(a => a.name === 'KER')!;
 const allBaseAirport = [ika, thr, mhd, ker];
 const group = [{ field: 'category' }];
-const circle = '●';
-const emptyCircle = '○';
-const leftHalfBlackCircle = '◐';
-const rightHalfBlackCircle = '◑';
+
+const character = {
+  circle: '●',
+  emptyCircle: '○',
+  leftHalfBlackCircle: '◐',
+  rightHalfBlackCircle: '◑'
+};
 
 enum FlightType {
   'Domestic',
@@ -107,9 +122,10 @@ interface ProposalReportProps {
 }
 
 interface FlattenFlightRequirment {
-  [index: string]: string | number | Airport | number[] | Daytime | boolean | FlattenFlightRequirment[] | string[];
+  [index: string]: string | number | Airport | number[] | Daytime | boolean | FlattenFlightRequirment[] | string[] | FlattenFlightRequirmentStatus;
   id: string;
   flightNumber: string;
+  fullFlightNumber: string;
   departureAirport: Airport;
   arrivalAirport: Airport;
   std: Daytime;
@@ -157,6 +173,45 @@ interface FlattenFlightRequirment {
   category: string;
   nextFlights: FlattenFlightRequirment[];
   previousFlights: FlattenFlightRequirment[];
+  status: FlattenFlightRequirmentStatus;
+}
+
+interface FlattenFlightRequirmentStatus {
+  [index: string]: boolean | WeekDayStatus | TimeStatus | DurationStatus | NoteStatus;
+  isDeleted: boolean;
+  isNew: boolean;
+  weekDay0: WeekDayStatus;
+  weekDay1: WeekDayStatus;
+  weekDay2: WeekDayStatus;
+  weekDay3: WeekDayStatus;
+  weekDay4: WeekDayStatus;
+  weekDay5: WeekDayStatus;
+  weekDay6: WeekDayStatus;
+  localStd: TimeStatus;
+  localSta: TimeStatus;
+  utcStd: TimeStatus;
+  utcSta: TimeStatus;
+  duration: DurationStatus;
+  note: NoteStatus;
+}
+
+interface WeekDayStatus {
+  hasPermission: boolean;
+  hasHalfPermission: boolean;
+  isChange: boolean;
+  isDeleted: boolean;
+}
+
+interface TimeStatus {
+  isChange: boolean;
+}
+
+interface DurationStatus {
+  isChange: boolean;
+}
+
+interface NoteStatus {
+  isChange: boolean;
 }
 
 interface DailyFlightRequirment {
@@ -179,6 +234,7 @@ interface DataProvider {
   items: FlattenFlightRequirment[];
   value: string;
   aggregates: any;
+  countOfRealFlight: number;
 }
 
 interface FliterModel {
@@ -194,13 +250,15 @@ interface FliterModel {
   showSTB1: boolean;
   showSTB2: boolean;
   showExtra: boolean;
+  preplanHeader: PreplanHeader;
+  compareMode: boolean;
 }
 
 const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequirments, preplanName, fromDate, toDate }) => {
   const [dataProvider, setDataProvider] = useState<DataProvider[]>([]);
   const [preplanHeaders, setPreplanHeaders] = useState<ReadonlyArray<Readonly<PreplanHeader>>>([]);
   const [flattenFlightRequirments, setFlattenFlightRequirments] = useState<FlattenFlightRequirment[]>([]);
-  const [targetPreplan, setTargetPreplan] = useState<Preplan>();
+  const [targetFalttenFlightRequirment, setTargetFalttenFlightRequirment] = useState<FlattenFlightRequirment[]>([]);
   const [filterModel, setFilterModel] = useState<FliterModel>({
     baseAirport: ika,
     startDate: fromDate,
@@ -212,11 +270,17 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
     showFrequency: false,
     showReal: true,
     showSTB1: true,
-    showSTB2: false,
-    showExtra: false
+    showSTB2: true,
+    showExtra: true,
+    preplanHeader: {} as PreplanHeader,
+    compareMode: false
   } as FliterModel);
 
-  if (!preplanHeaders.length) setPreplanHeaders(getDummyPreplanHeaders()); //TODO: Remove this line later.
+  if (!preplanHeaders.length) {
+    const preplanHeader = getDummyPreplanHeaders();
+    preplanHeader.unshift({} as PreplanHeader);
+    setPreplanHeaders(preplanHeader); //TODO: Remove this line later.
+  }
 
   let proposalExporter: ExcelExport | null;
 
@@ -248,11 +312,12 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
 
   const generateReportDataModel = (
     { baseAirport, startDate, endDate, flightType, showReal, showSTB1, showSTB2, showExtra }: FliterModel,
-    flightRequirments: readonly FlightRequirement[]
+    flightRequirments: readonly FlightRequirement[],
+    generateRealFlight: boolean
   ): FlattenFlightRequirment[] => {
     const result: FlattenFlightRequirment[] = [];
 
-    if (!baseAirport || !startDate || !endDate || startDate < fromDate || startDate > toDate || endDate < fromDate || endDate > toDate) return [];
+    if (!baseAirport || !startDate || !endDate) return [];
 
     let labels = getLabels(flightRequirments, baseAirport, flightType);
 
@@ -260,7 +325,16 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
 
     labels.forEach(m => {
       let dailyFlightRequirments = createDailyFlightRequirment(flightRequirments, m);
-      dailyFlightRequirments = fliterDailyFlightRequirmentByRSX(dailyFlightRequirments, showReal, showSTB1, showSTB2, showExtra);
+
+      randomize(dailyFlightRequirments); //TODO: remove
+
+      dailyFlightRequirments = fliterDailyFlightRequirmentByRSX(
+        dailyFlightRequirments,
+        generateRealFlight && showReal,
+        generateRealFlight && showSTB1,
+        !generateRealFlight && showSTB2,
+        !generateRealFlight && showExtra
+      );
       const flattenFlightRequirmentList = createFlattenFlightRequirmentsFromDailyFlightRequirment(dailyFlightRequirments, baseAirport, baseDate, m);
       flattenFlightRequirmentList.sort((a, b) => compareFunction(a.std.minutes, b.std.minutes));
 
@@ -287,30 +361,71 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
     calculateFrequency(result);
 
     return result;
+
+    function randomize(df: DailyFlightRequirment[]) {
+      //TODO: remove
+      // d.rsx = Math.random() > 0.5 ? 'REAL' : Math.random() > 0.5 ? 'STB1' : Math.random() > 0.5 ? 'STB2' : 'EXT';
+      df.forEach(d => {
+        d.arrivalPermission = Math.random() > 0.25 ? true : false; //TODO: remove
+        d.departurePermission = Math.random() > 0.25 ? true : false; //TODO: remove
+        //d.rsx = Math.random() > 0.5 ? 'REAL' : 'STB1';
+
+        if (d.departureAirport.id === '7092901520000005420' || d.arrivalAirport.id === '7092901520000005420') {
+          if ([1, 4].indexOf(d.day) !== -1) d.rsx = 'STB2';
+          if ([6].indexOf(d.day) !== -1) d.rsx = 'EXT';
+          if ([2].indexOf(d.day) !== -1) d.rsx = 'STB1';
+        }
+
+        if (d.departureAirport.id === '7092901520000001628' || d.arrivalAirport.id === '7092901520000001628') {
+          if ([5].indexOf(d.day) !== -1) d.rsx = 'STB2';
+          if ([3].indexOf(d.day) !== -1) d.rsx = 'EXT';
+          if ([1].indexOf(d.day) !== -1) d.rsx = 'STB1';
+        }
+      });
+    }
   };
 
   useEffect(() => {
-    const flat = generateReportDataModel(filterModel, flightRequirments);
-    const groupObject = flat.reduce(
-      (acc, current) => {
-        const category = current.category;
-        acc[category] = acc[category] || [];
-        acc[category].push(current);
-        return acc;
-      },
-      {} as any
-    );
+    const realFlatModel = generateReportDataModel(filterModel, flightRequirments, true);
+    const reserveFlatModel = generateReportDataModel(filterModel, flightRequirments, false);
 
-    setFlattenFlightRequirments(flat);
-    const result = Object.keys(groupObject)
-      .sort()
-      .map(function(k) {
-        if (groupObject.hasOwnProperty(k)) {
-          return { field: 'category', items: groupObject[k], value: k, aggregates: {} } as DataProvider;
-        }
-      }) as DataProvider[];
+    setFlattenFlightRequirmentsStatus(realFlatModel);
+    setFlattenFlightRequirmentsStatus(reserveFlatModel);
 
-    setDataProvider(result);
+    if (filterModel.compareMode) {
+      const targetPreplan = filterModel.preplanHeader;
+      const targetRealFlatModel = generateReportDataModel(filterModel, getPreplanFlightRequirments(targetPreplan.id), true);
+      const targetReserveFlatModel = generateReportDataModel(filterModel, getPreplanFlightRequirments(targetPreplan.id), false);
+
+      compareFlattenFlightRequirment(realFlatModel, targetRealFlatModel);
+      realFlatModel.sort((first, second) => {
+        const firstLabel = first.label;
+        const secondLabel = second.label;
+        return firstLabel > secondLabel ? 1 : firstLabel < secondLabel ? -1 : 0;
+      });
+
+      compareFlattenFlightRequirment(reserveFlatModel, targetReserveFlatModel);
+      reserveFlatModel.sort((first, second) => {
+        const firstLabel = first.label;
+        const secondLabel = second.label;
+        return firstLabel > secondLabel ? 1 : firstLabel < secondLabel ? -1 : 0;
+      });
+    }
+
+    const realGroup = groupFlattenFlightRequirmentbyCategory(realFlatModel);
+    const reserveGroup = groupFlattenFlightRequirmentbyCategory(reserveFlatModel);
+
+    realGroup.forEach(d => {
+      const groupInReserve = reserveGroup.find(r => r.value === d.value);
+      if (groupInReserve) {
+        d.countOfRealFlight = d.items.length;
+        d.items = d.items.concat(groupInReserve.items);
+        reserveGroup.remove(groupInReserve);
+      }
+    });
+
+    setDataProvider(realGroup.concat(reserveGroup));
+    setFlattenFlightRequirments(realFlatModel.concat(reserveFlatModel));
   }, [filterModel]);
 
   return (
@@ -461,7 +576,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
             getOptionLabel={l => l.name}
             getOptionValue={l => l.id}
             onSelect={s => {
-              //setTargetPreplan(s);
+              setFilterModel({ ...filterModel, preplanHeader: s, compareMode: !!s.id });
             }}
           />
         </Grid>
@@ -562,6 +677,15 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
                   weekdayWithoutPermission.forEach(c => {
                     r!.cells![weekDaySaturdayCellNumber + c].color = '#e53935';
                   });
+
+                  Array.range(0, 6).forEach(d => {
+                    if ((model.status['weekDay' + d.toString()] as WeekDayStatus).isChange) r!.cells![weekDaySaturdayCellNumber + d].background = color.changeStatus.background;
+
+                    if (model.status.localStd && model.status.localStd.isChange) r!.cells![3].background = color.changeStatus.background;
+                    if (model.status.localSta && model.status.localSta.isChange) r!.cells![4].background = color.changeStatus.background;
+                    if (model.status.utcStd && model.status.utcStd.isChange) r!.cells![5].background = color.changeStatus.background;
+                    if (model.status.utcSta && model.status.utcSta.isChange) r!.cells![6].background = color.changeStatus.background;
+                  });
                 }
               });
 
@@ -578,7 +702,48 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
               });
             }
 
+            rows && proposalExporter.props.data && insertDividerBetweenRealFlightAndStantbyFlight(proposalExporter.props.data, rows);
+
             proposalExporter.save(options);
+
+            function insertDividerBetweenRealFlightAndStantbyFlight(data: any[], workbookSheetRows: WorkbookSheetRow[]) {
+              let countOfHeaderRow = workbookSheetRows.filter(w => (w as any).type === 'header').length;
+              let numberOfGroupHeader = 1;
+              let countOfAllPreviousRow = countOfHeaderRow;
+              let groupHeader = workbookSheetRows.find(w => (w as any).type === 'group-header')!.cells![0];
+
+              data.forEach(element => {
+                const countOfRealFlightInCategory = element.countOfRealFlight;
+                const countOfAllFlight = element.items.length;
+                const insertIndex = countOfAllPreviousRow + countOfRealFlightInCategory + numberOfGroupHeader;
+                numberOfGroupHeader++;
+                countOfAllPreviousRow += countOfAllFlight;
+                if (countOfRealFlightInCategory) {
+                  countOfAllPreviousRow++;
+                  workbookSheetRows.splice(insertIndex, 0, {
+                    cells: [
+                      { background: groupHeader.background },
+                      {
+                        value:
+                          (element.value ? 'Category: ' : '') +
+                          element.value +
+                          ' ' +
+                          (filterModel.showSTB2 ? 'STB2' : '') +
+                          (filterModel.showExtra ? (filterModel.showSTB2 ? ' & EXT' : 'EXT') : ''),
+                        textAlign: 'left',
+                        borderLeft: { color: '#000000', size: 3 },
+                        borderRight: { color: '#000000', size: 3 },
+                        borderTop: { color: '#000000', size: 3 },
+                        borderBottom: { color: '#000000', size: 3 },
+                        background: '#FFC7CE',
+                        colSpan: groupHeader.colSpan! - 1
+                      }
+                    ],
+                    type: 'data'
+                  } as WorkbookSheetRow);
+                }
+              });
+            }
           }
         }}
       >
@@ -595,7 +760,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
         }}
       >
         <ExcelExportColumnGroup
-          title={'Propoal Schedule from ' + formatDate(filterModel.startDate) + ' till ' + formatDate(filterModel.endDate)}
+          title={'Propoal Schedule from ' + formatDateddMMMyy(filterModel.startDate) + ' till ' + formatDateddMMMyy(filterModel.endDate)}
           headerCellOptions={{ ...headerCellOptions, background: '#FFFFFF' }}
         >
           <ExcelExportColumnGroup title={'Base ' + filterModel.baseAirport.name} headerCellOptions={{ ...headerCellOptions, background: '#F4B084' }}>
@@ -784,9 +949,9 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
 
             {filterModel.showSlot && (
               <ExcelExportColumn
-                title={['INTL.', 'SLOT(UTC)'].join('\r\n')}
+                title={['DESTINATION', 'SLOT (LCL)'].join('\r\n')}
                 field="destinationNoPermissions"
-                width={85}
+                width={70}
                 cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 }, borderLeft: { color: '#000000', size: 3 } }}
                 headerCellOptions={{
                   ...headerCellOptions,
@@ -799,11 +964,12 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
                 }}
               />
             )}
+
             {filterModel.showSlot && (
               <ExcelExportColumn
-                title={['DOM.', 'SLOT(LCL)'].join('\r\n')}
+                title={['ORIGIN', 'SLOT (UTC)'].join('\r\n')}
                 field="domesticNoPermissions"
-                width={70}
+                width={85}
                 cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 }, borderLeft: { color: '#000000', size: 3 } }}
                 headerCellOptions={{
                   ...headerCellOptions,
@@ -920,13 +1086,13 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
             {filterModel.showSlot && (
               <Fragment>
                 <TableCell className={classes.boarder} align="center">
-                  <div>INTL.</div>
-                  <div>SLOT (UTC)</div>
+                  <div>DESTINATION</div>
+                  <div>SLOT (LCL)</div>
                 </TableCell>
 
                 <TableCell className={classes.boarder} align="center">
-                  <div>DOM.</div>
-                  <div>SLOT (LCL)</div>
+                  <div>ORIGIN </div>
+                  <div>SLOT (UTC)</div>
                 </TableCell>
               </Fragment>
             )}
@@ -949,91 +1115,163 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
             <Fragment key={d.value}>
               {d.value && (
                 <TableRow>
-                  <TableCell className={classes.category} colSpan={19}>
+                  <TableCell className={classNames(classes.category, classes.boarder)} colSpan={19}>
                     Category: {d.value}
                   </TableCell>
                 </TableRow>
               )}
               {d.items.map((f, index, self) => (
-                <TableRow
-                  key={index.toString() + f.label + f.flightNumber}
-                  className={
-                    index > 0 && self[index - 1].label !== f.label ? (self[index - 1].parentRoute !== f.parentRoute ? classes.borderTopThick : classes.borderTopThin) : undefined
-                  }
-                >
-                  <TableCell className={classes.boarder}>{f.flightNumber}</TableCell>
-                  <TableCell className={classes.boarder}>{f.route}</TableCell>
-                  <TableCell className={classes.boarder} align="center">
-                    {f.localStd}
-                  </TableCell>
-                  <TableCell className={classes.boarder} align="center">
-                    <div className={f.diffLocalStdandLocalSta !== 0 ? classes.diffContainer : ''}>
-                      <span>{f.localSta}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className={classNames(classes.boarder, classes.utc)} align="center">
-                    <div className={f.diffLocalStdandUtcStd !== 0 ? classes.diffContainer : ''}>
-                      <span>{f.utcStd}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className={classNames(classes.boarder, classes.utc)} align="center">
-                    <div className={f.diffLocalStdandUtcSta !== 0 ? classes.diffContainer : ''}>
-                      <span>{f.utcSta}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell align="center" className={classNames(classes.boarder, isRealFlight(f, 0) ? classes.rsx : '', noPermission(f, 0) ? classes.noPermission : '')}>
-                    <div className={isRealFlight(f, 0) && halfPermission(f, 0) ? classes.halfPermission : ''}>{f.weekDay0}</div>
-                  </TableCell>
-                  <TableCell align="center" className={classNames(classes.boarder, isRealFlight(f, 1) ? classes.rsx : '', noPermission(f, 1) ? classes.noPermission : '')}>
-                    <div className={isRealFlight(f, 1) && halfPermission(f, 1) ? classes.halfPermission : ''}>{f.weekDay1}</div>
-                  </TableCell>
-                  <TableCell align="center" className={classNames(classes.boarder, isRealFlight(f, 2) ? classes.rsx : '', noPermission(f, 2) ? classes.noPermission : '')}>
-                    <div className={isRealFlight(f, 2) && halfPermission(f, 2) ? classes.halfPermission : ''}>{f.weekDay2}</div>
-                  </TableCell>
-                  <TableCell align="center" className={classNames(classes.boarder, isRealFlight(f, 3) ? classes.rsx : '', noPermission(f, 3) ? classes.noPermission : '')}>
-                    <div className={isRealFlight(f, 3) && halfPermission(f, 3) ? classes.halfPermission : ''}>{f.weekDay3}</div>
-                  </TableCell>
-                  <TableCell align="center" className={classNames(classes.boarder, isRealFlight(f, 4) ? classes.rsx : '', noPermission(f, 4) ? classes.noPermission : '')}>
-                    <div className={isRealFlight(f, 4) && halfPermission(f, 4) ? classes.halfPermission : ''}>{f.weekDay4}</div>
-                  </TableCell>
-                  <TableCell align="center" className={classNames(classes.boarder, isRealFlight(f, 5) ? classes.rsx : '', noPermission(f, 5) ? classes.noPermission : '')}>
-                    <div className={isRealFlight(f, 5) && halfPermission(f, 5) ? classes.halfPermission : ''}>{f.weekDay5}</div>
-                  </TableCell>
-                  <TableCell align="center" className={classNames(classes.boarder, isRealFlight(f, 6) ? classes.rsx : '', noPermission(f, 6) ? classes.noPermission : '')}>
-                    <div className={isRealFlight(f, 6) && halfPermission(f, 6) ? classes.halfPermission : ''}>{f.weekDay6}</div>
-                  </TableCell>
-                  <TableCell align="center" className={classes.boarder}>
-                    {formatMinuteToString(f.blocktime)}
-                  </TableCell>
-                  {filterModel.showNote && (
+                <Fragment>
+                  {d.countOfRealFlight === index ? (
+                    <TableRow>
+                      <TableCell className={classNames(classes.category, classes.realBoarder, classes.boarder)} colSpan={19}>
+                        {(d.value ? 'Category: ' : '') +
+                          d.value +
+                          ' ' +
+                          (filterModel.showSTB2 ? 'STB2' : '') +
+                          (filterModel.showExtra ? (filterModel.showSTB2 ? ' & EXT' : 'EXT') : '')}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    <Fragment />
+                  )}
+                  <TableRow
+                    key={index.toString() + f.label + f.flightNumber}
+                    className={classNames(
+                      index > 0 && self[index - 1].label !== f.label ? (self[index - 1].parentRoute !== f.parentRoute ? classes.borderTopThick : classes.borderTopThin) : '',
+                      f.status.isNew ? classes.changeStatus : ''
+                    )}
+                  >
+                    <TableCell className={classes.boarder}>{f.flightNumber}</TableCell>
+                    <TableCell className={classes.boarder}>{f.route}</TableCell>
+                    <TableCell className={classNames(classes.boarder, f.status.localStd && f.status.localStd.isChange ? classes.changeStatus : '')} align="center">
+                      {f.localStd}
+                    </TableCell>
+                    <TableCell className={classNames(classes.boarder, f.status.localSta && f.status.localSta.isChange ? classes.changeStatus : '')} align="center">
+                      <div className={f.diffLocalStdandLocalSta !== 0 ? classes.diffContainer : ''}>
+                        <span>{f.localSta}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className={classNames(classes.boarder, classes.utc, f.status.utcStd && f.status.utcStd.isChange ? classes.changeStatus : '')} align="center">
+                      <div className={f.diffLocalStdandUtcStd !== 0 ? classes.diffContainer : ''}>
+                        <span>{f.utcStd}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className={classNames(classes.boarder, classes.utc, f.status.utcSta && f.status.utcSta.isChange ? classes.changeStatus : '')} align="center">
+                      <div className={f.diffLocalStdandUtcSta !== 0 ? classes.diffContainer : ''}>
+                        <span>{f.utcSta}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell
+                      align="center"
+                      className={classNames(
+                        classes.boarder,
+                        isRealFlight(f, 0) ? classes.rsx : '',
+                        f.status.weekDay0.hasPermission ? classes.noPermission : '',
+                        f.status.weekDay0.isChange ? classes.changeStatus : ''
+                      )}
+                    >
+                      <div className={isRealFlight(f, 0) && f.status.weekDay0.hasHalfPermission ? classes.halfPermission : ''}>{f.weekDay0}</div>
+                    </TableCell>
+                    <TableCell
+                      align="center"
+                      className={classNames(
+                        classes.boarder,
+                        isRealFlight(f, 1) ? classes.rsx : '',
+                        f.status.weekDay1.hasPermission ? classes.noPermission : '',
+                        f.status.weekDay1.isChange ? classes.changeStatus : ''
+                      )}
+                    >
+                      <div className={isRealFlight(f, 1) && f.status.weekDay1.hasHalfPermission ? classes.halfPermission : ''}>{f.weekDay1}</div>
+                    </TableCell>
+                    <TableCell
+                      align="center"
+                      className={classNames(
+                        classes.boarder,
+                        isRealFlight(f, 2) ? classes.rsx : '',
+                        f.status.weekDay2.hasPermission ? classes.noPermission : '',
+                        f.status.weekDay2.isChange ? classes.changeStatus : ''
+                      )}
+                    >
+                      <div className={isRealFlight(f, 2) && f.status.weekDay2.hasHalfPermission ? classes.halfPermission : ''}>{f.weekDay2}</div>
+                    </TableCell>
+                    <TableCell
+                      align="center"
+                      className={classNames(
+                        classes.boarder,
+                        isRealFlight(f, 3) ? classes.rsx : '',
+                        f.status.weekDay3.hasPermission ? classes.noPermission : '',
+                        f.status.weekDay3.isChange ? classes.changeStatus : ''
+                      )}
+                    >
+                      <div className={isRealFlight(f, 3) && f.status.weekDay3.hasHalfPermission ? classes.halfPermission : ''}>{f.weekDay3}</div>
+                    </TableCell>
+                    <TableCell
+                      align="center"
+                      className={classNames(
+                        classes.boarder,
+                        isRealFlight(f, 4) ? classes.rsx : '',
+                        f.status.weekDay4.hasPermission ? classes.noPermission : '',
+                        f.status.weekDay4.isChange ? classes.changeStatus : ''
+                      )}
+                    >
+                      <div className={isRealFlight(f, 4) && f.status.weekDay4.hasHalfPermission ? classes.halfPermission : ''}>{f.weekDay4}</div>
+                    </TableCell>
+                    <TableCell
+                      align="center"
+                      className={classNames(
+                        classes.boarder,
+                        isRealFlight(f, 5) ? classes.rsx : '',
+                        f.status.weekDay5.hasPermission ? classes.noPermission : '',
+                        f.status.weekDay5.isChange ? classes.changeStatus : ''
+                      )}
+                    >
+                      <div className={isRealFlight(f, 5) && f.status.weekDay5.hasHalfPermission ? classes.halfPermission : ''}>{f.weekDay5}</div>
+                    </TableCell>
+                    <TableCell
+                      align="center"
+                      className={classNames(
+                        classes.boarder,
+                        isRealFlight(f, 6) ? classes.rsx : '',
+                        f.status.weekDay6.hasPermission ? classes.noPermission : '',
+                        f.status.weekDay6.isChange ? classes.changeStatus : ''
+                      )}
+                    >
+                      <div className={isRealFlight(f, 6) && f.status.weekDay6.hasHalfPermission ? classes.halfPermission : ''}>{f.weekDay6}</div>
+                    </TableCell>
                     <TableCell align="center" className={classes.boarder}>
-                      {f.note}
+                      {formatMinuteToString(f.blocktime)}
                     </TableCell>
-                  )}
-
-                  {filterModel.showSlot && (
-                    <Fragment>
-                      <TableCell className={classes.boarder} align="center">
-                        {f.destinationNoPermissions}
+                    {filterModel.showNote && (
+                      <TableCell align="center" className={classes.boarder}>
+                        {f.note}
                       </TableCell>
+                    )}
 
+                    {filterModel.showSlot && (
+                      <Fragment>
+                        <TableCell className={classes.boarder} align="center">
+                          {f.destinationNoPermissions}
+                        </TableCell>
+
+                        <TableCell className={classes.boarder} align="center">
+                          {f.domesticNoPermissions}
+                        </TableCell>
+                      </Fragment>
+                    )}
+                    {filterModel.showType && (
                       <TableCell className={classes.boarder} align="center">
-                        {f.domesticNoPermissions}
+                        {f.aircraftType}
                       </TableCell>
-                    </Fragment>
-                  )}
-                  {filterModel.showType && (
-                    <TableCell className={classes.boarder} align="center">
-                      {f.aircraftType}
-                    </TableCell>
-                  )}
+                    )}
 
-                  {filterModel.showFrequency && (
-                    <TableCell className={classes.boarder} align="center">
-                      {f.frequency}
-                    </TableCell>
-                  )}
-                </TableRow>
+                    {filterModel.showFrequency && (
+                      <TableCell className={classes.boarder} align="center">
+                        {f.frequency}
+                      </TableCell>
+                    )}
+                  </TableRow>
+                </Fragment>
               ))}
             </Fragment>
           ))}
@@ -1044,6 +1282,104 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
 };
 
 export default ProposalReport;
+
+function groupFlattenFlightRequirmentbyCategory(realFlatModel: FlattenFlightRequirment[]) {
+  const groupObject = realFlatModel.reduce(
+    (acc, current) => {
+      const category = current.category;
+      acc[category] = acc[category] || [];
+      acc[category].push(current);
+      return acc;
+    },
+    {} as any
+  );
+  const result = Object.keys(groupObject)
+    .sort()
+    .map(function(k) {
+      if (groupObject.hasOwnProperty(k)) {
+        return { field: 'category', items: groupObject[k], value: k, aggregates: {} } as DataProvider;
+      }
+    }) as DataProvider[];
+  return result;
+}
+
+function compareFlattenFlightRequirment(sources: FlattenFlightRequirment[], targets: FlattenFlightRequirment[]) {
+  const flightNumbers = sources.map(s => s.fullFlightNumber).distinct();
+
+  flightNumbers.forEach(f => {
+    const source = sources.filter(s => s.fullFlightNumber === f);
+    const target = targets.filter(s => s.fullFlightNumber === f);
+    source.forEach(s => {
+      const checkDay = checkDayChangeBaseOnRouteAndTimes(s, target);
+      if (!checkDay) {
+        checkTimeChangeBaseOnRoute(s, target);
+      }
+    });
+  });
+
+  function checkDayChangeBaseOnRouteAndTimes(source: FlattenFlightRequirment, target: FlattenFlightRequirment[]) {
+    const ffrMatchWithRouteandTime = target.find(t => t.route === source.route && t.utcSta === source.utcSta && t.utcStd === source.utcStd);
+    if (ffrMatchWithRouteandTime) {
+      source.days.forEach(d => {
+        (source.status['weekDay' + d.toString()] as WeekDayStatus).isChange =
+          ffrMatchWithRouteandTime.days.indexOf(d) === -1 || source['rsxWeekDay' + d.toString()] !== ffrMatchWithRouteandTime['rsxWeekDay' + d.toString()];
+        ffrMatchWithRouteandTime.days.remove(d);
+      });
+      ffrMatchWithRouteandTime.days.forEach(d => {
+        (source.status['weekDay' + d.toString()] as WeekDayStatus).isChange = true;
+      });
+
+      target.remove(ffrMatchWithRouteandTime);
+
+      return true;
+    }
+
+    return false;
+  }
+
+  function checkTimeChangeBaseOnRoute(source: FlattenFlightRequirment, target: FlattenFlightRequirment[]) {
+    const ffrMatchWithRoute = target.filter(t => t.route === source.route);
+
+    source.days.forEach(n => {
+      const existsffr = ffrMatchWithRoute.find(f => f.days.indexOf(n) !== -1 && f['rsxWeekDay' + n.toString()] === source['rsxWeekDay' + n.toString()]);
+
+      (source.status['weekDay' + n.toString()] as WeekDayStatus).isChange = !existsffr;
+      if (existsffr) existsffr.days.remove(n);
+    });
+
+    source.status.localSta = { isChange: !ffrMatchWithRoute.some(f => f.localSta === source.localSta) };
+    source.status.localStd = { isChange: !ffrMatchWithRoute.some(f => f.localStd === source.localStd) };
+    source.status.utcSta = { isChange: !ffrMatchWithRoute.some(f => f.utcSta === source.utcSta) };
+    source.status.utcStd = { isChange: !ffrMatchWithRoute.some(f => f.utcStd === source.utcStd) };
+  }
+}
+
+function setFlattenFlightRequirmentsStatus(flattenFlightRequirments: FlattenFlightRequirment[]) {
+  flattenFlightRequirments.forEach(r => {
+    setFlattenFlightRequirmentStatus(r);
+  });
+}
+
+function setFlattenFlightRequirmentStatus(flattenFlightRequirment: FlattenFlightRequirment) {
+  flattenFlightRequirment.status = {
+    isDeleted: false,
+    isNew: false,
+    weekDay0: genereateWeekDayStatus(flattenFlightRequirment, 0),
+    weekDay1: genereateWeekDayStatus(flattenFlightRequirment, 1),
+    weekDay2: genereateWeekDayStatus(flattenFlightRequirment, 2),
+    weekDay3: genereateWeekDayStatus(flattenFlightRequirment, 3),
+    weekDay4: genereateWeekDayStatus(flattenFlightRequirment, 4),
+    weekDay5: genereateWeekDayStatus(flattenFlightRequirment, 5),
+    weekDay6: genereateWeekDayStatus(flattenFlightRequirment, 6)
+  } as FlattenFlightRequirmentStatus;
+
+  function genereateWeekDayStatus(flattenFlightRequirment: FlattenFlightRequirment, day: number): WeekDayStatus {
+    return {
+      hasPermission: hasPermission(flattenFlightRequirment, day),
+      hasHalfPermission: halfPermission(flattenFlightRequirment, day)
+    } as WeekDayStatus;
+  }
+}
 
 function calculateFrequency(result: FlattenFlightRequirment[]) {
   const parentRoutes = result
@@ -1112,30 +1448,38 @@ function findNextAndPreviousFlightRequirment(flattenFlightRequirmentList: Flatte
   flattenFlightRequirmentList.forEach((current, i, self) => {
     current.utcDays.forEach(d => {
       const arrivalDay = (d + (current.std.minutes > current.sta.minutes ? 1 : 0)) % 7;
-      let nextFlight = self.find(f => {
+      let nextOrPreviousFlight = self.find(f => {
         return f.departureAirport.id === current.arrivalAirport.id && (f.std.minutes > current.sta.minutes && f.utcDays.some(dd => dd === arrivalDay));
       });
       let dayDiff = 1;
-      if (!nextFlight) {
+      if (!nextOrPreviousFlight) {
         for (dayDiff = 1; dayDiff < 7; dayDiff++) {
-          nextFlight = self.find(f => {
+          nextOrPreviousFlight = self.find(f => {
             return f.departureAirport.id === current.arrivalAirport.id && f.utcDays.some(dd => dd === (arrivalDay + dayDiff) % 7);
           });
-          if (nextFlight) {
-            nextFlight.utcDays.remove((arrivalDay + dayDiff) % 7);
+          if (nextOrPreviousFlight) {
+            nextOrPreviousFlight.utcDays.remove((arrivalDay + dayDiff) % 7);
+            break;
+          }
+
+          nextOrPreviousFlight = self.find(f => {
+            return f.departureAirport.id === current.arrivalAirport.id && f.utcDays.some(dd => dd === (arrivalDay - dayDiff + 6) % 7);
+          });
+          if (nextOrPreviousFlight) {
+            nextOrPreviousFlight.utcDays.remove((arrivalDay - dayDiff + 6) % 7);
             break;
           }
         }
       } else {
-        nextFlight.utcDays.remove(arrivalDay);
+        nextOrPreviousFlight.utcDays.remove(arrivalDay);
       }
-      if (nextFlight) {
+      if (nextOrPreviousFlight) {
         if (dayDiff <= 3) {
-          if (current.nextFlights.indexOf(nextFlight) === -1) current.nextFlights.push(nextFlight);
-          if (nextFlight.previousFlights.indexOf(current) === -1) nextFlight.previousFlights.push(current);
+          if (current.nextFlights.indexOf(nextOrPreviousFlight) === -1) current.nextFlights.push(nextOrPreviousFlight);
+          if (nextOrPreviousFlight.previousFlights.indexOf(current) === -1) nextOrPreviousFlight.previousFlights.push(current);
         } else {
-          if (current.previousFlights.indexOf(nextFlight) === -1) current.previousFlights.push(nextFlight);
-          if (nextFlight.nextFlights.indexOf(current) === -1) nextFlight.nextFlights.push(current);
+          if (current.previousFlights.indexOf(nextOrPreviousFlight) === -1) current.previousFlights.push(nextOrPreviousFlight);
+          if (nextOrPreviousFlight.nextFlights.indexOf(current) === -1) nextOrPreviousFlight.nextFlights.push(current);
         }
       }
     });
@@ -1158,8 +1502,8 @@ function createDailyFlightRequirment(flightRequirments: readonly FlightRequireme
             note: d.notes,
             aircraftType: d.flight.aircraftRegister && d.flight.aircraftRegister.aircraftType.name,
             category: f.definition.category,
-            arrivalPermission: Math.random() > 0.25 ? d.scope.arrivalPermission : !d.scope.arrivalPermission,
-            departurePermission: Math.random() > 0.25 ? d.scope.departurePermission : !d.scope.departurePermission,
+            arrivalPermission: Math.random() > 0.25 ? d.scope.arrivalPermission : !d.scope.arrivalPermission, //TODO: remove
+            departurePermission: Math.random() > 0.25 ? d.scope.departurePermission : !d.scope.departurePermission, //TODO: remove
             rsx: d.scope.rsx
           } as DailyFlightRequirment)
       );
@@ -1267,6 +1611,7 @@ function createFlattenFlightRequirment(dailyFlightRequirment: DailyFlightRequirm
         .toString(36)
         .substring(2) + Date.now().toString(36),
     flightNumber: normalizeFlightNumber(dailyFlightRequirment.flightNumber),
+    fullFlightNumber: dailyFlightRequirment.flightNumber,
     arrivalAirport: dailyFlightRequirment.arrivalAirport,
     departureAirport: dailyFlightRequirment.departureAirport,
     blocktime: dailyFlightRequirment.blocktime,
@@ -1276,10 +1621,10 @@ function createFlattenFlightRequirment(dailyFlightRequirment: DailyFlightRequirm
     std: dailyFlightRequirment.std,
     sta: new Daytime(utcSta),
     notes: [] as string[],
-    localStd: formatDateToString(localStd),
-    localSta: formatDateToString(localSta) + (diffLocalStdandLocalSta < 0 ? '*' : ''),
-    utcStd: formatDateToString(utcStd) + (diffLocalStdandUtcStd < 0 ? '*' : diffLocalStdandUtcStd > 0 ? '#' : ''),
-    utcSta: formatDateToString(utcSta) + (diffLocalStdandUtcSta < 0 ? '*' : diffLocalStdandUtcSta > 0 ? '#' : ''),
+    localStd: formatDateToHHMM(localStd),
+    localSta: formatDateToHHMM(localSta) + (diffLocalStdandLocalSta < 0 ? '*' : ''),
+    utcStd: formatDateToHHMM(utcStd) + (diffLocalStdandUtcStd < 0 ? '*' : diffLocalStdandUtcStd > 0 ? '#' : ''),
+    utcSta: formatDateToHHMM(utcSta) + (diffLocalStdandUtcSta < 0 ? '*' : diffLocalStdandUtcSta > 0 ? '#' : ''),
     diffLocalStdandUtcStd: diffLocalStdandUtcStd,
     diffLocalStdandLocalSta: diffLocalStdandLocalSta,
     diffLocalStdandUtcSta: diffLocalStdandUtcSta,
@@ -1340,10 +1685,10 @@ function updateFlattenFlightRequirment(flattenFlight: FlattenFlightRequirment, d
 
   function calculateDayCharacter(): string | number | boolean | Airport | number[] | Daytime | FlattenFlightRequirment[] | string[] {
     if (dialyFlightRequirment.rsx === 'REAL') {
-      if (dialyFlightRequirment.departurePermission && dialyFlightRequirment.arrivalPermission) return circle;
-      if (!dialyFlightRequirment.departurePermission && !dialyFlightRequirment.arrivalPermission) return emptyCircle;
-      if (!dialyFlightRequirment.departurePermission) return domesticToDestination ? leftHalfBlackCircle : rightHalfBlackCircle;
-      return domesticToDestination ? rightHalfBlackCircle : leftHalfBlackCircle;
+      if (dialyFlightRequirment.departurePermission && dialyFlightRequirment.arrivalPermission) return character.circle;
+      if (!dialyFlightRequirment.departurePermission && !dialyFlightRequirment.arrivalPermission) return character.emptyCircle;
+      if (!dialyFlightRequirment.departurePermission) return domesticToDestination ? character.leftHalfBlackCircle : character.rightHalfBlackCircle;
+      return domesticToDestination ? character.rightHalfBlackCircle : character.leftHalfBlackCircle;
     } else {
       return dialyFlightRequirment.rsx.toString();
     }
@@ -1377,7 +1722,7 @@ function formatMinuteToString(minutes: number) {
   );
 }
 
-function formatDateToString(date: Date) {
+function formatDateToHHMM(date: Date) {
   if (!date) return '';
   return (
     date
@@ -1397,7 +1742,7 @@ function compareFunction(a: number, b: number) {
   return 0;
 }
 
-function noPermission(flattenFlightRequirment: FlattenFlightRequirment, day: number) {
+function hasPermission(flattenFlightRequirment: FlattenFlightRequirment, day: number) {
   return flattenFlightRequirment.destinationNoPermissionsWeekDay.some(a => a === day) || flattenFlightRequirment.domesticNoPermissionsWeekDay.some(a => a === day);
 }
 
@@ -1411,14 +1756,32 @@ function isRealFlight(flattenFlightRequirment: FlattenFlightRequirment, day: num
   return flattenFlightRequirment['rswWeekDay' + day.toString()] === 'REAL';
 }
 
-function formatDate(date: Date) {
-  let day = '' + date.getDate(),
-    year = date.getFullYear();
+function formatDateddMMMyyyy(date: Date) {
+  let day = '' + date.getUTCDate(),
+    year = date.getUTCFullYear();
   const month = date.toLocaleString('default', { month: 'short' }).toUpperCase();
 
   day = day.padStart(2, '0');
 
   return [day, month, year].join('/');
+}
+
+function formatDateddMMMyy(date: Date) {
+  let day = '' + date.getUTCDate(),
+    year = date
+      .getUTCFullYear()
+      .toString()
+      .substr(2, 2);
+  const month = date.toLocaleString('default', { month: 'short' }).toUpperCase();
+
+  day = day.padStart(2, '0');
+
+  return [day, month, year].join('');
+}
+
+function getPreplanFlightRequirments(preplanId: string) {
+  //TODO get correct
+  return getDummyPreplan().flightRequirements;
 }
 
 function getDummyPreplanHeaders(): PreplanHeader[] {
@@ -1442,7 +1805,7 @@ function getDummyPreplanHeaders(): PreplanHeader[] {
     },
     {
       id: '124',
-      name: 'S21 International Final',
+      name: 'W20 International Final',
       published: false,
       finalized: true,
       userId: '1001',
@@ -1476,7 +1839,7 @@ function getDummyPreplanHeaders(): PreplanHeader[] {
     },
     {
       id: '126',
-      name: 'S19 International Final',
+      name: 'W19 International Final',
       published: true,
       finalized: true,
       userId: '1002',
@@ -1493,7 +1856,7 @@ function getDummyPreplanHeaders(): PreplanHeader[] {
     },
     {
       id: '127',
-      name: 'S19 International Final',
+      name: 'S18 International Final',
       published: true,
       finalized: true,
       userId: '1003',
@@ -1510,7 +1873,7 @@ function getDummyPreplanHeaders(): PreplanHeader[] {
     },
     {
       id: '128',
-      name: 'S19 International Final',
+      name: 'W18 International Final',
       published: true,
       finalized: true,
       userId: '1003',
@@ -1526,4 +1889,427 @@ function getDummyPreplanHeaders(): PreplanHeader[] {
       simulationName: 'S19 International Simulation'
     }
   ];
+}
+
+function getDummyPreplan(): Preplan {
+  return new Preplan({
+    id: '123',
+    name: 'First Preplan',
+    published: false,
+    finalized: false,
+    userId: '1010',
+    userName: 'Moradi',
+    userDisplayName: 'Moradi',
+    parentPreplanId: '2020',
+    parentPreplanName: 'Before First Preplan',
+    creationDateTime: new Date().addDays(-10).toJSON(),
+    lastEditDateTime: new Date().addDays(-1).toJSON(),
+    startDate: new Date().toJSON(),
+    endDate: new Date().addDays(20).toJSON(),
+
+    autoArrangerOptions: { minimumGroundTimeMode: 'AVERAGE', minimumGroundTimeOffset: 50 },
+    autoArrangerState: {
+      solving: true,
+      solvingStartDateTime: new Date().toString(),
+      solvingDuration: 185,
+      message: {
+        type: 'ERROR',
+        text: 'Message Text .... '
+      },
+      messageViewed: false,
+      changeLogs: [
+        {
+          flightDerievedId: '000#4',
+          oldStd: 156,
+          oldAircraftRegisterId: MasterData.all.aircraftRegisters.items[0].id,
+          newStd: 485,
+          newAircraftRegisterId: MasterData.all.aircraftRegisters.items[1].id
+        },
+        {
+          flightDerievedId: '000#5',
+          oldStd: 300,
+          oldAircraftRegisterId: MasterData.all.aircraftRegisters.items[2].id,
+          newStd: 720,
+          newAircraftRegisterId: MasterData.all.aircraftRegisters.items[3].id
+        }
+      ],
+      changeLogsViewed: true
+    },
+    flightRequirements: [
+      {
+        id: '7092902000000155566',
+        definition: { category: '', label: 'BEY', stcId: '3', flightNumber: 'W5 1152', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000004781' },
+        scope: {
+          rsx: 'REAL',
+          departurePermission: true,
+          arrivalPermission: true,
+          blockTime: 140,
+          times: [{ stdLowerBound: 120, stdUpperBound: 240 }],
+          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000282' }], forbiddenIdentities: [] },
+          required: true
+        },
+        days: [
+          {
+            freezed: false,
+            scope: {
+              rsx: 'REAL',
+              departurePermission: true,
+              arrivalPermission: true,
+              blockTime: 140,
+              times: [{ stdLowerBound: 120, stdUpperBound: 240 }],
+              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000282' }], forbiddenIdentities: [] },
+              required: true
+            },
+            notes: 'somenotes...',
+            day: 4,
+            flight: { std: 180, aircraftRegisterId: '7092902880000000282' }
+          }
+        ],
+        ignored: false
+      },
+      {
+        id: '7092902000000155637',
+        definition: { category: '', label: 'BEY', stcId: '3', flightNumber: 'W5 1156', departureAirportId: '7092901520000002340', arrivalAirportId: '7092901520000004781' },
+        scope: {
+          rsx: 'REAL',
+          departurePermission: true,
+          arrivalPermission: true,
+          blockTime: 200,
+          times: [{ stdLowerBound: 620, stdUpperBound: 740 }],
+          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000282' }], forbiddenIdentities: [] },
+          required: true
+        },
+        days: [
+          {
+            freezed: false,
+            scope: {
+              rsx: 'REAL',
+              departurePermission: true,
+              arrivalPermission: true,
+              blockTime: 200,
+              times: [{ stdLowerBound: 620, stdUpperBound: 740 }],
+              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000282' }], forbiddenIdentities: [] },
+              required: true
+            },
+            notes: 'somenotes...',
+            day: 4,
+            flight: { std: 680, aircraftRegisterId: '7092902880000000282' }
+          }
+        ],
+        ignored: false
+      },
+      {
+        id: '7092902000000155659',
+        definition: { category: '', label: 'BEY', stcId: '3', flightNumber: 'W5 1153', departureAirportId: '7092901520000004781', arrivalAirportId: '7092901520000001588' },
+        scope: {
+          rsx: 'REAL',
+          departurePermission: true,
+          arrivalPermission: true,
+          blockTime: 130,
+          times: [{ stdLowerBound: 910, stdUpperBound: 1030 }],
+          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000282' }], forbiddenIdentities: [] },
+          required: true
+        },
+        days: [
+          {
+            freezed: false,
+            scope: {
+              rsx: 'REAL',
+              departurePermission: true,
+              arrivalPermission: true,
+              blockTime: 130,
+              times: [{ stdLowerBound: 910, stdUpperBound: 1030 }],
+              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000282' }], forbiddenIdentities: [] },
+              required: true
+            },
+            notes: 'somenotes...',
+            day: 4,
+            flight: { std: 970, aircraftRegisterId: '7092902880000000282' }
+          }
+        ],
+        ignored: false
+      },
+      {
+        id: '7092902000000155599',
+        definition: { category: '', label: 'BEY', stcId: '3', flightNumber: 'W5 1157', departureAirportId: '7092901520000004781', arrivalAirportId: '7092901520000002340' },
+        scope: {
+          rsx: 'REAL',
+          departurePermission: true,
+          arrivalPermission: true,
+          blockTime: 180,
+          times: [{ stdLowerBound: 350, stdUpperBound: 470 }],
+          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000282' }], forbiddenIdentities: [] },
+          required: true
+        },
+        days: [
+          {
+            freezed: false,
+            scope: {
+              rsx: 'REAL',
+              departurePermission: true,
+              arrivalPermission: true,
+              blockTime: 180,
+              times: [{ stdLowerBound: 350, stdUpperBound: 470 }],
+              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000282' }], forbiddenIdentities: [] },
+              required: true
+            },
+            notes: 'somenotes...',
+            day: 4,
+            flight: { std: 410, aircraftRegisterId: '7092902880000000282' }
+          }
+        ],
+        ignored: false
+      },
+      {
+        id: '7092902000000155828',
+        definition: { category: '', label: 'BEY', stcId: '3', flightNumber: 'W5 1152', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000004781' },
+        scope: {
+          rsx: 'REAL',
+          departurePermission: true,
+          arrivalPermission: true,
+          blockTime: 140,
+          times: [{ stdLowerBound: 120, stdUpperBound: 240 }],
+          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001060' }], forbiddenIdentities: [] },
+          required: true
+        },
+        days: [
+          {
+            freezed: false,
+            scope: {
+              rsx: 'REAL',
+              departurePermission: true,
+              arrivalPermission: true,
+              blockTime: 140,
+              times: [{ stdLowerBound: 120, stdUpperBound: 240 }],
+              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001060' }], forbiddenIdentities: [] },
+              required: true
+            },
+            notes: 'somenotes...',
+            day: 1,
+            flight: { std: 180, aircraftRegisterId: '7092902880000001060' }
+          }
+        ],
+        ignored: false
+      },
+      {
+        id: '7092902000000155894',
+        definition: { category: '', label: 'BEY', stcId: '3', flightNumber: 'W5 1156', departureAirportId: '7092901520000002340', arrivalAirportId: '7092901520000004781' },
+        scope: {
+          rsx: 'REAL',
+          departurePermission: true,
+          arrivalPermission: true,
+          blockTime: 200,
+          times: [{ stdLowerBound: 620, stdUpperBound: 740 }],
+          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001060' }], forbiddenIdentities: [] },
+          required: true
+        },
+        days: [
+          {
+            freezed: false,
+            scope: {
+              rsx: 'REAL',
+              departurePermission: true,
+              arrivalPermission: true,
+              blockTime: 200,
+              times: [{ stdLowerBound: 620, stdUpperBound: 740 }],
+              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001060' }], forbiddenIdentities: [] },
+              required: true
+            },
+            notes: 'somenotes...',
+            day: 1,
+            flight: { std: 680, aircraftRegisterId: '7092902880000001060' }
+          }
+        ],
+        ignored: false
+      },
+      {
+        id: '7092902000000155914',
+        definition: { category: '', label: 'BEY', stcId: '3', flightNumber: 'W5 1153', departureAirportId: '7092901520000004781', arrivalAirportId: '7092901520000001588' },
+        scope: {
+          rsx: 'REAL',
+          departurePermission: true,
+          arrivalPermission: true,
+          blockTime: 130,
+          times: [{ stdLowerBound: 910, stdUpperBound: 1030 }],
+          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001060' }], forbiddenIdentities: [] },
+          required: true
+        },
+        days: [
+          {
+            freezed: false,
+            scope: {
+              rsx: 'REAL',
+              departurePermission: true,
+              arrivalPermission: true,
+              blockTime: 130,
+              times: [{ stdLowerBound: 910, stdUpperBound: 1030 }],
+              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001060' }], forbiddenIdentities: [] },
+              required: true
+            },
+            notes: 'somenotes...',
+            day: 1,
+            flight: { std: 970, aircraftRegisterId: '7092902880000001060' }
+          }
+        ],
+        ignored: false
+      },
+      {
+        id: '7092902000000155864',
+        definition: { category: '', label: 'BEY', stcId: '3', flightNumber: 'W5 1157', departureAirportId: '7092901520000004781', arrivalAirportId: '7092901520000002340' },
+        scope: {
+          rsx: 'REAL',
+          departurePermission: true,
+          arrivalPermission: true,
+          blockTime: 180,
+          times: [{ stdLowerBound: 350, stdUpperBound: 470 }],
+          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001060' }], forbiddenIdentities: [] },
+          required: true
+        },
+        days: [
+          {
+            freezed: false,
+            scope: {
+              rsx: 'REAL',
+              departurePermission: true,
+              arrivalPermission: true,
+              blockTime: 180,
+              times: [{ stdLowerBound: 350, stdUpperBound: 470 }],
+              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001060' }], forbiddenIdentities: [] },
+              required: true
+            },
+            notes: 'somenotes...',
+            day: 1,
+            flight: { std: 410, aircraftRegisterId: '7092902880000001060' }
+          }
+        ],
+        ignored: false
+      },
+      {
+        id: '7092902000000155325',
+        definition: { category: '', label: 'BCN', stcId: '10', flightNumber: 'W5 0136', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000004755' },
+        scope: {
+          rsx: 'REAL',
+          departurePermission: true,
+          arrivalPermission: true,
+          blockTime: 345,
+          times: [{ stdLowerBound: 70, stdUpperBound: 190 }],
+          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000970' }], forbiddenIdentities: [] },
+          required: true
+        },
+        days: [
+          {
+            freezed: false,
+            scope: {
+              rsx: 'REAL',
+              departurePermission: true,
+              arrivalPermission: true,
+              blockTime: 345,
+              times: [{ stdLowerBound: 70, stdUpperBound: 190 }],
+              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000970' }], forbiddenIdentities: [] },
+              required: true
+            },
+            notes: '1...',
+            day: 1,
+            flight: { std: 135, aircraftRegisterId: '7092902880000000970' }
+          }
+        ],
+        ignored: false
+      },
+      {
+        id: '7092902000000155374',
+        definition: { category: '', label: 'BCN', stcId: '10', flightNumber: 'W5 0137', departureAirportId: '7092901520000004755', arrivalAirportId: '7092901520000001588' },
+        scope: {
+          rsx: 'REAL',
+          departurePermission: true,
+          arrivalPermission: true,
+          blockTime: 325,
+          times: [{ stdLowerBound: 505, stdUpperBound: 625 }],
+          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000970' }], forbiddenIdentities: [] },
+          required: true
+        },
+        days: [
+          {
+            freezed: false,
+            scope: {
+              rsx: 'REAL',
+              departurePermission: true,
+              arrivalPermission: true,
+              blockTime: 330,
+              times: [{ stdLowerBound: 505, stdUpperBound: 625 }],
+              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000970' }], forbiddenIdentities: [] },
+              required: true
+            },
+            notes: '2...',
+            day: 1,
+            flight: { std: 565, aircraftRegisterId: '7092902880000000970' }
+          }
+        ],
+        ignored: false
+      },
+      {
+        id: '7092902000000155855',
+        definition: { category: '', label: 'BCN', stcId: '10', flightNumber: 'W5 0136', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000004755' },
+        scope: {
+          rsx: 'REAL',
+          departurePermission: true,
+          arrivalPermission: true,
+          blockTime: 345,
+          times: [{ stdLowerBound: 70, stdUpperBound: 190 }],
+          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000970' }], forbiddenIdentities: [] },
+          required: true
+        },
+        days: [
+          {
+            freezed: false,
+            scope: {
+              rsx: 'REAL',
+              departurePermission: true,
+              arrivalPermission: true,
+              blockTime: 340,
+              times: [{ stdLowerBound: 70, stdUpperBound: 190 }],
+              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000970' }], forbiddenIdentities: [] },
+              required: true
+            },
+            notes: '3...',
+            day: 5,
+            flight: { std: 130, aircraftRegisterId: '7092902880000000970' }
+          }
+        ],
+        ignored: false
+      },
+      {
+        id: '7092902000000155898',
+        definition: { category: '', label: 'BCN', stcId: '10', flightNumber: 'W5 0137', departureAirportId: '7092901520000004755', arrivalAirportId: '7092901520000001588' },
+        scope: {
+          rsx: 'REAL',
+          departurePermission: true,
+          arrivalPermission: true,
+          blockTime: 325,
+          times: [{ stdLowerBound: 515, stdUpperBound: 635 }],
+          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000970' }], forbiddenIdentities: [] },
+          required: true
+        },
+        days: [
+          {
+            freezed: false,
+            scope: {
+              rsx: 'REAL',
+              departurePermission: true,
+              arrivalPermission: true,
+              blockTime: 325,
+              times: [{ stdLowerBound: 515, stdUpperBound: 635 }],
+              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000970' }], forbiddenIdentities: [] },
+              required: true
+            },
+            notes: '4',
+            day: 5,
+            flight: { std: 600, aircraftRegisterId: '7092902880000000970' }
+          }
+        ],
+        ignored: false
+      }
+    ],
+    dummyAircraftRegisters: [],
+    aircraftRegisterOptionsDictionary: {}
+  });
 }

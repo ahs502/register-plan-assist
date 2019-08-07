@@ -12,6 +12,9 @@ import { CellOptions } from '@progress/kendo-react-excel-export/dist/npm/ooxml/C
 
 const allAirports = MasterData.all.airports.items;
 const ika = allAirports.find(a => a.name === 'IKA')!;
+const character = {
+  zeroConnection: '–'
+};
 
 const useStyles = makeStyles((theme: Theme) => ({
   west: {
@@ -198,11 +201,8 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
         connection['airport'] = ea.name;
 
         westAirport.forEach(wa => {
-          const eastToWest = getNumberOfConnection(ea, wa, 'EasttoWest', connectionModel);
-          const westToEast = getNumberOfConnection(wa, ea, 'WesttoEast', connectionModel);
-
-          connection['to' + wa.name] = eastToWest;
-          connection['from' + wa.name] = westToEast;
+          connection['to' + wa.name] = getNumberOfConnection(ea, wa, 'EasttoWest', connectionModel) || character.zeroConnection;
+          connection['from' + wa.name] = getNumberOfConnection(wa, ea, 'WesttoEast', connectionModel) || character.zeroConnection;
         });
         result.push(connection);
       });
@@ -509,7 +509,7 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
                 const row = r as any;
                 if (row.type === 'data') {
                   r.cells!.forEach(c => {
-                    if (c.value === 0) c.color = '#C4BD97';
+                    if (c.value === character.zeroConnection) c.color = '#C4BD97';
                   });
                 }
               });
@@ -602,10 +602,16 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
             </TableCell>
             {westAirport.map(wa => (
               <Fragment key={wa.id}>
-                <TableCell className={classNames(classes.boarder, classes.removeRightBoarder, !cn['to' + wa.name] ? classes.zeroNumberOfConnection : '')} align="center">
+                <TableCell
+                  className={classNames(classes.boarder, classes.removeRightBoarder, cn['to' + wa.name] === character.zeroConnection ? classes.zeroNumberOfConnection : '')}
+                  align="center"
+                >
                   {cn['to' + wa.name]}
                 </TableCell>
-                <TableCell className={classNames(classes.boarder, classes.removeLeftBoarder, !cn['from' + wa.name] ? classes.zeroNumberOfConnection : '')} align="center">
+                <TableCell
+                  className={classNames(classes.boarder, classes.removeLeftBoarder, cn['from' + wa.name] === character.zeroConnection ? classes.zeroNumberOfConnection : '')}
+                  align="center"
+                >
                   {cn['from' + wa.name]}
                 </TableCell>
               </Fragment>

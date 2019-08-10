@@ -70,7 +70,7 @@ export default class Preplan extends PreplanHeader {
 
   /**
    * Gets the flattened list of this preplan's flights.
-   * NOTE: USE WITH CAUTION, IT IS A COMPUTED PROPERTY AND HAS PROCESSING COSTS.
+   * > **NOTE:** USE WITH CAUTION, IT IS A COMPUTED PROPERTY AND HAS PROCESSING COSTS.
    */
   get flights(): readonly Flight[] {
     return this.flightRequirements.map(w => w.days.map(d => d.flight)).flatten();

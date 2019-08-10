@@ -117,7 +117,7 @@ import { isArray } from 'util';
         throw new Error('Not implemented!');
 
       case 't':
-        throw new Error('Not implemented!');
+        return `${String(this.getUTCHours()).padStart(2, '0')}:${String(this.getUTCMinutes()).padStart(2, '0')}`;
 
       case 't#':
         throw new Error('Not implemented!');
@@ -144,6 +144,10 @@ import { isArray } from 'util';
     let result = new Date(0);
     result.setUTCHours(this.getUTCHours(), this.getUTCMinutes(), this.getUTCSeconds(), this.getUTCMilliseconds());
     return result;
+  };
+
+  Date.prototype.clone = function Date_prototype_clone(): Date {
+    return new Date(this);
   };
 
   Date.prototype.addYears = function Date_prototype_addYears(years: number): Date {

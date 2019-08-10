@@ -108,6 +108,11 @@ declare interface Date {
   getTimePart(): Date;
 
   /**
+   * Returns a clone of this.
+   */
+  clone(): Date;
+
+  /**
    * Adds (or subtracts) specific amount of years to this Date and returns this.
    * @param years The number of years to add.
    */

@@ -11,6 +11,10 @@ export default abstract class MasterDataItem {
     this.id = raw.id;
     this.name = raw.name;
   }
+
+  toString(): string {
+    return this.name;
+  }
 }
 
 /**

@@ -1,9 +1,12 @@
 declare module 'vis-timeline' {
+  import moment from 'moment';
+
   export type CustomTime = Date | number | string;
   export type Id = string | number;
 
   export interface DataItem {
     className?: string;
+    align?: 'auto' | 'center' | 'left' | 'right';
     content: string;
     end?: CustomTime;
     group?: any;
@@ -12,8 +15,14 @@ declare module 'vis-timeline' {
     style?: string;
     subgroup?: Id;
     title?: string;
-    type?: string;
-    editable?: boolean;
+    type?: 'box' | 'point' | 'range' | 'background';
+    editable?:
+      | boolean
+      | {
+          remove?: boolean;
+          updateGroup?: boolean;
+          updateTime?: boolean;
+        };
     /** Other item data */ data?: any;
   }
 
@@ -62,7 +71,7 @@ declare module 'vis-timeline' {
   }
 
   export interface TimelineOptions {
-    align?: string;
+    align?: 'auto' | 'center' | 'left' | 'right';
     autoResize?: boolean;
     clickToUse?: boolean;
     configure?: boolean | ((option: string, path: Array<string>) => boolean);
@@ -126,6 +135,7 @@ declare module 'vis-timeline' {
         };
     locale?: string;
     locales?: any; //TODO
+    moment?(date: CustomTime): moment.Moment;
     margin?:
       | number
       | {
@@ -147,7 +157,7 @@ declare module 'vis-timeline' {
     multiselectPerGroup?: boolean;
     onAdd?: (item: DataItem, callback: (item: DataItem | null) => void) => void;
     onAddGroup?: (group: DataGroup, callback: (group: DataGroup | null) => void) => void;
-    onDragObjectOnItem: (objectData: any, item: DataItem) => void;
+    onDragObjectOnItem?: (objectData: any, item: DataItem) => void;
     onMove?: (item: DataItem, callback: (item: DataItem | null) => void) => void;
     onMoveGroup?: (group: DataGroup, callback: (group: DataGroup | null) => void) => void;
     onMoving?: (item: DataItem, callback: (item: DataItem | null) => void) => void;
@@ -277,7 +287,7 @@ declare module 'vis-timeline' {
     on(event: 'currentTimeTick', callback: () => void): void;
     on(
       event: 'click' | 'contextmenu' | 'doubleClick' | 'drop' | 'mouseOver' | 'mouseDown' | 'mouseUp' | 'mouseMove',
-      callback: (properties: TimelineEventPropertiesResult) => void
+      callback: (properties: TimelineEventProperties) => void
     ): void;
     on(event: 'groupDragged', callback: (group: Id) => void): void;
     on(event: 'changed', callback: () => void): void;

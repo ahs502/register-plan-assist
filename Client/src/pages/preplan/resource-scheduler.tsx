@@ -146,12 +146,12 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
       </Drawer>
 
       <ResourceSchedulerView
-        startDate={preplan.startDate}
-        readonly={false}
+        startDate={preplan.startDate.getDatePart().addDays((preplan.startDate.getUTCDay() + 1) % 7)}
         flights={flights}
         aircraftRegisters={preplan.aircraftRegisters}
         changeLogs={preplan.autoArrangerState.changeLogs}
         selectedFlight={undefined}
+        readonly={false}
         onFlightContextMenu={(flight, pageX, pageY) => alert(`Flight ${flight.derivedId} @ ${pageX}:${pageY}\nNot implemented.`)}
         onFlightDragAndDrop={(flight, newStd, newAircraftRegister) =>
           alert(`D&D flight ${flight.derivedId} to ${newStd.toString()} with ${newAircraftRegister ? newAircraftRegister.name : '???'}\nNot implemented.`)

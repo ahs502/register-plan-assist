@@ -297,7 +297,7 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
           return secoundFlights.some(
             sf =>
               sf.std.minutes < sta + converteHHMMtoTotalMinute(maxConnectionTime) &&
-              sf.std.minutes > sta + converteHHMMtoTotalMinute(minConnectionTime) &&
+              sf.std.minutes >= sta + converteHHMMtoTotalMinute(minConnectionTime) &&
               ff.arrivalAirport.id === sf.departureAirport.id
           );
         })

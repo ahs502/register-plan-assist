@@ -1,7 +1,7 @@
 import React, { FC, Fragment, useState, useEffect } from 'react';
 import { Theme, InputLabel, TextField, TableHead, TableCell, Table, TableRow, TableBody, Button, Grid, FormControlLabel, Checkbox } from '@material-ui/core';
 import { red } from '@material-ui/core/colors';
-import { makeStyles } from '@material-ui/styles';
+import { makeStyles, useTheme } from '@material-ui/styles';
 import MasterData, { Airport } from '@core/master-data';
 import FlightRequirement from 'src/view-models/flights/FlightRequirement';
 import Daytime from '@core/types/Daytime';
@@ -16,83 +16,89 @@ import Rsx from '@core/types/flight-requirement/Rsx';
 import AircraftIdentityType from '@core/types/aircraft-identity/AircraftIdentityType';
 import { WorkbookSheetRow } from '@progress/kendo-ooxml';
 
-const color = {
-  changeStatus: { background: '#FFFFCC' }
-};
+const makeColor = (theme: Theme) => ({
+  changeStatus: { background: '#FFFFCC' },
+  realBoarder: { backgroundColor: '#FFC7CE' },
+  noPermission: { color: red[600] },
+  utc: { color: red[500] }
+});
 
-const useStyles = makeStyles((theme: Theme) => ({
-  marginBottom1: {
-    marginBottom: theme.spacing(1)
-  },
-  marginBottom2: {
-    marginBottom: theme.spacing(2)
-  },
-  marginRight1: {
-    marginRight: theme.spacing(1)
-  },
-  borderTopThick: {
-    borderTopColor: theme.palette.common.black,
-    borderTopStyle: 'solid',
-    borderTopWidth: 'thick'
-  },
-  borderTopThin: {
-    borderTopColor: '#C660CE',
-    borderTopStyle: 'solid',
-    borderTopWidth: 'medium'
-  },
-  borderBottom: {
-    borderBottomColor: theme.palette.common.black,
-    borderBottomStyle: 'solid',
-    borderBottomWidth: 'thick'
-  },
-  boarder: {
-    borderColor: theme.palette.grey[400],
-    borderStyle: 'solid',
-    borderWidth: 1
-  },
-  bullet: {
-    position: 'relative',
-    top: 5,
-    left: 10
-  },
-  utc: {
-    color: red[500]
-  },
-  diffFont: {
-    bottom: 4,
-    position: 'relative',
-    fontSize: 20
-  },
-  diffContainer: {
-    position: 'relative',
-    bottom: 3
-  },
-  transform180: {
-    transform: 'rotate(180deg)'
-  },
-  rsx: {
-    padding: 0,
-    fontSize: 40
-  },
-  category: {
-    fontFamily: '"Segoe UI","Tahoma"',
-    backgroundColor: theme.palette.grey[300]
-  },
-  noPermission: {
-    color: red[600]
-  },
-  halfPermission: {
-    position: 'relative',
-    top: 2,
-    fontSize: 26
-  },
-  changeStatus: {
-    backgroundColor: color.changeStatus.background
-  },
-  realBoarder: {
-    backgroundColor: '#FFC7CE'
-  }
-}));
+const useStyles = makeStyles((theme: Theme) => {
+  const color = makeColor(theme);
+  return {
+    marginBottom1: {
+      marginBottom: theme.spacing(1)
+    },
+    marginBottom2: {
+      marginBottom: theme.spacing(2)
+    },
+    marginRight1: {
+      marginRight: theme.spacing(1)
+    },
+    borderTopThick: {
+      borderTopColor: theme.palette.common.black,
+      borderTopStyle: 'solid',
+      borderTopWidth: 'thick'
+    },
+    borderTopThin: {
+      borderTopColor: '#C660CE',
+      borderTopStyle: 'solid',
+      borderTopWidth: 'medium'
+    },
+    borderBottom: {
+      borderBottomColor: theme.palette.common.black,
+      borderBottomStyle: 'solid',
+      borderBottomWidth: 'thick'
+    },
+    boarder: {
+      borderColor: theme.palette.grey[400],
+      borderStyle: 'solid',
+      borderWidth: 1
+    },
+    bullet: {
+      position: 'relative',
+      top: 5,
+      left: 10
+    },
+    utc: {
+      color: color.utc.color
+    },
+    diffFont: {
+      bottom: 4,
+      position: 'relative',
+      fontSize: 20
+    },
+    diffContainer: {
+      position: 'relative',
+      bottom: 3
+    },
+    transform180: {
+      transform: 'rotate(180deg)'
+    },
+    rsx: {
+      padding: 0,
+      fontSize: 40
+    },
+    category: {
+      fontFamily: '"Segoe UI","Tahoma"',
+      backgroundColor: theme.palette.grey[300]
+    },
+    noPermission: {
+      color: color.noPermission.color
+    },
+    halfPermission: {
+      position: 'relative',
+      top: 2,
+      fontSize: 26
+    },
+    changeStatus: {
+      backgroundColor: color.changeStatus.background
+    },
+    realBoarder: {
+      backgroundColor: color.realBoarder.backgroundColor
+    }
+  };
+});
 
 const allAirports = MasterData.all.airports.items.orderBy(a => a.name);
 const ika = allAirports.find(a => a.name === 'IKA')!;
@@ -122,7 +128,6 @@ interface ProposalReportProps {
 }
 
 interface FlattenFlightRequirment {
-  [index: string]: string | number | Airport | number[] | Daytime | boolean | FlattenFlightRequirment[] | string[] | FlattenFlightRequirmentStatus;
   id: string;
   flightNumber: string;
   fullFlightNumber: string;
@@ -177,9 +182,9 @@ interface FlattenFlightRequirment {
 }
 
 interface FlattenFlightRequirmentStatus {
-  [index: string]: boolean | WeekDayStatus | TimeStatus | DurationStatus | NoteStatus;
   isDeleted: boolean;
   isNew: boolean;
+  routeChange: boolean;
   weekDay0: WeekDayStatus;
   weekDay1: WeekDayStatus;
   weekDay2: WeekDayStatus;
@@ -258,7 +263,6 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
   const [dataProvider, setDataProvider] = useState<DataProvider[]>([]);
   const [preplanHeaders, setPreplanHeaders] = useState<ReadonlyArray<Readonly<PreplanHeader>>>([]);
   const [flattenFlightRequirments, setFlattenFlightRequirments] = useState<FlattenFlightRequirment[]>([]);
-  const [targetFalttenFlightRequirment, setTargetFalttenFlightRequirment] = useState<FlattenFlightRequirment[]>([]);
   const [filterModel, setFilterModel] = useState<FliterModel>({
     baseAirport: ika,
     startDate: fromDate,
@@ -308,6 +312,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
     bold: true
   } as CellOptions;
 
+  const color = makeColor(useTheme());
   const classes = useStyles();
 
   const generateReportDataModel = (
@@ -364,11 +369,10 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
 
     function randomize(df: DailyFlightRequirment[]) {
       //TODO: remove
-      // d.rsx = Math.random() > 0.5 ? 'REAL' : Math.random() > 0.5 ? 'STB1' : Math.random() > 0.5 ? 'STB2' : 'EXT';
+
       df.forEach(d => {
         d.arrivalPermission = Math.random() > 0.25 ? true : false; //TODO: remove
         d.departurePermission = Math.random() > 0.25 ? true : false; //TODO: remove
-        //d.rsx = Math.random() > 0.5 ? 'REAL' : 'STB1';
 
         if (d.departureAirport.id === '7092901520000005420' || d.arrivalAirport.id === '7092901520000005420') {
           if ([1, 4].indexOf(d.day) !== -1) d.rsx = 'STB2';
@@ -427,6 +431,173 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
     setDataProvider(realGroup.concat(reserveGroup));
     setFlattenFlightRequirments(realFlatModel.concat(reserveFlatModel));
   }, [filterModel]);
+
+  const exportToExcel = () => {
+    if (proposalExporter) {
+      const headerWeekDayCellNumbers = [5, 6, 7, 8, 9, 10, 11];
+      const weekDaySaturdayCellNumber = 7;
+      const numberOfHiddenColumn = 3;
+      const options = proposalExporter.workbookOptions();
+      const rows = options && options.sheets && options.sheets[0] && options.sheets[0].rows;
+
+      if (!rows || rows.length === 0) return;
+
+      const idColumnNumber = getIdColumnNumber(rows);
+
+      rows[0] && (rows[0].height = 30);
+      rows[1] && (rows[1].height = 30);
+
+      if (rows[2]) {
+        rows[2].height = 35;
+        if (rows[2].cells) {
+          rows[2].cells[3].colSpan = 2;
+          rows[2].cells[5].colSpan = 2;
+          rows[2].cells.remove(rows[2].cells[6]);
+          rows[2].cells.remove(rows[2].cells[4]);
+
+          headerWeekDayCellNumbers.forEach(c => {
+            if (rows && rows[2] && rows[2].cells && rows[2].cells[c]) rows[2].cells[c].fontFamily = 'Times New Roman';
+          });
+        }
+      }
+
+      rows.forEach((r, index, self) => {
+        if (!r.cells || r.cells.length === 0 || index <= 2) return;
+
+        if (index > 0 && index < self.length - 1 && self && self[index - 1] && self[index - 1].cells) {
+          const previousFlightRequirment = self[index - 1] as any;
+
+          if (previousFlightRequirment.type === 'data' && previousFlightRequirment.cells) {
+            const currentLabel = r.cells[r.cells.length - 1].value;
+            const previousLabel = previousFlightRequirment.cells[previousFlightRequirment.cells.length - 1].value;
+
+            if (currentLabel !== previousLabel) {
+              const currenParentRoute = r.cells[r.cells.length - 2] && r.cells[r.cells.length - 2].value;
+              const previousParentRoute = previousFlightRequirment.cells[previousFlightRequirment.cells.length - 2].value;
+              if (currenParentRoute === previousParentRoute)
+                r.cells.forEach((c, index) => {
+                  if (index === 0) return;
+                  c.borderTop = { color: '#C660CE', size: 2 };
+                });
+              else {
+                r.cells.forEach((c, index) => {
+                  if (index === 0) return;
+                  c.borderTop = { color: '#000000', size: 3 };
+                });
+              }
+            }
+          }
+        }
+
+        if (index === self.length - 1)
+          r.cells.forEach((c, index) => {
+            if (index === 0) return;
+            c.borderBottom = { color: '#000000', size: 3 };
+          });
+
+        const raw = r as any;
+        if (raw.type === 'group-header') {
+          const previousFlightRequirment = self[index - 1]!;
+          previousFlightRequirment.cells!.forEach((c, index) => {
+            if (index === 0) return;
+            c.borderBottom = { color: '#000000', size: 3 };
+          });
+          const nextFlightRequirment = self[index + 1]!;
+          nextFlightRequirment.cells!.forEach((c, index) => {
+            if (index === 0) return;
+            c.borderTop = { color: '#000000', size: 3 };
+          });
+        }
+
+        if (raw.type === 'data') {
+          const id = r.cells![idColumnNumber].value;
+          const model = flattenFlightRequirments.find(f => f.id === id)!;
+          const weekdayWithoutPermission = model.domesticNoPermissionsWeekDay.concat(model.destinationNoPermissionsWeekDay).distinct();
+
+          weekdayWithoutPermission.forEach(c => {
+            r!.cells![weekDaySaturdayCellNumber + c].color = color.noPermission.color;
+          });
+
+          Array.range(0, 6).forEach(d => {
+            if (((model.status as any)['weekDay' + d.toString()] as WeekDayStatus).isChange) r!.cells![weekDaySaturdayCellNumber + d].background = color.changeStatus.background;
+          });
+
+          if (model.status.localStd && model.status.localStd.isChange) r!.cells![3].background = color.changeStatus.background;
+          if (model.status.localSta && model.status.localSta.isChange) r!.cells![4].background = color.changeStatus.background;
+          if (model.status.utcStd && model.status.utcStd.isChange) r!.cells![5].background = color.changeStatus.background;
+          if (model.status.utcSta && model.status.utcSta.isChange) r!.cells![6].background = color.changeStatus.background;
+        }
+      });
+
+      rows.forEach((r, index) => {
+        if (index === 1 || index === 2 || !r.cells) return;
+        const row = r as any;
+        if (row.type === 'group-header') {
+          r.cells[0].colSpan = r.cells[0].colSpan! - numberOfHiddenColumn;
+        } else {
+          for (let index = 0; index < numberOfHiddenColumn; index++) {
+            r.cells.remove(r.cells[r.cells.length - 1]);
+          }
+        }
+      });
+
+      rows && proposalExporter.props.data && insertDividerBetweenRealFlightAndStantbyFlight(proposalExporter.props.data, rows);
+
+      proposalExporter.save(options);
+
+      function getIdColumnNumber(rows: WorkbookSheetRow[]) {
+        let idColumnNumber = 0;
+        for (let index = 0; index < rows[0].cells!.length; index++) {
+          const element = rows[0].cells![index];
+          if (element.value && element.colSpan) {
+            idColumnNumber += element.colSpan;
+            if (element.value === 'id') break;
+          }
+        }
+
+        return idColumnNumber;
+      }
+
+      function insertDividerBetweenRealFlightAndStantbyFlight(data: any[], workbookSheetRows: WorkbookSheetRow[]) {
+        let countOfHeaderRow = workbookSheetRows.filter(w => (w as any).type === 'header').length;
+        let numberOfGroupHeader = 1;
+        let countOfAllPreviousRow = countOfHeaderRow;
+        let groupHeader = workbookSheetRows.find(w => (w as any).type === 'group-header')!.cells![0];
+
+        data.forEach(element => {
+          const countOfRealFlightInCategory = element.countOfRealFlight;
+          const countOfAllFlight = element.items.length;
+          const insertIndex = countOfAllPreviousRow + countOfRealFlightInCategory + numberOfGroupHeader;
+          numberOfGroupHeader++;
+          countOfAllPreviousRow += countOfAllFlight;
+          if (countOfRealFlightInCategory) {
+            countOfAllPreviousRow++;
+            workbookSheetRows.splice(insertIndex, 0, {
+              cells: [
+                { background: groupHeader.background },
+                {
+                  value:
+                    (element.value ? 'Category: ' : '') +
+                    element.value +
+                    ' ' +
+                    (filterModel.showSTB2 ? 'STB2' : '') +
+                    (filterModel.showExtra ? (filterModel.showSTB2 ? ' & EXT' : 'EXT') : ''),
+                  textAlign: 'left',
+                  borderLeft: { color: '#000000', size: 3 },
+                  borderRight: { color: '#000000', size: 3 },
+                  borderTop: { color: '#000000', size: 3 },
+                  borderBottom: { color: '#000000', size: 3 },
+                  background: color.realBoarder.backgroundColor,
+                  colSpan: groupHeader.colSpan! - 1
+                }
+              ],
+              type: 'data'
+            } as WorkbookSheetRow);
+          }
+        });
+      }
+    }
+  };
 
   return (
     <Fragment>
@@ -583,170 +754,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
       </Grid>
 
       <br />
-      <Button
-        className={classes.marginBottom2}
-        variant="outlined"
-        color="primary"
-        onClick={() => {
-          if (proposalExporter) {
-            const headerWeekDayCellNumbers = [5, 6, 7, 8, 9, 10, 11];
-            const weekDaySaturdayCellNumber = 7;
-            const numberOfHiddenColumn = 3;
-            const options = proposalExporter.workbookOptions();
-            const rows = options && options.sheets && options.sheets[0] && options.sheets[0].rows;
-
-            if (rows && rows.length > 0) {
-              let idColumnNumber = 0;
-              for (let index = 0; index < rows[0].cells!.length; index++) {
-                const element = rows[0].cells![index];
-                if (element.value && element.colSpan) {
-                  idColumnNumber += element.colSpan;
-                  if (element.value === 'id') break;
-                }
-              }
-
-              rows[0] && (rows[0].height = 30);
-              rows[1] && (rows[1].height = 30);
-              if (rows[2]) {
-                rows[2].height = 35;
-                if (rows[2].cells) {
-                  rows[2].cells[3].colSpan = 2;
-                  rows[2].cells[5].colSpan = 2;
-                  rows[2].cells.remove(rows[2].cells[6]);
-                  rows[2].cells.remove(rows[2].cells[4]);
-
-                  headerWeekDayCellNumbers.forEach(c => {
-                    if (rows && rows[2] && rows[2].cells && rows[2].cells[c]) rows[2].cells[c].fontFamily = 'Times New Roman';
-                  });
-                }
-              }
-
-              rows.forEach((r, index, self) => {
-                if (!r.cells || r.cells.length === 0 || index <= 2) return;
-
-                if (index > 0 && index < self.length - 1 && self && self[index - 1] && self[index - 1].cells) {
-                  const previousFlightRequirment = self[index - 1] as any;
-
-                  if (previousFlightRequirment.type === 'data' && previousFlightRequirment.cells) {
-                    const currentLabel = r.cells[r.cells.length - 1].value;
-                    const previousLabel = previousFlightRequirment.cells[previousFlightRequirment.cells.length - 1].value;
-
-                    if (currentLabel !== previousLabel) {
-                      const currenParentRoute = r.cells[r.cells.length - 2] && r.cells[r.cells.length - 2].value;
-                      const previousParentRoute = previousFlightRequirment.cells[previousFlightRequirment.cells.length - 2].value;
-                      if (currenParentRoute === previousParentRoute)
-                        r.cells.forEach((c, index) => {
-                          if (index === 0) return;
-                          c.borderTop = { color: '#C660CE', size: 2 };
-                        });
-                      else {
-                        r.cells.forEach((c, index) => {
-                          if (index === 0) return;
-                          c.borderTop = { color: '#000000', size: 3 };
-                        });
-                      }
-                    }
-                  }
-                }
-
-                if (index === self.length - 1)
-                  r.cells.forEach((c, index) => {
-                    if (index === 0) return;
-                    c.borderBottom = { color: '#000000', size: 3 };
-                  });
-
-                const raw = r as any;
-                if (raw.type === 'group-header') {
-                  const previousFlightRequirment = self[index - 1]!;
-                  previousFlightRequirment.cells!.forEach((c, index) => {
-                    if (index === 0) return;
-                    c.borderBottom = { color: '#000000', size: 3 };
-                  });
-                  const nextFlightRequirment = self[index + 1]!;
-                  nextFlightRequirment.cells!.forEach((c, index) => {
-                    if (index === 0) return;
-                    c.borderTop = { color: '#000000', size: 3 };
-                  });
-                }
-
-                if (raw.type === 'data') {
-                  const id = r.cells![idColumnNumber].value;
-                  const model = flattenFlightRequirments.find(f => f.id === id)!;
-                  const weekdayWithoutPermission = model.domesticNoPermissionsWeekDay.concat(model.destinationNoPermissionsWeekDay).distinct();
-
-                  weekdayWithoutPermission.forEach(c => {
-                    r!.cells![weekDaySaturdayCellNumber + c].color = '#e53935';
-                  });
-
-                  Array.range(0, 6).forEach(d => {
-                    if ((model.status['weekDay' + d.toString()] as WeekDayStatus).isChange) r!.cells![weekDaySaturdayCellNumber + d].background = color.changeStatus.background;
-
-                    if (model.status.localStd && model.status.localStd.isChange) r!.cells![3].background = color.changeStatus.background;
-                    if (model.status.localSta && model.status.localSta.isChange) r!.cells![4].background = color.changeStatus.background;
-                    if (model.status.utcStd && model.status.utcStd.isChange) r!.cells![5].background = color.changeStatus.background;
-                    if (model.status.utcSta && model.status.utcSta.isChange) r!.cells![6].background = color.changeStatus.background;
-                  });
-                }
-              });
-
-              rows.forEach((r, index) => {
-                if (index === 1 || index === 2 || !r.cells) return;
-                const row = r as any;
-                if (row.type === 'group-header') {
-                  r.cells[0].colSpan = r.cells[0].colSpan! - numberOfHiddenColumn;
-                } else {
-                  for (let index = 0; index < numberOfHiddenColumn; index++) {
-                    r.cells.remove(r.cells[r.cells.length - 1]);
-                  }
-                }
-              });
-            }
-
-            rows && proposalExporter.props.data && insertDividerBetweenRealFlightAndStantbyFlight(proposalExporter.props.data, rows);
-
-            proposalExporter.save(options);
-
-            function insertDividerBetweenRealFlightAndStantbyFlight(data: any[], workbookSheetRows: WorkbookSheetRow[]) {
-              let countOfHeaderRow = workbookSheetRows.filter(w => (w as any).type === 'header').length;
-              let numberOfGroupHeader = 1;
-              let countOfAllPreviousRow = countOfHeaderRow;
-              let groupHeader = workbookSheetRows.find(w => (w as any).type === 'group-header')!.cells![0];
-
-              data.forEach(element => {
-                const countOfRealFlightInCategory = element.countOfRealFlight;
-                const countOfAllFlight = element.items.length;
-                const insertIndex = countOfAllPreviousRow + countOfRealFlightInCategory + numberOfGroupHeader;
-                numberOfGroupHeader++;
-                countOfAllPreviousRow += countOfAllFlight;
-                if (countOfRealFlightInCategory) {
-                  countOfAllPreviousRow++;
-                  workbookSheetRows.splice(insertIndex, 0, {
-                    cells: [
-                      { background: groupHeader.background },
-                      {
-                        value:
-                          (element.value ? 'Category: ' : '') +
-                          element.value +
-                          ' ' +
-                          (filterModel.showSTB2 ? 'STB2' : '') +
-                          (filterModel.showExtra ? (filterModel.showSTB2 ? ' & EXT' : 'EXT') : ''),
-                        textAlign: 'left',
-                        borderLeft: { color: '#000000', size: 3 },
-                        borderRight: { color: '#000000', size: 3 },
-                        borderTop: { color: '#000000', size: 3 },
-                        borderBottom: { color: '#000000', size: 3 },
-                        background: '#FFC7CE',
-                        colSpan: groupHeader.colSpan! - 1
-                      }
-                    ],
-                    type: 'data'
-                  } as WorkbookSheetRow);
-                }
-              });
-            }
-          }
-        }}
-      >
+      <Button className={classes.marginBottom2} variant="outlined" color="primary" onClick={() => exportToExcel()}>
         Export to Excel
         <ExportToExcelIcon className={classes.transform180} />
       </Button>
@@ -1143,7 +1151,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
                     )}
                   >
                     <TableCell className={classes.boarder}>{f.flightNumber}</TableCell>
-                    <TableCell className={classes.boarder}>{f.route}</TableCell>
+                    <TableCell className={classNames(classes.boarder, f.status.routeChange ? classes.changeStatus : '')}>{f.route}</TableCell>
                     <TableCell className={classNames(classes.boarder, f.status.localStd && f.status.localStd.isChange ? classes.changeStatus : '')} align="center">
                       {f.localStd}
                     </TableCell>
@@ -1304,29 +1312,38 @@ function groupFlattenFlightRequirmentbyCategory(realFlatModel: FlattenFlightRequ
 }
 
 function compareFlattenFlightRequirment(sources: FlattenFlightRequirment[], targets: FlattenFlightRequirment[]) {
-  const flightNumbers = sources.map(s => s.fullFlightNumber).distinct();
+  const sourceFlightNumbers = sources.map(s => s.fullFlightNumber).distinct();
 
-  flightNumbers.forEach(f => {
+  sourceFlightNumbers.forEach(f => {
     const source = sources.filter(s => s.fullFlightNumber === f);
     const target = targets.filter(s => s.fullFlightNumber === f);
     source.forEach(s => {
-      const checkDay = checkDayChangeBaseOnRouteAndTimes(s, target);
+      const checkDay = checkDayChangeBaseOnTimes(s, target.filter(t => t.route === s.route));
       if (!checkDay) {
-        checkTimeChangeBaseOnRoute(s, target);
+        checkTimeChange(s, target.filter(t => t.route === s.route));
+        checkDayChange(s, target.filter(t => t.route === s.route));
+        checkRouteChange(s, target.filter(t => t.route !== s.route));
+        checkDayChangeBaseOnTimes(s, target.filter(t => t.route !== s.route));
+        checkTimeChange(s, target.filter(t => t.route !== s.route));
+        checkDayChange(s, target.filter(t => t.route !== s.route));
       }
     });
   });
 
-  function checkDayChangeBaseOnRouteAndTimes(source: FlattenFlightRequirment, target: FlattenFlightRequirment[]) {
-    const ffrMatchWithRouteandTime = target.find(t => t.route === source.route && t.utcSta === source.utcSta && t.utcStd === source.utcStd);
+  checkNewFlight(sources, targets);
+  checkDeletedFlight(sources, targets);
+
+  function checkDayChangeBaseOnTimes(source: FlattenFlightRequirment, target: FlattenFlightRequirment[]) {
+    const ffrMatchWithRouteandTime = target.find(t => t.utcSta === source.utcSta && t.utcStd === source.utcStd);
     if (ffrMatchWithRouteandTime) {
       source.days.forEach(d => {
-        (source.status['weekDay' + d.toString()] as WeekDayStatus).isChange =
-          ffrMatchWithRouteandTime.days.indexOf(d) === -1 || source['rsxWeekDay' + d.toString()] !== ffrMatchWithRouteandTime['rsxWeekDay' + d.toString()];
+        ((source.status as any)['weekDay' + d.toString()] as WeekDayStatus).isChange =
+          ffrMatchWithRouteandTime.days.indexOf(d) === -1 ||
+          ((source as any)['rsxWeekDay' + d.toString()] as Rsx) !== ((ffrMatchWithRouteandTime as any)['rsxWeekDay' + d.toString()] as Rsx);
         ffrMatchWithRouteandTime.days.remove(d);
       });
       ffrMatchWithRouteandTime.days.forEach(d => {
-        (source.status['weekDay' + d.toString()] as WeekDayStatus).isChange = true;
+        ((source.status as any)['weekDay' + d.toString()] as WeekDayStatus).isChange = true;
       });
 
       target.remove(ffrMatchWithRouteandTime);
@@ -1337,20 +1354,100 @@ function compareFlattenFlightRequirment(sources: FlattenFlightRequirment[], targ
     return false;
   }
 
-  function checkTimeChangeBaseOnRoute(source: FlattenFlightRequirment, target: FlattenFlightRequirment[]) {
-    const ffrMatchWithRoute = target.filter(t => t.route === source.route);
-
-    source.days.forEach(n => {
-      const existsffr = ffrMatchWithRoute.find(f => f.days.indexOf(n) !== -1 && f['rsxWeekDay' + n.toString()] === source['rsxWeekDay' + n.toString()]);
-
-      (source.status['weekDay' + n.toString()] as WeekDayStatus).isChange = !existsffr;
-      if (existsffr) existsffr.days.remove(n);
-    });
+  function checkTimeChange(source: FlattenFlightRequirment, target: FlattenFlightRequirment[]) {
+    const ffrMatchWithRoute = target;
+    if (ffrMatchWithRoute.length === 0) {
+      return;
+    }
 
     source.status.localSta = { isChange: !ffrMatchWithRoute.some(f => f.localSta === source.localSta) };
     source.status.localStd = { isChange: !ffrMatchWithRoute.some(f => f.localStd === source.localStd) };
     source.status.utcSta = { isChange: !ffrMatchWithRoute.some(f => f.utcSta === source.utcSta) };
     source.status.utcStd = { isChange: !ffrMatchWithRoute.some(f => f.utcStd === source.utcStd) };
+  }
+
+  function checkDayChange(source: FlattenFlightRequirment, target: FlattenFlightRequirment[]) {
+    const ffrMatchs = target;
+    if (ffrMatchs.length === 0) return;
+
+    source.days.forEach(d => {
+      if (!ffrMatchs.some(f => f.days && f.days.length > 0)) return;
+      const existFfrWithDay = ffrMatchs.find(f => {
+        return f.days.indexOf(d) !== -1 && ((source as any)['rsxWeekDay' + d.toString()] as Rsx) === ((f as any)['rsxWeekDay' + d.toString()] as Rsx);
+      });
+
+      ((source.status as any)['weekDay' + d.toString()] as WeekDayStatus).isChange = !existFfrWithDay;
+
+      if (existFfrWithDay) {
+        existFfrWithDay.days.remove(d);
+      }
+    });
+
+    ffrMatchs.forEach(f => {
+      f.days.forEach(d => {
+        ((source.status as any)['weekDay' + d.toString()] as WeekDayStatus).isChange = true;
+      });
+    });
+
+    for (let index = ffrMatchs.length - 1; index >= 0; index--) {
+      const ffr = ffrMatchs[index];
+      if (ffr.days.length === 0) ffrMatchs.remove(ffr);
+    }
+  }
+
+  function checkRouteChange(source: FlattenFlightRequirment, target: FlattenFlightRequirment[]) {
+    const ffrMatchWithRoute = target;
+    if (ffrMatchWithRoute.length === 0) return;
+    source.status.routeChange = true;
+  }
+
+  function checkDeletedFlight(source: FlattenFlightRequirment[], target: FlattenFlightRequirment[]) {
+    if (target.length === 0) return;
+
+    const targetFlightNumbers = target.map(s => s.fullFlightNumber).distinct();
+    const sourceFlightNumbers = source.map(s => s.fullFlightNumber).distinct();
+
+    const deletedFlightNumber = targetFlightNumbers.filter(t => !sourceFlightNumbers.includes(t));
+    if (deletedFlightNumber.length === 0) return;
+
+    const deletedFlattenFlightRequirments = target.filter(t => deletedFlightNumber.includes(t.fullFlightNumber));
+    deletedFlattenFlightRequirments.forEach(f => {
+      f.status = {} as FlattenFlightRequirmentStatus;
+      f.status.isDeleted = true;
+
+      f.weekDay0 = '';
+      f.weekDay1 = '';
+      f.weekDay2 = '';
+      f.weekDay3 = '';
+      f.weekDay4 = '';
+      f.weekDay5 = '';
+      f.weekDay6 = '';
+
+      f.status.weekDay0 = f.days.includes(0) ? ({ isChange: true } as WeekDayStatus) : ({} as WeekDayStatus);
+      f.status.weekDay1 = f.days.includes(1) ? ({ isChange: true } as WeekDayStatus) : ({} as WeekDayStatus);
+      f.status.weekDay2 = f.days.includes(2) ? ({ isChange: true } as WeekDayStatus) : ({} as WeekDayStatus);
+      f.status.weekDay3 = f.days.includes(3) ? ({ isChange: true } as WeekDayStatus) : ({} as WeekDayStatus);
+      f.status.weekDay4 = f.days.includes(4) ? ({ isChange: true } as WeekDayStatus) : ({} as WeekDayStatus);
+      f.status.weekDay5 = f.days.includes(5) ? ({ isChange: true } as WeekDayStatus) : ({} as WeekDayStatus);
+      f.status.weekDay6 = f.days.includes(6) ? ({ isChange: true } as WeekDayStatus) : ({} as WeekDayStatus);
+
+      source.push(f);
+    });
+  }
+
+  function checkNewFlight(source: FlattenFlightRequirment[], target: FlattenFlightRequirment[]) {
+    const targetFlightNumbers = target.map(s => s.fullFlightNumber).distinct();
+    const sourceFlightNumbers = source.map(s => s.fullFlightNumber).distinct();
+
+    const newFlightNumbers = sourceFlightNumbers.filter(t => !targetFlightNumbers.includes(t));
+    if (newFlightNumbers.length === 0) return;
+    newFlightNumbers.forEach(fn => {
+      source
+        .filter(s => s.fullFlightNumber === fn)
+        .forEach(n => {
+          n.status.isNew = true;
+        });
+    });
   }
 }
 
@@ -1666,8 +1763,8 @@ function updateFlattenFlightRequirment(flattenFlight: FlattenFlightRequirment, d
 
   flattenFlight.utcDays.indexOf(dialyFlightRequirment.day) === -1 && flattenFlight.utcDays.push(dialyFlightRequirment.day);
   flattenFlight.notes.indexOf(dialyFlightRequirment.note) === -1 && flattenFlight.notes.push(dialyFlightRequirment.note);
-  flattenFlight['weekDay' + weekDay.toString()] = calculateDayCharacter();
-  flattenFlight['rswWeekDay' + weekDay.toString()] = dialyFlightRequirment.rsx;
+  (flattenFlight as any)['weekDay' + weekDay.toString()] = calculateDayCharacter();
+  (flattenFlight as any)['rswWeekDay' + weekDay.toString()] = dialyFlightRequirment.rsx;
   switch (dialyFlightRequirment.rsx) {
     case 'REAL':
       flattenFlight.realFrequency++;
@@ -1753,7 +1850,7 @@ function halfPermission(flattenFlightRequirment: FlattenFlightRequirment, day: n
 }
 
 function isRealFlight(flattenFlightRequirment: FlattenFlightRequirment, day: number) {
-  return flattenFlightRequirment['rswWeekDay' + day.toString()] === 'REAL';
+  return (flattenFlightRequirment as any)['rswWeekDay' + day.toString()] === 'REAL';
 }
 
 function formatDateddMMMyyyy(date: Date) {
@@ -2304,6 +2401,502 @@ function getDummyPreplan(): Preplan {
             notes: '4',
             day: 5,
             flight: { std: 600, aircraftRegisterId: '7092902880000000970' }
+          }
+        ],
+        ignored: false
+      },
+      {
+        id: '7092902000000132137',
+        definition: { category: '', label: 'CDG', stcId: '10', flightNumber: 'W5 0106', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000005045' },
+        scope: {
+          rsx: 'REAL',
+          departurePermission: true,
+          arrivalPermission: true,
+          blockTime: 360,
+          times: [{ stdLowerBound: 140, stdUpperBound: 260 }],
+          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001060' }], forbiddenIdentities: [] },
+          required: true
+        },
+        days: [
+          {
+            freezed: false,
+            scope: {
+              rsx: 'REAL',
+              departurePermission: true,
+              arrivalPermission: true,
+              blockTime: 360,
+              times: [{ stdLowerBound: 140, stdUpperBound: 260 }],
+              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001060' }], forbiddenIdentities: [] },
+              required: true
+            },
+            notes: 'somenotes...',
+            day: 0,
+            flight: { std: 200, aircraftRegisterId: '7092902880000001060' }
+          }
+        ],
+        ignored: false
+      },
+      {
+        id: '7092902000000132166',
+        definition: { category: '', label: 'CDG', stcId: '10', flightNumber: 'W5 0107', departureAirportId: '7092901520000005045', arrivalAirportId: '7092901520000001588' },
+        scope: {
+          rsx: 'REAL',
+          departurePermission: true,
+          arrivalPermission: true,
+          blockTime: 315,
+          times: [{ stdLowerBound: 595, stdUpperBound: 715 }],
+          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001060' }], forbiddenIdentities: [] },
+          required: true
+        },
+        days: [
+          {
+            freezed: false,
+            scope: {
+              rsx: 'REAL',
+              departurePermission: true,
+              arrivalPermission: true,
+              blockTime: 315,
+              times: [{ stdLowerBound: 595, stdUpperBound: 715 }],
+              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001060' }], forbiddenIdentities: [] },
+              required: true
+            },
+            notes: 'somenotes...',
+            day: 0,
+            flight: { std: 655, aircraftRegisterId: '7092902880000001060' }
+          }
+        ],
+        ignored: false
+      },
+      {
+        id: '7092902000000131838',
+        definition: { category: '', label: 'CDG', stcId: '10', flightNumber: 'W5 0106', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000005045' },
+        scope: {
+          rsx: 'REAL',
+          departurePermission: true,
+          arrivalPermission: true,
+          blockTime: 360,
+          times: [{ stdLowerBound: 140, stdUpperBound: 260 }],
+          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001088' }], forbiddenIdentities: [] },
+          required: true
+        },
+        days: [
+          {
+            freezed: false,
+            scope: {
+              rsx: 'REAL',
+              departurePermission: true,
+              arrivalPermission: true,
+              blockTime: 360,
+              times: [{ stdLowerBound: 140, stdUpperBound: 260 }],
+              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001088' }], forbiddenIdentities: [] },
+              required: true
+            },
+            notes: 'somenotes...',
+            day: 4,
+            flight: { std: 200, aircraftRegisterId: '7092902880000001088' }
+          }
+        ],
+        ignored: false
+      },
+      {
+        id: '7092902000000131872',
+        definition: { category: '', label: 'CDG', stcId: '10', flightNumber: 'W5 0107', departureAirportId: '7092901520000005045', arrivalAirportId: '7092901520000001588' },
+        scope: {
+          rsx: 'REAL',
+          departurePermission: true,
+          arrivalPermission: true,
+          blockTime: 315,
+          times: [{ stdLowerBound: 595, stdUpperBound: 715 }],
+          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001088' }], forbiddenIdentities: [] },
+          required: true
+        },
+        days: [
+          {
+            freezed: false,
+            scope: {
+              rsx: 'REAL',
+              departurePermission: true,
+              arrivalPermission: true,
+              blockTime: 315,
+              times: [{ stdLowerBound: 595, stdUpperBound: 715 }],
+              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001088' }], forbiddenIdentities: [] },
+              required: true
+            },
+            notes: 'somenotes...',
+            day: 4,
+            flight: { std: 655, aircraftRegisterId: '7092902880000001088' }
+          }
+        ],
+        ignored: false
+      },
+      {
+        id: '7092902000000131949',
+        definition: { category: '', label: 'CDG', stcId: '10', flightNumber: 'W5 0106', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000005045' },
+        scope: {
+          rsx: 'REAL',
+          departurePermission: true,
+          arrivalPermission: true,
+          blockTime: 360,
+          times: [{ stdLowerBound: 140, stdUpperBound: 260 }],
+          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001088' }], forbiddenIdentities: [] },
+          required: true
+        },
+        days: [
+          {
+            freezed: false,
+            scope: {
+              rsx: 'REAL',
+              departurePermission: true,
+              arrivalPermission: true,
+              blockTime: 360,
+              times: [{ stdLowerBound: 140, stdUpperBound: 260 }],
+              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001088' }], forbiddenIdentities: [] },
+              required: true
+            },
+            notes: 'somenotes...',
+            day: 5,
+            flight: { std: 200, aircraftRegisterId: '7092902880000001088' }
+          }
+        ],
+        ignored: false
+      },
+      {
+        id: '7092902000000131978',
+        definition: { category: '', label: 'CDG', stcId: '10', flightNumber: 'W5 0107', departureAirportId: '7092901520000005045', arrivalAirportId: '7092901520000001588' },
+        scope: {
+          rsx: 'REAL',
+          departurePermission: true,
+          arrivalPermission: true,
+          blockTime: 315,
+          times: [{ stdLowerBound: 595, stdUpperBound: 715 }],
+          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001088' }], forbiddenIdentities: [] },
+          required: true
+        },
+        days: [
+          {
+            freezed: false,
+            scope: {
+              rsx: 'REAL',
+              departurePermission: true,
+              arrivalPermission: true,
+              blockTime: 315,
+              times: [{ stdLowerBound: 595, stdUpperBound: 715 }],
+              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001088' }], forbiddenIdentities: [] },
+              required: true
+            },
+            notes: 'somenotes...',
+            day: 5,
+            flight: { std: 655, aircraftRegisterId: '7092902880000001088' }
+          }
+        ],
+        ignored: false
+      },
+      {
+        id: '7092902000000155470',
+        definition: { category: '', label: 'ALA', stcId: '10', flightNumber: 'W5 0072', departureAirportId: '7092901520000004577', arrivalAirportId: '7092901520000001588' },
+        scope: {
+          rsx: 'REAL',
+          departurePermission: true,
+          arrivalPermission: true,
+          blockTime: 225,
+          times: [{ stdLowerBound: 345, stdUpperBound: 465 }],
+          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000292' }], forbiddenIdentities: [] },
+          required: true
+        },
+        days: [
+          {
+            freezed: false,
+            scope: {
+              rsx: 'REAL',
+              departurePermission: true,
+              arrivalPermission: true,
+              blockTime: 225,
+              times: [{ stdLowerBound: 345, stdUpperBound: 465 }],
+              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000292' }], forbiddenIdentities: [] },
+              required: true
+            },
+            notes: 'somenotes...',
+            day: 2,
+            flight: { std: 405, aircraftRegisterId: '7092902880000000292' }
+          }
+        ],
+        ignored: false
+      },
+      {
+        id: '7092902000000155440',
+        definition: { category: '', label: 'ALA', stcId: '10', flightNumber: 'W5 0073', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000004577' },
+        scope: {
+          rsx: 'REAL',
+          departurePermission: true,
+          arrivalPermission: true,
+          blockTime: 210,
+          times: [{ stdLowerBound: 55, stdUpperBound: 175 }],
+          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000292' }], forbiddenIdentities: [] },
+          required: true
+        },
+        days: [
+          {
+            freezed: false,
+            scope: {
+              rsx: 'REAL',
+              departurePermission: true,
+              arrivalPermission: true,
+              blockTime: 210,
+              times: [{ stdLowerBound: 55, stdUpperBound: 175 }],
+              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000292' }], forbiddenIdentities: [] },
+              required: true
+            },
+            notes: 'somenotes...',
+            day: 2,
+            flight: { std: 115, aircraftRegisterId: '7092902880000000292' }
+          }
+        ],
+        ignored: false
+      },
+      {
+        id: '7092902000000155224',
+        definition: { category: '', label: 'DUS', stcId: '10', flightNumber: 'W5 0050', departureAirportId: '7092901520000000978', arrivalAirportId: '7092901520000001588' },
+        scope: {
+          rsx: 'REAL',
+          departurePermission: true,
+          arrivalPermission: true,
+          blockTime: 445,
+          times: [{ stdLowerBound: 875, stdUpperBound: 995 }],
+          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000348' }], forbiddenIdentities: [] },
+          required: true
+        },
+        days: [
+          {
+            freezed: false,
+            scope: {
+              rsx: 'REAL',
+              departurePermission: true,
+              arrivalPermission: true,
+              blockTime: 445,
+              times: [{ stdLowerBound: 875, stdUpperBound: 995 }],
+              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000348' }], forbiddenIdentities: [] },
+              required: true
+            },
+            notes: 'somenotes...',
+            day: 0,
+            flight: { std: 935, aircraftRegisterId: '7092902880000000348' }
+          }
+        ],
+        ignored: false
+      },
+      {
+        id: '7092902000000155413',
+        definition: { category: '', label: 'DUS', stcId: '10', flightNumber: 'W5 0051', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000000978' },
+        scope: {
+          rsx: 'REAL',
+          departurePermission: true,
+          arrivalPermission: true,
+          blockTime: 405,
+          times: [{ stdLowerBound: 1000, stdUpperBound: 1120 }],
+          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000298' }], forbiddenIdentities: [] },
+          required: true
+        },
+        days: [
+          {
+            freezed: false,
+            scope: {
+              rsx: 'REAL',
+              departurePermission: true,
+              arrivalPermission: true,
+              blockTime: 405,
+              times: [{ stdLowerBound: 1000, stdUpperBound: 1120 }],
+              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000298' }], forbiddenIdentities: [] },
+              required: true
+            },
+            notes: 'somenotes...',
+            day: 1,
+            flight: { std: 1060, aircraftRegisterId: '7092902880000000298' }
+          }
+        ],
+        ignored: false
+      },
+      {
+        id: '7092902000000155536',
+        definition: { category: '', label: 'DUS', stcId: '10', flightNumber: 'W5 0050', departureAirportId: '7092901520000000978', arrivalAirportId: '7092901520000001588' },
+        scope: {
+          rsx: 'REAL',
+          departurePermission: true,
+          arrivalPermission: true,
+          blockTime: 445,
+          times: [{ stdLowerBound: 875, stdUpperBound: 995 }],
+          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000298' }], forbiddenIdentities: [] },
+          required: true
+        },
+        days: [
+          {
+            freezed: false,
+            scope: {
+              rsx: 'REAL',
+              departurePermission: true,
+              arrivalPermission: true,
+              blockTime: 445,
+              times: [{ stdLowerBound: 875, stdUpperBound: 995 }],
+              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000298' }], forbiddenIdentities: [] },
+              required: true
+            },
+            notes: 'somenotes...',
+            day: 2,
+            flight: { std: 935, aircraftRegisterId: '7092902880000000298' }
+          }
+        ],
+        ignored: false
+      },
+      {
+        id: '7092902000000155807',
+        definition: { category: '', label: 'DUS', stcId: '10', flightNumber: 'W5 0051', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000000978' },
+        scope: {
+          rsx: 'REAL',
+          departurePermission: true,
+          arrivalPermission: true,
+          blockTime: 405,
+          times: [{ stdLowerBound: 1000, stdUpperBound: 1120 }],
+          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000292' }], forbiddenIdentities: [] },
+          required: true
+        },
+        days: [
+          {
+            freezed: false,
+            scope: {
+              rsx: 'REAL',
+              departurePermission: true,
+              arrivalPermission: true,
+              blockTime: 405,
+              times: [{ stdLowerBound: 1000, stdUpperBound: 1120 }],
+              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000292' }], forbiddenIdentities: [] },
+              required: true
+            },
+            notes: 'somenotes...',
+            day: 4,
+            flight: { std: 1060, aircraftRegisterId: '7092902880000000292' }
+          }
+        ],
+        ignored: false
+      },
+      {
+        id: '7092902000000155933',
+        definition: { category: '', label: 'DUS', stcId: '10', flightNumber: 'W5 0051', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000000978' },
+        scope: {
+          rsx: 'REAL',
+          departurePermission: true,
+          arrivalPermission: true,
+          blockTime: 405,
+          times: [{ stdLowerBound: 1000, stdUpperBound: 1120 }],
+          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000282' }], forbiddenIdentities: [] },
+          required: true
+        },
+        days: [
+          {
+            freezed: false,
+            scope: {
+              rsx: 'REAL',
+              departurePermission: true,
+              arrivalPermission: true,
+              blockTime: 405,
+              times: [{ stdLowerBound: 1000, stdUpperBound: 1120 }],
+              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000282' }], forbiddenIdentities: [] },
+              required: true
+            },
+            notes: 'somenotes...',
+            day: 5,
+            flight: { std: 1060, aircraftRegisterId: '7092902880000000282' }
+          }
+        ],
+        ignored: false
+      },
+      {
+        id: '7092902000000155928',
+        definition: { category: '', label: 'DUS', stcId: '10', flightNumber: 'W5 0050', departureAirportId: '7092901520000000978', arrivalAirportId: '7092901520000001588' },
+        scope: {
+          rsx: 'REAL',
+          departurePermission: true,
+          arrivalPermission: true,
+          blockTime: 445,
+          times: [{ stdLowerBound: 875, stdUpperBound: 995 }],
+          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000292' }], forbiddenIdentities: [] },
+          required: true
+        },
+        days: [
+          {
+            freezed: false,
+            scope: {
+              rsx: 'REAL',
+              departurePermission: true,
+              arrivalPermission: true,
+              blockTime: 445,
+              times: [{ stdLowerBound: 875, stdUpperBound: 995 }],
+              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000292' }], forbiddenIdentities: [] },
+              required: true
+            },
+            notes: 'somenotes...',
+            day: 5,
+            flight: { std: 935, aircraftRegisterId: '7092902880000000292' }
+          }
+        ],
+        ignored: false
+      },
+      {
+        id: '7092902000000156048',
+        definition: { category: '', label: 'DUS', stcId: '10', flightNumber: 'W5 0050', departureAirportId: '7092901520000000978', arrivalAirportId: '7092901520000001588' },
+        scope: {
+          rsx: 'REAL',
+          departurePermission: true,
+          arrivalPermission: true,
+          blockTime: 445,
+          times: [{ stdLowerBound: 875, stdUpperBound: 995 }],
+          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000282' }], forbiddenIdentities: [] },
+          required: true
+        },
+        days: [
+          {
+            freezed: false,
+            scope: {
+              rsx: 'REAL',
+              departurePermission: true,
+              arrivalPermission: true,
+              blockTime: 445,
+              times: [{ stdLowerBound: 875, stdUpperBound: 995 }],
+              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000282' }], forbiddenIdentities: [] },
+              required: true
+            },
+            notes: 'somenotes...',
+            day: 6,
+            flight: { std: 935, aircraftRegisterId: '7092902880000000282' }
+          }
+        ],
+        ignored: false
+      },
+      {
+        id: '7092902000000156051',
+        definition: { category: '', label: 'DUS', stcId: '10', flightNumber: 'W5 0051', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000000978' },
+        scope: {
+          rsx: 'REAL',
+          departurePermission: true,
+          arrivalPermission: true,
+          blockTime: 405,
+          times: [{ stdLowerBound: 1000, stdUpperBound: 1120 }],
+          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000348' }], forbiddenIdentities: [] },
+          required: true
+        },
+        days: [
+          {
+            freezed: false,
+            scope: {
+              rsx: 'REAL',
+              departurePermission: true,
+              arrivalPermission: true,
+              blockTime: 405,
+              times: [{ stdLowerBound: 1000, stdUpperBound: 1120 }],
+              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000348' }], forbiddenIdentities: [] },
+              required: true
+            },
+            notes: 'somenotes...',
+            day: 6,
+            flight: { std: 1060, aircraftRegisterId: '7092902880000000348' }
           }
         ],
         ignored: false

@@ -14,14 +14,14 @@ export default class Daytime {
     if (typeof value === 'number' && !isNaN(value) && value >= 0) {
       this.minutes = value;
     } else if (typeof value === 'string' && /^\d+:\d+$/.test(value)) {
-      let stringValue: string = value,
+      const stringValue: string = value,
         separatorIndex = stringValue.indexOf(':');
       this.minutes = Number(stringValue.slice(0, separatorIndex)) * 60 + Number(stringValue.slice(separatorIndex + 1));
-    } else if (value && value.constructor === Date && !isNaN((value as Date).getTime())) {
+    } else if (value && value.constructor === Date && (value as Date).isValid()) {
       if (baseDate) {
-        let date = baseDate as Date;
+        const date = new Date(baseDate);
         date.setUTCHours(0, 0, 0, 0);
-        this.minutes = Math.max(0, Math.floor(((value as Date).getTime() - (date as Date).getTime()) / (60 * 1000)));
+        this.minutes = Math.max(0, Math.floor(((value as Date).getTime() - date.getTime()) / (60 * 1000)));
       } else {
         this.minutes = (value as Date).getUTCMinutes() + (value as Date).getUTCHours() * 60;
       }
@@ -49,11 +49,14 @@ export default class Daytime {
 
   /**
    * Returns the string with this format: 'hh:mm' or 'hhh:mm'.
+   * @param clip Whether to express the daytime within 24-hours format or not.
+   * For example `'02:35'` instead of `'26:35'`.
    */
-  toString(): string {
+  toString(clip?: boolean): string {
     this.checkValidity();
-    let minutes = this.minutes % 60,
-      hours = (this.minutes - minutes) / 60;
+    const totalMinutes = clip ? this.minutes % (24 * 60) : this.minutes;
+    const minutes = totalMinutes % 60,
+      hours = (totalMinutes - minutes) / 60;
     return String(hours).padStart(2, '0') + ':' + String(minutes).padStart(2, '0');
   }
 
@@ -71,7 +74,7 @@ export default class Daytime {
    */
   toDate(baseDate?: Date): Date {
     if (!this.isValid()) return new Date(NaN);
-    let minutes = this.minutes % 60,
+    const minutes = this.minutes % 60,
       hours = (this.minutes - minutes) / 60,
       result = baseDate || new Date(0);
     result.setUTCHours(hours, minutes, 0, 0);

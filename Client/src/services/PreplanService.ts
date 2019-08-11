@@ -2,7 +2,7 @@ import apiRequest from 'src/utils/apiRequest';
 import PreplanModel, { PreplanHeaderModel } from '@core/models/PreplanModel';
 import AutoArrangerOptions from '@core/models/AutoArrangerOptionsModel';
 import FlightRequirementModel from '@core/models/flight/FlightRequirementModel';
-import ServerResult from './ServerResult';
+import ServerResult from '@core/types/ServerResult';
 
 const request = apiRequest.bind(null, 'preplan');
 
@@ -10,7 +10,7 @@ export default class PreplanService {
   /**
    * Provides all user related or public preplan headers.
    */
-  static async getAllHeaders(): Promise<ServerResult<ReadonlyArray<Readonly<PreplanHeaderModel>>>> {
+  static async getAllHeaders(): Promise<ServerResult<readonly PreplanHeaderModel[]>> {
     return await request('get-all-headers');
   }
 

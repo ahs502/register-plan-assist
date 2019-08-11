@@ -1,5 +1,4 @@
 import { Connection, Request as TediousRequest, TYPES, TediousType, ParameterOptions, TediousTypes, ISOLATION_LEVEL } from 'tedious';
-import { Request, Response, NextFunction } from 'express';
 import config from 'src/config';
 
 function createConnection() {
@@ -35,9 +34,7 @@ export interface TableColumn {
 function getJsonResult(rows: { value: any; metadata: { colName: string } }[][]): any[] {
   return rows.map(row => {
     const record: any = {};
-    row.forEach(field => {
-      record[field.metadata.colName] = field.value;
-    });
+    row.forEach(field => (record[field.metadata.colName] = field.value));
     return record;
   });
 }
@@ -136,7 +133,7 @@ export enum IsolationLevel {
   Snapshot = ISOLATION_LEVEL.SNAPSHOT
 }
 
-interface AccessQueryParams {
+interface DbAccessQueryParams {
   param(name: string, type: TediousType, value: any, options?: ParameterOptions): SqlParameter;
   intParam(name: string, value: string | number | null, options?: ParameterOptions): SqlParameter;
   bigIntParam(name: string, value: bigint | string | null, options?: ParameterOptions): SqlParameter;
@@ -146,15 +143,14 @@ interface AccessQueryParams {
   bitParam(name: string, value: string | null, options?: ParameterOptions): SqlParameter;
   tableparam(name: string, columns: readonly TableColumn[], rows: readonly any[][], options?: ParameterOptions): SqlParameter;
 }
-export interface Access {
-  req: Request;
+export interface DbAccess {
   types: TediousTypes;
   runQuery: {
     (query: string, ...parameters: SqlParameter[]): Promise<readonly any[]>;
-  } & AccessQueryParams;
+  } & DbAccessQueryParams;
   runSp: {
     (sp: string, ...parameters: SqlParameter[]): Promise<readonly any[]>;
-  } & AccessQueryParams;
+  } & DbAccessQueryParams;
 }
 
 function attachHelperFunctions(f: any): any {
@@ -194,7 +190,7 @@ function attachHelperFunctions(f: any): any {
   }
 }
 
-export function withAccess(req: Request, task: (access: Access) => Promise<unknown>): Promise<unknown> {
+export function withDbAccess(task: (dbAccess: DbAccess) => Promise<any>): Promise<any> {
   return new Promise((resolve, reject) => {
     const connection = createConnection();
     connection.on('connect', async error => {
@@ -203,7 +199,6 @@ export function withAccess(req: Request, task: (access: Access) => Promise<unkno
         const boundRunQuery = runQuery.bind(null, connection);
         const boundRunSp = runSp.bind(null, connection);
         const result = await task({
-          req,
           types: TYPES,
           runQuery: attachHelperFunctions(boundRunQuery),
           runSp: attachHelperFunctions(boundRunSp)
@@ -216,11 +211,7 @@ export function withAccess(req: Request, task: (access: Access) => Promise<unkno
   });
 }
 
-export function withTransactionalAccess(
-  req: Request,
-  task: (access: Access) => Promise<unknown>,
-  isolationLevel: IsolationLevel = IsolationLevel.RepeatableRead
-): Promise<unknown> {
+export function withTransactionalDbAccess(task: (dbAccess: DbAccess) => Promise<any>, isolationLevel: IsolationLevel = IsolationLevel.RepeatableRead): Promise<any> {
   return new Promise((resolve, reject) => {
     const connection = createConnection();
     connection.on('connect', async error => {
@@ -232,7 +223,6 @@ export function withTransactionalAccess(
             const boundRunQuery = runQuery.bind(null, connection);
             const boundRunSp = runSp.bind(null, connection);
             await task({
-              req,
               types: TYPES,
               runQuery: attachHelperFunctions(boundRunQuery),
               runSp: attachHelperFunctions(boundRunSp)

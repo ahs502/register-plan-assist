@@ -1,24 +1,29 @@
 import { Router } from 'express';
 import PreplanEntity, { convertPreplanEntityToModel } from 'src/entities/PreplanEntity';
-import { withAccessMiddleware, withTransactionalAccessMiddleware } from 'src/utils/asyncMiddleware';
 import { PreplanHeaderEntity, convertPreplanHeaderEntityToModel } from 'src/entities/PreplanHeadersEntity';
-import { Access } from 'src/utils/sqlServer';
+import { DbAccess } from 'src/utils/sqlServer';
 import FlightRequirementEntity from 'src/entities/flight/_FlightRequirementEntity';
 import PreplanModel from '@core/models/PreplanModel';
+import { requestMiddlewareWithDbAccess } from 'src/utils/requestMiddleware';
 
 const router = Router();
 export default router;
 
-//TODO: Replace these with a better implementation:
-// const currentUser = { id: '1001', name: 'MAHANAIR\\123456', displayName: 'Hessamoddin Khan' };
+router.post(
+  '/get-all-headers',
+  requestMiddlewareWithDbAccess<{}, readonly PreplanHeaderEntity[]>(async (userId, body, { runSp }) => {
+    const preplanHeaderEntities: readonly PreplanHeaderEntity[] = await runSp('[RPA].[SP_GetPreplanHeaders]', runSp.intParam('userId', userId));
+    const preplanHeaderModels = preplanHeaderEntities.map(convertPreplanHeaderEntityToModel);
+    return preplanHeaderModels;
+  })
+);
 
-router.post('/get-all-headers', withAccessMiddleware(getAllHeadersHandler));
-router.post('/create-empty', withAccessMiddleware(createEmptyHandler));
-router.post('/clone', withTransactionalAccessMiddleware(clonedPreplan));
-router.post('/get', withAccessMiddleware(getHandler));
-router.post('/edit-header', withAccessMiddleware(editHeaderHandler));
-router.post('/finalize', withAccessMiddleware(finalizeHandler));
-router.post('/remove', withTransactionalAccessMiddleware(removeHandler));
+router.post('/create-empty', asyncMiddlewareWithDbAccess(createEmptyHandler));
+router.post('/clone', asyncMiddlewareWithTransactionalDbAccess(clonedPreplan));
+router.post('/get', asyncMiddlewareWithDbAccess(getHandler));
+router.post('/edit-header', asyncMiddlewareWithDbAccess(editHeaderHandler));
+router.post('/finalize', asyncMiddlewareWithDbAccess(finalizeHandler));
+router.post('/remove', asyncMiddlewareWithTransactionalDbAccess(removeHandler));
 // router.post('/update-auto-arranger-options', asyncMiddlewareWithDatabase(updateAutoArrangerOptionsHandler));
 // // router.post('/add-or-edit-dummy-aircraft-register', asyncMiddlewareWithDatabase(addOrEditDummyAircraftRegisterHandler));
 // // router.post('/remove-dummy-aircraft-register', asyncMiddlewareWithDatabase(removeDummyAircraftRegisterHandler));
@@ -26,14 +31,7 @@ router.post('/remove', withTransactionalAccessMiddleware(removeHandler));
 // router.post('/add-or-edit-flight-requirement', asyncMiddlewareWithDatabase(addOrEditFlightRequirementHandler));
 // router.post('/remove-flight-requirement', asyncMiddlewareWithDatabase(removeFlightRequirementHandler));
 
-async function getAllHeadersHandler({ runSp }: Access) {
-  const userId = 4223;
-  const preplanHeaderEntities: readonly PreplanHeaderEntity[] = await runSp('[RPA].[SP_GetPreplanHeaders]', runSp.intParam('userId', userId));
-  const preplanHeaderModels = preplanHeaderEntities.map(convertPreplanHeaderEntityToModel);
-  return preplanHeaderModels;
-}
-
-async function createEmptyHandler({ req, runSp }: Access) {
+async function createEmptyHandler({ req, runSp }: DbAccess) {
   // PreplanValidator.createEmptyValidate(req.body.name,req.body.startDate, req.body.endDate).throwIfErrorsExsit();
   // change all InsertPreplan ....
   const userId = '4223';
@@ -48,7 +46,7 @@ async function createEmptyHandler({ req, runSp }: Access) {
   return result;
 }
 
-async function clonedPreplan({ req, runSp }: Access) {
+async function clonedPreplan({ req, runSp }: DbAccess) {
   // PreplanValidator.createEmptyValidate(req.body.name,req.body.startDate, req.body.endDate).throwIfErrorsExsit();
   //remove proc SP_ClonedPreplan and use InsertPreplan + inserrt flight requerment
   const userId = '4223';
@@ -112,7 +110,7 @@ async function clonedPreplan({ req, runSp }: Access) {
   //return clonedPreplanId;
 }
 
-async function getHandler({ req, types, runSp }: Access) {
+async function getHandler({ req, types, runSp }: DbAccess) {
   // PreplanValidator.createEmptyValidate(req.body.name,req.body.startDate, req.body.endDate).throwIfErrorsExsit();
   const userId = '4223';
   const Preplans: readonly PreplanEntity[] | null = await runSp('[RPA].[SP_GetPreplanDetails]', runSp.bigIntParam('userId', userId), runSp.intParam('Id', req.body.Id));
@@ -138,7 +136,7 @@ async function getHandler({ req, types, runSp }: Access) {
   //   return result;
 }
 
-async function editHeaderHandler({ req, types, runSp }: Access) {
+async function editHeaderHandler({ req, types, runSp }: DbAccess) {
   // PreplanValidator.editHeaderValidate(name, startDate, endDate).throwIfErrorsExsit();
   const userId = '4223';
   const result: readonly PreplanHeaderEntity[] = await runSp(
@@ -160,7 +158,7 @@ async function editHeaderHandler({ req, types, runSp }: Access) {
   //   return await getAllHeadersHandler(db, {});
 }
 
-async function finalizeHandler({ req, types, runSp }: Access) {
+async function finalizeHandler({ req, types, runSp }: DbAccess) {
   const userId = '4223';
   const result: readonly PreplanHeaderEntity[] = await runSp(
     '[RPA].[Sp_SetPreplanFinalized]',
@@ -175,7 +173,7 @@ async function finalizeHandler({ req, types, runSp }: Access) {
   //   return await getHandler(db, { id });
 }
 
-async function removeHandler({ req, types, runSp }: Access) {
+async function removeHandler({ req, types, runSp }: DbAccess) {
   const userId = '4223';
   const result = await runSp('[RPA].[SP_GetPreplanDetails]', runSp.bigIntParam('userId', userId), runSp.intParam('Id', req.body.Id));
   return result;

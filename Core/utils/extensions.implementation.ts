@@ -69,6 +69,16 @@ import { isArray } from 'util';
     return result;
   };
 
+  Array.prototype.groupBy = function Array_prototype_groupBy<T>(groupName: keyof T | ((item: T) => string)): { [groupName: string]: T[] } {
+    const groups: { [groupName: string]: T[] } = {};
+    this.forEach(item => {
+      const name = typeof groupName === 'function' ? groupName(item) : item[groupName];
+      groups[name] = groups[name] || [];
+      groups[name].push(item);
+    });
+    return groups;
+  };
+
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   const monthNames = <const>['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];

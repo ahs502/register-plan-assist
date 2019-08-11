@@ -39,6 +39,12 @@ declare interface Array<T> {
    * Returns the flattened array of this array.
    */
   flatten<U>(): T extends (infer U)[] ? U[] : T[];
+
+  /**
+   * Returns a grouped dictionary of this array.
+   * @param groupName The property of the items or a group name generator to group items with.
+   */
+  groupBy(groupName: keyof T | ((item: T) => string)): { [groupName: string]: T[] };
 }
 
 declare interface ReadonlyArray<T> {
@@ -54,6 +60,17 @@ declare interface ReadonlyArray<T> {
    * @param areEqual checker of object equality, by default uses ===.
    */
   distinct(areEqual?: (a: T, b: T) => boolean): T[];
+
+  /**
+   * Returns the flattened array of this array.
+   */
+  flatten<U>(): T extends (infer U)[] ? U[] : T[];
+
+  /**
+   * Returns a grouped dictionary of this array.
+   * @param groupName The property of the items or a group name generator to group items with.
+   */
+  groupBy(groupName: keyof T | ((item: T) => string)): { [groupName: string]: T[] };
 }
 
 declare type DateFormat = 'D' | 'D#' | 'd' | 'd#' | 'D$' | '~D$' | 'T' | 'T0' | 't' | 'T#' | 't#' | 'DT' | 'DT0';

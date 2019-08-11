@@ -1,7 +1,7 @@
 import React, { FC, Fragment, useState, useEffect } from 'react';
 import { Theme, InputLabel, TextField, TableHead, TableCell, Table, TableRow, TableBody, Button, Grid, FormControlLabel, Checkbox } from '@material-ui/core';
-import { red } from '@material-ui/core/colors';
-import { makeStyles, useTheme } from '@material-ui/styles';
+import { red, grey } from '@material-ui/core/colors';
+import { makeStyles } from '@material-ui/styles';
 import MasterData, { Airport } from '@core/master-data';
 import FlightRequirement from 'src/view-models/flights/FlightRequirement';
 import Daytime from '@core/types/Daytime';
@@ -16,15 +16,18 @@ import Rsx from '@core/types/flight-requirement/Rsx';
 import AircraftIdentityType from '@core/types/aircraft-identity/AircraftIdentityType';
 import { WorkbookSheetRow } from '@progress/kendo-ooxml';
 
-const makeColor = (theme: Theme) => ({
+const makeColor = () => ({
   changeStatus: { background: '#FFFFCC' },
   realBoarder: { backgroundColor: '#FFC7CE' },
   noPermission: { color: red[600] },
-  utc: { color: red[500] }
+  utc: { color: red[500] },
+  internalPreplanDevider: { color: '#C660CE' },
+  border: { color: grey[400] },
+  excelHeader: { backgroundColor: '#F4B084' }
 });
 
 const useStyles = makeStyles((theme: Theme) => {
-  const color = makeColor(theme);
+  const color = makeColor();
   return {
     marginBottom1: {
       marginBottom: theme.spacing(1)
@@ -40,8 +43,8 @@ const useStyles = makeStyles((theme: Theme) => {
       borderTopStyle: 'solid',
       borderTopWidth: 'thick'
     },
-    borderTopThin: {
-      borderTopColor: '#C660CE',
+    internalPreplanDevider: {
+      borderTopColor: color.internalPreplanDevider.color,
       borderTopStyle: 'solid',
       borderTopWidth: 'medium'
     },
@@ -50,7 +53,7 @@ const useStyles = makeStyles((theme: Theme) => {
       borderBottomStyle: 'solid',
       borderBottomWidth: 'thick'
     },
-    boarder: {
+    border: {
       borderColor: theme.palette.grey[400],
       borderStyle: 'solid',
       borderWidth: 1
@@ -291,10 +294,10 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
   const detailCellOption = {
     textAlign: 'center',
     verticalAlign: 'center',
-    borderBottom: { color: '#BDBDBD', size: 1 },
-    borderLeft: { color: '#BDBDBD', size: 1 },
-    borderRight: { color: '#BDBDBD', size: 1 },
-    borderTop: { color: '#BDBDBD', size: 1 },
+    borderBottom: { color: grey[400], size: 1 },
+    borderLeft: { color: grey[400], size: 1 },
+    borderRight: { color: grey[400], size: 1 },
+    borderTop: { color: grey[400], size: 1 },
     fontSize: 10,
     bold: true,
     wrap: true
@@ -303,16 +306,16 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
   const headerCellOptions = {
     textAlign: 'center',
     verticalAlign: 'center',
-    borderBottom: { color: '#BDBDBD', size: 1 },
-    borderLeft: { color: '#BDBDBD', size: 1 },
-    borderRight: { color: '#BDBDBD', size: 1 },
-    borderTop: { color: '#BDBDBD', size: 1 },
+    borderBottom: { color: grey[400], size: 1 },
+    borderLeft: { color: grey[400], size: 1 },
+    borderRight: { color: grey[400], size: 1 },
+    borderTop: { color: grey[400], size: 1 },
     fontSize: 10,
     color: '#000000',
     bold: true
   } as CellOptions;
 
-  const color = makeColor(useTheme());
+  const color = makeColor();
   const classes = useStyles();
 
   const generateReportDataModel = (
@@ -433,169 +436,214 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
   }, [filterModel]);
 
   const exportToExcel = () => {
-    if (proposalExporter) {
-      const headerWeekDayCellNumbers = [5, 6, 7, 8, 9, 10, 11];
-      const weekDaySaturdayCellNumber = 7;
-      const numberOfHiddenColumn = 3;
-      const options = proposalExporter.workbookOptions();
-      const rows = options && options.sheets && options.sheets[0] && options.sheets[0].rows;
+    if (!proposalExporter) return;
+    const headerWeekDayCellNumbers = [5, 6, 7, 8, 9, 10, 11];
+    const weekDaySaturdayCellNumber = 7;
+    const numberOfHiddenColumn = 3;
+    const options = proposalExporter.workbookOptions();
+    const rows = options && options.sheets && options.sheets[0] && options.sheets[0].rows;
 
-      if (!rows || rows.length === 0) return;
+    if (!rows || rows.length === 0) return;
 
-      const idColumnNumber = getIdColumnNumber(rows);
+    const idColumnNumber = getIdColumnNumber(rows);
+    setRowHeight(rows);
 
-      rows[0] && (rows[0].height = 30);
-      rows[1] && (rows[1].height = 30);
+    rows.forEach((r, index, self) => {
+      if (!r.cells || r.cells.length === 0) return;
+      const row = r as any;
 
-      if (rows[2]) {
-        rows[2].height = 35;
-        if (rows[2].cells) {
-          rows[2].cells[3].colSpan = 2;
-          rows[2].cells[5].colSpan = 2;
-          rows[2].cells.remove(rows[2].cells[6]);
-          rows[2].cells.remove(rows[2].cells[4]);
+      setExcelBoarder(index, self, r);
 
-          headerWeekDayCellNumbers.forEach(c => {
-            if (rows && rows[2] && rows[2].cells && rows[2].cells[c]) rows[2].cells[c].fontFamily = 'Times New Roman';
-          });
+      if (row.type === 'group-header') {
+        setBoarderForGroupHeader(self, index);
+        r.cells[0].colSpan! -= numberOfHiddenColumn;
+      }
+
+      if (row.type === 'data') {
+        const id = r.cells![idColumnNumber].value;
+        const model = flattenFlightRequirments.find(f => f.id === id)!;
+        const weekdayWithoutPermission = model.domesticNoPermissionsWeekDay.concat(model.destinationNoPermissionsWeekDay).distinct();
+
+        weekdayWithoutPermission.forEach(c => {
+          r!.cells![weekDaySaturdayCellNumber + c].color = color.noPermission.color;
+        });
+
+        setChangedBackgroundColor(model, r);
+        setFontSizeForDayColumns(model, r);
+      }
+    });
+
+    rows.forEach(r => {
+      if (!r.cells || r.cells.length === 0) return;
+      const row = r as any;
+      if (row.type === 'data') {
+        removeHiddenColumn(r);
+      }
+    });
+
+    removeHiddenColumn(rows[0]);
+
+    boarderBotoom(rows);
+    rows && proposalExporter.props.data && insertDividerBetweenRealFlightAndStantbyFlight(proposalExporter.props.data, rows);
+
+    proposalExporter.save(options);
+
+    function setFontSizeForDayColumns(model: FlattenFlightRequirment, workbookSheetRow: WorkbookSheetRow) {
+      Array.range(0, 6).forEach(d => {
+        const weekDayStatus = (model.status as any)['weekDay' + d.toString()] as WeekDayStatus;
+        if (!isRealFlight(model, d)) return;
+        if (weekDayStatus.hasPermission) {
+          workbookSheetRow!.cells![weekDaySaturdayCellNumber + d].fontSize = 16;
+        } else if (!weekDayStatus.hasHalfPermission) {
+          workbookSheetRow!.cells![weekDaySaturdayCellNumber + d].fontSize = 15;
+        }
+      });
+    }
+
+    function setChangedBackgroundColor(model: FlattenFlightRequirment, workbookSheetRow: WorkbookSheetRow) {
+      if (!workbookSheetRow || !model || !workbookSheetRow.cells) return;
+
+      Array.range(0, 6).forEach(d => {
+        if (((model.status as any)['weekDay' + d.toString()] as WeekDayStatus).isChange)
+          workbookSheetRow!.cells![weekDaySaturdayCellNumber + d].background = color.changeStatus.background;
+      });
+
+      if (model.status.routeChange) workbookSheetRow.cells![2].background = color.changeStatus.background;
+      if (model.status.localStd && model.status.localStd.isChange) workbookSheetRow.cells[3].background = color.changeStatus.background;
+      if (model.status.localSta && model.status.localSta.isChange) workbookSheetRow.cells[4].background = color.changeStatus.background;
+      if (model.status.utcStd && model.status.utcStd.isChange) workbookSheetRow.cells[5].background = color.changeStatus.background;
+      if (model.status.utcSta && model.status.utcSta.isChange) workbookSheetRow.cells[6].background = color.changeStatus.background;
+      if (model.status.isNew) {
+        workbookSheetRow.cells.forEach((c, index) => {
+          if (index > 0) c.background = color.changeStatus.background;
+        });
+      }
+    }
+
+    function boarderBotoom(workbookSheetRows: WorkbookSheetRow[]) {
+      if (!workbookSheetRows || workbookSheetRows.length === 0) return;
+      const lastRow = workbookSheetRows[workbookSheetRows.length - 1]!;
+      lastRow.cells!.forEach((c, index) => {
+        if (index === 0) return;
+        c.borderBottom = { color: '#000000', size: 3 };
+      });
+    }
+
+    function removeHiddenColumn(workbookSheetRow: WorkbookSheetRow) {
+      if (!workbookSheetRow || !workbookSheetRow.cells) return;
+      for (let index = 0; index < numberOfHiddenColumn; index++) {
+        workbookSheetRow.cells.remove(workbookSheetRow.cells[workbookSheetRow.cells.length - 1]);
+      }
+    }
+
+    function getIdColumnNumber(rows: WorkbookSheetRow[]) {
+      let idColumnNumber = 0;
+      for (let index = 0; index < rows[0].cells!.length; index++) {
+        const element = rows[0].cells![index];
+        if (element.value && element.colSpan) {
+          idColumnNumber += element.colSpan;
+          if (element.value === 'id') break;
         }
       }
 
-      rows.forEach((r, index, self) => {
-        if (!r.cells || r.cells.length === 0 || index <= 2) return;
+      return idColumnNumber;
+    }
 
-        if (index > 0 && index < self.length - 1 && self && self[index - 1] && self[index - 1].cells) {
-          const previousFlightRequirment = self[index - 1] as any;
+    function insertDividerBetweenRealFlightAndStantbyFlight(data: any[], workbookSheetRows: WorkbookSheetRow[]) {
+      let countOfHeaderRow = workbookSheetRows.filter(w => (w as any).type === 'header').length;
+      let numberOfGroupHeader = 1;
+      let countOfAllPreviousRow = countOfHeaderRow;
+      let groupHeader = workbookSheetRows.find(w => (w as any).type === 'group-header')!.cells![0];
 
-          if (previousFlightRequirment.type === 'data' && previousFlightRequirment.cells) {
-            const currentLabel = r.cells[r.cells.length - 1].value;
-            const previousLabel = previousFlightRequirment.cells[previousFlightRequirment.cells.length - 1].value;
-
-            if (currentLabel !== previousLabel) {
-              const currenParentRoute = r.cells[r.cells.length - 2] && r.cells[r.cells.length - 2].value;
-              const previousParentRoute = previousFlightRequirment.cells[previousFlightRequirment.cells.length - 2].value;
-              if (currenParentRoute === previousParentRoute)
-                r.cells.forEach((c, index) => {
-                  if (index === 0) return;
-                  c.borderTop = { color: '#C660CE', size: 2 };
-                });
-              else {
-                r.cells.forEach((c, index) => {
-                  if (index === 0) return;
-                  c.borderTop = { color: '#000000', size: 3 };
-                });
+      data.forEach(element => {
+        const countOfRealFlightInCategory = element.countOfRealFlight;
+        const countOfAllFlight = element.items.length;
+        const insertIndex = countOfAllPreviousRow + countOfRealFlightInCategory + numberOfGroupHeader;
+        numberOfGroupHeader++;
+        countOfAllPreviousRow += countOfAllFlight;
+        if (countOfRealFlightInCategory) {
+          countOfAllPreviousRow++;
+          workbookSheetRows.splice(insertIndex, 0, {
+            cells: [
+              { background: groupHeader.background },
+              {
+                value:
+                  '‎' /**Left to right character dont remove it*/ +
+                  element.value +
+                  (element.value ? ': ' : '') +
+                  (filterModel.showSTB2 ? 'STB2' : '') +
+                  (filterModel.showExtra ? (filterModel.showSTB2 ? ' & EXT' : 'EXT') : ''),
+                textAlign: 'left',
+                borderLeft: { color: '#000000', size: 3 },
+                borderRight: { color: '#000000', size: 3 },
+                borderTop: { color: '#000000', size: 3 },
+                borderBottom: { color: '#000000', size: 3 },
+                background: color.realBoarder.backgroundColor,
+                colSpan: groupHeader.colSpan! - 1
               }
+            ],
+            type: 'data'
+          } as WorkbookSheetRow);
+        }
+      });
+    }
+
+    function setRowHeight(workbookSheetRows: WorkbookSheetRow[]) {
+      workbookSheetRows[0] && (workbookSheetRows[0].height = 30);
+      workbookSheetRows[1] && (workbookSheetRows[1].height = 30);
+      if (workbookSheetRows[2]) {
+        workbookSheetRows[2].height = 35;
+        if (workbookSheetRows[2].cells) {
+          workbookSheetRows[2].cells[3].colSpan = 2;
+          workbookSheetRows[2].cells[5].colSpan = 2;
+          workbookSheetRows[2].cells.remove(workbookSheetRows[2].cells[6]);
+          workbookSheetRows[2].cells.remove(workbookSheetRows[2].cells[4]);
+
+          headerWeekDayCellNumbers.forEach(c => {
+            if (workbookSheetRows && workbookSheetRows[2] && workbookSheetRows[2].cells && workbookSheetRows[2].cells[c])
+              workbookSheetRows[2].cells[c].fontFamily = 'Times New Roman';
+          });
+        }
+      }
+    }
+
+    function setExcelBoarder(index: number, self: WorkbookSheetRow[], r: WorkbookSheetRow) {
+      if (!r || !r.cells) return;
+      if (index > 0 && index < self.length - 1 && self && self[index - 1] && self[index - 1].cells) {
+        const previousFlightRequirment = self[index - 1] as any;
+        if (previousFlightRequirment.type === 'data' && previousFlightRequirment.cells) {
+          const currentLabel = r.cells[r.cells.length - 1].value;
+          const previousLabel = previousFlightRequirment.cells[previousFlightRequirment.cells.length - 1].value;
+          if (currentLabel !== previousLabel) {
+            const currenParentRoute = r.cells[r.cells.length - 2] && r.cells[r.cells.length - 2].value;
+            const previousParentRoute = previousFlightRequirment.cells[previousFlightRequirment.cells.length - 2].value;
+            if (currenParentRoute === previousParentRoute)
+              r.cells.forEach((c, index) => {
+                if (index === 0) return;
+                c.borderTop = { color: color.internalPreplanDevider.color, size: 2 };
+              });
+            else {
+              r.cells.forEach((c, index) => {
+                if (index === 0) return;
+                c.borderTop = { color: '#000000', size: 3 };
+              });
             }
           }
         }
-
-        if (index === self.length - 1)
-          r.cells.forEach((c, index) => {
-            if (index === 0) return;
-            c.borderBottom = { color: '#000000', size: 3 };
-          });
-
-        const raw = r as any;
-        if (raw.type === 'group-header') {
-          const previousFlightRequirment = self[index - 1]!;
-          previousFlightRequirment.cells!.forEach((c, index) => {
-            if (index === 0) return;
-            c.borderBottom = { color: '#000000', size: 3 };
-          });
-          const nextFlightRequirment = self[index + 1]!;
-          nextFlightRequirment.cells!.forEach((c, index) => {
-            if (index === 0) return;
-            c.borderTop = { color: '#000000', size: 3 };
-          });
-        }
-
-        if (raw.type === 'data') {
-          const id = r.cells![idColumnNumber].value;
-          const model = flattenFlightRequirments.find(f => f.id === id)!;
-          const weekdayWithoutPermission = model.domesticNoPermissionsWeekDay.concat(model.destinationNoPermissionsWeekDay).distinct();
-
-          weekdayWithoutPermission.forEach(c => {
-            r!.cells![weekDaySaturdayCellNumber + c].color = color.noPermission.color;
-          });
-
-          Array.range(0, 6).forEach(d => {
-            if (((model.status as any)['weekDay' + d.toString()] as WeekDayStatus).isChange) r!.cells![weekDaySaturdayCellNumber + d].background = color.changeStatus.background;
-          });
-
-          if (model.status.localStd && model.status.localStd.isChange) r!.cells![3].background = color.changeStatus.background;
-          if (model.status.localSta && model.status.localSta.isChange) r!.cells![4].background = color.changeStatus.background;
-          if (model.status.utcStd && model.status.utcStd.isChange) r!.cells![5].background = color.changeStatus.background;
-          if (model.status.utcSta && model.status.utcSta.isChange) r!.cells![6].background = color.changeStatus.background;
-        }
-      });
-
-      rows.forEach((r, index) => {
-        if (index === 1 || index === 2 || !r.cells) return;
-        const row = r as any;
-        if (row.type === 'group-header') {
-          r.cells[0].colSpan = r.cells[0].colSpan! - numberOfHiddenColumn;
-        } else {
-          for (let index = 0; index < numberOfHiddenColumn; index++) {
-            r.cells.remove(r.cells[r.cells.length - 1]);
-          }
-        }
-      });
-
-      rows && proposalExporter.props.data && insertDividerBetweenRealFlightAndStantbyFlight(proposalExporter.props.data, rows);
-
-      proposalExporter.save(options);
-
-      function getIdColumnNumber(rows: WorkbookSheetRow[]) {
-        let idColumnNumber = 0;
-        for (let index = 0; index < rows[0].cells!.length; index++) {
-          const element = rows[0].cells![index];
-          if (element.value && element.colSpan) {
-            idColumnNumber += element.colSpan;
-            if (element.value === 'id') break;
-          }
-        }
-
-        return idColumnNumber;
       }
+    }
 
-      function insertDividerBetweenRealFlightAndStantbyFlight(data: any[], workbookSheetRows: WorkbookSheetRow[]) {
-        let countOfHeaderRow = workbookSheetRows.filter(w => (w as any).type === 'header').length;
-        let numberOfGroupHeader = 1;
-        let countOfAllPreviousRow = countOfHeaderRow;
-        let groupHeader = workbookSheetRows.find(w => (w as any).type === 'group-header')!.cells![0];
-
-        data.forEach(element => {
-          const countOfRealFlightInCategory = element.countOfRealFlight;
-          const countOfAllFlight = element.items.length;
-          const insertIndex = countOfAllPreviousRow + countOfRealFlightInCategory + numberOfGroupHeader;
-          numberOfGroupHeader++;
-          countOfAllPreviousRow += countOfAllFlight;
-          if (countOfRealFlightInCategory) {
-            countOfAllPreviousRow++;
-            workbookSheetRows.splice(insertIndex, 0, {
-              cells: [
-                { background: groupHeader.background },
-                {
-                  value:
-                    (element.value ? 'Category: ' : '') +
-                    element.value +
-                    ' ' +
-                    (filterModel.showSTB2 ? 'STB2' : '') +
-                    (filterModel.showExtra ? (filterModel.showSTB2 ? ' & EXT' : 'EXT') : ''),
-                  textAlign: 'left',
-                  borderLeft: { color: '#000000', size: 3 },
-                  borderRight: { color: '#000000', size: 3 },
-                  borderTop: { color: '#000000', size: 3 },
-                  borderBottom: { color: '#000000', size: 3 },
-                  background: color.realBoarder.backgroundColor,
-                  colSpan: groupHeader.colSpan! - 1
-                }
-              ],
-              type: 'data'
-            } as WorkbookSheetRow);
-          }
-        });
-      }
+    function setBoarderForGroupHeader(self: WorkbookSheetRow[], index: number) {
+      const previousFlightRequirment = self[index - 1]!;
+      previousFlightRequirment.cells!.forEach((c, index) => {
+        if (index === 0) return;
+        c.borderBottom = { color: '#000000', size: 3 };
+      });
+      const nextFlightRequirment = self[index + 1]!;
+      nextFlightRequirment.cells!.forEach((c, index) => {
+        if (index === 0) return;
+        c.borderTop = { color: '#000000', size: 3 };
+      });
     }
   };
 
@@ -771,7 +819,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
           title={'Propoal Schedule from ' + formatDateddMMMyy(filterModel.startDate) + ' till ' + formatDateddMMMyy(filterModel.endDate)}
           headerCellOptions={{ ...headerCellOptions, background: '#FFFFFF' }}
         >
-          <ExcelExportColumnGroup title={'Base ' + filterModel.baseAirport.name} headerCellOptions={{ ...headerCellOptions, background: '#F4B084' }}>
+          <ExcelExportColumnGroup title={'Base ' + filterModel.baseAirport.name} headerCellOptions={{ ...headerCellOptions, background: color.excelHeader.backgroundColor }}>
             <ExcelExportColumn
               title={'F/N'}
               field="flightNumber"
@@ -779,7 +827,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
               cellOptions={{ ...detailCellOption, borderLeft: { color: '#000000', size: 3 } }}
               headerCellOptions={{
                 ...headerCellOptions,
-                background: '#F4B084',
+                background: color.excelHeader.backgroundColor,
                 borderLeft: { color: '#000000', size: 3 },
                 borderTop: { color: '#000000', size: 3 },
                 borderBottom: { color: '#000000', size: 3 }
@@ -792,7 +840,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
               cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 } }}
               headerCellOptions={{
                 ...headerCellOptions,
-                background: '#F4B084',
+                background: color.excelHeader.backgroundColor,
                 borderRight: { color: '#000000', size: 3 },
                 borderTop: { color: '#000000', size: 3 },
                 borderBottom: { color: '#000000', size: 3 }
@@ -806,7 +854,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
               cellOptions={{ ...detailCellOption }}
               headerCellOptions={{
                 ...headerCellOptions,
-                background: '#F4B084',
+                background: color.excelHeader.backgroundColor,
                 borderLeft: { color: '#000000', size: 3 },
                 borderTop: { color: '#000000', size: 3 },
                 borderBottom: { color: '#000000', size: 3 }
@@ -819,7 +867,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
               cellOptions={{ ...detailCellOption }}
               headerCellOptions={{
                 ...headerCellOptions,
-                background: '#F4B084',
+                background: color.excelHeader.backgroundColor,
                 borderTop: { color: '#000000', size: 3 },
                 borderBottom: { color: '#000000', size: 3 }
               }}
@@ -832,7 +880,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
               cellOptions={{ ...detailCellOption, color: '#F44336' }}
               headerCellOptions={{
                 ...headerCellOptions,
-                background: '#F4B084',
+                background: color.excelHeader.backgroundColor,
                 color: '#F44336',
                 borderTop: { color: '#000000', size: 3 },
                 borderBottom: { color: '#000000', size: 3 }
@@ -845,7 +893,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
               cellOptions={{ ...detailCellOption, color: '#F44336', borderRight: { color: '#000000', size: 3 } }}
               headerCellOptions={{
                 ...headerCellOptions,
-                background: '#F4B084',
+                background: color.excelHeader.backgroundColor,
                 color: '#F44336',
                 borderRight: { color: '#000000', size: 3 },
                 borderTop: { color: '#000000', size: 3 },
@@ -861,7 +909,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
               headerCellOptions={{
                 ...headerCellOptions,
                 wrap: true,
-                background: '#F4B084',
+                background: color.excelHeader.backgroundColor,
                 borderLeft: { color: '#000000', size: 3 },
                 borderTop: { color: '#000000', size: 3 },
                 borderBottom: { color: '#000000', size: 3 }
@@ -873,7 +921,13 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
               field="weekDay1"
               width={26}
               cellOptions={{ ...detailCellOption }}
-              headerCellOptions={{ ...headerCellOptions, wrap: true, background: '#F4B084', borderTop: { color: '#000000', size: 3 }, borderBottom: { color: '#000000', size: 3 } }}
+              headerCellOptions={{
+                ...headerCellOptions,
+                wrap: true,
+                background: color.excelHeader.backgroundColor,
+                borderTop: { color: '#000000', size: 3 },
+                borderBottom: { color: '#000000', size: 3 }
+              }}
             />
 
             <ExcelExportColumn
@@ -881,7 +935,13 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
               field="weekDay2"
               width={26}
               cellOptions={{ ...detailCellOption }}
-              headerCellOptions={{ ...headerCellOptions, wrap: true, background: '#F4B084', borderTop: { color: '#000000', size: 3 }, borderBottom: { color: '#000000', size: 3 } }}
+              headerCellOptions={{
+                ...headerCellOptions,
+                wrap: true,
+                background: color.excelHeader.backgroundColor,
+                borderTop: { color: '#000000', size: 3 },
+                borderBottom: { color: '#000000', size: 3 }
+              }}
             />
 
             <ExcelExportColumn
@@ -889,7 +949,13 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
               field="weekDay3"
               width={26}
               cellOptions={{ ...detailCellOption }}
-              headerCellOptions={{ ...headerCellOptions, wrap: true, background: '#F4B084', borderTop: { color: '#000000', size: 3 }, borderBottom: { color: '#000000', size: 3 } }}
+              headerCellOptions={{
+                ...headerCellOptions,
+                wrap: true,
+                background: color.excelHeader.backgroundColor,
+                borderTop: { color: '#000000', size: 3 },
+                borderBottom: { color: '#000000', size: 3 }
+              }}
             />
 
             <ExcelExportColumn
@@ -897,7 +963,13 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
               field="weekDay4"
               width={26}
               cellOptions={{ ...detailCellOption }}
-              headerCellOptions={{ ...headerCellOptions, wrap: true, background: '#F4B084', borderTop: { color: '#000000', size: 3 }, borderBottom: { color: '#000000', size: 3 } }}
+              headerCellOptions={{
+                ...headerCellOptions,
+                wrap: true,
+                background: color.excelHeader.backgroundColor,
+                borderTop: { color: '#000000', size: 3 },
+                borderBottom: { color: '#000000', size: 3 }
+              }}
             />
 
             <ExcelExportColumn
@@ -905,7 +977,13 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
               field="weekDay5"
               width={26}
               cellOptions={{ ...detailCellOption }}
-              headerCellOptions={{ ...headerCellOptions, wrap: true, background: '#F4B084', borderTop: { color: '#000000', size: 3 }, borderBottom: { color: '#000000', size: 3 } }}
+              headerCellOptions={{
+                ...headerCellOptions,
+                wrap: true,
+                background: color.excelHeader.backgroundColor,
+                borderTop: { color: '#000000', size: 3 },
+                borderBottom: { color: '#000000', size: 3 }
+              }}
             />
 
             <ExcelExportColumn
@@ -916,7 +994,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
               headerCellOptions={{
                 ...headerCellOptions,
                 wrap: true,
-                background: '#F4B084',
+                background: color.excelHeader.backgroundColor,
                 borderRight: { color: '#000000', size: 3 },
                 borderTop: { color: '#000000', size: 3 },
                 borderBottom: { color: '#000000', size: 3 }
@@ -930,7 +1008,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
               cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 }, borderLeft: { color: '#000000', size: 3 } }}
               headerCellOptions={{
                 ...headerCellOptions,
-                background: '#F4B084',
+                background: color.excelHeader.backgroundColor,
                 borderRight: { color: '#000000', size: 3 },
                 borderLeft: { color: '#000000', size: 3 },
                 borderTop: { color: '#000000', size: 3 },
@@ -946,7 +1024,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
                 headerCellOptions={{
                   ...headerCellOptions,
                   wrap: true,
-                  background: '#F4B084',
+                  background: color.excelHeader.backgroundColor,
                   borderRight: { color: '#000000', size: 3 },
                   borderLeft: { color: '#000000', size: 3 },
                   borderTop: { color: '#000000', size: 3 },
@@ -964,7 +1042,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
                 headerCellOptions={{
                   ...headerCellOptions,
                   wrap: true,
-                  background: '#F4B084',
+                  background: color.excelHeader.backgroundColor,
                   borderRight: { color: '#000000', size: 3 },
                   borderLeft: { color: '#000000', size: 3 },
                   borderTop: { color: '#000000', size: 3 },
@@ -982,7 +1060,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
                 headerCellOptions={{
                   ...headerCellOptions,
                   wrap: true,
-                  background: '#F4B084',
+                  background: color.excelHeader.backgroundColor,
                   borderRight: { color: '#000000', size: 3 },
                   borderLeft: { color: '#000000', size: 3 },
                   borderTop: { color: '#000000', size: 3 },
@@ -1000,7 +1078,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
                 headerCellOptions={{
                   ...headerCellOptions,
                   wrap: true,
-                  background: '#F4B084',
+                  background: color.excelHeader.backgroundColor,
                   borderRight: { color: '#000000', size: 3 },
                   borderLeft: { color: '#000000', size: 3 },
                   borderTop: { color: '#000000', size: 3 },
@@ -1018,7 +1096,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
                 headerCellOptions={{
                   ...headerCellOptions,
                   wrap: true,
-                  background: '#F4B084',
+                  background: color.excelHeader.backgroundColor,
                   borderRight: { color: '#000000', size: 3 },
                   borderLeft: { color: '#000000', size: 3 },
                   borderTop: { color: '#000000', size: 3 },
@@ -1037,81 +1115,81 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
       <Table className={classNames(classes.marginBottom1, classes.marginRight1)}>
         <TableHead>
           <TableRow>
-            <TableCell className={classes.boarder} align="center" colSpan={19}>
+            <TableCell className={classes.border} align="center" colSpan={19}>
               {filterModel.baseAirport ? 'Base ' + filterModel.baseAirport.name : ''}
             </TableCell>
           </TableRow>
           <TableRow className={classes.borderBottom}>
-            <TableCell className={classes.boarder} rowSpan={2}>
+            <TableCell className={classes.border} rowSpan={2}>
               F/N
             </TableCell>
-            <TableCell className={classes.boarder} rowSpan={2}>
+            <TableCell className={classes.border} rowSpan={2}>
               ROUTE
             </TableCell>
-            <TableCell className={classes.boarder} align="center" colSpan={2} rowSpan={2}>
+            <TableCell className={classes.border} align="center" colSpan={2} rowSpan={2}>
               LCL
             </TableCell>
-            <TableCell className={classNames(classes.boarder, classes.utc)} align="center" colSpan={2} rowSpan={2}>
+            <TableCell className={classNames(classes.border, classes.utc)} align="center" colSpan={2} rowSpan={2}>
               UTC
             </TableCell>
-            <TableCell className={classes.boarder} align="center">
+            <TableCell className={classes.border} align="center">
               <div>Sat</div>
               <div>6</div>
             </TableCell>
-            <TableCell className={classes.boarder} align="center">
+            <TableCell className={classes.border} align="center">
               <div>Sun</div>
               <div>7</div>
             </TableCell>
-            <TableCell className={classes.boarder} align="center">
+            <TableCell className={classes.border} align="center">
               <div>Mon</div>
               <div>1</div>
             </TableCell>
-            <TableCell className={classes.boarder} align="center">
+            <TableCell className={classes.border} align="center">
               <div>Tue</div>
               <div>2</div>
             </TableCell>
-            <TableCell className={classes.boarder} align="center">
+            <TableCell className={classes.border} align="center">
               <div>Wed</div>
               <div>3</div>
             </TableCell>
-            <TableCell className={classes.boarder} align="center">
+            <TableCell className={classes.border} align="center">
               <div>Thu</div>
               <div>4</div>
             </TableCell>
-            <TableCell className={classes.boarder} align="center">
+            <TableCell className={classes.border} align="center">
               <div>Fri</div>
               <div>5</div>
             </TableCell>
-            <TableCell className={classes.boarder} align="center">
+            <TableCell className={classes.border} align="center">
               DUR.
             </TableCell>
             {filterModel.showNote && (
-              <TableCell className={classes.boarder} align="center">
+              <TableCell className={classes.border} align="center">
                 <div>NOTE</div>
                 <div>(base on domestic/lcl)</div>
               </TableCell>
             )}
             {filterModel.showSlot && (
               <Fragment>
-                <TableCell className={classes.boarder} align="center">
+                <TableCell className={classes.border} align="center">
                   <div>DESTINATION</div>
                   <div>SLOT (LCL)</div>
                 </TableCell>
 
-                <TableCell className={classes.boarder} align="center">
+                <TableCell className={classes.border} align="center">
                   <div>ORIGIN </div>
                   <div>SLOT (UTC)</div>
                 </TableCell>
               </Fragment>
             )}
             {filterModel.showType && (
-              <TableCell className={classes.boarder} align="center">
+              <TableCell className={classes.border} align="center">
                 Type
               </TableCell>
             )}
 
             {filterModel.showFrequency && (
-              <TableCell className={classes.boarder} align="center">
+              <TableCell className={classes.border} align="center">
                 Fre
               </TableCell>
             )}
@@ -1123,7 +1201,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
             <Fragment key={d.value}>
               {d.value && (
                 <TableRow>
-                  <TableCell className={classNames(classes.category, classes.boarder)} colSpan={19}>
+                  <TableCell className={classNames(classes.category, classes.border)} colSpan={19}>
                     Category: {d.value}
                   </TableCell>
                 </TableRow>
@@ -1132,10 +1210,10 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
                 <Fragment>
                   {d.countOfRealFlight === index ? (
                     <TableRow>
-                      <TableCell className={classNames(classes.category, classes.realBoarder, classes.boarder)} colSpan={19}>
-                        {(d.value ? 'Category: ' : '') +
+                      <TableCell className={classNames(classes.category, classes.realBoarder, classes.border)} colSpan={19}>
+                        {'‎' /**Left to right character dont remove it*/ +
                           d.value +
-                          ' ' +
+                          (d.value ? ': ' : '') +
                           (filterModel.showSTB2 ? 'STB2' : '') +
                           (filterModel.showExtra ? (filterModel.showSTB2 ? ' & EXT' : 'EXT') : '')}
                       </TableCell>
@@ -1146,26 +1224,30 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
                   <TableRow
                     key={index.toString() + f.label + f.flightNumber}
                     className={classNames(
-                      index > 0 && self[index - 1].label !== f.label ? (self[index - 1].parentRoute !== f.parentRoute ? classes.borderTopThick : classes.borderTopThin) : '',
+                      index > 0 && self[index - 1].label !== f.label
+                        ? self[index - 1].parentRoute !== f.parentRoute
+                          ? classes.borderTopThick
+                          : classes.internalPreplanDevider
+                        : '',
                       f.status.isNew ? classes.changeStatus : ''
                     )}
                   >
-                    <TableCell className={classes.boarder}>{f.flightNumber}</TableCell>
-                    <TableCell className={classNames(classes.boarder, f.status.routeChange ? classes.changeStatus : '')}>{f.route}</TableCell>
-                    <TableCell className={classNames(classes.boarder, f.status.localStd && f.status.localStd.isChange ? classes.changeStatus : '')} align="center">
+                    <TableCell className={classes.border}>{f.flightNumber}</TableCell>
+                    <TableCell className={classNames(classes.border, f.status.routeChange ? classes.changeStatus : '')}>{f.route}</TableCell>
+                    <TableCell className={classNames(classes.border, f.status.localStd && f.status.localStd.isChange ? classes.changeStatus : '')} align="center">
                       {f.localStd}
                     </TableCell>
-                    <TableCell className={classNames(classes.boarder, f.status.localSta && f.status.localSta.isChange ? classes.changeStatus : '')} align="center">
+                    <TableCell className={classNames(classes.border, f.status.localSta && f.status.localSta.isChange ? classes.changeStatus : '')} align="center">
                       <div className={f.diffLocalStdandLocalSta !== 0 ? classes.diffContainer : ''}>
                         <span>{f.localSta}</span>
                       </div>
                     </TableCell>
-                    <TableCell className={classNames(classes.boarder, classes.utc, f.status.utcStd && f.status.utcStd.isChange ? classes.changeStatus : '')} align="center">
+                    <TableCell className={classNames(classes.border, classes.utc, f.status.utcStd && f.status.utcStd.isChange ? classes.changeStatus : '')} align="center">
                       <div className={f.diffLocalStdandUtcStd !== 0 ? classes.diffContainer : ''}>
                         <span>{f.utcStd}</span>
                       </div>
                     </TableCell>
-                    <TableCell className={classNames(classes.boarder, classes.utc, f.status.utcSta && f.status.utcSta.isChange ? classes.changeStatus : '')} align="center">
+                    <TableCell className={classNames(classes.border, classes.utc, f.status.utcSta && f.status.utcSta.isChange ? classes.changeStatus : '')} align="center">
                       <div className={f.diffLocalStdandUtcSta !== 0 ? classes.diffContainer : ''}>
                         <span>{f.utcSta}</span>
                       </div>
@@ -1173,9 +1255,9 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
                     <TableCell
                       align="center"
                       className={classNames(
-                        classes.boarder,
+                        classes.border,
                         isRealFlight(f, 0) ? classes.rsx : '',
-                        f.status.weekDay0.hasPermission ? classes.noPermission : '',
+                        !f.status.weekDay0.hasPermission ? classes.noPermission : '',
                         f.status.weekDay0.isChange ? classes.changeStatus : ''
                       )}
                     >
@@ -1184,9 +1266,9 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
                     <TableCell
                       align="center"
                       className={classNames(
-                        classes.boarder,
+                        classes.border,
                         isRealFlight(f, 1) ? classes.rsx : '',
-                        f.status.weekDay1.hasPermission ? classes.noPermission : '',
+                        !f.status.weekDay1.hasPermission ? classes.noPermission : '',
                         f.status.weekDay1.isChange ? classes.changeStatus : ''
                       )}
                     >
@@ -1195,9 +1277,9 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
                     <TableCell
                       align="center"
                       className={classNames(
-                        classes.boarder,
+                        classes.border,
                         isRealFlight(f, 2) ? classes.rsx : '',
-                        f.status.weekDay2.hasPermission ? classes.noPermission : '',
+                        !f.status.weekDay2.hasPermission ? classes.noPermission : '',
                         f.status.weekDay2.isChange ? classes.changeStatus : ''
                       )}
                     >
@@ -1206,9 +1288,9 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
                     <TableCell
                       align="center"
                       className={classNames(
-                        classes.boarder,
+                        classes.border,
                         isRealFlight(f, 3) ? classes.rsx : '',
-                        f.status.weekDay3.hasPermission ? classes.noPermission : '',
+                        !f.status.weekDay3.hasPermission ? classes.noPermission : '',
                         f.status.weekDay3.isChange ? classes.changeStatus : ''
                       )}
                     >
@@ -1217,9 +1299,9 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
                     <TableCell
                       align="center"
                       className={classNames(
-                        classes.boarder,
+                        classes.border,
                         isRealFlight(f, 4) ? classes.rsx : '',
-                        f.status.weekDay4.hasPermission ? classes.noPermission : '',
+                        !f.status.weekDay4.hasPermission ? classes.noPermission : '',
                         f.status.weekDay4.isChange ? classes.changeStatus : ''
                       )}
                     >
@@ -1228,9 +1310,9 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
                     <TableCell
                       align="center"
                       className={classNames(
-                        classes.boarder,
+                        classes.border,
                         isRealFlight(f, 5) ? classes.rsx : '',
-                        f.status.weekDay5.hasPermission ? classes.noPermission : '',
+                        !f.status.weekDay5.hasPermission ? classes.noPermission : '',
                         f.status.weekDay5.isChange ? classes.changeStatus : ''
                       )}
                     >
@@ -1239,42 +1321,42 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
                     <TableCell
                       align="center"
                       className={classNames(
-                        classes.boarder,
+                        classes.border,
                         isRealFlight(f, 6) ? classes.rsx : '',
-                        f.status.weekDay6.hasPermission ? classes.noPermission : '',
+                        !f.status.weekDay6.hasPermission ? classes.noPermission : '',
                         f.status.weekDay6.isChange ? classes.changeStatus : ''
                       )}
                     >
                       <div className={isRealFlight(f, 6) && f.status.weekDay6.hasHalfPermission ? classes.halfPermission : ''}>{f.weekDay6}</div>
                     </TableCell>
-                    <TableCell align="center" className={classes.boarder}>
+                    <TableCell align="center" className={classes.border}>
                       {formatMinuteToString(f.blocktime)}
                     </TableCell>
                     {filterModel.showNote && (
-                      <TableCell align="center" className={classes.boarder}>
+                      <TableCell align="center" className={classes.border}>
                         {f.note}
                       </TableCell>
                     )}
 
                     {filterModel.showSlot && (
                       <Fragment>
-                        <TableCell className={classes.boarder} align="center">
+                        <TableCell className={classes.border} align="center">
                           {f.destinationNoPermissions}
                         </TableCell>
 
-                        <TableCell className={classes.boarder} align="center">
+                        <TableCell className={classes.border} align="center">
                           {f.domesticNoPermissions}
                         </TableCell>
                       </Fragment>
                     )}
                     {filterModel.showType && (
-                      <TableCell className={classes.boarder} align="center">
+                      <TableCell className={classes.border} align="center">
                         {f.aircraftType}
                       </TableCell>
                     )}
 
                     {filterModel.showFrequency && (
-                      <TableCell className={classes.boarder} align="center">
+                      <TableCell className={classes.border} align="center">
                         {f.frequency}
                       </TableCell>
                     )}
@@ -1319,14 +1401,29 @@ function compareFlattenFlightRequirment(sources: FlattenFlightRequirment[], targ
     const target = targets.filter(s => s.fullFlightNumber === f);
     source.forEach(s => {
       const checkDay = checkDayChangeBaseOnTimes(s, target.filter(t => t.route === s.route));
-      if (!checkDay) {
-        checkTimeChange(s, target.filter(t => t.route === s.route));
-        checkDayChange(s, target.filter(t => t.route === s.route));
-        checkRouteChange(s, target.filter(t => t.route !== s.route));
-        checkDayChangeBaseOnTimes(s, target.filter(t => t.route !== s.route));
-        checkTimeChange(s, target.filter(t => t.route !== s.route));
-        checkDayChange(s, target.filter(t => t.route !== s.route));
-      }
+    });
+
+    source.forEach(s => {
+      checkTimeChange(s, target.filter(t => t.route === s.route));
+      checkDayChange(s, target.filter(t => t.route === s.route));
+    });
+
+    source.forEach(s => {
+      checkDayChangeBaseOnTarget(s, target.filter(t => t.route === s.route));
+    });
+
+    source.forEach(s => {
+      checkRouteChange(s, target.filter(t => t.route !== s.route));
+      checkDayChangeBaseOnTimes(s, target.filter(t => t.route !== s.route));
+    });
+
+    source.forEach(s => {
+      checkTimeChange(s, target.filter(t => t.route !== s.route));
+      checkDayChange(s, target.filter(t => t.route !== s.route));
+    });
+
+    source.forEach(s => {
+      checkDayChangeBaseOnTarget(s, target.filter(t => t.route !== s.route));
     });
   });
 
@@ -1383,16 +1480,18 @@ function compareFlattenFlightRequirment(sources: FlattenFlightRequirment[], targ
       }
     });
 
-    ffrMatchs.forEach(f => {
-      f.days.forEach(d => {
-        ((source.status as any)['weekDay' + d.toString()] as WeekDayStatus).isChange = true;
-      });
-    });
-
     for (let index = ffrMatchs.length - 1; index >= 0; index--) {
       const ffr = ffrMatchs[index];
       if (ffr.days.length === 0) ffrMatchs.remove(ffr);
     }
+  }
+
+  function checkDayChangeBaseOnTarget(source: FlattenFlightRequirment, target: FlattenFlightRequirment[]) {
+    target.forEach(f => {
+      f.days.forEach(d => {
+        ((source.status as any)['weekDay' + d.toString()] as WeekDayStatus).isChange = true;
+      });
+    });
   }
 
   function checkRouteChange(source: FlattenFlightRequirment, target: FlattenFlightRequirment[]) {
@@ -1840,12 +1939,14 @@ function compareFunction(a: number, b: number) {
 }
 
 function hasPermission(flattenFlightRequirment: FlattenFlightRequirment, day: number) {
-  return flattenFlightRequirment.destinationNoPermissionsWeekDay.some(a => a === day) || flattenFlightRequirment.domesticNoPermissionsWeekDay.some(a => a === day);
+  const destinationPermission = flattenFlightRequirment.destinationNoPermissionsWeekDay.includes(day);
+  const domesticPermission = flattenFlightRequirment.domesticNoPermissionsWeekDay.includes(day);
+  return !(destinationPermission || domesticPermission);
 }
 
 function halfPermission(flattenFlightRequirment: FlattenFlightRequirment, day: number) {
-  const destinationPermission = flattenFlightRequirment.destinationNoPermissionsWeekDay.some(a => a === day);
-  const domesticPermission = flattenFlightRequirment.domesticNoPermissionsWeekDay.some(a => a === day);
+  const destinationPermission = flattenFlightRequirment.destinationNoPermissionsWeekDay.includes(day);
+  const domesticPermission = flattenFlightRequirment.domesticNoPermissionsWeekDay.includes(day);
   return (destinationPermission && !domesticPermission) || (!destinationPermission && domesticPermission);
 }
 

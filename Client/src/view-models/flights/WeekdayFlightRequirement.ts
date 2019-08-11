@@ -1,7 +1,7 @@
 import FlightRequirement from './FlightRequirement';
 import FlightScope from './FlightScope';
 import Flight from './Flight';
-import WeekdayFlightRequirementModel from '@core/models/flight/WeekdayFlightRequirementModel';
+import WeekdayFlightRequirementModel from '@core/models/flights/WeekdayFlightRequirementModel';
 import { PreplanAircraftRegisters } from 'src/view-models/PreplanAircraftRegister';
 import FlightDefinition from './FlightDefinition';
 
@@ -10,6 +10,7 @@ export default class WeekdayFlightRequirement {
   readonly derivedId: string;
   readonly scope: FlightScope;
   readonly notes: string;
+  readonly freezed: boolean;
   readonly day: number;
   readonly flight: Flight;
 
@@ -18,6 +19,7 @@ export default class WeekdayFlightRequirement {
     this.requirement = requirement;
     this.scope = new FlightScope(raw.scope, aircraftRegisters);
     this.notes = raw.notes;
+    this.freezed = raw.freezed;
     this.day = raw.day;
     this.flight = new Flight(raw.flight, this, aircraftRegisters);
   }

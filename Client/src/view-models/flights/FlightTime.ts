@@ -1,5 +1,5 @@
 import Daytime from '@core/types/Daytime';
-import FlightTimeModel from '@core/models/flight/FlightTimeModel';
+import FlightTimeModel from '@core/models/flights/FlightTimeModel';
 
 export default class FlightTime {
   /** In minutes. */ readonly stdLowerBound: Daytime;

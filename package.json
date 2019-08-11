@@ -21,11 +21,13 @@
   "author": "Mahan Air",
   "license": "ISC",
   "devDependencies": {
-    "@types/gulp": "^4.0.6",
+    "@types/gulp": "^4.0.6"
+  },
+  "dependencies": {
     "concurrently": "^4.1.1",
     "del": "^5.0.0",
     "gulp": "^4.0.2",
     "gulp-run-command": "0.0.9",
-    "npm-check-updates": "^3.1.18"
+    "npm-check-updates": "^3.1.20"
   }
 }

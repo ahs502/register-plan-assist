@@ -4,6 +4,7 @@ import 'typeface-roboto';
 import CssBaseline from '@material-ui/core/CssBaseline';
 import * as serviceWorker from './serviceWorker';
 import '@core/utils/extensions.implementation';
+import '@core/utils/validation-init';
 import App from './App';
 
 ReactDOM.render(

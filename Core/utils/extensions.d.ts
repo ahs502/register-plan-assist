@@ -56,21 +56,6 @@ declare interface ReadonlyArray<T> {
   distinct(areEqual?: (a: T, b: T) => boolean): T[];
 }
 
-/**
-  D: 1970-01-02 |
-  D#: 19700102 |
-  d: 02Jan70 |
-  d#: 020170 |
-  D$: 1970 January 2 |
-  ~D$: 2 January 1970 |
-  T: 12:34:56 |
-  T0: 12:34:00 |
-  t: 12:34 |
-  T#: 123456 |
-  t#: 1234 |
-  DT: 1970-01-02T12:34:56 |
-  DT0: 1970-01-02T12:34:00
- */
 declare type DateFormat = 'D' | 'D#' | 'd' | 'd#' | 'D$' | '~D$' | 'T' | 'T0' | 't' | 'T#' | 't#' | 'DT' | 'DT0';
 
 declare interface DateConstructor {
@@ -91,6 +76,21 @@ declare interface Date {
 
   /**
    * Returns a formatted string out of this Date object.
+   *
+   * - **D**: *1970-01-02*
+   * - **D#**: *19700102*
+   * - **d**: *02Jan70*
+   * - **d#**: *020170*
+   * - **D$**: *1970 January 2*
+   * - **~D$**: *2 January 1970*
+   * - **T**: *12:34:56*
+   * - **T0**: *12:34:00*
+   * - **T#**: *123456*
+   * - **t**: *12:34*
+   * - **t#**: *1234*
+   * - **DT**: *1970-01-02T12:34:56*
+   * - **DT0**: *1970-01-02T12:34:00*
+   *
    * @see DateFormat for more details.
    * @param mode The desired format specifier.
    */
@@ -106,6 +106,11 @@ declare interface Date {
    * Returns the time part of this and makes sure its date is 1970/01/01.
    */
   getTimePart(): Date;
+
+  /**
+   * Returns a clone of this.
+   */
+  clone(): Date;
 
   /**
    * Adds (or subtracts) specific amount of years to this Date and returns this.

@@ -1,39 +1,37 @@
 import AircraftIdentityType from '@core/types/aircraft-identity/AircraftIdentityType';
 import MasterData, { MasterDataItem, AircraftType, AircraftGroup } from '@core/master-data';
-import AircraftIdentityModel from '@core/models/AircraftIdentityModel';
 import PreplanAircraftRegister, { PreplanAircraftRegisters } from './PreplanAircraftRegister';
+import AircraftIdentityModel from '@core/models/AircraftIdentityModel';
 
 /**
  * A representive object identifying one or more aircraft registers
  * by pointing to a specific item in master data.
  */
-export default abstract class AircraftIdentity {
+export default abstract class PreplanAircraftIdentity {
   readonly type: AircraftIdentityType;
-  readonly name: string;
   readonly entity: MasterDataItem;
 
   protected readonly aircraftRegisters: PreplanAircraftRegisters;
 
-  constructor(raw: AircraftIdentityModel, entity: MasterDataItem, aircraftRegisters: PreplanAircraftRegisters) {
+  protected constructor(raw: AircraftIdentityModel, entity: MasterDataItem, aircraftRegisters: PreplanAircraftRegisters) {
     this.type = raw.type;
-    this.name = raw.name;
     this.entity = entity;
 
     this.aircraftRegisters = aircraftRegisters;
   }
 
-  static parse(raw: AircraftIdentityModel, aircraftRegisters: PreplanAircraftRegisters): AircraftIdentity {
+  static parse(raw: AircraftIdentityModel, aircraftRegisters: PreplanAircraftRegisters): PreplanAircraftIdentity {
     switch (raw.type) {
       case 'REGISTER':
-        return new AircraftRegisterIdentity(raw, aircraftRegisters);
+        return new PreplanAircraftRegisterIdentity(raw, aircraftRegisters);
       case 'TYPE':
-        return new AircraftTypeIdentity(raw, aircraftRegisters);
+        return new PreplanAircraftTypeIdentity(raw, aircraftRegisters);
       case 'TYPE_EXISTING':
-        return new AircraftTypeExistingIdentity(raw, aircraftRegisters);
+        return new PreplanAircraftTypeExistingIdentity(raw, aircraftRegisters);
       case 'TYPE_DUMMY':
-        return new AircraftTypeDummyIdentity(raw, aircraftRegisters);
+        return new PreplanAircraftTypeDummyIdentity(raw, aircraftRegisters);
       case 'GROUP':
-        return new AircraftGroupIdentity(raw, aircraftRegisters);
+        return new PreplanAircraftGroupIdentity(raw, aircraftRegisters);
       default:
         throw 'Invalid aircraft identity type.';
     }
@@ -46,7 +44,7 @@ export default abstract class AircraftIdentity {
   abstract resolve(): Set<PreplanAircraftRegister>;
 }
 
-export class AircraftRegisterIdentity extends AircraftIdentity {
+export class PreplanAircraftRegisterIdentity extends PreplanAircraftIdentity {
   readonly entity!: PreplanAircraftRegister;
 
   constructor(raw: AircraftIdentityModel, aircraftRegisters: PreplanAircraftRegisters) {
@@ -58,7 +56,7 @@ export class AircraftRegisterIdentity extends AircraftIdentity {
   }
 }
 
-export class AircraftTypeIdentity extends AircraftIdentity {
+export class PreplanAircraftTypeIdentity extends PreplanAircraftIdentity {
   readonly entity!: AircraftType;
 
   constructor(raw: AircraftIdentityModel, aircraftRegisters: PreplanAircraftRegisters) {
@@ -70,7 +68,7 @@ export class AircraftTypeIdentity extends AircraftIdentity {
   }
 }
 
-export class AircraftTypeExistingIdentity extends AircraftIdentity {
+export class PreplanAircraftTypeExistingIdentity extends PreplanAircraftIdentity {
   readonly entity!: AircraftType;
 
   constructor(raw: AircraftIdentityModel, aircraftRegisters: PreplanAircraftRegisters) {
@@ -82,7 +80,7 @@ export class AircraftTypeExistingIdentity extends AircraftIdentity {
   }
 }
 
-export class AircraftTypeDummyIdentity extends AircraftIdentity {
+export class PreplanAircraftTypeDummyIdentity extends PreplanAircraftIdentity {
   readonly entity!: AircraftType;
 
   constructor(raw: AircraftIdentityModel, aircraftRegisters: PreplanAircraftRegisters) {
@@ -94,7 +92,7 @@ export class AircraftTypeDummyIdentity extends AircraftIdentity {
   }
 }
 
-export class AircraftGroupIdentity extends AircraftIdentity {
+export class PreplanAircraftGroupIdentity extends PreplanAircraftIdentity {
   readonly entity!: AircraftGroup;
 
   constructor(raw: AircraftIdentityModel, aircraftRegisters: PreplanAircraftRegisters) {

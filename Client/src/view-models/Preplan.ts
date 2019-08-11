@@ -1,8 +1,8 @@
 import PreplanModel, { PreplanHeaderModel } from '@core/models/PreplanModel';
 import { PreplanAircraftRegisters } from './PreplanAircraftRegister';
 import AutoArrangerState from './AutoArrangerState';
-import FlightRequirement from './flight/FlightRequirement';
-import Flight from './flight/Flight';
+import FlightRequirement from './flights/FlightRequirement';
+import Flight from './flights/Flight';
 import AutoArrangerOptions from './AutoArrangerOptions';
 
 export class PreplanHeader {
@@ -70,7 +70,7 @@ export default class Preplan extends PreplanHeader {
 
   /**
    * Gets the flattened list of this preplan's flights.
-   * NOTE: USE WITH CAUTION, IT IS A COMPUTED PROPERTY AND HAS PROCESSING COSTS.
+   * > **NOTE:** USE WITH CAUTION, IT IS A COMPUTED PROPERTY AND HAS PROCESSING COSTS.
    */
   get flights(): readonly Flight[] {
     return this.flightRequirements.map(w => w.days.map(d => d.flight)).flatten();

@@ -1,4 +1,4 @@
-import FlightRequirementModel from '@core/models/flight/FlightRequirementModel';
+import FlightRequirementModel from '@core/models/flights/FlightRequirementModel';
 import FlightDefinition from './FlightDefinition';
 import FlightScope from './FlightScope';
 import WeekdayFlightRequirement from './WeekdayFlightRequirement';

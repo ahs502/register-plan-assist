@@ -50,7 +50,7 @@ const AppBar: FC<AppBarProps> = ({ user }) => {
           <SyncIcon />
         </IconButton>
         <Typography classes={{ root: classes.textMargin }} variant="h5" color="inherit">
-          PA
+          RPA
         </Typography>
         <Typography classes={{ root: classes.textMargin }} variant="h6" color="inherit">
           {user.displayName}

@@ -1,6 +1,11 @@
 /**
- * All possible kinds of aircraft identities.
+ * All possible aircraft identity types.
  */
-type AircraftIdentityType = 'REGISTER' | 'TYPE' | 'TYPE_EXISTING' | 'TYPE_DUMMY' | 'GROUP';
+export const AircraftIdentityTypes = <const>['REGISTER', 'TYPE', 'TYPE_EXISTING', 'TYPE_DUMMY', 'GROUP'];
+
+/**
+ * Aircraft identity type.
+ */
+type AircraftIdentityType = typeof AircraftIdentityTypes[number];
 
 export default AircraftIdentityType;

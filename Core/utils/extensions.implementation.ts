@@ -71,8 +71,8 @@ import { isArray } from 'util';
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  const shortMonthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const monthNames = <const>['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const shortMonthNames = <const>['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
   Date.concatDateTime = function Date_concatDateTime(date: Date, time: Date): Date {
     if (!date.isValid()) return date;
@@ -89,8 +89,44 @@ import { isArray } from 'util';
 
   Date.prototype.format = function Date_prototype_format(mode: DateFormat): string {
     switch (mode) {
+      case 'D':
+        throw new Error('Not implemented!');
+
+      case 'D#':
+        throw new Error('Not implemented!');
+
+      case 'd':
+        return `${String(this.getUTCDate()).padStart(2, '0')}${shortMonthNames[this.getUTCMonth()]}${String(this.getUTCFullYear()).slice(-2)}`;
+
+      case 'd#':
+        throw new Error('Not implemented!');
+
+      case 'D$':
+        throw new Error('Not implemented!');
+
       case '~D$':
         return `${this.getUTCDate()} ${monthNames[this.getUTCMonth()]} ${this.getUTCFullYear()}`;
+
+      case 'T':
+        throw new Error('Not implemented!');
+
+      case 'T0':
+        throw new Error('Not implemented!');
+
+      case 'T#':
+        throw new Error('Not implemented!');
+
+      case 't':
+        return `${String(this.getUTCHours()).padStart(2, '0')}:${String(this.getUTCMinutes()).padStart(2, '0')}`;
+
+      case 't#':
+        throw new Error('Not implemented!');
+
+      case 'DT':
+        throw new Error('Not implemented!');
+
+      case 'DT0':
+        throw new Error('Not implemented!');
 
       default:
         throw new Error('Not implemented!');
@@ -108,6 +144,10 @@ import { isArray } from 'util';
     let result = new Date(0);
     result.setUTCHours(this.getUTCHours(), this.getUTCMinutes(), this.getUTCSeconds(), this.getUTCMilliseconds());
     return result;
+  };
+
+  Date.prototype.clone = function Date_prototype_clone(): Date {
+    return new Date(this);
   };
 
   Date.prototype.addYears = function Date_prototype_addYears(years: number): Date {

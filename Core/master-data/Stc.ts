@@ -2,8 +2,11 @@ import StcModel from '@core/models/master-data/StcModel';
 import MasterDataItem, { MasterDataItems } from './MasterDataItem';
 
 export default class Stc extends MasterDataItem {
+  readonly description: string;
+
   constructor(raw: StcModel) {
-    super(raw, raw.description);
+    super(raw);
+    this.description = raw.description;
   }
 }
 

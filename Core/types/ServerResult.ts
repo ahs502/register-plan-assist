@@ -1,4 +1,4 @@
-export default interface ServerResult<T = any> {
+export default interface ServerResult<R> {
   message?: string;
-  value?: T;
+  value?: R;
 }

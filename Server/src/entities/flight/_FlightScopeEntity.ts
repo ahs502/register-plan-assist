@@ -1,5 +1,3 @@
-import { FlightScopeModel } from '@core/models/flight/FlightScopeModel';
-
 export default interface FlightScopeEntity {
   readonly BlockTime: string;
   readonly Times: string;

@@ -4,7 +4,7 @@ import AuthenticationHeaderModel from '@core/models/authentication/Authenticatio
 import { cryptr } from './oauth';
 import ServerResult from '@core/types/ServerResult';
 
-export default function requestMiddleware<B = any, R = any>(task: (userId: string, body: B) => Promise<R>) {
+export default function requestMiddleware<B extends {}, R>(task: (userId: string, body: B) => Promise<R>) {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       const encodedAuthenticationHeader = req.headers['Authentication'] as string | undefined;
@@ -34,11 +34,11 @@ export default function requestMiddleware<B = any, R = any>(task: (userId: strin
   };
 }
 
-export function requestMiddlewareWithDbAccess<B = any, R = any>(task: (userId: string, body: B, dbAccess: DbAccess) => Promise<R>) {
+export function requestMiddlewareWithDbAccess<B extends {}, R>(task: (userId: string, body: B, dbAccess: DbAccess) => Promise<R>) {
   return requestMiddleware<B, R>((userId, body) => withDbAccess(dbAccess => task(userId, body, dbAccess)));
 }
 
-export function requestMiddlewareWithTransactionalDbAccess<B = any, R = any>(
+export function requestMiddlewareWithTransactionalDbAccess<B extends {}, R>(
   task: (userId: string, body: B, dbAccess: DbAccess) => Promise<R>,
   isolationLevel: IsolationLevel = IsolationLevel.RepeatableRead
 ) {

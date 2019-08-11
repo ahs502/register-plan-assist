@@ -3,7 +3,7 @@ import AuthenticationResultModel from '@core/models/authentication/Authenticatio
 import persistant from './persistant';
 import ServerResult from '@core/types/ServerResult';
 
-export default async function apiRequest(service: string, command: string, data?: any): Promise<ServerResult> {
+export default async function apiRequest<R>(service: string, command: string, data?: any): Promise<ServerResult<R>> {
   try {
     const response = await fetch(`/api/${service}/${command}`, {
       method: 'POST',
@@ -69,4 +69,8 @@ export default async function apiRequest(service: string, command: string, data?
   } catch (reason) {
     return { message: String(reason) };
   }
+}
+
+export function apiRequestMaker(service: string): <R>(command: string, data?: any) => Promise<ServerResult<R>> {
+  return async (command: string, data?: any) => await apiRequest(service, command, data);
 }

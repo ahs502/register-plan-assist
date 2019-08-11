@@ -1,5 +1,3 @@
-import FlightTimeModel from '@core/models/flight/FlightTimeModel';
-
 export default interface FlightTimeEntity {
   readonly StdLowerBound: number;
   readonly StdUpperBound: number;

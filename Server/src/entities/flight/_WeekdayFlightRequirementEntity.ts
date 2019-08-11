@@ -1,5 +1,3 @@
-import WeekdayFlightRequirementModel from '@core/models/flight/WeekdayFlightRequirementModel';
-
 export default interface WeekdayFlightRequirementEntity {
   readonly Scope: string;
   readonly Notes: string;

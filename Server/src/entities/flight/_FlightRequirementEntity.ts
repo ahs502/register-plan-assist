@@ -1,5 +1,3 @@
-import FlightRequirementModel from '@core/models/flight/FlightRequirementModel';
-
 export default interface FlightRequirementEntity {
   readonly id: string;
   readonly preplanId: string;

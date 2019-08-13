@@ -25,6 +25,85 @@
 
     <script src="/api/config/init"></script>
 
+    <script>
+      +(async function() {
+        const authentication = localStorage.getItem('authentication');
+        const encodedAuthenticationHeader = localStorage.getItem('encodedAuthenticationHeader');
+        const oauthCode = localStorage.getItem('oauthCode');
+        if (authentication && encodedAuthenticationHeader && oauthCode) return;
+
+        const url = new URL(window.location.href);
+        const code = url.searchParams.get('code');
+        if (!code) {
+          const loginUrl = `${config.oauth.serverIssuer}?client_id=${config.oauth.clientId}&redirect_uri=${config.oauth.clientUrl}&response_type=code&lang=${
+            config.oauth.lang
+          }&resource=${config.oauth.resourceName}`;
+          window.location.href = loginUrl;
+          return;
+        }
+
+        try {
+          let response;
+          try {
+            response = await fetch('/api/oauth/get-authentication', {
+              method: 'POST',
+              cache: 'no-cache',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              redirect: 'follow',
+              body: JSON.stringify({ oauthCode: code })
+            });
+          } catch (error) {
+            throw 'SERVER_NOT_AVAILABLE';
+          }
+          if (!response.ok) throw 'UNKNOWN';
+
+          const authenticationResult = await response.json();
+          if (authenticationResult.error) throw authenticationResult.error;
+
+          const { authentication, encodedAuthenticationHeader } = authenticationResult;
+          localStorage.setItem('authentication', JSON.stringify(authentication));
+          localStorage.setItem('encodedAuthenticationHeader', JSON.stringify(encodedAuthenticationHeader));
+          localStorage.setItem('oauthCode', JSON.stringify(code));
+
+          removeCodeFromUrl();
+        } catch (error) {
+          switch (error) {
+            case 'SERVER_NOT_AVAILABLE':
+              break;
+            case 'OAUTH_SERVER_NOT_AVAILABLE':
+              break;
+            case 'CODE_NOT_AVAILABLE':
+              removeCodeFromUrl();
+              break;
+            case 'INVALID_CODE':
+              removeCodeFromUrl();
+              break;
+            case 'DATABASE_NOT_AVAILABLE':
+              break;
+            case 'USER_NOT_FOUND':
+              alert('User not found.');
+              removeCodeFromUrl();
+              break;
+            case 'UNKNOWN':
+            default:
+              removeCodeFromUrl();
+              break;
+          }
+          window.location.reload();
+        }
+
+        function removeCodeFromUrl() {
+          const uri = window.location.toString();
+          if (uri.includes('?')) {
+            const clean_uri = uri.substring(0, uri.indexOf('?'));
+            window.history.replaceState({}, document.title, clean_uri);
+          }
+        }
+      })();
+    </script>
+
     <title>Register Plan Assist</title>
   </head>
   <body>

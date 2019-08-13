@@ -9,18 +9,60 @@ import { DataGroup, DataItem, TimelineOptions, Id } from 'vis-timeline';
 import Weekday from '@core/types/Weekday';
 import VisTimeline from 'src/components/VisTimeline';
 import moment from 'moment';
+import { Airport } from '@core/master-data';
 
 const useStyles = makeStyles((theme: Theme) => ({
   '@global': {
-    '.vis-item': {
-      border: '2px solid black'
+    '.vis-item.vis-range': {
+      border: 'none',
+      backgroundColor: 'transparent',
+      '& .vis-item-content': {
+        padding: 0
+      }
+    },
+    '.rpa-item-header': {
+      display: 'flex',
+      justifyContent: 'space-between',
+      '& .rpa-item-time': {
+        fontSize: '8px',
+        '&.rpa-item-std': {},
+        '&.rpa-item-sta': {}
+      }
+    },
+    '.rpa-item-body': {
+      display: 'flex',
+      position: 'relative',
+      border: '1px solid rgba(100, 20, 110, 0.5)',
+      borderRadius: '3px',
+      backgroundColor: 'rgba(100, 20, 110, 0.15)',
+      '& .rpa-item-section': {
+        position: 'absolute',
+        top: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(100, 20, 110, 0.15)'
+      },
+      '& .rpa-item-label': {
+        flexGrow: 1,
+        textAlign: 'center',
+        fontSize: '110%',
+        textShadow: '0 0 2px #797979'
+      }
+    },
+    '.rpa-item-footer': {
+      display: 'flex',
+      alignItems: 'center',
+      '& .rpa-item-icon': {
+        fontSize: '13px',
+        fontWeight: 'bold',
+        border: '1px solid black',
+        borderRadius: 5,
+        lineHeight: '12px',
+        padding: '1px 2px'
+      },
+      '& .rpa-item-notes': {
+        fontSize: '10px'
+      }
     }
-  },
-  root: {
-    width: '100%',
-    height: 'calc(100vh - 159px)',
-    overflowX: 'auto'
-    // backgroundColor: 'yellow'
   }
 }));
 
@@ -28,6 +70,22 @@ interface TimelineData {
   groups: DataGroup[];
   items: DataItem[];
   options: TimelineOptions;
+}
+
+interface Bar {
+  id: string;
+  label: string;
+  register: string;
+  flights: Flight[];
+  day: number;
+  start: Daytime;
+  end: Daytime;
+  sections: {
+    start: number;
+    end: number;
+  }[];
+  icons: string[];
+  notes: string;
 }
 
 export interface ResourceSchedulerViewProps {
@@ -56,202 +114,15 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = ({
   onFreeSpaceMouseHover
 }) => {
   const [timelineData, setTimelineData] = useState<TimelineData>(() => {
-    const registers = aircraftRegisters.items.filter(r => flights.some(f => f.aircraftRegister && f.aircraftRegister.id === r.id)).sortBy('name');
-
-    const types = registers
-      .map(r => r.aircraftType)
-      .distinct()
-      .sortBy('displayOrder');
-
-    const registerGroups = registers.map(
-      (r): DataGroup => ({
-        id: r.id,
-        content: r.name,
-        title: r.name,
-        data: r
-      })
-    );
-
-    const typeGroups = types.map(
-      (t): DataGroup => ({
-        id: t.id,
-        content: t.name,
-        title: t.name,
-        nestedGroups: registers.filter(r => r.aircraftType.id === t.id).map(r => r.id),
-        data: t
-      })
-    );
-
-    const groups = registerGroups.concat(typeGroups).concat({
-      id: '???',
-      content: '???',
-      title: 'Flights without allocated aircraft register'
-    });
-
-    interface Bar {
-      label: string;
-      start: Date;
-      end: Date;
-      sections: {
-        start: number;
-        end: number;
-      }[];
-      icons: string[];
-      notes: string;
-    }
-
-    const items = flights.map(
-      (f): DataItem => {
-        var start = new Date(startDate.getTime() + (f.day * 24 * 60 + f.std.minutes) * 60 * 1000);
-        var end = new Date(startDate.getTime() + (f.day * 24 * 60 + f.std.minutes + f.blockTime) * 60 * 1000);
-        return {
-          id: f.derivedId,
-          start,
-          end,
-          group: f.aircraftRegister ? f.aircraftRegister.id : '???',
-          content: f.label,
-          title: `
-            <div>
-              <div>
-                ${f.label} 
-              </diu>
-              <div> 
-                ${f.flightNumber} ${f.departureAirport.name}&dash;${f.arrivalAirport.name}
-              </div>
-              <div >
-                ${f.required ? 'R' : ''} |
-                ${f.arrivalPermission && f.departurePermission ? '' : 'P'} |
-                ${Math.random() >= 0.5 ? '<i class="icon-locked"></i>' : ''} 
-              </div>
-              <div>
-                STD:&nbsp;${start.format('t')}
-              </div>
-                BlockTime:&nbsp;${f.blockTime}
-              <div>
-                STA:&nbsp;${end.format('t')}
-              </div>
-            </div>
-          `,
-          type: 'range',
-          data: f
-        };
-      }
-    );
-
-    const options: TimelineOptions = {
-      editable: {
-        add: false,
-        remove: false,
-        updateGroup: true,
-        updateTime: true,
-        overrideItems: false
-      },
-      end: startDate.clone().addDays(7),
-      format: {
-        majorLabels(date, scale, step) {
-          return Weekday[((new Date(date).setUTCHours(0, 0, 0, 0) - startDate.getTime()) / (24 * 60 * 60 * 1000) + 7) % 7].slice(0, 3);
-        },
-        minorLabels: {
-          millisecond: 'HH:mm:ss',
-          second: 'HH:mm',
-          minute: 'HH:mm',
-          hour: 'HH',
-          weekday: 'H',
-          day: 'H',
-          week: 'H',
-          month: 'H',
-          year: 'H'
-        }
-      },
-      itemsAlwaysDraggable: true,
-      moment(date) {
-        return moment(date).utc();
-      },
-      margin: {
-        axis: 5,
-        item: {
-          horizontal: 5,
-          vertical: 5
-        }
-      },
-      max: startDate.clone().addDays(8),
-      maxMinorChars: 5,
-      maxHeight: 'calc(100vh - 159px)',
-      min: startDate,
-      minHeight: 'calc(100vh - 160px)',
-      onMove(item, callback) {
-        console.log('Move', item.id);
-        callback(item);
-      },
-      onMoving(item, callback) {
-        console.log('Moving', item.id);
-        callback(item);
-      },
-      orientation: 'top',
-      showCurrentTime: false,
-      stack: true,
-      stackSubgroups: true,
-      snap(date, scale, step) {
-        const ticks = date.getTime(),
-          timeStep = 5 * 60 * 1000,
-          fraction = ticks % timeStep,
-          rounded = Math.round(fraction / timeStep) * timeStep;
-        return new Date(ticks - fraction + rounded);
-      },
-      start: startDate,
-      template: function(item, element, data) {
-        const flight: Flight = item.data;
-        return `
-          <div style="border: 1px solid red; display: flex;">
-            <div>
-              ${flight.label}&nbsp;${flight.departureAirport.name}&ndash;${flight.arrivalAirport.name}
-            </div>
-            <div>
-              ${flight.required ? 'R' : ''}
-              ${flight.departurePermission && flight.arrivalPermission ? '' : 'P'}
-              ${Math.random() >= 0.5 ? '<i class="icon-locked"></i>' : ''}
-            </div>
-          </div>
-        `;
-      },
-      tooltip: {
-        followMouse: true,
-        overflowMethod: 'cap'
-      },
-      tooltipOnItemUpdateTime: true,
-      verticalScroll: true,
-      width: '100%',
-      zoomable: true,
-      zoomKey: 'ctrlKey',
-      zoomMin: 12 * 60 * 60 * 1000
-    };
+    const groups = calculateTimelineGroups(flights, aircraftRegisters);
+    const bars = calculateTimelineBars(flights);
+    const items = calculateTimelineItems(bars, startDate);
+    const options = calculateTimelineOptions(startDate);
 
     return { groups, items, options };
   });
 
   const classes = useStyles();
-
-  const findAdjacentFlights = (items: DataItem[], groupId: Id, FreeSpaceDateTime: Date) => {
-    var nextItem: any;
-    var previousItem: any;
-    const itemInGroups = items.filter(item => item.group === groupId).sort((a, b) => (a.start > b.start ? 1 : a.start < b.start ? -1 : 0));
-    for (var i = 0; i < itemInGroups.length; i++) {
-      if (+itemInGroups[i].start > +FreeSpaceDateTime) {
-        nextItem = itemInGroups[i];
-        if (i > 0) {
-          previousItem = itemInGroups[i - 1];
-        }
-        break;
-      }
-    }
-    if (!nextItem && itemInGroups.length) {
-      previousItem = itemInGroups[itemInGroups.length - 1];
-    }
-    const nextFlight = !nextItem ? nextItem : nextItem.flight;
-    const previousFlight = !previousItem ? previousItem : previousItem.flight;
-    console.log(previousFlight && previousFlight.arrivalAirport.name, nextFlight && nextFlight.departureAirport.name);
-    return [previousFlight, nextFlight];
-  };
 
   return (
     <VisTimeline
@@ -276,3 +147,293 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = ({
 };
 
 export default ResourceSchedulerView;
+
+function calculateTimelineGroups(flights: readonly Flight[], aircraftRegisters: PreplanAircraftRegisters): DataGroup[] {
+  const registers = aircraftRegisters.items.filter(r => flights.some(f => f.aircraftRegister && f.aircraftRegister.id === r.id)).sortBy('name');
+
+  const types = registers
+    .map(r => r.aircraftType)
+    .distinct()
+    .sortBy('displayOrder');
+
+  const registerGroups = registers.map(
+    (r): DataGroup => ({
+      id: r.id,
+      content: r.name,
+      title: r.name,
+      data: r
+    })
+  );
+
+  const typeGroups = types.map(
+    (t): DataGroup => ({
+      id: t.id,
+      content: t.name,
+      title: t.name,
+      nestedGroups: registers.filter(r => r.aircraftType.id === t.id).map(r => r.id),
+      data: t
+    })
+  );
+
+  const groups = registerGroups.concat(typeGroups).concat({
+    id: '???',
+    content: '???',
+    title: 'Flights without allocated aircraft register'
+  });
+
+  return groups;
+}
+
+function getAirportBaseLevel(airport: Airport): number {
+  switch (airport.name) {
+    case 'IKA':
+      return 4;
+    case 'THR':
+      return 3;
+    case 'KER':
+      return 2;
+    case 'MHD':
+      return 1;
+    default:
+      return 0;
+  }
+}
+
+function calculateTimelineBars(flights: readonly Flight[]): Bar[] {
+  const bars: Bar[] = [];
+  const flightsByLabel = flights.groupBy('label');
+  for (const label in flightsByLabel) {
+    const flightsByRegister = flightsByLabel[label].groupBy(f => (f.aircraftRegister ? f.aircraftRegister.id : '???'));
+    for (const register in flightsByRegister) {
+      const flightGroup = flightsByRegister[register].sortBy(f => f.day * 24 * 60 + f.std.minutes, true);
+      while (flightGroup.length) {
+        const flight = flightGroup.pop()!;
+        let lastFlight = flight;
+        const bar: Bar = {
+          id: flight.derivedId,
+          label,
+          register,
+          flights: [flight],
+          day: flight.day,
+          start: flight.std,
+          end: new Daytime(flight.std.minutes + flight.blockTime),
+          sections: [{ start: 0, end: 1 }],
+          icons: [flight.required ? 'R' : '', flight.freezed ? 'F' : '', flight.departurePermission && flight.arrivalPermission ? '' : 'P'].filter(Boolean),
+          notes: flight.notes
+        };
+        bars.push(bar);
+        if (getAirportBaseLevel(flight.departureAirport) <= getAirportBaseLevel(flight.arrivalAirport)) continue;
+        while (flightGroup.length) {
+          const nextFlight = flightGroup.pop()!;
+          const lastDayDiff = (nextFlight.day - lastFlight.day) * 24 * 60;
+          // Where next flight can NOT be appended to the bar:
+          if (
+            lastDayDiff + nextFlight.std.minutes <= lastFlight.std.minutes + lastFlight.blockTime ||
+            lastDayDiff + nextFlight.std.minutes > lastFlight.std.minutes + lastFlight.blockTime + 20 * 60 ||
+            nextFlight.departureAirport.id !== lastFlight.arrivalAirport.id ||
+            nextFlight.departureAirport.id === flight.departureAirport.id
+          ) {
+            flightGroup.push(nextFlight);
+            break;
+          }
+          const dayDiff = (nextFlight.day - bar.day) * 24 * 60;
+          bar.flights.push(nextFlight);
+          bar.end = new Daytime(dayDiff + nextFlight.std.minutes + nextFlight.blockTime);
+          lastFlight = nextFlight;
+        }
+        bar.sections = bar.flights.map(f => {
+          const dayDiff = (f.day - bar.day) * 24 * 60;
+          return {
+            start: (dayDiff + f.std.minutes - bar.start.minutes) / (bar.end.minutes - bar.start.minutes),
+            end: (dayDiff + f.std.minutes + f.blockTime - bar.start.minutes) / (bar.end.minutes - bar.start.minutes)
+          };
+        });
+      }
+    }
+  }
+  return bars;
+}
+
+function itemTooltipTemplate(bar: Bar): string {
+  return `
+    <div>
+      <div>
+        <em><small>Label:</small></em>
+        <strong>${bar.label}</strong>
+      </div>
+      <div>
+        <em><small>Flights:</small></em>
+        ${bar.flights
+          .map(
+            f => `
+              <div>
+                &nbsp;&nbsp;&nbsp;&nbsp;
+                ${f.flightNumber}:
+                ${f.departureAirport.name} (${f.std.toString()}) &dash;
+                ${f.arrivalAirport.name} (${new Daytime(f.std.minutes + f.blockTime).toString()})
+              </div>
+            `
+          )
+          .join('')}
+      </div>
+      <div>
+        <em><small>Flags:</small></em>
+        ${bar.icons.map(i => `<strong>${i}</strong>`).join(' | ')}
+      </div>
+      <div>
+        <em><small>Notes:</small></em>
+        ${bar.notes}
+      </div>
+    </div>
+  `;
+}
+
+function calculateTimelineItems(bars: Bar[], startDate: Date): DataItem[] {
+  const items = bars.map(
+    (b): DataItem => ({
+      id: b.id,
+      start: new Date(startDate.getTime() + (b.day * 24 * 60 + b.start.minutes) * 60 * 1000),
+      end: new Date(startDate.getTime() + (b.day * 24 * 60 + b.end.minutes) * 60 * 1000),
+      group: b.register,
+      content: b.label,
+      title: itemTooltipTemplate(b),
+      type: 'range',
+      data: b
+    })
+  );
+
+  return items;
+}
+
+function itemTemplate(item: DataItem, element: HTMLElement, data: DataItem): string {
+  const bar: Bar = item.data;
+  return `
+    <div class="rpa-item-header">
+      <div class="rpa-item-time rpa-item-std">
+        ${bar.start.toString(true)}
+      </div>
+      <div class="rpa-item-time rpa-item-sta">
+        ${bar.end.toString(true)}
+      </div>
+    </div>
+    <div class="rpa-item-body">
+      ${bar.sections
+        .map(
+          s => `
+            <div class="rpa-item-section" style="left: ${s.start * 100}%; right: ${(1 - s.end) * 100}%;"></div>
+          `
+        )
+        .join(' ')}
+      <div class="rpa-item-label">
+        ${bar.label}
+      </div>
+    </div>
+    <div class="rpa-item-footer">
+      ${bar.icons.map(i => `<span class="rpa-item-icon">${i}</span>`).join(' ')}
+      &nbsp;
+      <div class="rpa-item-notes">
+        ${bar.notes}
+      </div>
+    </div>
+  `;
+}
+
+function calculateTimelineOptions(startDate: Date): TimelineOptions {
+  const options: TimelineOptions = {
+    editable: {
+      add: false,
+      remove: false,
+      updateGroup: true,
+      updateTime: true,
+      overrideItems: false
+    },
+    end: startDate.clone().addDays(7),
+    format: {
+      majorLabels(date, scale, step) {
+        return Weekday[((new Date(date).setUTCHours(0, 0, 0, 0) - startDate.getTime()) / (24 * 60 * 60 * 1000) + 7) % 7].slice(0, 3);
+      },
+      minorLabels: {
+        millisecond: 'HH:mm:ss',
+        second: 'HH:mm',
+        minute: 'HH:mm',
+        hour: 'HH',
+        weekday: 'H',
+        day: 'H',
+        week: 'H',
+        month: 'H',
+        year: 'H'
+      }
+    },
+    itemsAlwaysDraggable: true,
+    moment(date) {
+      return moment(date).utc();
+    },
+    margin: {
+      axis: 5,
+      item: {
+        horizontal: 5,
+        vertical: 5
+      }
+    },
+    max: startDate.clone().addDays(8),
+    maxMinorChars: 5,
+    maxHeight: 'calc(100vh - 159px)',
+    min: startDate,
+    minHeight: 'calc(100vh - 160px)',
+    onMove(item, callback) {
+      console.log('Move', item.id);
+      callback(item);
+    },
+    onMoving(item, callback) {
+      if (item.group) console.log('Moving', item.id);
+      callback(item);
+    },
+    orientation: 'top',
+    showCurrentTime: false,
+    stack: true,
+    stackSubgroups: true,
+    snap(date, scale, step) {
+      const ticks = date.getTime(),
+        timeStep = 5 * 60 * 1000,
+        fraction = ticks % timeStep,
+        rounded = Math.round(fraction / timeStep) * timeStep;
+      return new Date(ticks - fraction + rounded);
+    },
+    start: startDate,
+    template: itemTemplate,
+    tooltip: {
+      followMouse: true,
+      overflowMethod: 'cap'
+    },
+    tooltipOnItemUpdateTime: true,
+    verticalScroll: true,
+    width: '100%',
+    zoomable: true,
+    zoomKey: 'ctrlKey',
+    zoomMin: 12 * 60 * 60 * 1000
+  };
+
+  return options;
+}
+
+function findAdjacentFlights(items: DataItem[], groupId: Id, freeSpaceDateTime: Date) {
+  var nextItem: any;
+  var previousItem: any;
+  const itemInGroups = items.filter(item => item.group === groupId).sort((a, b) => (a.start > b.start ? 1 : a.start < b.start ? -1 : 0));
+  for (var i = 0; i < itemInGroups.length; i++) {
+    if (+itemInGroups[i].start > +freeSpaceDateTime) {
+      nextItem = itemInGroups[i];
+      if (i > 0) {
+        previousItem = itemInGroups[i - 1];
+      }
+      break;
+    }
+  }
+  if (!nextItem && itemInGroups.length) {
+    previousItem = itemInGroups[itemInGroups.length - 1];
+  }
+  const nextFlight = !nextItem ? nextItem : nextItem.flight;
+  const previousFlight = !previousItem ? previousItem : previousItem.flight;
+  console.log(previousFlight && previousFlight.arrivalAirport.name, nextFlight && nextFlight.departureAirport.name);
+  return [previousFlight, nextFlight];
+}

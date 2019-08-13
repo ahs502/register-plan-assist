@@ -10,6 +10,7 @@
     "ncu": "ncu"
   },
   "dependencies": {
+    "@progress/kendo-react-excel-export": "^3.2.2",
     "@ahs502/validation": "^2.3.0",
     "@material-ui/core": "^4.2.0",
     "@material-ui/icons": "^4.2.1",

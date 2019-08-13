@@ -171,6 +171,7 @@ function getDummyPreplan(): Preplan {
     lastEditDateTime: new Date().addDays(-1).toJSON(),
     startDate: new Date().toJSON(),
     endDate: new Date().addDays(20).toJSON(),
+
     autoArrangerOptions: { minimumGroundTimeMode: 'AVERAGE', minimumGroundTimeOffset: 50 },
     autoArrangerState: {
       solving: true,
@@ -200,6 +201,37 @@ function getDummyPreplan(): Preplan {
       changeLogsViewed: true
     },
     flightRequirements: [
+      {
+        id: '7092902000000155131',
+        definition: { category: '', label: 'IFN', stcId: '3', flightNumber: 'W5 5013', departureAirportId: '7092901520000000350', arrivalAirportId: '7092901520000001564' },
+        scope: {
+          rsx: 'REAL',
+          departurePermission: true,
+          arrivalPermission: true,
+          blockTime: 85,
+          times: [{ stdLowerBound: 235, stdUpperBound: 355 }],
+          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000573' }], forbiddenIdentities: [] },
+          required: true
+        },
+        days: [
+          {
+            freezed: false,
+            scope: {
+              rsx: 'REAL',
+              departurePermission: true,
+              arrivalPermission: true,
+              blockTime: 85,
+              times: [{ stdLowerBound: 235, stdUpperBound: 355 }],
+              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000573' }], forbiddenIdentities: [] },
+              required: true
+            },
+            notes: 'somenotes...',
+            day: 0,
+            flight: { std: 295, aircraftRegisterId: '7092902880000000573' }
+          }
+        ],
+        ignored: false
+      },
       {
         id: '7092902000000155152',
         definition: { category: 'شمسا', label: 'NJF', stcId: '3', flightNumber: 'W5 5016', departureAirportId: '7092901520000001564', arrivalAirportId: '7092901520000002646' },
@@ -922,7 +954,7 @@ function getDummyPreplan(): Preplan {
       },
       {
         id: '7092902000000155189',
-        definition: { category: '', label: 'DXB', stcId: '10', flightNumber: 'W5 0065', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000005420' },
+        definition: { category: '', label: 'DXB2', stcId: '10', flightNumber: 'W5 0065', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000005420' },
         scope: {
           rsx: 'REAL',
           departurePermission: true,
@@ -1294,7 +1326,7 @@ function getDummyPreplan(): Preplan {
       },
       {
         id: '7092902000000155211',
-        definition: { category: '', label: 'DXB', stcId: '10', flightNumber: 'W5 0064', departureAirportId: '7092901520000005420', arrivalAirportId: '7092901520000001588' },
+        definition: { category: '', label: 'DXB2', stcId: '10', flightNumber: 'W5 0064', departureAirportId: '7092901520000005420', arrivalAirportId: '7092901520000001588' },
         scope: {
           rsx: 'REAL',
           departurePermission: true,
@@ -3030,7 +3062,7 @@ function getDummyPreplan(): Preplan {
       },
       {
         id: '7092902000000155123',
-        definition: { category: '', label: 'DXB', stcId: '10', flightNumber: 'W5 0061', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000005420' },
+        definition: { category: '', label: 'DXB1', stcId: '10', flightNumber: 'W5 0061', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000005420' },
         scope: {
           rsx: 'REAL',
           departurePermission: true,
@@ -3154,7 +3186,7 @@ function getDummyPreplan(): Preplan {
       },
       {
         id: '7092902000000155157',
-        definition: { category: '', label: 'DXB', stcId: '10', flightNumber: 'W5 0060', departureAirportId: '7092901520000005420', arrivalAirportId: '7092901520000001588' },
+        definition: { category: '', label: 'DXB1', stcId: '10', flightNumber: 'W5 0060', departureAirportId: '7092901520000005420', arrivalAirportId: '7092901520000001588' },
         scope: {
           rsx: 'REAL',
           departurePermission: true,
@@ -4160,7 +4192,7 @@ function getDummyPreplan(): Preplan {
       },
       {
         id: '7092902000000155378',
-        definition: { category: '', label: 'DXB', stcId: '10', flightNumber: 'W5 0065', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000005420' },
+        definition: { category: '', label: 'DXB2', stcId: '10', flightNumber: 'W5 0065', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000005420' },
         scope: {
           rsx: 'REAL',
           departurePermission: true,
@@ -4408,7 +4440,7 @@ function getDummyPreplan(): Preplan {
       },
       {
         id: '7092902000000155396',
-        definition: { category: '', label: 'DXB', stcId: '10', flightNumber: 'W5 0064', departureAirportId: '7092901520000005420', arrivalAirportId: '7092901520000001588' },
+        definition: { category: '', label: 'DXB2', stcId: '10', flightNumber: 'W5 0064', departureAirportId: '7092901520000005420', arrivalAirportId: '7092901520000001588' },
         scope: {
           rsx: 'REAL',
           departurePermission: true,
@@ -4842,7 +4874,7 @@ function getDummyPreplan(): Preplan {
       },
       {
         id: '7092902000000155299',
-        definition: { category: '', label: 'DXB', stcId: '10', flightNumber: 'W5 0061', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000005420' },
+        definition: { category: '', label: 'DXB1', stcId: '10', flightNumber: 'W5 0061', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000005420' },
         scope: {
           rsx: 'REAL',
           departurePermission: true,
@@ -4935,7 +4967,7 @@ function getDummyPreplan(): Preplan {
       },
       {
         id: '7092902000000155339',
-        definition: { category: '', label: 'DXB', stcId: '10', flightNumber: 'W5 0060', departureAirportId: '7092901520000005420', arrivalAirportId: '7092901520000001588' },
+        definition: { category: '', label: 'DXB1', stcId: '10', flightNumber: 'W5 0060', departureAirportId: '7092901520000005420', arrivalAirportId: '7092901520000001588' },
         scope: {
           rsx: 'REAL',
           departurePermission: true,
@@ -7157,7 +7189,7 @@ function getDummyPreplan(): Preplan {
       },
       {
         id: '7092902000000155441',
-        definition: { category: '', label: 'DXB', stcId: '10', flightNumber: 'W5 0061', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000005420' },
+        definition: { category: '', label: 'DXB1', stcId: '10', flightNumber: 'W5 0061', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000005420' },
         scope: {
           rsx: 'REAL',
           departurePermission: true,
@@ -7188,7 +7220,7 @@ function getDummyPreplan(): Preplan {
       },
       {
         id: '7092902000000155499',
-        definition: { category: '', label: 'DXB', stcId: '10', flightNumber: 'W5 0065', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000005420' },
+        definition: { category: '', label: 'DXB2', stcId: '10', flightNumber: 'W5 0065', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000005420' },
         scope: {
           rsx: 'REAL',
           departurePermission: true,
@@ -7467,7 +7499,7 @@ function getDummyPreplan(): Preplan {
       },
       {
         id: '7092902000000155468',
-        definition: { category: '', label: 'DXB', stcId: '10', flightNumber: 'W5 0060', departureAirportId: '7092901520000005420', arrivalAirportId: '7092901520000001588' },
+        definition: { category: '', label: 'DXB1', stcId: '10', flightNumber: 'W5 0060', departureAirportId: '7092901520000005420', arrivalAirportId: '7092901520000001588' },
         scope: {
           rsx: 'REAL',
           departurePermission: true,
@@ -7498,7 +7530,7 @@ function getDummyPreplan(): Preplan {
       },
       {
         id: '7092902000000155522',
-        definition: { category: '', label: 'DXB', stcId: '10', flightNumber: 'W5 0064', departureAirportId: '7092901520000005420', arrivalAirportId: '7092901520000001588' },
+        definition: { category: '', label: 'DXB2', stcId: '10', flightNumber: 'W5 0064', departureAirportId: '7092901520000005420', arrivalAirportId: '7092901520000001588' },
         scope: {
           rsx: 'REAL',
           departurePermission: true,
@@ -10354,7 +10386,7 @@ function getDummyPreplan(): Preplan {
       },
       {
         id: '7092902000000155643',
-        definition: { category: '', label: 'DXB', stcId: '10', flightNumber: 'W5 0065', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000005420' },
+        definition: { category: '', label: 'DXB2', stcId: '10', flightNumber: 'W5 0065', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000005420' },
         scope: {
           rsx: 'REAL',
           departurePermission: true,
@@ -10437,7 +10469,7 @@ function getDummyPreplan(): Preplan {
           {
             freezed: false,
             scope: {
-              rsx: 'REAL',
+              rsx: 'STB2',
               departurePermission: true,
               arrivalPermission: true,
               blockTime: 150,
@@ -10764,7 +10796,7 @@ function getDummyPreplan(): Preplan {
       },
       {
         id: '7092902000000155662',
-        definition: { category: '', label: 'DXB', stcId: '10', flightNumber: 'W5 0064', departureAirportId: '7092901520000005420', arrivalAirportId: '7092901520000001588' },
+        definition: { category: '', label: 'DXB2', stcId: '10', flightNumber: 'W5 0064', departureAirportId: '7092901520000005420', arrivalAirportId: '7092901520000001588' },
         scope: {
           rsx: 'REAL',
           departurePermission: true,
@@ -11236,7 +11268,7 @@ function getDummyPreplan(): Preplan {
       },
       {
         id: '7092902000000155569',
-        definition: { category: '', label: 'DXB', stcId: '10', flightNumber: 'W5 0061', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000005420' },
+        definition: { category: '', label: 'DXB1', stcId: '10', flightNumber: 'W5 0061', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000005420' },
         scope: {
           rsx: 'REAL',
           departurePermission: true,
@@ -11329,7 +11361,7 @@ function getDummyPreplan(): Preplan {
       },
       {
         id: '7092902000000155602',
-        definition: { category: '', label: 'DXB', stcId: '10', flightNumber: 'W5 0060', departureAirportId: '7092901520000005420', arrivalAirportId: '7092901520000001588' },
+        definition: { category: '', label: 'DXB1', stcId: '10', flightNumber: 'W5 0060', departureAirportId: '7092901520000005420', arrivalAirportId: '7092901520000001588' },
         scope: {
           rsx: 'REAL',
           departurePermission: true,
@@ -12752,7 +12784,7 @@ function getDummyPreplan(): Preplan {
           {
             freezed: false,
             scope: {
-              rsx: 'REAL',
+              rsx: 'STB2',
               departurePermission: true,
               arrivalPermission: true,
               blockTime: 150,
@@ -13482,7 +13514,7 @@ function getDummyPreplan(): Preplan {
       },
       {
         id: '7092902000000155704',
-        definition: { category: '', label: 'DXB', stcId: '10', flightNumber: 'W5 0061', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000005420' },
+        definition: { category: '', label: 'DXB1', stcId: '10', flightNumber: 'W5 0061', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000005420' },
         scope: {
           rsx: 'REAL',
           departurePermission: true,
@@ -13513,7 +13545,7 @@ function getDummyPreplan(): Preplan {
       },
       {
         id: '7092902000000155770',
-        definition: { category: '', label: 'DXB', stcId: '10', flightNumber: 'W5 0065', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000005420' },
+        definition: { category: '', label: 'DXB2', stcId: '10', flightNumber: 'W5 0065', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000005420' },
         scope: {
           rsx: 'REAL',
           departurePermission: true,
@@ -13761,7 +13793,7 @@ function getDummyPreplan(): Preplan {
       },
       {
         id: '7092902000000155736',
-        definition: { category: '', label: 'DXB', stcId: '10', flightNumber: 'W5 0060', departureAirportId: '7092901520000005420', arrivalAirportId: '7092901520000001588' },
+        definition: { category: '', label: 'DXB1', stcId: '10', flightNumber: 'W5 0060', departureAirportId: '7092901520000005420', arrivalAirportId: '7092901520000001588' },
         scope: {
           rsx: 'REAL',
           departurePermission: true,
@@ -13792,7 +13824,7 @@ function getDummyPreplan(): Preplan {
       },
       {
         id: '7092902000000155790',
-        definition: { category: '', label: 'DXB', stcId: '10', flightNumber: 'W5 0064', departureAirportId: '7092901520000005420', arrivalAirportId: '7092901520000001588' },
+        definition: { category: '', label: 'DXB2', stcId: '10', flightNumber: 'W5 0064', departureAirportId: '7092901520000005420', arrivalAirportId: '7092901520000001588' },
         scope: {
           rsx: 'REAL',
           departurePermission: true,
@@ -16803,7 +16835,7 @@ function getDummyPreplan(): Preplan {
       },
       {
         id: '7092902000000155832',
-        definition: { category: '', label: 'DXB', stcId: '10', flightNumber: 'W5 0061', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000005420' },
+        definition: { category: '', label: 'DXB1', stcId: '10', flightNumber: 'W5 0061', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000005420' },
         scope: {
           rsx: 'REAL',
           departurePermission: true,
@@ -16934,7 +16966,7 @@ function getDummyPreplan(): Preplan {
       },
       {
         id: '7092902000000155866',
-        definition: { category: '', label: 'DXB', stcId: '10', flightNumber: 'W5 0060', departureAirportId: '7092901520000005420', arrivalAirportId: '7092901520000001588' },
+        definition: { category: '', label: 'DXB1', stcId: '10', flightNumber: 'W5 0060', departureAirportId: '7092901520000005420', arrivalAirportId: '7092901520000001588' },
         scope: {
           rsx: 'REAL',
           departurePermission: true,
@@ -17306,7 +17338,7 @@ function getDummyPreplan(): Preplan {
       },
       {
         id: '7092902000000155900',
-        definition: { category: '', label: 'DXB', stcId: '10', flightNumber: 'W5 0065', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000005420' },
+        definition: { category: '', label: 'DXB2', stcId: '10', flightNumber: 'W5 0065', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000005420' },
         scope: {
           rsx: 'REAL',
           departurePermission: true,
@@ -17430,7 +17462,7 @@ function getDummyPreplan(): Preplan {
       },
       {
         id: '7092902000000155916',
-        definition: { category: '', label: 'DXB', stcId: '10', flightNumber: 'W5 0064', departureAirportId: '7092901520000005420', arrivalAirportId: '7092901520000001588' },
+        definition: { category: '', label: 'DXB2', stcId: '10', flightNumber: 'W5 0064', departureAirportId: '7092901520000005420', arrivalAirportId: '7092901520000001588' },
         scope: {
           rsx: 'REAL',
           departurePermission: true,
@@ -19690,7 +19722,7 @@ function getDummyPreplan(): Preplan {
       },
       {
         id: '7092902000000155963',
-        definition: { category: '', label: 'DXB', stcId: '10', flightNumber: 'W5 0063', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000005420' },
+        definition: { category: '', label: 'DXB3', stcId: '10', flightNumber: 'W5 0063', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000005420' },
         scope: {
           rsx: 'REAL',
           departurePermission: true,
@@ -19721,7 +19753,7 @@ function getDummyPreplan(): Preplan {
       },
       {
         id: '7092902000000156018',
-        definition: { category: '', label: 'DXB', stcId: '10', flightNumber: 'W5 0065', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000005420' },
+        definition: { category: '', label: 'DXB2', stcId: '10', flightNumber: 'W5 0065', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000005420' },
         scope: {
           rsx: 'REAL',
           departurePermission: true,
@@ -19876,7 +19908,7 @@ function getDummyPreplan(): Preplan {
       },
       {
         id: '7092902000000155990',
-        definition: { category: '', label: 'DXB', stcId: '10', flightNumber: 'W5 0062', departureAirportId: '7092901520000005420', arrivalAirportId: '7092901520000001588' },
+        definition: { category: '', label: 'DXB3', stcId: '10', flightNumber: 'W5 0062', departureAirportId: '7092901520000005420', arrivalAirportId: '7092901520000001588' },
         scope: {
           rsx: 'REAL',
           departurePermission: true,
@@ -19907,7 +19939,7 @@ function getDummyPreplan(): Preplan {
       },
       {
         id: '7092902000000156035',
-        definition: { category: '', label: 'DXB', stcId: '10', flightNumber: 'W5 0064', departureAirportId: '7092901520000005420', arrivalAirportId: '7092901520000001588' },
+        definition: { category: '', label: 'DXB2', stcId: '10', flightNumber: 'W5 0064', departureAirportId: '7092901520000005420', arrivalAirportId: '7092901520000001588' },
         scope: {
           rsx: 'REAL',
           departurePermission: true,
@@ -21674,7 +21706,7 @@ function getDummyPreplan(): Preplan {
       },
       {
         id: '7092902000000155951',
-        definition: { category: '', label: 'DXB', stcId: '10', flightNumber: 'W5 0061', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000005420' },
+        definition: { category: '', label: 'DXB1', stcId: '10', flightNumber: 'W5 0061', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000005420' },
         scope: {
           rsx: 'REAL',
           departurePermission: true,
@@ -21829,7 +21861,7 @@ function getDummyPreplan(): Preplan {
       },
       {
         id: '7092902000000155979',
-        definition: { category: '', label: 'DXB', stcId: '10', flightNumber: 'W5 0060', departureAirportId: '7092901520000005420', arrivalAirportId: '7092901520000001588' },
+        definition: { category: '', label: 'DXB1', stcId: '10', flightNumber: 'W5 0060', departureAirportId: '7092901520000005420', arrivalAirportId: '7092901520000001588' },
         scope: {
           rsx: 'REAL',
           departurePermission: true,

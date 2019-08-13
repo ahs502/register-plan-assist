@@ -106,12 +106,6 @@ const useStyles = makeStyles((theme: Theme) => {
   };
 });
 
-const allAirports = MasterData.all.airports.items.orderBy(a => a.name);
-const ika = allAirports.find(a => a.name === 'IKA')!;
-const thr = allAirports.find(a => a.name === 'THR')!;
-const mhd = allAirports.find(a => a.name === 'MHD')!;
-const ker = allAirports.find(a => a.name === 'KER')!;
-const allBaseAirport = [ika, thr, mhd, ker];
 const flightType = [{ label: 'International', value: 'International' }, { label: 'Domestic', value: 'Domestic' }];
 const group = [{ field: 'category' }];
 
@@ -267,6 +261,12 @@ interface FliterModel {
 }
 
 const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequirments, preplanName, fromDate, toDate }) => {
+  const allAirports = MasterData.all.airports.items.orderBy(a => a.name);
+  const ika = allAirports.find(a => a.name === 'IKA')!;
+  const thr = allAirports.find(a => a.name === 'THR')!;
+  const mhd = allAirports.find(a => a.name === 'MHD')!;
+  const ker = allAirports.find(a => a.name === 'KER')!;
+  const allBaseAirport = [ika, thr, mhd, ker];
   const [dataProvider, setDataProvider] = useState<DataProvider[]>([]);
   const [preplanHeaders, setPreplanHeaders] = useState<ReadonlyArray<Readonly<PreplanHeader>>>([]);
   const [flattenFlightRequirments, setFlattenFlightRequirments] = useState<FlattenFlightRequirment[]>([]);

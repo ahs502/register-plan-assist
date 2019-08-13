@@ -10,8 +10,6 @@ import { CallMade as ConnectionIcon, Publish as ExportToExcelIcon } from '@mater
 import { ExcelExport, ExcelExportColumn, ExcelExportColumnGroup } from '@progress/kendo-react-excel-export';
 import { CellOptions } from '@progress/kendo-react-excel-export/dist/npm/ooxml/CellOptionsInterface';
 
-const allAirports = MasterData.all.airports.items;
-const ika = allAirports.find(a => a.name === 'IKA')!;
 const character = {
   zeroConnection: '–'
 };
@@ -100,6 +98,8 @@ interface ConnectionModel {
 type connectionDirection = 'WesttoEast' | 'EasttoWest';
 
 const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, fromDate, toDate }) => {
+  const allAirports = MasterData.all.airports.items;
+  const ika = allAirports.find(a => a.name === 'IKA')!;
   const defaultWestAirport = ['BCN', 'DXB', 'ESB', 'EVN', 'GYD', 'IST', 'MXP', 'VKO'];
   const defaultEastAirpot = ['BKK', 'CAN', 'DEL', 'BOM', 'KUL', 'LHE', 'PEK', 'PVG'];
   const [eastAirport, setEastAriport] = useState<readonly Airport[]>(allAirports.filter(a => defaultEastAirpot.indexOf(a.name) !== -1).orderBy('name'));

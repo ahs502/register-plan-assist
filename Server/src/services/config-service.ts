@@ -10,7 +10,7 @@ const clientConfig: ClientConfig = {
   oauth: config.oauth
 };
 
-router.get('/init', async (req, res, next) => {
+router.get('/init', (req, res, next) => {
   const init = `
     +function(){
       window.config = ${JSON.stringify(clientConfig, null, 4)};

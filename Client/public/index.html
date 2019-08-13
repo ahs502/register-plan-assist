@@ -65,7 +65,7 @@
           const { authentication, encodedAuthenticationHeader } = authenticationResult;
           localStorage.setItem('authentication', JSON.stringify(authentication));
           localStorage.setItem('encodedAuthenticationHeader', JSON.stringify(encodedAuthenticationHeader));
-          localStorage.setItem('oauthCode', code);
+          localStorage.setItem('oauthCode', JSON.stringify(code));
 
           removeCodeFromUrl();
         } catch (error) {

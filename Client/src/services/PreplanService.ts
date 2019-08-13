@@ -1,10 +1,10 @@
-import { apiRequestMaker } from 'src/utils/apiRequest';
+import RequestManager from 'src/utils/RequestManager';
 import PreplanModel, { PreplanHeaderModel } from '@core/models/PreplanModel';
 import AutoArrangerOptions from '@core/models/AutoArrangerOptionsModel';
 import FlightRequirementModel from '@core/models/flights/FlightRequirementModel';
 import ServerResult from '@core/types/ServerResult';
 
-const request = apiRequestMaker('preplan');
+const request = RequestManager.makeRequester('preplan');
 
 export default class PreplanService {
   /**

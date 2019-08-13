@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { requestMiddlewareWithDbAccess } from 'src/utils/requestMiddleware';
+
 import MasterDataModel from '@core/models/master-data/MasterDataModel';
+
 import AircraftTypeModel from '@core/models/master-data/AircraftTypeModel';
 import AircraftRegisterModel from '@core/models/master-data/AircraftRegisterModel';
 import AirportModel from '@core/models/master-data/AirportModel';
@@ -8,6 +10,7 @@ import SeasonTypeModel from '@core/models/master-data/SeasonTypeModel';
 import SeasonModel from '@core/models/master-data/SeasonModel';
 import StcModel from '@core/models/master-data/StcModel';
 import AircraftGroupModel from '@core/models/master-data/AircraftGroupModel';
+import ConstraintModel from '@core/models/master-data/ConstraintModel';
 
 const router = Router();
 export default router;
@@ -16,6 +19,7 @@ router.post(
   '/get',
   requestMiddlewareWithDbAccess<{ collections: (keyof MasterDataModel)[] }, MasterDataModel>(async (userId, { collections }, { runQuery }) => {
     //TODO: Check user access here...
+    //TODO: Implement aircraftGroups & constraints too.
 
     const MasterDataModel: MasterDataModel = {
       aircraftTypes: collections.includes('aircraftTypes') ? await getAircraftTypes() : undefined,
@@ -23,9 +27,9 @@ router.post(
       airports: collections.includes('airports') ? await getAirports() : undefined,
       seasonTypes: collections.includes('seasonTypes') ? await getSeasonTypes() : undefined,
       seasons: collections.includes('seasons') ? await getSeasons() : undefined,
-      stcs: collections.includes('seasons') ? await getStcs() : undefined
-      //aircraftGroups
-      //constraints
+      stcs: collections.includes('seasons') ? await getStcs() : undefined,
+      aircraftGroups: collections.includes('aircraftGroups') ? await getAircraftGroups() : undefined,
+      constraints: collections.includes('constraints') ? await getConstraints() : undefined
     };
 
     return MasterDataModel;
@@ -206,6 +210,14 @@ router.post(
             [MasterData].[Stc]                 as u
         `
       );
+    }
+
+    async function getAircraftGroups(): Promise<readonly AircraftGroupModel[]> {
+      return []; // Not implemented.
+    }
+
+    async function getConstraints(): Promise<readonly ConstraintModel[]> {
+      return []; // Not implemented.
     }
   })
 );

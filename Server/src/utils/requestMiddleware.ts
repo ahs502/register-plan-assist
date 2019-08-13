@@ -7,7 +7,7 @@ import ServerResult from '@core/types/ServerResult';
 export default function requestMiddleware<B extends {}, R>(task: (userId: string, body: B) => Promise<R>) {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const encodedAuthenticationHeader = req.headers['Authentication'] as string | undefined;
+      const encodedAuthenticationHeader = req.headers['authentication'] as string | undefined; // Apparently, express makes all header keys lower-case.
       if (!encodedAuthenticationHeader) throw 'No authentication';
 
       const authenticationHeader: AuthenticationHeaderModel = JSON.parse(cryptr.decrypt(encodedAuthenticationHeader));
@@ -19,16 +19,16 @@ export default function requestMiddleware<B extends {}, R>(task: (userId: string
 
       try {
         const result = await task(userId, req.body);
-        console.log(req.method.yellow.bold, req.url, 'OK'.green.bold);
+        console.log(req.method.yellow.bold, req.originalUrl, 'OK'.green.bold);
         const serverResult: ServerResult<R> = { value: result };
         res.json(serverResult);
       } catch (reason) {
-        console.log(req.method.yellow.bold, req.url, 'Error'.red.bold);
+        console.log(req.method.yellow.bold, req.originalUrl, 'Error'.red.bold);
         const serverResult: ServerResult<R> = { message: String(reason) };
         res.json(serverResult);
       }
     } catch (authenticationFailureReason) {
-      console.error(req.method.yellow.bold, req.url, 'Unauthorized (401)'.red, String(authenticationFailureReason).red.bold);
+      console.error(req.method.yellow.bold, req.originalUrl, 'Unauthorized (401)'.red, String(authenticationFailureReason).red.bold);
       res.status(401).end();
     }
   };

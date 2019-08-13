@@ -33,8 +33,10 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
   contents: {
     flexGrow: 1,
-    margin: 0,
-    padding: 0
+    marginTop: theme.spacing(5),
+    marginLeft: theme.spacing(3),
+    padding: 0,
+    width: 'calc(100vh - 105px)'
   },
   card: {
     display: 'inline-block',

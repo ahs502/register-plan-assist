@@ -36,7 +36,7 @@ gulp.task(
   run('npm start', {
     cwd: './Client',
     env: {
-      PORT: process.env.CLIENT_PORT || 4000,
+      PORT: process.env.CLIENT_PORT || 4200,
       PROXY_PORT: process.env.SERVER_PORT || 3000,
       TSC_WATCHFILE: 'UseFsEventsWithFallbackDynamicPolling' //See: https://www.typescriptlang.org/docs/handbook/configuring-watch.html
     }

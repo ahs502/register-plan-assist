@@ -1,5 +1,3 @@
-import './_initialize'; //TODO: Remove this line.
-
 export { default as MasterDataItem, MasterDataItems } from './MasterDataItem';
 
 import MasterData from './MasterData';

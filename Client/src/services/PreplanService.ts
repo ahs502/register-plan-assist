@@ -1,24 +1,24 @@
-import apiRequest from 'src/utils/apiRequest';
+import RequestManager from 'src/utils/RequestManager';
 import PreplanModel, { PreplanHeaderModel } from '@core/models/PreplanModel';
 import AutoArrangerOptions from '@core/models/AutoArrangerOptionsModel';
 import FlightRequirementModel from '@core/models/flights/FlightRequirementModel';
-import ServerResult from './ServerResult';
+import ServerResult from '@core/types/ServerResult';
 
-const request = apiRequest.bind(null, 'preplan');
+const request = RequestManager.makeRequester('preplan');
 
 export default class PreplanService {
   /**
    * Provides all user related or public preplan headers.
    */
-  static async getAllHeaders(): Promise<ServerResult<ReadonlyArray<Readonly<PreplanHeaderModel>>>> {
-    return await request('get-all-headers');
+  static async getAllHeaders() {
+    return await request<PreplanHeaderModel[]>('get-all-headers');
   }
 
   /**
    * Creates a new empty preplan and provides its id.
    */
-  static async createEmpty(name: string, startDate: Date, endDate: Date): Promise<ServerResult<string>> {
-    return await request('create-empty', { name, startDate, endDate });
+  static async createEmpty(name: string, startDate: Date, endDate: Date) {
+    return await request<string>('create-empty', { name, startDate, endDate });
   }
 
   /**

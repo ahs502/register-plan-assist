@@ -5,41 +5,55 @@ import Flight from 'src/view-models/flights/Flight';
 import Daytime from '@core/types/Daytime';
 import PreplanAircraftRegister, { PreplanAircraftRegisters } from 'src/view-models/PreplanAircraftRegister';
 import { ChangeLog } from 'src/view-models/AutoArrangerState';
-import { DataGroup, DataItem, TimelineOptions, Id } from 'vis-timeline';
+import { DataGroup, DataItem, TimelineOptions, Id, Timeline } from 'vis-timeline';
 import Weekday from '@core/types/Weekday';
 import VisTimeline from 'src/components/VisTimeline';
 import moment from 'moment';
 import { Airport } from '@core/master-data';
+import useProperty from 'src/utils/useProperty';
 
 const useStyles = makeStyles((theme: Theme) => ({
   '@global': {
-    '.vis-item.vis-range': {
-      border: 'none',
-      backgroundColor: 'transparent',
-      '& .vis-item-content': {
-        padding: 0
+    '.vis-timeline': {
+      '& .vis-item': {
+        '&.vis-range': {
+          border: 'none',
+          backgroundColor: 'transparent',
+          // minWidth: 50,
+          '& .vis-item-overflow': {
+            // overflow: 'visible',
+            '& .vis-item-content': {
+              padding: 0,
+              left: '0 !important',
+              width: '100% !important'
+            }
+          }
+        }
       }
     },
     '.rpa-item-header': {
       display: 'flex',
-      justifyContent: 'space-between',
+      flexWrap: 'wrap',
       '& .rpa-item-time': {
+        flexGrow: 1,
         fontSize: '8px',
         '&.rpa-item-std': {},
-        '&.rpa-item-sta': {}
+        '&.rpa-item-sta': {
+          textAlign: 'right'
+        }
       }
     },
     '.rpa-item-body': {
       display: 'flex',
       position: 'relative',
-      border: '1px solid rgba(100, 20, 110, 0.5)',
+      border: '1px solid rgba(0, 20, 110, 0.5)',
       borderRadius: '3px',
-      backgroundColor: 'rgba(100, 20, 110, 0.15)',
+      backgroundColor: 'rgba(0, 20, 110, 0.15)',
       '& .rpa-item-section': {
         position: 'absolute',
         top: 0,
         bottom: 0,
-        backgroundColor: 'rgba(100, 20, 110, 0.15)'
+        backgroundColor: 'rgba(0, 20, 110, 0.15)'
       },
       '& .rpa-item-label': {
         flexGrow: 1,
@@ -51,15 +65,26 @@ const useStyles = makeStyles((theme: Theme) => ({
     '.rpa-item-footer': {
       display: 'flex',
       alignItems: 'center',
+      flexWrap: 'wrap',
+      paddingTop: 2,
+      maxHeight: 170,
       '& .rpa-item-icon': {
-        fontSize: '13px',
+        fontSize: '10px',
         fontWeight: 'bold',
-        border: '1px solid black',
-        borderRadius: 5,
-        lineHeight: '12px',
-        padding: '1px 2px'
+        border: '1px solid darkblue',
+        borderRadius: 3,
+        lineHeight: '11px',
+        padding: '0px 2px',
+        color: 'white',
+        backgroundColor: 'darkblue',
+        marginTop: 1,
+        marginRight: 1,
+        '&:last-of-type': {
+          marginRight: 4
+        }
       },
-      '& .rpa-item-notes': {
+      '& div': {
+        display: 'inline',
         fontSize: '10px'
       }
     }
@@ -113,6 +138,7 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = ({
   onFlightMouseHover,
   onFreeSpaceMouseHover
 }) => {
+  const timeline = useProperty<Timeline>(null as any);
   const [timelineData, setTimelineData] = useState<TimelineData>(() => {
     const groups = calculateTimelineGroups(flights, aircraftRegisters);
     const bars = calculateTimelineBars(flights);
@@ -127,6 +153,8 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = ({
   return (
     <VisTimeline
       {...timelineData}
+      retrieveTimeline={t => timeline(t)}
+      onRangeChanged={properties => timeline().redraw()}
       onMouseMove={properties => {
         if (!properties.group) return;
         const adjacentItem = findAdjacentFlights(timelineData.items, properties.group, properties.time);
@@ -218,8 +246,10 @@ function calculateTimelineBars(flights: readonly Flight[]): Bar[] {
           start: flight.std,
           end: new Daytime(flight.std.minutes + flight.blockTime),
           sections: [{ start: 0, end: 1 }],
-          icons: [flight.required ? 'R' : '', flight.freezed ? 'F' : '', flight.departurePermission && flight.arrivalPermission ? '' : 'P'].filter(Boolean),
-          notes: flight.notes
+          // icons: [flight.required ? 'R' : '', flight.freezed ? 'F' : '', flight.departurePermission && flight.arrivalPermission ? '' : 'P'].filter(Boolean),
+          icons: [Math.random() < 0.25 ? 'R' : '', Math.random() < 0.25 ? 'F' : '', Math.random() < 0.25 ? 'P' : ''].filter(Boolean),
+          // notes: flight.notes
+          notes: Math.random() < 0.4 ? '' : ['note', 'a longer note', 'some very very long note'][Math.floor(Math.random() * 3)]
         };
         bars.push(bar);
         if (getAirportBaseLevel(flight.departureAirport) <= getAirportBaseLevel(flight.arrivalAirport)) continue;
@@ -276,14 +306,26 @@ function itemTooltipTemplate(bar: Bar): string {
           )
           .join('')}
       </div>
-      <div>
-        <em><small>Flags:</small></em>
-        ${bar.icons.map(i => `<strong>${i}</strong>`).join(' | ')}
-      </div>
-      <div>
-        <em><small>Notes:</small></em>
-        ${bar.notes}
-      </div>
+      ${
+        bar.icons.length === 0
+          ? ''
+          : `
+              <div>
+                <em><small>Flags:</small></em>
+                ${bar.icons.map(i => `<strong>${i}</strong>`).join(' | ')}
+              </div>
+            `
+      }
+      ${
+        !bar.notes
+          ? ''
+          : `
+              <div>
+                <em><small>Notes:</small></em>
+                ${bar.notes}
+              </div>
+            `
+      }
     </div>
   `;
 }
@@ -310,31 +352,31 @@ function itemTemplate(item: DataItem, element: HTMLElement, data: DataItem): str
   return `
     <div class="rpa-item-header">
       <div class="rpa-item-time rpa-item-std">
-        ${bar.start.toString(true)}
+        ${bar.start.toString(true)}&nbsp;
       </div>
       <div class="rpa-item-time rpa-item-sta">
         ${bar.end.toString(true)}
       </div>
     </div>
     <div class="rpa-item-body">
-      ${bar.sections
-        .map(
-          s => `
-            <div class="rpa-item-section" style="left: ${s.start * 100}%; right: ${(1 - s.end) * 100}%;"></div>
-          `
-        )
-        .join(' ')}
+      ${bar.sections.map(s => `<div class="rpa-item-section" style="left: ${s.start * 100}%; right: ${(1 - s.end) * 100}%;"></div>`).join(' ')}
       <div class="rpa-item-label">
         ${bar.label}
       </div>
     </div>
-    <div class="rpa-item-footer">
-      ${bar.icons.map(i => `<span class="rpa-item-icon">${i}</span>`).join(' ')}
-      &nbsp;
-      <div class="rpa-item-notes">
-        ${bar.notes}
-      </div>
-    </div>
+    ${
+      bar.icons.length === 0 && !bar.notes
+        ? ''
+        : `
+            <div class="rpa-item-footer">
+              ${bar.icons.map(i => `<span class="rpa-item-icon">${i}</span>`).join(' ')}
+              ${bar.notes
+                .split('')
+                .map(c => `<div>${c === ' ' ? '&nbsp;' : c}</div>`)
+                .join('')}
+            </div>
+          `
+    }
   `;
 }
 
@@ -369,10 +411,10 @@ function calculateTimelineOptions(startDate: Date): TimelineOptions {
       return moment(date).utc();
     },
     margin: {
-      axis: 5,
+      axis: 6,
       item: {
-        horizontal: 5,
-        vertical: 5
+        horizontal: 6,
+        vertical: 6
       }
     },
     max: startDate.clone().addDays(8),

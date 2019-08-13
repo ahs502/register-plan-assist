@@ -48,16 +48,16 @@ export default class Daytime {
   }
 
   /**
-   * Returns the string with this format: 'hh:mm' or 'hhh:mm'.
+   * Returns the string with the format 'H:mm'.
    * @param clip Whether to express the daytime within 24-hours format or not.
-   * For example `'02:35'` instead of `'26:35'`.
+   * For example `'2:35'` instead of `'26:35'`.
    */
   toString(clip?: boolean): string {
     this.checkValidity();
     const totalMinutes = clip ? this.minutes % (24 * 60) : this.minutes;
     const minutes = totalMinutes % 60,
       hours = (totalMinutes - minutes) / 60;
-    return String(hours).padStart(2, '0') + ':' + String(minutes).padStart(2, '0');
+    return hours + ':' + String(minutes).padStart(2, '0');
   }
 
   /**

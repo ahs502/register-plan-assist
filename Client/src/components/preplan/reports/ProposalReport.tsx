@@ -99,6 +99,9 @@ const useStyles = makeStyles((theme: Theme) => {
     },
     realBoarder: {
       backgroundColor: color.realBoarder.backgroundColor
+    },
+    datePosition: {
+      marginTop: 12
     }
   };
 });
@@ -109,6 +112,7 @@ const thr = allAirports.find(a => a.name === 'THR')!;
 const mhd = allAirports.find(a => a.name === 'MHD')!;
 const ker = allAirports.find(a => a.name === 'KER')!;
 const allBaseAirport = [ika, thr, mhd, ker];
+const flightType = [{ label: 'International', value: 'International' }, { label: 'Domestic', value: 'Domestic' }];
 const group = [{ field: 'category' }];
 
 const character = {
@@ -649,155 +653,173 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
 
   return (
     <Fragment>
-      <Grid container spacing={1}>
-        <Grid item xs={6}>
-          <InputLabel htmlFor="base-airport" className={classes.marginBottom1}>
-            Base Airport
-          </InputLabel>
-          <select
-            id="base-airport"
-            onChange={event => {
-              setFilterModel({ ...filterModel, baseAirport: allBaseAirport[+event.target.value] });
-            }}
-            className={classes.marginBottom1}
-          >
-            {allBaseAirport.map((option, index) => (
-              <option key={index} value={index}>
-                {option.name}
-              </option>
-            ))}
-          </select>
-        </Grid>
-        <Grid item xs={6}>
-          <InputLabel htmlFor="flight-type" className={classes.marginBottom1}>
-            Flight Type
-          </InputLabel>
-          <select
-            id="flight-type"
-            onChange={(event: React.ChangeEvent<HTMLSelectElement>) => {
-              filterModel.flightType = event.target.value === 'Domestic' ? FlightType.Domestic : FlightType.International;
-              filterModel.showSlot = event.target.value !== 'Domestic';
-              filterModel.showNote = event.target.value !== 'Domestic';
-              filterModel.showType = event.target.value === 'Domestic';
-              filterModel.showFrequency = event.target.value === 'Domestic';
-              setFilterModel({ ...filterModel });
-            }}
-            className={classes.marginBottom1}
-          >
-            <option value="International">International</option>
-            <option value="Domestic">Domestic</option>
-          </select>
-        </Grid>
-        <Grid item xs={6}>
-          <TextField
-            className={classNames(classes.marginRight1, classes.marginBottom2)}
-            label=" Start Date"
-            onChange={e => {
-              const value = e.target.value;
-              if (!value) return;
-              const ticks = Date.parse(value);
-              if (ticks) {
-                setFilterModel({ ...filterModel, startDate: new Date(ticks) });
-              }
-            }}
-          />
-        </Grid>
-        <Grid item xs={6}>
-          <TextField
-            className={classNames(classes.marginRight1, classes.marginBottom2)}
-            label="End Date"
-            onChange={e => {
-              const value = e.target.value;
-              if (!value) return;
-              const ticks = Date.parse(value);
-              if (ticks) {
-                setFilterModel({ ...filterModel, endDate: new Date(ticks) });
-              }
-            }}
-          />
-        </Grid>
+      <Grid container spacing={2}>
+        <Grid item xs={12}>
+          <Grid container spacing={1}>
+            <Grid item xs={1}>
+              <InputLabel htmlFor="base-airport" className={classes.marginBottom1}>
+                Base Airport
+              </InputLabel>
+              <AutoComplete
+                id="compare-preplan"
+                value={filterModel.baseAirport}
+                options={allBaseAirport}
+                getOptionLabel={l => l.name}
+                getOptionValue={l => l.id}
+                onSelect={s => {
+                  setFilterModel({ ...filterModel, baseAirport: s });
+                }}
+              />
+            </Grid>
+            <Grid item xs={2}>
+              <InputLabel htmlFor="flight-type" className={classes.marginBottom1}>
+                Flight Type
+              </InputLabel>
 
-        <Grid item xs={6}>
-          <FormControlLabel
-            value="start"
-            control={<Checkbox checked={filterModel.showSlot} onChange={e => setFilterModel({ ...filterModel, showSlot: e.target.checked })} color="primary" />}
-            label="Show Slot"
-            labelPlacement="start"
-          />
-        </Grid>
-
-        <Grid item xs={6}>
-          <FormControlLabel
-            value="start"
-            control={<Checkbox checked={filterModel.showNote} onChange={e => setFilterModel({ ...filterModel, showNote: e.target.checked })} color="primary" />}
-            label="Show Note"
-            labelPlacement="start"
-          />
-        </Grid>
-
-        <Grid item xs={6}>
-          <FormControlLabel
-            value="start"
-            control={<Checkbox checked={filterModel.showType} onChange={e => setFilterModel({ ...filterModel, showType: e.target.checked })} color="primary" />}
-            label="Show Type"
-            labelPlacement="start"
-          />
-        </Grid>
-
-        <Grid item xs={6}>
-          <FormControlLabel
-            value="start"
-            control={<Checkbox checked={filterModel.showFrequency} onChange={e => setFilterModel({ ...filterModel, showFrequency: e.target.checked })} color="primary" />}
-            label="Show Frequency"
-            labelPlacement="start"
-          />
-        </Grid>
-
-        <Grid item xs={6}>
-          <FormControlLabel
-            value="start"
-            control={<Checkbox checked={filterModel.showReal} onChange={e => setFilterModel({ ...filterModel, showReal: e.target.checked })} color="primary" />}
-            label="Show Real"
-            labelPlacement="start"
-          />
-        </Grid>
-
-        <Grid item xs={6}>
-          <FormControlLabel
-            value="start"
-            control={<Checkbox checked={filterModel.showSTB1} onChange={e => setFilterModel({ ...filterModel, showSTB1: e.target.checked })} color="primary" />}
-            label="Show STB1"
-            labelPlacement="start"
-          />
-        </Grid>
-
-        <Grid item xs={6}>
-          <FormControlLabel
-            value="start"
-            control={<Checkbox checked={filterModel.showSTB2} onChange={e => setFilterModel({ ...filterModel, showSTB2: e.target.checked })} color="primary" />}
-            label="Show STB2"
-            labelPlacement="start"
-          />
-        </Grid>
-
-        <Grid item xs={6}>
-          <FormControlLabel
-            value="start"
-            control={<Checkbox checked={filterModel.showExtra} onChange={e => setFilterModel({ ...filterModel, showExtra: e.target.checked })} color="primary" />}
-            label="Show EXT"
-            labelPlacement="start"
-          />
+              <AutoComplete
+                id="compare-preplan"
+                options={flightType}
+                value={filterModel.flightType === FlightType.International ? flightType.find(f => f.value === 'International') : flightType.find(f => f.value === 'Domestic')}
+                onSelect={s => {
+                  filterModel.flightType = s.value === 'Domestic' ? FlightType.Domestic : FlightType.International;
+                  filterModel.showSlot = s.value !== 'Domestic';
+                  filterModel.showNote = s.value !== 'Domestic';
+                  filterModel.showType = s.value === 'Domestic';
+                  filterModel.showFrequency = s.value === 'Domestic';
+                  setFilterModel({ ...filterModel });
+                }}
+              />
+            </Grid>
+            <Grid item xs={3}>
+              <InputLabel htmlFor="compare-preplan" className={classes.marginBottom1}>
+                Compare with:
+              </InputLabel>
+              <AutoComplete
+                id="compare-preplan"
+                options={preplanHeaders}
+                getOptionLabel={l => l.name}
+                getOptionValue={l => l.id}
+                onSelect={s => {
+                  setFilterModel({ ...filterModel, preplanHeader: s, compareMode: !!s.id });
+                }}
+              />
+            </Grid>
+            <Grid item xs={1} className={classes.datePosition}>
+              <TextField
+                className={classNames(classes.marginRight1, classes.marginBottom2)}
+                label=" Start Date"
+                onChange={e => {
+                  const value = e.target.value;
+                  if (!value) return;
+                  const ticks = Date.parse(value);
+                  if (ticks) {
+                    setFilterModel({ ...filterModel, startDate: new Date(ticks) });
+                  }
+                }}
+              />
+            </Grid>
+            <Grid item xs={1} className={classes.datePosition}>
+              <TextField
+                className={classNames(classes.marginRight1, classes.marginBottom2)}
+                label="End Date"
+                onChange={e => {
+                  const value = e.target.value;
+                  if (!value) return;
+                  const ticks = Date.parse(value);
+                  if (ticks) {
+                    setFilterModel({ ...filterModel, endDate: new Date(ticks) });
+                  }
+                }}
+              />
+            </Grid>
+            <Grid item xs={4} />
+          </Grid>
         </Grid>
 
         <Grid item xs={12}>
-          <AutoComplete
-            options={preplanHeaders}
-            getOptionLabel={l => l.name}
-            getOptionValue={l => l.id}
-            onSelect={s => {
-              setFilterModel({ ...filterModel, preplanHeader: s, compareMode: !!s.id });
-            }}
-          />
+          <Grid container spacing={1}>
+            <Grid item xs={1}>
+              Columns:
+            </Grid>
+            <Grid item xs={2}>
+              <FormControlLabel
+                value="start"
+                control={<Checkbox checked={filterModel.showSlot} onChange={e => setFilterModel({ ...filterModel, showSlot: e.target.checked })} color="primary" />}
+                label="Show Slot"
+                labelPlacement="end"
+              />
+            </Grid>
+
+            <Grid item xs={2}>
+              <FormControlLabel
+                value="start"
+                control={<Checkbox checked={filterModel.showNote} onChange={e => setFilterModel({ ...filterModel, showNote: e.target.checked })} color="primary" />}
+                label="Show Note"
+                labelPlacement="end"
+              />
+            </Grid>
+
+            <Grid item xs={2}>
+              <FormControlLabel
+                value="start"
+                control={<Checkbox checked={filterModel.showType} onChange={e => setFilterModel({ ...filterModel, showType: e.target.checked })} color="primary" />}
+                label="Show Type"
+                labelPlacement="end"
+              />
+            </Grid>
+
+            <Grid item xs={3}>
+              <FormControlLabel
+                value="start"
+                control={<Checkbox checked={filterModel.showFrequency} onChange={e => setFilterModel({ ...filterModel, showFrequency: e.target.checked })} color="primary" />}
+                label="Show Frequency"
+                labelPlacement="end"
+              />
+            </Grid>
+          </Grid>
+        </Grid>
+
+        <Grid item xs={12}>
+          <Grid container spacing={1}>
+            <Grid item xs={1}>
+              Filter:
+            </Grid>
+            <Grid item xs={2}>
+              <FormControlLabel
+                value="start"
+                control={<Checkbox checked={filterModel.showReal} onChange={e => setFilterModel({ ...filterModel, showReal: e.target.checked })} color="primary" />}
+                label="Show Real"
+                labelPlacement="end"
+              />
+            </Grid>
+
+            <Grid item xs={2}>
+              <FormControlLabel
+                value="start"
+                control={<Checkbox checked={filterModel.showSTB1} onChange={e => setFilterModel({ ...filterModel, showSTB1: e.target.checked })} color="primary" />}
+                label="Show STB1"
+                labelPlacement="end"
+              />
+            </Grid>
+
+            <Grid item xs={2}>
+              <FormControlLabel
+                value="start"
+                control={<Checkbox checked={filterModel.showSTB2} onChange={e => setFilterModel({ ...filterModel, showSTB2: e.target.checked })} color="primary" />}
+                label="Show STB2"
+                labelPlacement="end"
+              />
+            </Grid>
+
+            <Grid item xs={3}>
+              <FormControlLabel
+                value="start"
+                control={<Checkbox checked={filterModel.showExtra} onChange={e => setFilterModel({ ...filterModel, showExtra: e.target.checked })} color="primary" />}
+                label="Show EXT"
+                labelPlacement="end"
+              />
+            </Grid>
+          </Grid>
         </Grid>
       </Grid>
 

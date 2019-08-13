@@ -1,5 +1,3 @@
-import { isArray } from 'util';
-
 /*eslint no-extend-native: "off", no-self-compare: "off"*/
 
 (function() {
@@ -8,7 +6,7 @@ import { isArray } from 'util';
   Array.range = function Array_range(start: number, end: number, step?: number): number[] {
     let actualStep = step || 1;
     actualStep = actualStep > 0 ? +actualStep : -actualStep;
-    let result: number[] = [];
+    const result: number[] = [];
     if (start <= end) {
       while (start <= end) {
         result.push(start);
@@ -38,11 +36,11 @@ import { isArray } from 'util';
   };
 
   Array.prototype.sortBy = function Array_prototype_sortBy<T>(propertySelector: keyof T | ((item: T) => any), descending?: boolean): T[] {
-    let generalPropertySelector = typeof propertySelector === 'function' ? propertySelector : (item: T) => item[propertySelector];
-    let direction = descending ? -1 : +1;
+    const generalPropertySelector = typeof propertySelector === 'function' ? propertySelector : (item: T) => item[propertySelector];
+    const direction = descending ? -1 : +1;
     return this.sort((a, b) => {
-      let aValue = generalPropertySelector(a);
-      let bValue = generalPropertySelector(b);
+      const aValue = generalPropertySelector(a);
+      const bValue = generalPropertySelector(b);
       return aValue > bValue ? +direction : aValue < bValue ? -direction : 0;
     });
   };
@@ -52,8 +50,8 @@ import { isArray } from 'util';
   };
 
   Array.prototype.distinct = function Array_prototype_distinct<T>(areEqual?: (a: T, b: T) => boolean): T[] {
-    let areEqualFunction: (a: T, b: T) => boolean = areEqual || ((a: T, b: T) => a === b);
-    let result: T[] = [];
+    const areEqualFunction: (a: T, b: T) => boolean = areEqual || ((a: T, b: T) => a === b);
+    const result: T[] = [];
     for (let i = 0; i < this.length; ++i) {
       result.find(x => areEqualFunction(this[i], x)) || result.push(this[i]);
     }
@@ -61,12 +59,22 @@ import { isArray } from 'util';
   };
 
   Array.prototype.flatten = function Array_prototype_flatten(): any[] {
-    let result: any[] = [];
+    const result: any[] = [];
     this.forEach(item => {
       if (!Array.isArray(item)) return result.push(item);
       item.forEach(i => result.push(i));
     });
     return result;
+  };
+
+  Array.prototype.groupBy = function Array_prototype_groupBy<T>(groupName: keyof T | ((item: T) => string)): { [groupName: string]: T[] } {
+    const groups: { [groupName: string]: T[] } = {};
+    this.forEach(item => {
+      const name = typeof groupName === 'function' ? groupName(item) : item[groupName];
+      groups[name] = groups[name] || [];
+      groups[name].push(item);
+    });
+    return groups;
   };
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -77,7 +85,7 @@ import { isArray } from 'util';
   Date.concatDateTime = function Date_concatDateTime(date: Date, time: Date): Date {
     if (!date.isValid()) return date;
     if (!time.isValid()) return time;
-    let result = new Date(date.getTime());
+    const result = new Date(date);
     result.setUTCHours(time.getUTCHours(), time.getUTCMinutes(), time.getUTCSeconds(), time.getUTCMilliseconds());
     return result;
   };
@@ -117,7 +125,7 @@ import { isArray } from 'util';
         throw new Error('Not implemented!');
 
       case 't':
-        throw new Error('Not implemented!');
+        return `${String(this.getUTCHours()).padStart(2, '0')}:${String(this.getUTCMinutes()).padStart(2, '0')}`;
 
       case 't#':
         throw new Error('Not implemented!');
@@ -135,15 +143,19 @@ import { isArray } from 'util';
 
   Date.prototype.getDatePart = function Date_prototype_getDatePart(): Date {
     if (!this.isValid()) return this;
-    let result = new Date(this.getTime());
+    const result = new Date(this);
     result.setUTCHours(0, 0, 0, 0);
     return result;
   };
   Date.prototype.getTimePart = function Date_prototype_getTimePart(): Date {
     if (!this.isValid()) return this;
-    let result = new Date(0);
+    const result = new Date(0);
     result.setUTCHours(this.getUTCHours(), this.getUTCMinutes(), this.getUTCSeconds(), this.getUTCMilliseconds());
     return result;
+  };
+
+  Date.prototype.clone = function Date_prototype_clone(): Date {
+    return new Date(this);
   };
 
   Date.prototype.addYears = function Date_prototype_addYears(years: number): Date {

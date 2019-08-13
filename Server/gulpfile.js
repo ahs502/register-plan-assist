@@ -40,21 +40,26 @@ function buildSource(destinationFolder, packageJsonModifier) {
         .pipe(
           modifyFile((content, filePath, file) => {
             const lines = content.split('\r\n');
+            let imported = false;
             return lines
               .map(line => {
-                if (line.startsWith('import ')) {
-                  conversions.forEach(({ from, to }) => {
-                    const firstQuotationIndex = line.indexOf("'");
-                    const secondQuotationIndex = line.slice(firstQuotationIndex + 1).indexOf("'") + firstQuotationIndex + 1;
-                    const absoluteDependency = line.slice(firstQuotationIndex + 1, secondQuotationIndex); // 'from/utils/module'
-                    if (absoluteDependency.startsWith(from)) {
-                      const dependencyFile = absoluteDependency.slice(from.length); // 'utils/module'
-                      const dependencyPath = path.join(__dirname, 'temp', to, dependencyFile); // '/usr/hessam/projects/plan-assist/Server/temp/to/utils/module'
-                      const dependencyRelativePath = path.relative(path.dirname(filePath), dependencyPath).replace(/\\/g, '/'); // '../../to/utils/module'
-                      const dependencyRelativePathRelativeForm = dependencyRelativePath.startsWith('.') ? dependencyRelativePath : './' + dependencyRelativePath; // '../../to/utils/module'
-                      line = line.slice(0, firstQuotationIndex + 1) + dependencyRelativePathRelativeForm + line.slice(secondQuotationIndex);
-                    }
-                  });
+                const startsWithImport = line.startsWith('import ');
+                const hasDependencyName = line.includes("'");
+                if (startsWithImport || imported) {
+                  imported = !hasDependencyName;
+                  hasDependencyName &&
+                    conversions.forEach(({ from, to }) => {
+                      const firstQuotationIndex = line.indexOf("'");
+                      const secondQuotationIndex = line.slice(firstQuotationIndex + 1).indexOf("'") + firstQuotationIndex + 1;
+                      const absoluteDependency = line.slice(firstQuotationIndex + 1, secondQuotationIndex); // 'from/utils/module'
+                      if (absoluteDependency.startsWith(from)) {
+                        const dependencyFile = absoluteDependency.slice(from.length); // 'utils/module'
+                        const dependencyPath = path.join(__dirname, 'temp', to, dependencyFile); // '/usr/hessam/projects/plan-assist/Server/temp/to/utils/module'
+                        const dependencyRelativePath = path.relative(path.dirname(filePath), dependencyPath).replace(/\\/g, '/'); // '../../to/utils/module'
+                        const dependencyRelativePathRelativeForm = dependencyRelativePath.startsWith('.') ? dependencyRelativePath : './' + dependencyRelativePath; // '../../to/utils/module'
+                        line = line.slice(0, firstQuotationIndex + 1) + dependencyRelativePathRelativeForm + line.slice(secondQuotationIndex);
+                      }
+                    });
                 }
                 return line;
               })

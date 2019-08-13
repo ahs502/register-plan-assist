@@ -3,7 +3,6 @@ import AircraftIdentityModel from '@core/models/AircraftIdentityModel';
 
 export default interface AircraftIdentityEntity {
   readonly type: AircraftIdentityType;
-  readonly name: string;
   readonly entityId: string;
 }
 

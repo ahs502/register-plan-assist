@@ -14,7 +14,6 @@ import ResourceSchedulerView from 'src/components/preplan/resource-scheduler/Res
 import Preplan from 'src/view-models/Preplan';
 import FlightRequirement from 'src/view-models/flights/FlightRequirement';
 import WeekdayFlightRequirement from 'src/view-models/flights/WeekdayFlightRequirement';
-import useRouter from 'src/utils/useRouter';
 import Flight from 'src/view-models/flights/Flight';
 import Daytime from '@core/types/Daytime';
 
@@ -44,18 +43,18 @@ type SideBar = 'SETTINGS' | 'SELECT_AIRCRAFT_REGISTERS' | 'SEARCH_FLIGHTS' | 'AU
 
 export interface ResourceSchedulerPageProps {
   preplan: Preplan;
-  onEditFlightRequirement: (flightRequirement: FlightRequirement) => void;
-  onEditWeekdayFlightRequirement: (weekdayFlightRequirement: WeekdayFlightRequirement) => void;
+  onEditFlight(flight: Flight): void;
+  onEditFlightRequirement(flightRequirement: FlightRequirement): void;
+  onEditWeekdayFlightRequirement(weekdayFlightRequirement: WeekdayFlightRequirement): void;
 }
 
-const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
+const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEditFlight, onEditFlightRequirement, onEditWeekdayFlightRequirement }) => {
   const [sideBar, setSideBar] = useState<{ sideBar?: SideBar; open: boolean; initialSearch?: string }>({ open: false });
   const [autoArrangerRunning, setAutoArrangerRunning] = useState(() => false); //TODO: Initialize by data from server.
   const [allFlightsFreezed, setAllFlightsFreezed] = useState(() => false); //TODO: Initialize from preplan flights.
   const navBarToolsContainer = useContext(NavBarToolsContainerContext);
 
   const [statusBarText, setStatusBarText] = useState('');
-  const { match } = useRouter<{ id: string }>();
 
   const classes = useStyles();
 
@@ -76,13 +75,14 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
           <IconButton color="inherit" onClick={() => alert('Not implemented.')} title={allFlightsFreezed ? 'Unfreeze All Flights' : 'Freeze All Flights'}>
             {allFlightsFreezed ? <LockOpenIcon /> : <LockIcon />}
           </IconButton>
-          <LinkIconButton color="inherit" to={'/preplan/' + match.params.id + '/flight-requirement-list'} title="Flight Requirments">
+          <LinkIconButton color="inherit" to={`/preplan/${preplan.id}/flight-requirement-list`} title="Flight Requirments">
             <MahanIcon type={MahanIconType.FlightIcon} />
           </LinkIconButton>
           <IconButton color="inherit" title="Reports">
             <MahanIcon type={MahanIconType.Chart} />
           </IconButton>
-          {/* <Select
+          {/*
+            <Select
             classes={{ select: classes.formDaysSelect }}
             native
             value={this.state.numberOfDays}
@@ -96,7 +96,8 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
             <option value={3}>Three Days</option>
             <option value={7}>Seven Days</option>
             <option value={8}>Eight Days</option>
-          </Select> */}
+          </Select>
+          */}
           <IconButton color="inherit" onClick={() => setSideBar({ sideBar: 'AUTO_ARRANGER_CHANGE_LOG', open: true })} title="Auto Arrange Change Log">
             <MahanIcon type={MahanIconType.Change} />
           </IconButton>
@@ -145,12 +146,12 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
       </Drawer>
 
       <ResourceSchedulerView
-        startDate={preplan.startDate}
-        readonly={false}
+        startDate={preplan.startDate.getDatePart().addDays((preplan.startDate.getUTCDay() + 1) % 7)}
         flights={flights}
         aircraftRegisters={preplan.aircraftRegisters}
         changeLogs={preplan.autoArrangerState.changeLogs}
         selectedFlight={undefined}
+        readonly={false}
         onFlightContextMenu={(flight, pageX, pageY) => alert(`Flight ${flight.derivedId} @ ${pageX}:${pageY}\nNot implemented.`)}
         onFlightDragAndDrop={(flight, newStd, newAircraftRegister) =>
           alert(`D&D flight ${flight.derivedId} to ${newStd.toString()} with ${newAircraftRegister ? newAircraftRegister.name : '???'}\nNot implemented.`)

@@ -113,6 +113,7 @@ const PreplanPage: FC = () => {
               component={() => (
                 <ResourceSchedulerPage
                   preplan={preplan}
+                  onEditFlight={f => alert('edit flight ' + f.derivedId)}
                   onEditFlightRequirement={f => setFlightRequirementModal({ open: true, flightRequirement: f, weekly: true /*TODO*/ })}
                   onEditWeekdayFlightRequirement={f => setFlightRequirementModal({ open: true, flightRequirement: f.requirement, weekly: false /*TODO*/ })}
                 />
@@ -316,7 +317,7 @@ function getDummyPreplan(): Preplan {
           {
             freezed: false,
             scope: {
-              rsx: 'EXT',
+              rsx: 'REAL',
               departurePermission: true,
               arrivalPermission: true,
               blockTime: 150,
@@ -378,7 +379,7 @@ function getDummyPreplan(): Preplan {
           {
             freezed: false,
             scope: {
-              rsx: 'EXT',
+              rsx: 'REAL',
               departurePermission: true,
               arrivalPermission: true,
               blockTime: 135,
@@ -21890,7 +21891,6 @@ function getDummyPreplan(): Preplan {
         ignored: false
       }
     ],
-
     dummyAircraftRegisters: [],
     aircraftRegisterOptionsDictionary: {}
   });

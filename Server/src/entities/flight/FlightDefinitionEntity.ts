@@ -1,4 +1,4 @@
-import FlightDefinitionModel from '@core/models/flight/FlightDefinitionModel';
+import FlightDefinitionModel from '@core/models/flights/FlightDefinitionModel';
 
 export default interface FlightDefinitionEntity {
   readonly label: string;
@@ -11,6 +11,7 @@ export default interface FlightDefinitionEntity {
 export function convertFlightDefinitionEntityToModel(data: FlightDefinitionEntity): FlightDefinitionModel {
   return {
     label: data.label,
+    category: '',
     stcId: data.stcId,
     flightNumber: data.flightNumber,
     departureAirportId: data.departureAirportId,

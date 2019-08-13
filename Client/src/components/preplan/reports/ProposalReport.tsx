@@ -338,7 +338,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
     labels.forEach(m => {
       let dailyFlightRequirments = createDailyFlightRequirment(flightRequirments, m);
 
-      randomize(dailyFlightRequirments); //TODO: remove
+      // randomize(dailyFlightRequirments); //TODO: remove
 
       dailyFlightRequirments = fliterDailyFlightRequirmentByRSX(
         dailyFlightRequirments,
@@ -1720,8 +1720,8 @@ function createDailyFlightRequirment(flightRequirments: readonly FlightRequireme
             note: d.notes,
             aircraftType: d.flight.aircraftRegister && d.flight.aircraftRegister.aircraftType.name,
             category: f.definition.category,
-            arrivalPermission: Math.random() > 0.25 ? d.scope.arrivalPermission : !d.scope.arrivalPermission, //TODO: remove
-            departurePermission: Math.random() > 0.25 ? d.scope.departurePermission : !d.scope.departurePermission, //TODO: remove
+            arrivalPermission: d.scope.arrivalPermission,
+            departurePermission: d.scope.departurePermission,
             rsx: d.scope.rsx
           } as DailyFlightRequirment)
       );

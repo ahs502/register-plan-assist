@@ -1,4 +1,4 @@
-import WeekdayFlightRequirementModel from '@core/models/flight/WeekdayFlightRequirementModel';
+import WeekdayFlightRequirementModel from '@core/models/flights/WeekdayFlightRequirementModel';
 import FlightScopeEntity, { convertFlightScopeEntityToModel } from './FlightScopeEntity';
 import FlightEntity, { convertFlightEntityToModel } from './FlightEntity';
 
@@ -13,6 +13,7 @@ export function convertWeekdayFlightRequirementEntityToModel(data: WeekdayFlight
   return {
     scope: convertFlightScopeEntityToModel(data.scope),
     notes: data.notes,
+    freezed: false,
     day: data.day,
     flight: convertFlightEntityToModel(data.flight)
   };

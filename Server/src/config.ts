@@ -1,8 +1,13 @@
-import ClientConfig from '@core/models/ClientConfig';
+import ClientConfig from '@core/models/config/ClientConfig';
 
 export interface Config extends ClientConfig {
-  readonly mongodbUrl: string;
-  readonly mongodbDatabase: string;
+  readonly sqlServer: {
+    readonly server: string;
+    readonly database: string;
+    readonly username: string;
+    readonly password: string;
+  };
+  readonly secretKey: string;
 }
 
 const config: Config = require('../config').default;

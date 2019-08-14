@@ -9,6 +9,7 @@ export interface MultiSelectProps<T extends {}> extends MuiReactSelectProps<T> {
 const MultiSelect = <T extends {}>({ onSelect, onChange, ...others }: MultiSelectProps<T>): ReactElement | null => (
   <MuiReactSelect
     {...others}
+    isMulti={true}
     onChange={(value, actionMeta) => {
       if (onSelect) return onSelect(value as readonly T[], actionMeta);
       if (onChange) return onChange(value, actionMeta);

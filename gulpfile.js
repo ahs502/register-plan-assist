@@ -9,7 +9,15 @@ gulp.task('install-server', run('npm install', { cwd: './Server' }));
 gulp.task('install-client', run('npm install', { cwd: './Client' }));
 
 gulp.task('build-server', run('npm run build', { cwd: './Server' }));
-gulp.task('build-client', run('npm run build', { cwd: './Client' }));
+gulp.task(
+  'build-client',
+  run('npm run build', {
+    cwd: './Client',
+    env: {
+      PORT: process.env.CLIENT_PORT || 4000
+    }
+  })
+);
 
 gulp.task('dist', gulp.series(() => gulp.src('Server/dist/**').pipe(gulp.dest('dist')), () => gulp.src('Client/build/**').pipe(gulp.dest('dist/public'))));
 gulp.task('build', gulp.series('clean', 'build-server', 'build-client', 'dist'));
@@ -28,7 +36,7 @@ gulp.task(
   run('npm start', {
     cwd: './Client',
     env: {
-      PORT: process.env.CLIENT_PORT || 4000,
+      PORT: process.env.CLIENT_PORT || 4200,
       PROXY_PORT: process.env.SERVER_PORT || 3000,
       TSC_WATCHFILE: 'UseFsEventsWithFallbackDynamicPolling' //See: https://www.typescriptlang.org/docs/handbook/configuring-watch.html
     }

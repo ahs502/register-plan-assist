@@ -5,7 +5,6 @@ import CssBaseline from '@material-ui/core/CssBaseline';
 import * as serviceWorker from './serviceWorker';
 import '@core/utils/extensions.implementation';
 import '@core/utils/validation-init';
-import 'vis/dist/vis.css';
 import App from './App';
 
 ReactDOM.render(

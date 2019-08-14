@@ -3,7 +3,7 @@ var config = {
   oauth: {
     serverUrl: 'https://login.mahan.aero/adfs/oauth2/token',
     serverIssuer: 'https://login.mahan.aero/adfs/oauth2/authorize',
-    clientUrl: 'http://localhost:4200/',
+    clientUrl: 'http://localhost:4000/',
     clientId: 'b3ca0b10-f75f-4a3b-b7f8-278b1bd6fc2a',
     resourceName: 'dev-rpa',
     lang: 'En'

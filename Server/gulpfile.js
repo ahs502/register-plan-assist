@@ -69,8 +69,8 @@ function buildSource(destinationFolder, packageJsonModifier) {
         .pipe(typescriptProject())
         .js.pipe(gulp.dest(destinationFolder));
     },
-    () => gulp.src(['config.js', packageJsonModifier && 'temp/package.json'].filter(Boolean)).pipe(gulp.dest(destinationFolder)),
-    () => del('temp/**')
+    () => gulp.src(['configure.js', packageJsonModifier && 'temp/package.json'].filter(Boolean)).pipe(gulp.dest(destinationFolder)),
+    () => del([`${destinationFolder}/config.js`, 'temp/**'])
   );
 }
 
@@ -81,7 +81,10 @@ gulp.task(
     data.name = 'planassist';
     data.description = 'Intelligent Flight Scheduler';
     data.main = 'index.js';
-    data.scripts = { start: 'node .' };
+    data.scripts = {
+      start: 'node .',
+      config: 'node ./configure.js'
+    };
     delete data.devDependencies;
     return data;
   })

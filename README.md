@@ -40,6 +40,14 @@ To setup the project on the `./dist` folder, after _build_:
 
     dist$ npm install
 
+and, to make the `./config.js` file:
+
+    dist$ npm run config
+
+> The above uses the following environment variables to fill in the configuration file: `'ENV'`, `'OAUTH_SERVER_URL'`, `'OAUTH_SERVER_ISSUER'`, `'OAUTH_CLIENT_URL'`, `'OAUTH_CLIENT_ID'`, `'OAUTH_RESOURCE_NAME'`, `'OAUTH_LANG'`, `'SQL_SERVER_SERVER'`, `'SQL_SERVER_DATABASE'`, `'SQL_SERVER_USERNAME'` and `'SQL_SERVER_PASSWORD'`.
+
+> Each build artiface can only be configured **once**. Make sure to create proper backups before running `npm run config`.
+
 then, to run it:
 
     dist$ npm start
@@ -48,7 +56,7 @@ The default port is **3000** and the default node environment is **production** 
 
     dist$ PORT=3000 NODE_ENV=production npm start
 
-> The node environment can be either **production**, **test** or **development**.
+> The node environment can be either **`production`**, **`user acceptance test`**, **`quality assurance`** or **`development`**.
 
 ## Public files
 

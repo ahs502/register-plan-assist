@@ -17,6 +17,4 @@ var config = {
   secretKey: 'fsdjkla glsdfa kjglkjasfd ghasfdghasl;k ;lskg kjlahgfuiow rhtfurhgha g jkfangwreh gn89498 y353087 59w8 3570987Y*& ^%)&^#&^T&)*$@&Y)(*&@#Y $(@Y%()$YRURHfguisyreg ehrj'
 };
 
-/* ENVIRONMENT SPECIFIC CONFIGURATION PLACEHOLDER */
-
 module.exports = { default: config };

@@ -5,6 +5,7 @@ import { DbAccess } from 'src/utils/sqlServer';
 import FlightRequirementEntity from 'src/entities/flight/_FlightRequirementEntity';
 import PreplanModel, { PreplanHeaderModel } from '@core/models/PreplanModel';
 import { requestMiddlewareWithDbAccess } from 'src/utils/requestMiddleware';
+import NewPreplanModel, { NewPreplanModelValidation } from '@core/models/NewPreplanModel';
 
 const router = Router();
 export default router;
@@ -20,8 +21,22 @@ router.post(
 
 router.post(
   '/create-empty',
-  requestMiddlewareWithDbAccess<{ name: string; startDate: Date; endDate: Date }, string>(async (userId, { name, startDate, endDate }, { runSp }) => {
-    return 'ksadjflkjasdlfkjasd';
+  requestMiddlewareWithDbAccess<NewPreplanModel, string>(async (userId, newPreplan, { runSp }) => {
+    const userPreplanNames: string[] = (await 0) as any;
+    new NewPreplanModelValidation(newPreplan, userPreplanNames).throw('Invalid API input.');
+
+    const { name, startDate, endDate } = newPreplan;
+    return '123435671271';
+  })
+);
+
+router.post(
+  '/clone',
+  requestMiddlewareWithDbAccess<{ id: string; newPreplan: NewPreplanModel }, string>(async (userId, { id, newPreplan }, { runSp }) => {
+    const userPreplanNames: string[] = (await 0) as any;
+    new NewPreplanModelValidation(newPreplan, userPreplanNames).throw('Invalid API input.');
+
+    return '382748923789237';
   })
 );
 

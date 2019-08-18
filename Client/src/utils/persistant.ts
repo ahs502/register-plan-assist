@@ -43,7 +43,7 @@ function get<T extends keyof Persistant>(cache: Persistant, status: PersistantSt
   if (status[key] === true) return cache[key];
   if (status[key] === false) return undefined;
   const stringValue = localStorage.getItem(key);
-  if ((status[key] = stringValue === null)) return undefined;
+  if (!(status[key] = stringValue !== null)) return undefined;
   return (cache[key] = JSON.parse(stringValue!));
 }
 function set<T extends keyof Persistant>(cache: Persistant, status: PersistantStatus, key: T, value: Persistant[T] | undefined): void {

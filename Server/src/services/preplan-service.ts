@@ -68,7 +68,7 @@ router.post(
     new NewPreplanModelValidation(editPreplan, userPreplanNames).throw('Invalid API input.');
 
     const Preplan: readonly string[] = await runSp(
-      '[RPA].[SP_InsertPreplanHeader]',
+      '[RPA].[Sp_UpdatePreplanHeader]',
       runSp.varCharParam('userId', userId),
       runSp.nVarCharParam('name', editPreplan.name, 200),
       runSp.dateTimeParam('startDate', editPreplan.startDate),

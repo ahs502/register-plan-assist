@@ -21,12 +21,29 @@ router.post(
 
 router.post(
   '/create-empty',
-  requestMiddlewareWithDbAccess<NewPreplanModel, string>(async (userId, newPreplan, { runSp }) => {
-    const userPreplanNames: string[] = (await 0) as any;
+  requestMiddlewareWithDbAccess<NewPreplanModel, string>(async (userId, newPreplan, { runSp, runQuery }) => {
+    const userPreplanNames: readonly string[] = await runQuery(
+      `
+        select
+          p.[Name]              as [name]
+        from
+          [RPA].[Preplan]             as p
+        where 
+          p.[Id_User] = @userId
+      `,
+      runQuery.intParam('userId', userId)
+    );
     new NewPreplanModelValidation(newPreplan, userPreplanNames).throw('Invalid API input.');
 
-    const { name, startDate, endDate } = newPreplan;
-    return '123435671271';
+    const Preplan: readonly string[] = await runSp(
+      '[RPA].[SP_InsertPreplanHeader]',
+      runSp.varCharParam('userId', userId),
+      runSp.nVarCharParam('name', newPreplan.name, 200),
+      runSp.dateTimeParam('startDate', newPreplan.startDate),
+      runSp.dateTimeParam('endDate', newPreplan.endDate)
+    );
+
+    return Preplan[0];
   })
 );
 

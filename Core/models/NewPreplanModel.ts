@@ -8,7 +8,7 @@ export default interface NewPreplanModel {
 
 //TODO: Not implemented.
 export class NewPreplanModelValidation extends Validation<''> {
-  constructor(newPreplan: NewPreplanModel, userPreplanNames: string[]) {
+  constructor(newPreplan: NewPreplanModel, userPreplanNames: readonly string[]) {
     super(validator => {});
   }
 }

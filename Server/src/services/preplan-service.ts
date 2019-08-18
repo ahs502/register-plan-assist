@@ -50,7 +50,7 @@ router.post(
 
 router.post(
   '/edit-header',
-  requestMiddlewareWithDbAccess<EditPreplanModel, string>(async (userId, editPreplan, { runSp, runQuery }) => {
+  requestMiddlewareWithDbAccess<EditPreplanModel, PreplanHeaderModel[]>(async (userId, editPreplan, { runSp, runQuery }) => {
     const userPreplanNames: readonly string[] = await runQuery(
       `
         select
@@ -67,7 +67,7 @@ router.post(
     );
     new NewPreplanModelValidation(editPreplan, userPreplanNames).throw('Invalid API input.');
 
-    const Preplan: readonly string[] = await runSp(
+    const Preplan: PreplanHeaderEntity[] = await runSp(
       '[RPA].[Sp_UpdatePreplanHeader]',
       runSp.varCharParam('userId', userId),
       runSp.varCharParam('id', editPreplan.id),
@@ -76,7 +76,7 @@ router.post(
       runSp.dateTimeParam('endDate', editPreplan.endDate)
     );
 
-    return Preplan[0];
+    return Preplan;
   })
 );
 

@@ -6,6 +6,7 @@ import FlightRequirementEntity from 'src/entities/flight/_FlightRequirementEntit
 import PreplanModel, { PreplanHeaderModel } from '@core/models/PreplanModel';
 import { requestMiddlewareWithDbAccess } from 'src/utils/requestMiddleware';
 import NewPreplanModel, { NewPreplanModelValidation } from '@core/models/NewPreplanModel';
+import EditPreplanModel from '@core/models/EditPreplanModel';
 
 const router = Router();
 export default router;
@@ -13,7 +14,7 @@ export default router;
 router.post(
   '/get-all-headers',
   requestMiddlewareWithDbAccess<{}, PreplanHeaderModel[]>(async (userId, {}, { runSp }) => {
-    const preplanHeaderEntities: readonly PreplanHeaderEntity[] = await runSp('[RPA].[SP_GetPreplanHeaders]', runSp.intParam('userId', userId));
+    const preplanHeaderEntities: readonly PreplanHeaderEntity[] = await runSp('[RPA].[SP_GetPreplanHeaders]', runSp.varCharParam('userId', userId));
     const preplanHeaderModels = preplanHeaderEntities.map(convertPreplanHeaderEntityToModel);
     return preplanHeaderModels;
   })
@@ -31,7 +32,7 @@ router.post(
         where 
           p.[Id_User] = @userId
       `,
-      runQuery.intParam('userId', userId)
+      runQuery.varCharParam('userId', userId)
     );
     new NewPreplanModelValidation(newPreplan, userPreplanNames).throw('Invalid API input.');
 
@@ -41,6 +42,37 @@ router.post(
       runSp.nVarCharParam('name', newPreplan.name, 200),
       runSp.dateTimeParam('startDate', newPreplan.startDate),
       runSp.dateTimeParam('endDate', newPreplan.endDate)
+    );
+
+    return Preplan[0];
+  })
+);
+
+router.post(
+  '/edit-header',
+  requestMiddlewareWithDbAccess<EditPreplanModel, string>(async (userId, editPreplan, { runSp, runQuery }) => {
+    const userPreplanNames: readonly string[] = await runQuery(
+      `
+        select
+          p.[Name]              as [name]
+        from
+          [RPA].[Preplan]             as p
+        where 
+          p.[Id_User] = @userId 
+          and 
+           p.[Id] <> @id
+      `,
+      runQuery.varCharParam('userId', userId),
+      runQuery.varCharParam('id', editPreplan.id)
+    );
+    new NewPreplanModelValidation(editPreplan, userPreplanNames).throw('Invalid API input.');
+
+    const Preplan: readonly string[] = await runSp(
+      '[RPA].[SP_InsertPreplanHeader]',
+      runSp.varCharParam('userId', userId),
+      runSp.nVarCharParam('name', editPreplan.name, 200),
+      runSp.dateTimeParam('startDate', editPreplan.startDate),
+      runSp.dateTimeParam('endDate', editPreplan.endDate)
     );
 
     return Preplan[0];

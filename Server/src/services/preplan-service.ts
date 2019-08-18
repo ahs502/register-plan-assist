@@ -70,6 +70,7 @@ router.post(
     const Preplan: readonly string[] = await runSp(
       '[RPA].[Sp_UpdatePreplanHeader]',
       runSp.varCharParam('userId', userId),
+      runSp.varCharParam('id', editPreplan.id),
       runSp.nVarCharParam('name', editPreplan.name, 200),
       runSp.dateTimeParam('startDate', editPreplan.startDate),
       runSp.dateTimeParam('endDate', editPreplan.endDate)

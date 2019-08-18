@@ -13,7 +13,7 @@ export default router;
 router.post(
   '/get-all-headers',
   requestMiddlewareWithDbAccess<{}, PreplanHeaderModel[]>(async (userId, {}, { runSp }) => {
-    const preplanHeaderEntities: readonly PreplanHeaderEntity[] = await runSp('[RPA].[SP_GetPreplanHeaders]', runSp.intParam('userId', userId));
+    const preplanHeaderEntities: readonly PreplanHeaderEntity[] = await runSp('[RPA].[SP_GetPreplanHeaders]', runSp.varCharParam('userId', userId));
     const preplanHeaderModels = preplanHeaderEntities.map(convertPreplanHeaderEntityToModel);
     return preplanHeaderModels;
   })
@@ -31,7 +31,7 @@ router.post(
         where 
           p.[Id_User] = @userId
       `,
-      runQuery.intParam('userId', userId)
+      runQuery.bigIntParam('userId', userId)
     );
     new NewPreplanModelValidation(newPreplan, userPreplanNames).throw('Invalid API input.');
 

@@ -230,8 +230,8 @@ interface DailyFlightRequirment {
   note: string;
   aircraftType: string;
   category: string;
-  arrivalPermission: boolean;
-  departurePermission: boolean;
+  destinationPermission: boolean;
+  originPermission: boolean;
   rsx: Rsx;
 }
 
@@ -378,8 +378,8 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
       //TODO: remove
 
       df.forEach(d => {
-        d.arrivalPermission = Math.random() > 0.25 ? true : false; //TODO: remove
-        d.departurePermission = Math.random() > 0.25 ? true : false; //TODO: remove
+        d.destinationPermission = Math.random() > 0.25 ? true : false; //TODO: remove
+        d.originPermission = Math.random() > 0.25 ? true : false; //TODO: remove
 
         if (d.departureAirport.id === '7092901520000005420' || d.arrivalAirport.id === '7092901520000005420') {
           if ([1, 4].indexOf(d.day) !== -1) d.rsx = 'STB2';
@@ -1720,8 +1720,8 @@ function createDailyFlightRequirment(flightRequirments: readonly FlightRequireme
             note: d.notes,
             aircraftType: d.flight.aircraftRegister && d.flight.aircraftRegister.aircraftType.name,
             category: f.definition.category,
-            arrivalPermission: d.scope.arrivalPermission,
-            departurePermission: d.scope.departurePermission,
+            destinationPermission: d.scope.destinationPermission,
+            originPermission: d.scope.originPermission,
             rsx: d.scope.rsx
           } as DailyFlightRequirment)
       );
@@ -1872,11 +1872,11 @@ function updateFlattenFlightRequirment(flattenFlight: FlattenFlightRequirment, d
   if (flattenFlight.days.indexOf(weekDay) === -1) {
     flattenFlight.days.push(weekDay);
 
-    if (!dialyFlightRequirment.departurePermission) {
+    if (!dialyFlightRequirment.originPermission) {
       domesticToDestination ? flattenFlight.domesticNoPermissionsWeekDay.push(weekDay) : flattenFlight.destinationNoPermissionsWeekDay.push(weekDay);
     }
 
-    if (!dialyFlightRequirment.arrivalPermission) {
+    if (!dialyFlightRequirment.destinationPermission) {
       const arrivalWeekDay = flattenFlight.diffLocalStdandLocalSta > 0 ? (weekDay + 1) % 7 : weekDay;
       domesticToDestination ? flattenFlight.destinationNoPermissionsWeekDay.push(arrivalWeekDay) : flattenFlight.domesticNoPermissionsWeekDay.push(arrivalWeekDay);
     }
@@ -1903,9 +1903,9 @@ function updateFlattenFlightRequirment(flattenFlight: FlattenFlightRequirment, d
 
   function calculateDayCharacter(): string | number | boolean | Airport | number[] | Daytime | FlattenFlightRequirment[] | string[] {
     if (dialyFlightRequirment.rsx === 'REAL') {
-      if (dialyFlightRequirment.departurePermission && dialyFlightRequirment.arrivalPermission) return character.circle;
-      if (!dialyFlightRequirment.departurePermission && !dialyFlightRequirment.arrivalPermission) return character.emptyCircle;
-      if (!dialyFlightRequirment.departurePermission) return domesticToDestination ? character.leftHalfBlackCircle : character.rightHalfBlackCircle;
+      if (dialyFlightRequirment.originPermission && dialyFlightRequirment.destinationPermission) return character.circle;
+      if (!dialyFlightRequirment.originPermission && !dialyFlightRequirment.destinationPermission) return character.emptyCircle;
+      if (!dialyFlightRequirment.originPermission) return domesticToDestination ? character.leftHalfBlackCircle : character.rightHalfBlackCircle;
       return domesticToDestination ? character.rightHalfBlackCircle : character.leftHalfBlackCircle;
     } else {
       return dialyFlightRequirment.rsx.toString();
@@ -2161,8 +2161,8 @@ function getDummyPreplan(): Preplan {
         definition: { category: '', label: 'BEY', stcId: '3', flightNumber: 'W5 1152', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000004781' },
         scope: {
           rsx: 'REAL',
-          departurePermission: true,
-          arrivalPermission: true,
+          originPermission: true,
+          destinationPermission: true,
           blockTime: 140,
           times: [{ stdLowerBound: 120, stdUpperBound: 240 }],
           aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000282' }], forbiddenIdentities: [] },
@@ -2173,8 +2173,8 @@ function getDummyPreplan(): Preplan {
             freezed: false,
             scope: {
               rsx: 'REAL',
-              departurePermission: true,
-              arrivalPermission: true,
+              originPermission: true,
+              destinationPermission: true,
               blockTime: 140,
               times: [{ stdLowerBound: 120, stdUpperBound: 240 }],
               aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000282' }], forbiddenIdentities: [] },
@@ -2192,8 +2192,8 @@ function getDummyPreplan(): Preplan {
         definition: { category: '', label: 'BEY', stcId: '3', flightNumber: 'W5 1156', departureAirportId: '7092901520000002340', arrivalAirportId: '7092901520000004781' },
         scope: {
           rsx: 'REAL',
-          departurePermission: true,
-          arrivalPermission: true,
+          originPermission: true,
+          destinationPermission: true,
           blockTime: 200,
           times: [{ stdLowerBound: 620, stdUpperBound: 740 }],
           aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000282' }], forbiddenIdentities: [] },
@@ -2204,8 +2204,8 @@ function getDummyPreplan(): Preplan {
             freezed: false,
             scope: {
               rsx: 'REAL',
-              departurePermission: true,
-              arrivalPermission: true,
+              originPermission: true,
+              destinationPermission: true,
               blockTime: 200,
               times: [{ stdLowerBound: 620, stdUpperBound: 740 }],
               aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000282' }], forbiddenIdentities: [] },
@@ -2223,8 +2223,8 @@ function getDummyPreplan(): Preplan {
         definition: { category: '', label: 'BEY', stcId: '3', flightNumber: 'W5 1153', departureAirportId: '7092901520000004781', arrivalAirportId: '7092901520000001588' },
         scope: {
           rsx: 'REAL',
-          departurePermission: true,
-          arrivalPermission: true,
+          originPermission: true,
+          destinationPermission: true,
           blockTime: 130,
           times: [{ stdLowerBound: 910, stdUpperBound: 1030 }],
           aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000282' }], forbiddenIdentities: [] },
@@ -2235,8 +2235,8 @@ function getDummyPreplan(): Preplan {
             freezed: false,
             scope: {
               rsx: 'REAL',
-              departurePermission: true,
-              arrivalPermission: true,
+              originPermission: true,
+              destinationPermission: true,
               blockTime: 130,
               times: [{ stdLowerBound: 910, stdUpperBound: 1030 }],
               aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000282' }], forbiddenIdentities: [] },
@@ -2254,8 +2254,8 @@ function getDummyPreplan(): Preplan {
         definition: { category: '', label: 'BEY', stcId: '3', flightNumber: 'W5 1157', departureAirportId: '7092901520000004781', arrivalAirportId: '7092901520000002340' },
         scope: {
           rsx: 'REAL',
-          departurePermission: true,
-          arrivalPermission: true,
+          originPermission: true,
+          destinationPermission: true,
           blockTime: 180,
           times: [{ stdLowerBound: 350, stdUpperBound: 470 }],
           aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000282' }], forbiddenIdentities: [] },
@@ -2266,8 +2266,8 @@ function getDummyPreplan(): Preplan {
             freezed: false,
             scope: {
               rsx: 'REAL',
-              departurePermission: true,
-              arrivalPermission: true,
+              originPermission: true,
+              destinationPermission: true,
               blockTime: 180,
               times: [{ stdLowerBound: 350, stdUpperBound: 470 }],
               aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000282' }], forbiddenIdentities: [] },
@@ -2285,8 +2285,8 @@ function getDummyPreplan(): Preplan {
         definition: { category: '', label: 'BEY', stcId: '3', flightNumber: 'W5 1152', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000004781' },
         scope: {
           rsx: 'REAL',
-          departurePermission: true,
-          arrivalPermission: true,
+          originPermission: true,
+          destinationPermission: true,
           blockTime: 140,
           times: [{ stdLowerBound: 120, stdUpperBound: 240 }],
           aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001060' }], forbiddenIdentities: [] },
@@ -2297,8 +2297,8 @@ function getDummyPreplan(): Preplan {
             freezed: false,
             scope: {
               rsx: 'REAL',
-              departurePermission: true,
-              arrivalPermission: true,
+              originPermission: true,
+              destinationPermission: true,
               blockTime: 140,
               times: [{ stdLowerBound: 120, stdUpperBound: 240 }],
               aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001060' }], forbiddenIdentities: [] },
@@ -2316,8 +2316,8 @@ function getDummyPreplan(): Preplan {
         definition: { category: '', label: 'BEY', stcId: '3', flightNumber: 'W5 1156', departureAirportId: '7092901520000002340', arrivalAirportId: '7092901520000004781' },
         scope: {
           rsx: 'REAL',
-          departurePermission: true,
-          arrivalPermission: true,
+          originPermission: true,
+          destinationPermission: true,
           blockTime: 200,
           times: [{ stdLowerBound: 620, stdUpperBound: 740 }],
           aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001060' }], forbiddenIdentities: [] },
@@ -2328,8 +2328,8 @@ function getDummyPreplan(): Preplan {
             freezed: false,
             scope: {
               rsx: 'REAL',
-              departurePermission: true,
-              arrivalPermission: true,
+              originPermission: true,
+              destinationPermission: true,
               blockTime: 200,
               times: [{ stdLowerBound: 620, stdUpperBound: 740 }],
               aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001060' }], forbiddenIdentities: [] },
@@ -2347,8 +2347,8 @@ function getDummyPreplan(): Preplan {
         definition: { category: '', label: 'BEY', stcId: '3', flightNumber: 'W5 1153', departureAirportId: '7092901520000004781', arrivalAirportId: '7092901520000001588' },
         scope: {
           rsx: 'REAL',
-          departurePermission: true,
-          arrivalPermission: true,
+          originPermission: true,
+          destinationPermission: true,
           blockTime: 130,
           times: [{ stdLowerBound: 910, stdUpperBound: 1030 }],
           aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001060' }], forbiddenIdentities: [] },
@@ -2359,8 +2359,8 @@ function getDummyPreplan(): Preplan {
             freezed: false,
             scope: {
               rsx: 'REAL',
-              departurePermission: true,
-              arrivalPermission: true,
+              originPermission: true,
+              destinationPermission: true,
               blockTime: 130,
               times: [{ stdLowerBound: 910, stdUpperBound: 1030 }],
               aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001060' }], forbiddenIdentities: [] },
@@ -2378,8 +2378,8 @@ function getDummyPreplan(): Preplan {
         definition: { category: '', label: 'BEY', stcId: '3', flightNumber: 'W5 1157', departureAirportId: '7092901520000004781', arrivalAirportId: '7092901520000002340' },
         scope: {
           rsx: 'REAL',
-          departurePermission: true,
-          arrivalPermission: true,
+          originPermission: true,
+          destinationPermission: true,
           blockTime: 180,
           times: [{ stdLowerBound: 350, stdUpperBound: 470 }],
           aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001060' }], forbiddenIdentities: [] },
@@ -2390,8 +2390,8 @@ function getDummyPreplan(): Preplan {
             freezed: false,
             scope: {
               rsx: 'REAL',
-              departurePermission: true,
-              arrivalPermission: true,
+              originPermission: true,
+              destinationPermission: true,
               blockTime: 180,
               times: [{ stdLowerBound: 350, stdUpperBound: 470 }],
               aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001060' }], forbiddenIdentities: [] },
@@ -2409,8 +2409,8 @@ function getDummyPreplan(): Preplan {
         definition: { category: '', label: 'BCN', stcId: '10', flightNumber: 'W5 0136', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000004755' },
         scope: {
           rsx: 'REAL',
-          departurePermission: true,
-          arrivalPermission: true,
+          originPermission: true,
+          destinationPermission: true,
           blockTime: 345,
           times: [{ stdLowerBound: 70, stdUpperBound: 190 }],
           aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000970' }], forbiddenIdentities: [] },
@@ -2421,8 +2421,8 @@ function getDummyPreplan(): Preplan {
             freezed: false,
             scope: {
               rsx: 'REAL',
-              departurePermission: true,
-              arrivalPermission: true,
+              originPermission: true,
+              destinationPermission: true,
               blockTime: 345,
               times: [{ stdLowerBound: 70, stdUpperBound: 190 }],
               aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000970' }], forbiddenIdentities: [] },
@@ -2440,8 +2440,8 @@ function getDummyPreplan(): Preplan {
         definition: { category: '', label: 'BCN', stcId: '10', flightNumber: 'W5 0137', departureAirportId: '7092901520000004755', arrivalAirportId: '7092901520000001588' },
         scope: {
           rsx: 'REAL',
-          departurePermission: true,
-          arrivalPermission: true,
+          originPermission: true,
+          destinationPermission: true,
           blockTime: 325,
           times: [{ stdLowerBound: 505, stdUpperBound: 625 }],
           aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000970' }], forbiddenIdentities: [] },
@@ -2452,8 +2452,8 @@ function getDummyPreplan(): Preplan {
             freezed: false,
             scope: {
               rsx: 'REAL',
-              departurePermission: true,
-              arrivalPermission: true,
+              originPermission: true,
+              destinationPermission: true,
               blockTime: 330,
               times: [{ stdLowerBound: 505, stdUpperBound: 625 }],
               aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000970' }], forbiddenIdentities: [] },
@@ -2471,8 +2471,8 @@ function getDummyPreplan(): Preplan {
         definition: { category: '', label: 'BCN', stcId: '10', flightNumber: 'W5 0136', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000004755' },
         scope: {
           rsx: 'REAL',
-          departurePermission: true,
-          arrivalPermission: true,
+          originPermission: true,
+          destinationPermission: true,
           blockTime: 345,
           times: [{ stdLowerBound: 70, stdUpperBound: 190 }],
           aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000970' }], forbiddenIdentities: [] },
@@ -2483,8 +2483,8 @@ function getDummyPreplan(): Preplan {
             freezed: false,
             scope: {
               rsx: 'REAL',
-              departurePermission: true,
-              arrivalPermission: true,
+              originPermission: true,
+              destinationPermission: true,
               blockTime: 340,
               times: [{ stdLowerBound: 70, stdUpperBound: 190 }],
               aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000970' }], forbiddenIdentities: [] },
@@ -2502,8 +2502,8 @@ function getDummyPreplan(): Preplan {
         definition: { category: '', label: 'BCN', stcId: '10', flightNumber: 'W5 0137', departureAirportId: '7092901520000004755', arrivalAirportId: '7092901520000001588' },
         scope: {
           rsx: 'REAL',
-          departurePermission: true,
-          arrivalPermission: true,
+          originPermission: true,
+          destinationPermission: true,
           blockTime: 325,
           times: [{ stdLowerBound: 515, stdUpperBound: 635 }],
           aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000970' }], forbiddenIdentities: [] },
@@ -2514,8 +2514,8 @@ function getDummyPreplan(): Preplan {
             freezed: false,
             scope: {
               rsx: 'REAL',
-              departurePermission: true,
-              arrivalPermission: true,
+              originPermission: true,
+              destinationPermission: true,
               blockTime: 325,
               times: [{ stdLowerBound: 515, stdUpperBound: 635 }],
               aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000970' }], forbiddenIdentities: [] },
@@ -2533,8 +2533,8 @@ function getDummyPreplan(): Preplan {
         definition: { category: '', label: 'CDG', stcId: '10', flightNumber: 'W5 0106', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000005045' },
         scope: {
           rsx: 'REAL',
-          departurePermission: true,
-          arrivalPermission: true,
+          originPermission: true,
+          destinationPermission: true,
           blockTime: 360,
           times: [{ stdLowerBound: 140, stdUpperBound: 260 }],
           aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001060' }], forbiddenIdentities: [] },
@@ -2545,8 +2545,8 @@ function getDummyPreplan(): Preplan {
             freezed: false,
             scope: {
               rsx: 'REAL',
-              departurePermission: true,
-              arrivalPermission: true,
+              originPermission: true,
+              destinationPermission: true,
               blockTime: 360,
               times: [{ stdLowerBound: 140, stdUpperBound: 260 }],
               aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001060' }], forbiddenIdentities: [] },
@@ -2564,8 +2564,8 @@ function getDummyPreplan(): Preplan {
         definition: { category: '', label: 'CDG', stcId: '10', flightNumber: 'W5 0107', departureAirportId: '7092901520000005045', arrivalAirportId: '7092901520000001588' },
         scope: {
           rsx: 'REAL',
-          departurePermission: true,
-          arrivalPermission: true,
+          originPermission: true,
+          destinationPermission: true,
           blockTime: 315,
           times: [{ stdLowerBound: 595, stdUpperBound: 715 }],
           aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001060' }], forbiddenIdentities: [] },
@@ -2576,8 +2576,8 @@ function getDummyPreplan(): Preplan {
             freezed: false,
             scope: {
               rsx: 'REAL',
-              departurePermission: true,
-              arrivalPermission: true,
+              originPermission: true,
+              destinationPermission: true,
               blockTime: 315,
               times: [{ stdLowerBound: 595, stdUpperBound: 715 }],
               aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001060' }], forbiddenIdentities: [] },
@@ -2595,8 +2595,8 @@ function getDummyPreplan(): Preplan {
         definition: { category: '', label: 'CDG', stcId: '10', flightNumber: 'W5 0106', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000005045' },
         scope: {
           rsx: 'REAL',
-          departurePermission: true,
-          arrivalPermission: true,
+          originPermission: true,
+          destinationPermission: true,
           blockTime: 360,
           times: [{ stdLowerBound: 140, stdUpperBound: 260 }],
           aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001088' }], forbiddenIdentities: [] },
@@ -2607,8 +2607,8 @@ function getDummyPreplan(): Preplan {
             freezed: false,
             scope: {
               rsx: 'REAL',
-              departurePermission: true,
-              arrivalPermission: true,
+              originPermission: true,
+              destinationPermission: true,
               blockTime: 360,
               times: [{ stdLowerBound: 140, stdUpperBound: 260 }],
               aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001088' }], forbiddenIdentities: [] },
@@ -2626,8 +2626,8 @@ function getDummyPreplan(): Preplan {
         definition: { category: '', label: 'CDG', stcId: '10', flightNumber: 'W5 0107', departureAirportId: '7092901520000005045', arrivalAirportId: '7092901520000001588' },
         scope: {
           rsx: 'REAL',
-          departurePermission: true,
-          arrivalPermission: true,
+          originPermission: true,
+          destinationPermission: true,
           blockTime: 315,
           times: [{ stdLowerBound: 595, stdUpperBound: 715 }],
           aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001088' }], forbiddenIdentities: [] },
@@ -2638,8 +2638,8 @@ function getDummyPreplan(): Preplan {
             freezed: false,
             scope: {
               rsx: 'REAL',
-              departurePermission: true,
-              arrivalPermission: true,
+              originPermission: true,
+              destinationPermission: true,
               blockTime: 315,
               times: [{ stdLowerBound: 595, stdUpperBound: 715 }],
               aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001088' }], forbiddenIdentities: [] },
@@ -2657,8 +2657,8 @@ function getDummyPreplan(): Preplan {
         definition: { category: '', label: 'CDG', stcId: '10', flightNumber: 'W5 0106', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000005045' },
         scope: {
           rsx: 'REAL',
-          departurePermission: true,
-          arrivalPermission: true,
+          originPermission: true,
+          destinationPermission: true,
           blockTime: 360,
           times: [{ stdLowerBound: 140, stdUpperBound: 260 }],
           aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001088' }], forbiddenIdentities: [] },
@@ -2669,8 +2669,8 @@ function getDummyPreplan(): Preplan {
             freezed: false,
             scope: {
               rsx: 'REAL',
-              departurePermission: true,
-              arrivalPermission: true,
+              originPermission: true,
+              destinationPermission: true,
               blockTime: 360,
               times: [{ stdLowerBound: 140, stdUpperBound: 260 }],
               aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001088' }], forbiddenIdentities: [] },
@@ -2688,8 +2688,8 @@ function getDummyPreplan(): Preplan {
         definition: { category: '', label: 'CDG', stcId: '10', flightNumber: 'W5 0107', departureAirportId: '7092901520000005045', arrivalAirportId: '7092901520000001588' },
         scope: {
           rsx: 'REAL',
-          departurePermission: true,
-          arrivalPermission: true,
+          originPermission: true,
+          destinationPermission: true,
           blockTime: 315,
           times: [{ stdLowerBound: 595, stdUpperBound: 715 }],
           aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001088' }], forbiddenIdentities: [] },
@@ -2700,8 +2700,8 @@ function getDummyPreplan(): Preplan {
             freezed: false,
             scope: {
               rsx: 'REAL',
-              departurePermission: true,
-              arrivalPermission: true,
+              originPermission: true,
+              destinationPermission: true,
               blockTime: 315,
               times: [{ stdLowerBound: 595, stdUpperBound: 715 }],
               aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001088' }], forbiddenIdentities: [] },
@@ -2719,8 +2719,8 @@ function getDummyPreplan(): Preplan {
         definition: { category: '', label: 'ALA', stcId: '10', flightNumber: 'W5 0072', departureAirportId: '7092901520000004577', arrivalAirportId: '7092901520000001588' },
         scope: {
           rsx: 'REAL',
-          departurePermission: true,
-          arrivalPermission: true,
+          originPermission: true,
+          destinationPermission: true,
           blockTime: 225,
           times: [{ stdLowerBound: 345, stdUpperBound: 465 }],
           aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000292' }], forbiddenIdentities: [] },
@@ -2731,8 +2731,8 @@ function getDummyPreplan(): Preplan {
             freezed: false,
             scope: {
               rsx: 'REAL',
-              departurePermission: true,
-              arrivalPermission: true,
+              originPermission: true,
+              destinationPermission: true,
               blockTime: 225,
               times: [{ stdLowerBound: 345, stdUpperBound: 465 }],
               aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000292' }], forbiddenIdentities: [] },
@@ -2750,8 +2750,8 @@ function getDummyPreplan(): Preplan {
         definition: { category: '', label: 'ALA', stcId: '10', flightNumber: 'W5 0073', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000004577' },
         scope: {
           rsx: 'REAL',
-          departurePermission: true,
-          arrivalPermission: true,
+          originPermission: true,
+          destinationPermission: true,
           blockTime: 210,
           times: [{ stdLowerBound: 55, stdUpperBound: 175 }],
           aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000292' }], forbiddenIdentities: [] },
@@ -2762,8 +2762,8 @@ function getDummyPreplan(): Preplan {
             freezed: false,
             scope: {
               rsx: 'REAL',
-              departurePermission: true,
-              arrivalPermission: true,
+              originPermission: true,
+              destinationPermission: true,
               blockTime: 210,
               times: [{ stdLowerBound: 55, stdUpperBound: 175 }],
               aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000292' }], forbiddenIdentities: [] },
@@ -2781,8 +2781,8 @@ function getDummyPreplan(): Preplan {
         definition: { category: '', label: 'DUS', stcId: '10', flightNumber: 'W5 0050', departureAirportId: '7092901520000000978', arrivalAirportId: '7092901520000001588' },
         scope: {
           rsx: 'REAL',
-          departurePermission: true,
-          arrivalPermission: true,
+          originPermission: true,
+          destinationPermission: true,
           blockTime: 445,
           times: [{ stdLowerBound: 875, stdUpperBound: 995 }],
           aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000348' }], forbiddenIdentities: [] },
@@ -2793,8 +2793,8 @@ function getDummyPreplan(): Preplan {
             freezed: false,
             scope: {
               rsx: 'REAL',
-              departurePermission: true,
-              arrivalPermission: true,
+              originPermission: true,
+              destinationPermission: true,
               blockTime: 445,
               times: [{ stdLowerBound: 875, stdUpperBound: 995 }],
               aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000348' }], forbiddenIdentities: [] },
@@ -2812,8 +2812,8 @@ function getDummyPreplan(): Preplan {
         definition: { category: '', label: 'DUS', stcId: '10', flightNumber: 'W5 0051', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000000978' },
         scope: {
           rsx: 'REAL',
-          departurePermission: true,
-          arrivalPermission: true,
+          originPermission: true,
+          destinationPermission: true,
           blockTime: 405,
           times: [{ stdLowerBound: 1000, stdUpperBound: 1120 }],
           aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000298' }], forbiddenIdentities: [] },
@@ -2824,8 +2824,8 @@ function getDummyPreplan(): Preplan {
             freezed: false,
             scope: {
               rsx: 'REAL',
-              departurePermission: true,
-              arrivalPermission: true,
+              originPermission: true,
+              destinationPermission: true,
               blockTime: 405,
               times: [{ stdLowerBound: 1000, stdUpperBound: 1120 }],
               aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000298' }], forbiddenIdentities: [] },
@@ -2843,8 +2843,8 @@ function getDummyPreplan(): Preplan {
         definition: { category: '', label: 'DUS', stcId: '10', flightNumber: 'W5 0050', departureAirportId: '7092901520000000978', arrivalAirportId: '7092901520000001588' },
         scope: {
           rsx: 'REAL',
-          departurePermission: true,
-          arrivalPermission: true,
+          originPermission: true,
+          destinationPermission: true,
           blockTime: 445,
           times: [{ stdLowerBound: 875, stdUpperBound: 995 }],
           aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000298' }], forbiddenIdentities: [] },
@@ -2855,8 +2855,8 @@ function getDummyPreplan(): Preplan {
             freezed: false,
             scope: {
               rsx: 'REAL',
-              departurePermission: true,
-              arrivalPermission: true,
+              originPermission: true,
+              destinationPermission: true,
               blockTime: 445,
               times: [{ stdLowerBound: 875, stdUpperBound: 995 }],
               aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000298' }], forbiddenIdentities: [] },
@@ -2874,8 +2874,8 @@ function getDummyPreplan(): Preplan {
         definition: { category: '', label: 'DUS', stcId: '10', flightNumber: 'W5 0051', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000000978' },
         scope: {
           rsx: 'REAL',
-          departurePermission: true,
-          arrivalPermission: true,
+          originPermission: true,
+          destinationPermission: true,
           blockTime: 405,
           times: [{ stdLowerBound: 1000, stdUpperBound: 1120 }],
           aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000292' }], forbiddenIdentities: [] },
@@ -2886,8 +2886,8 @@ function getDummyPreplan(): Preplan {
             freezed: false,
             scope: {
               rsx: 'REAL',
-              departurePermission: true,
-              arrivalPermission: true,
+              originPermission: true,
+              destinationPermission: true,
               blockTime: 405,
               times: [{ stdLowerBound: 1000, stdUpperBound: 1120 }],
               aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000292' }], forbiddenIdentities: [] },
@@ -2905,8 +2905,8 @@ function getDummyPreplan(): Preplan {
         definition: { category: '', label: 'DUS', stcId: '10', flightNumber: 'W5 0051', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000000978' },
         scope: {
           rsx: 'REAL',
-          departurePermission: true,
-          arrivalPermission: true,
+          originPermission: true,
+          destinationPermission: true,
           blockTime: 405,
           times: [{ stdLowerBound: 1000, stdUpperBound: 1120 }],
           aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000282' }], forbiddenIdentities: [] },
@@ -2917,8 +2917,8 @@ function getDummyPreplan(): Preplan {
             freezed: false,
             scope: {
               rsx: 'REAL',
-              departurePermission: true,
-              arrivalPermission: true,
+              originPermission: true,
+              destinationPermission: true,
               blockTime: 405,
               times: [{ stdLowerBound: 1000, stdUpperBound: 1120 }],
               aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000282' }], forbiddenIdentities: [] },
@@ -2936,8 +2936,8 @@ function getDummyPreplan(): Preplan {
         definition: { category: '', label: 'DUS', stcId: '10', flightNumber: 'W5 0050', departureAirportId: '7092901520000000978', arrivalAirportId: '7092901520000001588' },
         scope: {
           rsx: 'REAL',
-          departurePermission: true,
-          arrivalPermission: true,
+          originPermission: true,
+          destinationPermission: true,
           blockTime: 445,
           times: [{ stdLowerBound: 875, stdUpperBound: 995 }],
           aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000292' }], forbiddenIdentities: [] },
@@ -2948,8 +2948,8 @@ function getDummyPreplan(): Preplan {
             freezed: false,
             scope: {
               rsx: 'REAL',
-              departurePermission: true,
-              arrivalPermission: true,
+              originPermission: true,
+              destinationPermission: true,
               blockTime: 445,
               times: [{ stdLowerBound: 875, stdUpperBound: 995 }],
               aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000292' }], forbiddenIdentities: [] },
@@ -2967,8 +2967,8 @@ function getDummyPreplan(): Preplan {
         definition: { category: '', label: 'DUS', stcId: '10', flightNumber: 'W5 0050', departureAirportId: '7092901520000000978', arrivalAirportId: '7092901520000001588' },
         scope: {
           rsx: 'REAL',
-          departurePermission: true,
-          arrivalPermission: true,
+          originPermission: true,
+          destinationPermission: true,
           blockTime: 445,
           times: [{ stdLowerBound: 875, stdUpperBound: 995 }],
           aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000282' }], forbiddenIdentities: [] },
@@ -2979,8 +2979,8 @@ function getDummyPreplan(): Preplan {
             freezed: false,
             scope: {
               rsx: 'REAL',
-              departurePermission: true,
-              arrivalPermission: true,
+              originPermission: true,
+              destinationPermission: true,
               blockTime: 445,
               times: [{ stdLowerBound: 875, stdUpperBound: 995 }],
               aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000282' }], forbiddenIdentities: [] },
@@ -2998,8 +2998,8 @@ function getDummyPreplan(): Preplan {
         definition: { category: '', label: 'DUS', stcId: '10', flightNumber: 'W5 0051', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000000978' },
         scope: {
           rsx: 'REAL',
-          departurePermission: true,
-          arrivalPermission: true,
+          originPermission: true,
+          destinationPermission: true,
           blockTime: 405,
           times: [{ stdLowerBound: 1000, stdUpperBound: 1120 }],
           aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000348' }], forbiddenIdentities: [] },
@@ -3010,8 +3010,8 @@ function getDummyPreplan(): Preplan {
             freezed: false,
             scope: {
               rsx: 'REAL',
-              departurePermission: true,
-              arrivalPermission: true,
+              originPermission: true,
+              destinationPermission: true,
               blockTime: 405,
               times: [{ stdLowerBound: 1000, stdUpperBound: 1120 }],
               aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000348' }], forbiddenIdentities: [] },

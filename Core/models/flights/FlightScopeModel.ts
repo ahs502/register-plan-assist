@@ -8,8 +8,8 @@ export interface FlightScopeModel {
   readonly blockTime: number;
   readonly times: readonly FlightTimeModel[];
   readonly aircraftSelection: AircraftSelectionModel;
-  readonly departurePermission: boolean;
-  readonly arrivalPermission: boolean;
+  readonly originPermission: boolean;
+  readonly destinationPermission: boolean;
   readonly rsx: Rsx;
   readonly required: boolean;
 }

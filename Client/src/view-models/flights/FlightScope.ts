@@ -8,8 +8,8 @@ export default class FlightScope {
   /** In minutes, greater than 0. */ readonly blockTime: number;
   readonly times: readonly FlightTime[];
   readonly aircraftSelection: PreplanAircraftSelection;
-  readonly departurePermission: boolean;
-  readonly arrivalPermission: boolean;
+  readonly originPermission: boolean;
+  readonly destinationPermission: boolean;
   readonly rsx: Rsx;
   readonly required: boolean;
 
@@ -17,8 +17,8 @@ export default class FlightScope {
     this.blockTime = raw.blockTime;
     this.times = raw.times.map(t => new FlightTime(t));
     this.aircraftSelection = new PreplanAircraftSelection(raw.aircraftSelection, aircraftRegisters);
-    this.departurePermission = raw.departurePermission;
-    this.arrivalPermission = raw.arrivalPermission;
+    this.originPermission = raw.originPermission;
+    this.destinationPermission = raw.destinationPermission;
     this.rsx = raw.rsx;
     this.required = raw.required;
   }

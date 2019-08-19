@@ -838,7 +838,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
         }}
       >
         <ExcelExportColumnGroup
-          title={'Propoal Schedule from ' + formatDateddMMMyy(filterModel.startDate) + ' till ' + formatDateddMMMyy(filterModel.endDate)}
+          title={'Propoal Schedule from ' + filterModel.startDate.format('d') + ' till ' + filterModel.endDate.format('d')}
           headerCellOptions={{ ...headerCellOptions, background: '#FFFFFF' }}
         >
           <ExcelExportColumnGroup title={'Base ' + filterModel.baseAirport.name} headerCellOptions={{ ...headerCellOptions, background: color.excelHeader.backgroundColor }}>
@@ -1974,29 +1974,6 @@ function halfPermission(flattenFlightRequirment: FlattenFlightRequirment, day: n
 
 function isRealFlight(flattenFlightRequirment: FlattenFlightRequirment, day: number) {
   return (flattenFlightRequirment as any)['rswWeekDay' + day.toString()] === 'REAL';
-}
-
-function formatDateddMMMyyyy(date: Date) {
-  let day = '' + date.getUTCDate(),
-    year = date.getUTCFullYear();
-  const month = date.toLocaleString('default', { month: 'short' }).toUpperCase();
-
-  day = day.padStart(2, '0');
-
-  return [day, month, year].join('/');
-}
-
-function formatDateddMMMyy(date: Date) {
-  let day = '' + date.getUTCDate(),
-    year = date
-      .getUTCFullYear()
-      .toString()
-      .substr(2, 2);
-  const month = date.toLocaleString('default', { month: 'short' }).toUpperCase();
-
-  day = day.padStart(2, '0');
-
-  return [day, month, year].join('');
 }
 
 function getPreplanFlightRequirments(preplanId: string) {

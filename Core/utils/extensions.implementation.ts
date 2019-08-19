@@ -82,6 +82,46 @@
   const monthNames = <const>['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   const shortMonthNames = <const>['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
+  Date.invalidDate = new Date(NaN);
+
+  Date.parseUtc = function Date_parseUtc(date?: string): Date | null {
+    if (!date) return null;
+    const parts = date.match(/^(\d\d)([a-zA-Z]{3})(\d\d)$/);
+    if (parts) {
+      const [date, days, month, years] = parts;
+      const daysNumber = Number(days);
+      if (daysNumber <= 0 || daysNumber > 31) return Date.invalidDate;
+      const monthIndex = shortMonthNames.indexOf((month[0].toUpperCase() + month.slice(1).toLowerCase()) as any);
+      if (monthIndex < 0) return Date.invalidDate;
+      let yearsNumber = Number(years);
+      yearsNumber = yearsNumber < 70 ? 2000 + yearsNumber : 1900 + yearsNumber; //TODO: Fix this before year 2070.
+      return new Date(Date.UTC(yearsNumber, monthIndex, daysNumber, 0, 0, 0, 0));
+    }
+    //TODO: Support more date string formats if needed here.
+    return Date.invalidDate;
+  };
+
+  Date.toJSON = function Date_toJSON(date: Date | string | number | null | undefined): string {
+    const invalidDateString = 'Invalid date.';
+    if (typeof date === 'number') {
+      if (isNaN(date)) return invalidDateString;
+      return new Date(date).toJSON();
+    }
+    if (typeof date === 'string') {
+      const dateObject = Date.parseUtc(date);
+      if (!dateObject) return '';
+      if (!dateObject.isValid()) return invalidDateString;
+      return dateObject.toJSON();
+    }
+    if (!date) return '';
+    if (date.constructor === Date) {
+      if (!date.isValid()) return invalidDateString;
+      return date.toJSON();
+    }
+
+    return '';
+  };
+
   Date.concatDateTime = function Date_concatDateTime(date: Date, time: Date): Date {
     if (!date.isValid()) return date;
     if (!time.isValid()) return time;

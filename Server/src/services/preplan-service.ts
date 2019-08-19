@@ -14,61 +14,37 @@ export default router;
 router.post(
   '/get-all-headers',
   requestMiddlewareWithDbAccess<{}, PreplanHeaderModel[]>(async (userId, {}, { runSp }) => {
-    const preplanHeaderEntities: readonly PreplanHeaderEntity[] = await runSp('[RPA].[SP_GetPreplanHeaders]', runSp.varCharParam('userId', userId));
-    const preplanHeaderModels = preplanHeaderEntities.map(convertPreplanHeaderEntityToModel);
-    return preplanHeaderModels;
+    return getHeaderHandler(userId, runSp);
   })
 );
 
 router.post(
   '/create-empty',
   requestMiddlewareWithDbAccess<NewPreplanModel, string>(async (userId, newPreplan, { runSp, runQuery }) => {
-    const userPreplanNames: readonly string[] = await runQuery(
-      `
-        select
-          p.[Name]              as [name]
-        from
-          [RPA].[Preplan]             as p
-        where 
-          p.[Id_User] = @userId
-      `,
-      runQuery.varCharParam('userId', userId)
-    );
+    const userPreplanNames: string[] = await runQuery(`select [Name] from [RPA].[Preplan] where [Id_User] = '${userId}'`);
     new NewPreplanModelValidation(newPreplan, userPreplanNames).throw('Invalid API input.');
 
-    const Preplan: readonly string[] = await runSp(
-      '[RPA].[SP_InsertPreplanHeader]',
+    const result: string[] = await runSp(
+      '[RPA].[SP_CreateEmptyPreplan]',
       runSp.varCharParam('userId', userId),
       runSp.nVarCharParam('name', newPreplan.name, 200),
       runSp.dateTimeParam('startDate', newPreplan.startDate),
       runSp.dateTimeParam('endDate', newPreplan.endDate)
     );
+    const newPreplanId = result[0];
 
-    return Preplan[0];
+    return newPreplanId;
   })
 );
 
 router.post(
   '/edit-header',
   requestMiddlewareWithDbAccess<EditPreplanModel, PreplanHeaderModel[]>(async (userId, editPreplan, { runSp, runQuery }) => {
-    const userPreplanNames: readonly string[] = await runQuery(
-      `
-        select
-          p.[Name]              as [name]
-        from
-          [RPA].[Preplan]             as p
-        where 
-          p.[Id_User] = @userId 
-          and 
-           p.[Id] <> @id
-      `,
-      runQuery.varCharParam('userId', userId),
-      runQuery.varCharParam('id', editPreplan.id)
-    );
+    const userPreplanNames: string[] = await runQuery(`select [Name] from [RPA].[Preplan] where [Id_User] = '${userId}' and [Id] <> '${editPreplan.id}'`);
     new NewPreplanModelValidation(editPreplan, userPreplanNames).throw('Invalid API input.');
 
-    const Preplan: PreplanHeaderEntity[] = await runSp(
-      '[RPA].[Sp_UpdatePreplanHeader]',
+    const preplanHeaderEntity: PreplanHeaderEntity[] = await runSp(
+      '[RPA].[Sp_EditPreplanHeader]',
       runSp.varCharParam('userId', userId),
       runSp.varCharParam('id', editPreplan.id),
       runSp.nVarCharParam('name', editPreplan.name, 200),
@@ -76,7 +52,23 @@ router.post(
       runSp.dateTimeParam('endDate', editPreplan.endDate)
     );
 
-    return Preplan;
+    return getHeaderHandler(userId, runSp);
+  })
+);
+
+router.post(
+  '/set-published',
+  requestMiddlewareWithDbAccess<{ id: string; published: boolean }, PreplanHeaderModel[]>(async (userId, { id, published }, { runSp }) => {
+    await runSp('[RPA].[Sp_SetPublished]', runSp.varCharParam('userId', userId), runSp.varCharParam('id', id), runSp.bitParam('published', published));
+    return getHeaderHandler(userId, runSp);
+  })
+);
+
+router.post(
+  '/remove',
+  requestMiddlewareWithDbAccess<{ id: string }, PreplanHeaderModel[]>(async (userId, { id }, { runSp }) => {
+    await runSp('[RPA].[Sp_RemovePrePlan]', runSp.varCharParam('userId', userId), runSp.varCharParam('id', id));
+    return getHeaderHandler(userId, runSp);
   })
 );
 
@@ -90,6 +82,12 @@ router.post(
   })
 );
 
+async function getHeaderHandler(runSp, userId): Promise<PreplanHeaderModel[]> {
+  const preplanHeaderEntities: readonly PreplanHeaderEntity[] = await runSp('[RPA].[SP_GetPreplanHeaders]', runSp.varCharParam('userId', userId));
+  const preplanHeaderModels = preplanHeaderEntities.map(convertPreplanHeaderEntityToModel);
+  return preplanHeaderModels;
+}
+
 // router.post('/clone', asyncMiddlewareWithTransactionalDbAccess(clonedPreplan));
 // router.post('/get', asyncMiddlewareWithDbAccess(getHandler));
 // router.post('/edit-header', asyncMiddlewareWithDbAccess(editHeaderHandler));
@@ -102,20 +100,6 @@ router.post(
 // // router.post('/update-aircraft-register-options-dictionary', asyncMiddlewareWithDatabase(updateAircraftRegisterOptionsdictionaryHandler));
 // router.post('/add-or-edit-flight-requirement', asyncMiddlewareWithDatabase(addOrEditFlightRequirementHandler));
 // router.post('/remove-flight-requirement', asyncMiddlewareWithDatabase(removeFlightRequirementHandler));
-
-async function createEmptyHandler(userId, body, { runSp }: DbAccess) {
-  // PreplanValidator.createEmptyValidate(req.body.name,req.body.startDate, req.body.endDate).throwIfErrorsExsit();
-  // change all InsertPreplan ....
-  const result: readonly PreplanHeaderEntity[] = await runSp(
-    '[RPA].[SP_InsertPreplanHeader]',
-    runSp.varCharParam('userId', userId),
-    runSp.nVarCharParam('name', body.name, 200),
-    runSp.intParam('parentPreplanId', body.parentPreplanId),
-    runSp.dateTimeParam('startDate', body.startDate),
-    runSp.dateTimeParam('endDate', body.endDate)
-  );
-  return result;
-}
 
 async function clonedPreplan(userId, body, { runSp }: DbAccess) {
   // PreplanValidator.createEmptyValidate(req.body.name,req.body.startDate, req.body.endDate).throwIfErrorsExsit();

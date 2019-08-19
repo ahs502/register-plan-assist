@@ -140,7 +140,7 @@ interface DbAccessQueryParams {
   varCharParam(name: string, value: string | null, length?: number, options?: ParameterOptions): SqlParameter;
   nVarCharParam(name: string, value: string | null, length: number, options?: ParameterOptions): SqlParameter;
   dateTimeParam(name: string, value: string | null, options?: ParameterOptions): SqlParameter;
-  bitParam(name: string, value: string | null, options?: ParameterOptions): SqlParameter;
+  bitParam(name: string, value: boolean | null, options?: ParameterOptions): SqlParameter;
   tableparam(name: string, columns: readonly TableColumn[], rows: readonly any[][], options?: ParameterOptions): SqlParameter;
 }
 export interface DbAccess {

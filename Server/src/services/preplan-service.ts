@@ -14,7 +14,9 @@ export default router;
 router.post(
   '/get-all-headers',
   requestMiddlewareWithDbAccess<{}, PreplanHeaderModel[]>(async (userId, {}, { runSp }) => {
-    return getHeaderHandler(userId, runSp);
+    const preplanHeaderEntities: readonly PreplanHeaderEntity[] = await runSp('[RPA].[SP_GetPreplanHeaders]', runSp.varCharParam('userId', userId));
+    const preplanHeaderModels = preplanHeaderEntities.map(convertPreplanHeaderEntityToModel);
+    return preplanHeaderModels;
   })
 );
 
@@ -52,7 +54,9 @@ router.post(
       runSp.dateTimeParam('endDate', editPreplan.endDate)
     );
 
-    return getHeaderHandler(userId, runSp);
+    const preplanHeaderEntities: readonly PreplanHeaderEntity[] = await runSp('[RPA].[SP_GetPreplanHeaders]', runSp.varCharParam('userId', userId));
+    const preplanHeaderModels = preplanHeaderEntities.map(convertPreplanHeaderEntityToModel);
+    return preplanHeaderModels;
   })
 );
 
@@ -60,7 +64,9 @@ router.post(
   '/set-published',
   requestMiddlewareWithDbAccess<{ id: string; published: boolean }, PreplanHeaderModel[]>(async (userId, { id, published }, { runSp }) => {
     await runSp('[RPA].[Sp_SetPublished]', runSp.varCharParam('userId', userId), runSp.varCharParam('id', id), runSp.bitParam('published', published));
-    return getHeaderHandler(userId, runSp);
+    const preplanHeaderEntities: readonly PreplanHeaderEntity[] = await runSp('[RPA].[SP_GetPreplanHeaders]', runSp.varCharParam('userId', userId));
+    const preplanHeaderModels = preplanHeaderEntities.map(convertPreplanHeaderEntityToModel);
+    return preplanHeaderModels;
   })
 );
 
@@ -68,7 +74,9 @@ router.post(
   '/remove',
   requestMiddlewareWithDbAccess<{ id: string }, PreplanHeaderModel[]>(async (userId, { id }, { runSp }) => {
     await runSp('[RPA].[Sp_RemovePrePlan]', runSp.varCharParam('userId', userId), runSp.varCharParam('id', id));
-    return getHeaderHandler(userId, runSp);
+    const preplanHeaderEntities: readonly PreplanHeaderEntity[] = await runSp('[RPA].[SP_GetPreplanHeaders]', runSp.varCharParam('userId', userId));
+    const preplanHeaderModels = preplanHeaderEntities.map(convertPreplanHeaderEntityToModel);
+    return preplanHeaderModels;
   })
 );
 
@@ -81,12 +89,6 @@ router.post(
     return '382748923789237';
   })
 );
-
-async function getHeaderHandler(runSp, userId): Promise<PreplanHeaderModel[]> {
-  const preplanHeaderEntities: readonly PreplanHeaderEntity[] = await runSp('[RPA].[SP_GetPreplanHeaders]', runSp.varCharParam('userId', userId));
-  const preplanHeaderModels = preplanHeaderEntities.map(convertPreplanHeaderEntityToModel);
-  return preplanHeaderModels;
-}
 
 // router.post('/clone', asyncMiddlewareWithTransactionalDbAccess(clonedPreplan));
 // router.post('/get', asyncMiddlewareWithDbAccess(getHandler));

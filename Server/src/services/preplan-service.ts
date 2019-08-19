@@ -54,7 +54,9 @@ router.post(
       runSp.dateTimeParam('endDate', editPreplan.endDate)
     );
 
-    return getHeaderHandler(userId, runSp);
+    const preplanHeaderEntities: readonly PreplanHeaderEntity[] = await runSp('[RPA].[SP_GetPreplanHeaders]', runSp.varCharParam('userId', userId));
+    const preplanHeaderModels = preplanHeaderEntities.map(convertPreplanHeaderEntityToModel);
+    return preplanHeaderModels;
   })
 );
 

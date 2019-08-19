@@ -24,6 +24,8 @@ import classNames from 'classnames';
 import Weekday from '@core/types/Weekday';
 import MasterData from '@core/master-data';
 import FlightTime from 'src/view-models/flights/FlightTime';
+import Rsx, { Rsxes } from '@core/types/flight-requirement/Rsx';
+import AutoComplete from 'src/components/AutoComplete';
 
 const useStyles = makeStyles((theme: Theme) => ({
   allowTimeStyle: {
@@ -92,23 +94,8 @@ const FlightRequirementEditor: FC<FlightRequirementEditorProps> = ({ model, mode
                 <TextField fullWidth label="Label" />
               </Grid>
               <Grid item xs={4}>
-                <FormControl>
-                  <InputLabel htmlFor="age-native-simple">RSX</InputLabel>
-                  {/* <Select
-                    native
-                    value={state.age}
-                    onChange={handleChange('age')}
-                    inputProps={{
-                      name: 'age',
-                      id: 'age-native-simple'
-                    }}
-                  >
-                    <option value="" />
-                    <option value={10}>Ten</option>
-                    <option value={20}>Twenty</option>
-                    <option value={30}>Thirty</option>
-                  </Select> */}
-                </FormControl>
+                <InputLabel htmlFor="rsx">RSX</InputLabel>
+                <AutoComplete id="rsx" options={Rsxes} getOptionLabel={l => l} getOptionValue={l => l} />
               </Grid>
               <Grid item xs={4}>
                 <TextField fullWidth label="Category" />

@@ -165,7 +165,9 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = ({
                     <Typography variant="h6">{d.definition.flightNumber}</Typography>
                   </Grid>
                   <Grid item>
-                    <Typography variant="h6">IKA-DXB</Typography>
+                    <Typography variant="h6">
+                      {d.definition.departureAirport.name}-{d.definition.arrivalAirport.name}
+                    </Typography>
                   </Grid>
                 </Grid>
               </Grid>
@@ -220,8 +222,10 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = ({
                       <TableRow key={item.derivedId} hover={true}>
                         <TableCell>{Weekday[item.day]}</TableCell>
                         <TableCell>{item.scope.blockTime}</TableCell>
-                        <TableCell>{item.scope.aircraftSelection.allowedIdentities.map(a => a.entity.name).join(', ')}</TableCell>
-                        <TableCell>{item.scope.aircraftSelection.forbiddenIdentities.map(a => a.entity.name).join(', ')}</TableCell>
+                        {/* <TableCell>{item.scope.aircraftSelection.allowedIdentities.map(a => a.entity.name).join(', ')}</TableCell>
+                        <TableCell>{item.scope.aircraftSelection.forbiddenIdentities.map(a => a.entity.name).join(', ')}</TableCell> */}
+                        <TableCell />
+                        <TableCell />
                         <TableCell align="center" className={classes.STDpadding}>
                           {item.scope.times.map(t => {
                             return (

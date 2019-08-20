@@ -10,10 +10,10 @@ import { PreplanHeader } from 'src/view-models/Preplan';
 import SimpleModal from 'src/components/SimpleModal';
 import persistant from 'src/utils/persistant';
 import PreplanService from 'src/services/PreplanService';
-import delay from 'src/utils/delay';
 import NewPreplanModel, { NewPreplanModelValidation } from '@core/models/NewPreplanModel';
 import EditPreplanModel, { EditPreplanModelValidation } from '@core/models/EditPreplanModel';
 import useRouter from 'src/utils/useRouter';
+import { VariantType, useSnackbar } from 'notistack';
 
 const useStyles = makeStyles((theme: Theme) => ({
   root: {
@@ -54,7 +54,10 @@ const useStyles = makeStyles((theme: Theme) => ({
   messagePosition: {
     paddingTop: 40
   },
-  error: {}
+  error: {},
+  switchProgressBar: {
+    position: 'relative'
+  }
 }));
 
 type Tab = 'USER' | 'PUBLIC';
@@ -79,19 +82,27 @@ const PreplanListPage: FC = () => {
   const [deletePreplanModalModel, setDeletePreplanModalModel] = useState<PreplanModalModel>({ open: false });
   const [loading, setLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState();
+  const [query, setQuery] = useState();
+
+  const { enqueueSnackbar } = useSnackbar();
+
   useEffect(() => {
-    setLoading(true);
-    PreplanService.getAllHeaders().then(result => {
-      setLoading(false);
-      if (result.message) {
-        setLoadingMessage(result.message);
-        return;
-      }
-      const preplanHeader = result.value!.map(p => new PreplanHeader(p));
-      setPreplanHeaders(preplanHeader);
-      setFilterPreplanHeaders(preplanHeader);
-    });
-  }, []);
+    if (preplanHeaders.length === 0) {
+      setLoading(true);
+      PreplanService.getAllHeaders().then(result => {
+        setLoading(false);
+        if (result.message) {
+          setLoadingMessage(result.message);
+          return;
+        }
+
+        setPreplanHeaders(result.value!.map(p => new PreplanHeader(p)));
+        setFilterPreplanHeaders(result.value!.map(p => new PreplanHeader(p)));
+      });
+    } else {
+      setFilterPreplanHeaders(filterPreplan(preplanHeaders, query));
+    }
+  }, [preplanHeaders, query]);
 
   function filterPreplan(preplanHeaders: PreplanHeader[], query: readonly string[]) {
     if (!query.length) return preplanHeaders;
@@ -102,6 +113,11 @@ const PreplanListPage: FC = () => {
       }
       return false;
     });
+  }
+
+  function snakbar(message: string, variant: VariantType) {
+    // variant could be success, error, warning, info, or default
+    enqueueSnackbar(message, { variant });
   }
 
   const { history } = useRouter();
@@ -122,7 +138,7 @@ const PreplanListPage: FC = () => {
         <Tabs value={tab} indicatorColor="primary" textColor="primary" onChange={(event, tab) => setTab(tab)}>
           <Tab value="USER" label="Current User" />
           <Tab value="PUBLIC" label="Public" />
-          <Search onQueryChange={query => setFilterPreplanHeaders(filterPreplan(preplanHeaders, query))} outlined />
+          <Search onQueryChange={query => setQuery(query)} outlined />
           <IconButton color="primary" title="Add Preplan" onClick={() => setNewPreplanModalModel({ ...newPreplanModalModel, open: true })}>
             <AddIcon fontSize="large" />
           </IconButton>
@@ -175,7 +191,11 @@ const PreplanListPage: FC = () => {
                             checked={preplanHeader.published}
                             onChange={async (event, checked) => {
                               const result = await PreplanService.setPublished(preplanHeader.id, event.target.checked);
-                              setPreplanHeaders(result.value!.map(p => new PreplanHeader(p)));
+                              if (result.message) {
+                                snakbar(result.message, 'warning');
+                              } else {
+                                setPreplanHeaders(result.value!.map(p => new PreplanHeader(p)));
+                              }
                             }}
                           />
                         )}
@@ -277,13 +297,11 @@ const PreplanListPage: FC = () => {
         open={newPreplanModalModel.open}
         title="What is your pre plan's specifications?"
         errorMessage={newPreplanModalModel.errorMessage}
+        loading={newPreplanModalModel.loading}
         cancelable={true}
         actions={[
           {
-            title: 'cancle',
-            action: () => {
-              setNewPreplanModalModel({ ...newPreplanModalModel, open: false });
-            }
+            title: 'cancle'
           },
           {
             title: 'create',
@@ -307,7 +325,6 @@ const PreplanListPage: FC = () => {
                 setNewPreplanModalModel({ ...newPreplanModalModel, loading: false, errorMessage: result.message });
               } else {
                 setNewPreplanModalModel({ ...newPreplanModalModel, loading: false, open: false });
-
                 history.push(`/preplan/${result.value}`);
               }
             }
@@ -349,14 +366,12 @@ const PreplanListPage: FC = () => {
         key="edit-preplan"
         open={editPreplanModalModel.open}
         loading={editPreplanModalModel.loading}
+        errorMessage={editPreplanModalModel.errorMessage}
         title="What is this pre-plan's new specifications?"
         cancelable={true}
         actions={[
           {
-            title: 'cancle',
-            action: () => {
-              setEditPreplanModalModel({ ...editPreplanModalModel, open: false });
-            }
+            title: 'cancle'
           },
           {
             title: 'apply',
@@ -383,7 +398,7 @@ const PreplanListPage: FC = () => {
 
               const result = await PreplanService.editHeader(model);
               if (result.message) {
-                setEditPreplanModalModel({ ...editPreplanModalModel, loading: false, open: true, errorMessage: result.message });
+                setEditPreplanModalModel({ ...editPreplanModalModel, loading: false, errorMessage: result.message });
               } else {
                 setEditPreplanModalModel({ ...editPreplanModalModel, loading: false, open: false });
                 setPreplanHeaders(result.value!.map(p => new PreplanHeader(p)));
@@ -430,18 +445,39 @@ const PreplanListPage: FC = () => {
         key="copy-preplan"
         open={copyPreplanModalModel.open}
         title="What is the new Pre Plan's name?"
+        errorMessage={copyPreplanModalModel.errorMessage}
+        loading={copyPreplanModalModel.loading}
         cancelable={true}
         actions={[
           {
-            title: 'cancle',
-            action: () => {
-              setCopyPreplanModalModel({ ...copyPreplanModalModel, open: false });
-            }
+            title: 'cancle'
           },
           {
             title: 'copy',
-            action: () => {
-              setCopyPreplanModalModel({ ...copyPreplanModalModel, open: false });
+            action: async () => {
+              setCopyPreplanModalModel({ ...copyPreplanModalModel, loading: true, errorMessage: undefined });
+
+              const model: NewPreplanModel = {
+                name: copyPreplanModalModel.name!,
+                startDate: Date.toJSON(copyPreplanModalModel.startDate),
+                endDate: Date.toJSON(copyPreplanModalModel.endDate)
+              };
+
+              const validation = new NewPreplanModelValidation(model, filterPreplanHeaders.filter(s => s.userId === persistant.authentication!.user.id).map(p => p.name));
+
+              if (!validation.ok) {
+                //TODO: Show error messages of form fields.
+                setCopyPreplanModalModel({ ...copyPreplanModalModel, loading: false });
+                return;
+              }
+
+              const result = await PreplanService.clone(copyPreplanModalModel.id!, model);
+              if (result.message) {
+                setCopyPreplanModalModel({ ...copyPreplanModalModel, loading: false, open: true, errorMessage: result.message });
+              } else {
+                setCopyPreplanModalModel({ ...copyPreplanModalModel, loading: false, open: false });
+                history.push(`/preplan/${result.value}`);
+              }
             }
           }
         ]}

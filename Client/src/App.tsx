@@ -10,6 +10,7 @@ import AppBar from './components/AppBar';
 import RequestManager from './utils/RequestManager';
 import MasterDataService from './services/MasterDataService';
 import MasterData from '@core/master-data';
+import { SnackbarProvider } from 'notistack';
 
 const App: FC = () => {
   const [initializing, setInitializing] = useState(true);
@@ -28,18 +29,20 @@ const App: FC = () => {
 
   return (
     <ThemeProvider theme={theme}>
-      {initializing && <div>Loading, please wait...</div>}
-      {!initializing && (
-        <Router>
-          <AppBar loading={loading} fullScreen={fullScreen} />
-          <Switch>
-            <Redirect exact from="/" to="/preplan-list" />
-            <Route exact path="/preplan-list" component={PreplanListPage} />
-            <Route path="/preplan/:id" component={PreplanPage} />
-            <Redirect to="/" />
-          </Switch>
-        </Router>
-      )}
+      <SnackbarProvider maxSnack={5}>
+        {initializing && <div>Loading, please wait...</div>}
+        {!initializing && (
+          <Router>
+            <AppBar loading={loading} fullScreen={fullScreen} />
+            <Switch>
+              <Redirect exact from="/" to="/preplan-list" />
+              <Route exact path="/preplan-list" component={PreplanListPage} />
+              <Route path="/preplan/:id" component={PreplanPage} />
+              <Redirect to="/" />
+            </Switch>
+          </Router>
+        )}
+      </SnackbarProvider>
     </ThemeProvider>
   );
 };

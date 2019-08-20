@@ -33,9 +33,9 @@ router.post(
       runSp.dateTimeParam('startDate', newPreplan.startDate),
       runSp.dateTimeParam('endDate', newPreplan.endDate)
     );
-    const newPreplanId = result[0];
+    const newPreplanId = result[0] as any;
 
-    return newPreplanId;
+    return newPreplanId.id;
   })
 );
 
@@ -97,7 +97,7 @@ router.post(
       runSp.dateTimeParam('endDate', newPreplan.endDate)
     );
     const newPreplanId = result[0] as any;
-    console.log(newPreplanId);
+
     return newPreplanId.id;
   })
 );

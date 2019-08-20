@@ -89,7 +89,7 @@ router.post(
     new NewPreplanModelValidation(newPreplan, userPreplanNames).throw('Invalid API input.');
 
     const result: string[] = await runSp(
-      '[RPA].[SP_ClonnePrepla]',
+      '[RPA].[SP_ClonePreplan]',
       runSp.varCharParam('userId', userId),
       runSp.varCharParam('id', id),
       runSp.nVarCharParam('name', newPreplan.name, 200),

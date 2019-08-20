@@ -14,6 +14,7 @@ import NewPreplanModel, { NewPreplanModelValidation } from '@core/models/NewPrep
 import EditPreplanModel, { EditPreplanModelValidation } from '@core/models/EditPreplanModel';
 import useRouter from 'src/utils/useRouter';
 import { VariantType, useSnackbar } from 'notistack';
+import ProgressSwitch from 'src/components/ProgressSwitch';
 
 const useStyles = makeStyles((theme: Theme) => ({
   root: {
@@ -72,6 +73,11 @@ interface PreplanModalModel {
   endDate?: string;
 }
 
+interface PublishLoadingStatus {
+  [id: string]: boolean;
+  value: boolean;
+}
+
 const PreplanListPage: FC = () => {
   const [preplanHeaders, setPreplanHeaders] = useState<PreplanHeader[]>([]);
   const [filterPreplanHeaders, setFilterPreplanHeaders] = useState<PreplanHeader[]>([]);
@@ -80,7 +86,9 @@ const PreplanListPage: FC = () => {
   const [editPreplanModalModel, setEditPreplanModalModel] = useState<PreplanModalModel>({ open: false });
   const [copyPreplanModalModel, setCopyPreplanModalModel] = useState<PreplanModalModel>({ open: false });
   const [deletePreplanModalModel, setDeletePreplanModalModel] = useState<PreplanModalModel>({ open: false });
-  const [loading, setLoading] = useState(false);
+  const [preplanLoading, setPrePlanLoading] = useState(false);
+  const [publishLoadingStatus, setPublishLoadingStatus] = useState<PublishLoadingStatus>({} as PublishLoadingStatus);
+  const [publish, setPublish] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState();
   const [query, setQuery] = useState();
 
@@ -88,9 +96,9 @@ const PreplanListPage: FC = () => {
 
   useEffect(() => {
     if (preplanHeaders.length === 0) {
-      setLoading(true);
+      setPrePlanLoading(true);
       PreplanService.getAllHeaders().then(result => {
-        setLoading(false);
+        setPrePlanLoading(false);
         if (result.message) {
           setLoadingMessage(result.message);
           return;
@@ -186,16 +194,22 @@ const PreplanListPage: FC = () => {
                       <TableCell className={classes.preplanTableCell}>{preplanHeader.simulationName}</TableCell>
                       <TableCell className={classes.preplanTableCell} align="center">
                         {tab === 'USER' && (
-                          <Switch
-                            color="primary"
+                          <ProgressSwitch
                             checked={preplanHeader.published}
+                            loading={publishLoadingStatus[preplanHeader.id]}
                             onChange={async (event, checked) => {
+                              if (publishLoadingStatus[preplanHeader.id]) return;
+                              publishLoadingStatus[preplanHeader.id] = true;
+                              setPublishLoadingStatus({ ...publishLoadingStatus });
+                              setPublish(true);
                               const result = await PreplanService.setPublished(preplanHeader.id, event.target.checked);
                               if (result.message) {
                                 snakbar(result.message, 'warning');
                               } else {
                                 setPreplanHeaders(result.value!.map(p => new PreplanHeader(p)));
                               }
+                              publishLoadingStatus[preplanHeader.id] = false;
+                              setPublishLoadingStatus({ ...publishLoadingStatus });
                             }}
                           />
                         )}
@@ -248,7 +262,7 @@ const PreplanListPage: FC = () => {
             </Table>
           ) : (
             <Paper className={classes.waitingPaper}>
-              {loading ? (
+              {preplanLoading ? (
                 <CircularProgress size={24} className={classes.progress} />
               ) : (
                 <Typography align="center" className={classes.messagePosition}>

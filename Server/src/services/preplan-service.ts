@@ -84,17 +84,17 @@ router.post(
 
 router.post(
   '/clone',
-  requestMiddlewareWithDbAccess<EditPreplanModel, string>(async (userId, newPreplan, { runSp, runQuery }) => {
+  requestMiddlewareWithDbAccess<{ id: string; newPreplanModel: NewPreplanModel }, string>(async (userId, { id, newPreplanModel }, { runSp, runQuery }) => {
     const userPreplanNames: string[] = await runQuery(`select [Name] from [RPA].[Preplan] where [Id_User] = '${userId}'`);
-    new NewPreplanModelValidation(newPreplan, userPreplanNames).throw('Invalid API input.');
+    new NewPreplanModelValidation(newPreplanModel, userPreplanNames).throw('Invalid API input.');
 
     const result: string[] = await runSp(
       '[RPA].[SP_ClonePreplan]',
       runSp.varCharParam('userId', userId),
-      runSp.varCharParam('id', newPreplan.id),
-      runSp.nVarCharParam('name', newPreplan.name, 200),
-      runSp.dateTimeParam('startDate', newPreplan.startDate),
-      runSp.dateTimeParam('endDate', newPreplan.endDate)
+      runSp.varCharParam('id', id),
+      runSp.nVarCharParam('name', newPreplanModel.name, 200),
+      runSp.dateTimeParam('startDate', newPreplanModel.startDate),
+      runSp.dateTimeParam('endDate', newPreplanModel.endDate)
     );
     const newPreplanId = result[0];
 

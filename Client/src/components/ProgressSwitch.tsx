@@ -6,12 +6,14 @@ import classNames from 'classnames';
 
 const useStyles = makeStyles((theme: Theme) => ({
   root: {
-    position: 'relative'
+    position: 'relative',
+    width: 58,
+    height: 38
   },
   trueProgress: {
     position: 'absolute',
     top: 12,
-    right: 15.5,
+    right: 12,
     pointerEvents: 'none',
     color: theme.palette.common.black
   },
@@ -19,7 +21,7 @@ const useStyles = makeStyles((theme: Theme) => ({
     position: 'absolute',
     zIndex: 1000,
     top: 12,
-    left: 15.5,
+    left: 12,
     pointerEvents: 'none',
     color: theme.palette.common.black
   },
@@ -27,13 +29,13 @@ const useStyles = makeStyles((theme: Theme) => ({
     color: theme.palette.primary.main
   },
   falseProgressPrimary: {
-    color: theme.palette.text.primary
+    color: theme.palette.getContrastText(theme.palette.primary.main)
   },
   trueProgressSecondary: {
     color: theme.palette.secondary.main
   },
   falseProgressSecondary: {
-    color: theme.palette.text.secondary
+    color: theme.palette.getContrastText(theme.palette.secondary.main)
   },
   progressDefault: {
     color: theme.palette.common.black
@@ -60,12 +62,13 @@ const useStyles = makeStyles((theme: Theme) => ({
 
 export interface ProgressSwitchProps extends SwitchProps {
   loading?: boolean;
+  checked: boolean;
 }
 
 const ProgressSwitch: FC<ProgressSwitchProps> = ({ loading, checked, disabled, color, classes: propsClasses, ...other }) => {
   const classes = useStyles();
 
-  const actuallyLoading = loading && !disabled;
+  const actuallyLoading = loading && !disabled && checked !== undefined;
   const actuallyChecked = actuallyLoading ? !checked : checked;
 
   return (

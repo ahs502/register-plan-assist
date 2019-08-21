@@ -69,13 +69,14 @@ export default Search;
 export function filterOnProperties<K extends string, T extends { [key in K]?: string | undefined | null }>(
   items: readonly T[],
   query: readonly string[],
-  properties: readonly K[]
+  properties: readonly (K | ((item: T) => string | null | undefined))[]
 ): readonly T[] {
   if (query.length === 0) return items;
   return items.filter(item => {
     for (let i = 0; i < properties.length; ++i) {
       for (let j = 0; j < query.length; ++j) {
-        if (((item[properties[i]] || '') as string).toLowerCase().includes(query[j])) return true;
+        const property = properties[i];
+        if ((((typeof property === 'function' ? property(item) : item[property]) || '') as string).toLowerCase().includes(query[j])) return true;
       }
     }
     return false;

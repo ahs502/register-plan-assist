@@ -47,6 +47,28 @@ const DaysPicker: FC<DaysPickerProps> = ({ selectedDays, onItemClick, disabled }
           </Typography>
         </Button>
       ))}
+      <Button
+        disabled={disabled}
+        size="small"
+        key="AllDay"
+        variant="outlined"
+        color="secondary"
+        className={classes.button}
+        onClick={() => {
+          const weekday = [...buttonsState];
+          const numberOfSelected = buttonsState.filter(d => d).length;
+          for (let index = 0; index < buttonsState.length; index++) {
+            weekday[index] = (numberOfSelected > 3 && numberOfSelected !== 7) || numberOfSelected === 0;
+          }
+
+          setButtonsState(weekday);
+          onItemClick && onItemClick(weekday);
+        }}
+      >
+        <Typography className={classes.typographyLineHight} variant="overline">
+          All
+        </Typography>
+      </Button>
     </Fragment>
   );
 };

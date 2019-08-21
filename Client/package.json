@@ -10,12 +10,13 @@
     "ncu": "ncu"
   },
   "dependencies": {
-    "@progress/kendo-react-excel-export": "^3.2.2",
     "@ahs502/validation": "^2.3.0",
     "@material-ui/core": "^4.2.0",
     "@material-ui/icons": "^4.2.1",
     "@material-ui/styles": "^4.2.0",
+    "@progress/kendo-react-excel-export": "^3.2.2",
     "classnames": "^2.2.6",
+    "notistack": "^0.8.9",
     "react": "^16.8.6",
     "react-dom": "^16.8.6",
     "react-draggable": "^3.3.0",

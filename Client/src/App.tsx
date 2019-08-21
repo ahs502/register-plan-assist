@@ -13,6 +13,8 @@ import PreplanListPage from './pages/preplan-list';
 import PreplanPage from './pages/preplan';
 import AppBar from './components/AppBar';
 
+import { SnackbarProvider } from 'notistack';
+
 const useStyles = makeStyles((theme: Theme) => ({
   progress: {
     position: 'absolute',
@@ -41,18 +43,20 @@ const App: FC = () => {
 
   return (
     <ThemeProvider theme={theme}>
-      {initializing && <CircularProgress size={48} className={classes.progress} />}
-      {!initializing && (
-        <Router>
-          <AppBar loading={loading} />
-          <Switch>
-            <Redirect exact from="/" to="/preplan-list" />
-            <Route exact path="/preplan-list" component={PreplanListPage} />
-            <Route path="/preplan/:id" component={PreplanPage} />
-            <Redirect to="/" />
-          </Switch>
-        </Router>
-      )}
+      <SnackbarProvider maxSnack={5}>
+        {initializing && <CircularProgress size={48} className={classes.progress} />}
+        {!initializing && (
+          <Router>
+            <AppBar loading={loading} />
+            <Switch>
+              <Redirect exact from="/" to="/preplan-list" />
+              <Route exact path="/preplan-list" component={PreplanListPage} />
+              <Route path="/preplan/:id" component={PreplanPage} />
+              <Redirect to="/" />
+            </Switch>
+          </Router>
+        )}
+      </SnackbarProvider>
     </ThemeProvider>
   );
 };

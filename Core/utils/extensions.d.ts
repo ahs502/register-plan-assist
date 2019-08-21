@@ -77,6 +77,26 @@ declare type DateFormat = 'D' | 'D#' | 'd' | 'd#' | 'D$' | '~D$' | 'T' | 'T0' | 
 
 declare interface DateConstructor {
   /**
+   * An ivalid date instance.
+   */
+  invalidDate: Date;
+
+  /**
+   * Returns the parsed date object from the given date string as an UTC date.
+   * Returns `null` for empty input.
+   * @param date The string formatted date.
+   */
+  parseUtc(date?: string): Date | null;
+
+  /**
+   * Returns the JSON formatted date string or
+   * empty string for empty inputs or
+   * `'Invalid date'` for invalid inputs.
+   * @param date The date by any supported format.
+   */
+  toJSON(date: Date | string | number | null | undefined): string;
+
+  /**
    * Returns a Date object which inherits its date part
    * and its time part from two different arguments.
    * @param date The date part of the concatenation.

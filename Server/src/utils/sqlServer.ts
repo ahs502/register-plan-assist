@@ -39,7 +39,7 @@ function getJsonResult(rows: { value: any; metadata: { colName: string } }[][]):
   });
 }
 
-function runQuery<T extends any = any>(connection: Connection, query: string, ...parameters: SqlParameter[]): Promise<readonly T[]> {
+function runQuery<T extends any = any>(connection: Connection, query: string, ...parameters: SqlParameter[]): Promise<T[]> {
   return new Promise((resolve, reject) => {
     const request = new TediousRequest(query, (error, rowCount, rows) => {
       if (error) return reject(error);
@@ -49,7 +49,7 @@ function runQuery<T extends any = any>(connection: Connection, query: string, ..
     connection.execSql(request);
   });
 }
-function runSp<T extends any = any>(connection: Connection, sp: string, ...parameters: SqlParameter[]): Promise<readonly T[]> {
+function runSp<T extends any = any>(connection: Connection, sp: string, ...parameters: SqlParameter[]): Promise<T[]> {
   return new Promise((resolve, reject) => {
     const request = new TediousRequest(sp, (error, rowCount, rows) => {
       if (error) return reject(error);
@@ -140,16 +140,16 @@ interface DbAccessQueryParams {
   varCharParam(name: string, value: string | null, length?: number, options?: ParameterOptions): SqlParameter;
   nVarCharParam(name: string, value: string | null, length: number, options?: ParameterOptions): SqlParameter;
   dateTimeParam(name: string, value: string | null, options?: ParameterOptions): SqlParameter;
-  bitParam(name: string, value: string | null, options?: ParameterOptions): SqlParameter;
+  bitParam(name: string, value: boolean | null, options?: ParameterOptions): SqlParameter;
   tableparam(name: string, columns: readonly TableColumn[], rows: readonly any[][], options?: ParameterOptions): SqlParameter;
 }
 export interface DbAccess {
   types: TediousTypes;
   runQuery: {
-    (query: string, ...parameters: SqlParameter[]): Promise<readonly any[]>;
+    (query: string, ...parameters: SqlParameter[]): Promise<any[]>;
   } & DbAccessQueryParams;
   runSp: {
-    (sp: string, ...parameters: SqlParameter[]): Promise<readonly any[]>;
+    (sp: string, ...parameters: SqlParameter[]): Promise<any[]>;
   } & DbAccessQueryParams;
 }
 

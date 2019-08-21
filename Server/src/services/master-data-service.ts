@@ -183,9 +183,9 @@ router.post(
           select
             u.[Id]                        as [id],
             u.[SeasonName]                as [name],
-			u.[FromDateUtc]               as [startDate],
-			u.[ToDateUtc]                 as [endDate],
-			u.[Id_SeasonType]             as [seasonTypeId] 
+			      u.[FromDateUtc]               as [startDate],
+			      u.[ToDateUtc]                 as [endDate],
+			      u.[Id_SeasonType]             as [seasonTypeId] 
           from
             [MasterData].[Season]            as u
         `
@@ -205,7 +205,7 @@ router.post(
           select
             u.[Id]                        as [id],
             u.[Code]                      as [name],
-			u.[description]               as [description] 
+			      u.[description]               as [description] 
           from
             [MasterData].[Stc]                 as u
         `

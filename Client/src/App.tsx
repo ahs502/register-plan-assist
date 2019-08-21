@@ -14,7 +14,6 @@ import MasterData from '@core/master-data';
 const App: FC = () => {
   const [initializing, setInitializing] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [fullScreen, setFullScreen] = useState(false); //TODO: Initialize from browser status.
 
   useEffect(() => {
     MasterDataService.get('aircraftTypes', 'aircraftRegisters', 'airports', 'seasonTypes', 'seasons', 'stcs', 'aircraftGroups', 'constraints').then(result => {
@@ -31,7 +30,7 @@ const App: FC = () => {
       {initializing && <div>Loading, please wait...</div>}
       {!initializing && (
         <Router>
-          <AppBar loading={loading} fullScreen={fullScreen} />
+          <AppBar loading={loading} />
           <Switch>
             <Redirect exact from="/" to="/preplan-list" />
             <Route exact path="/preplan-list" component={PreplanListPage} />

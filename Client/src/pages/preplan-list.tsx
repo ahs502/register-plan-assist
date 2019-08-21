@@ -3,7 +3,7 @@ import { Theme, IconButton, Paper, Tab, Tabs, Table, TableBody, TableCell, Table
 import { makeStyles } from '@material-ui/styles';
 import { DoneAll as FinilizedIcon, Add as AddIcon, Edit as EditIcon, Clear as ClearIcon } from '@material-ui/icons';
 import MahanIcon, { MahanIconType } from 'src/components/MahanIcon';
-import Search from 'src/components/Search';
+import Search, { filterOnProperties } from 'src/components/Search';
 import LinkTypography from 'src/components/LinkTypography';
 import NavBar from 'src/components/NavBar';
 import { PreplanHeader } from 'src/view-models/Preplan';
@@ -80,7 +80,7 @@ interface PublishLoadingStatus {
 
 const PreplanListPage: FC = () => {
   const [preplanHeaders, setPreplanHeaders] = useState<PreplanHeader[]>([]);
-  const [filterPreplanHeaders, setFilterPreplanHeaders] = useState<PreplanHeader[]>([]);
+  //const [filterPreplanHeaders, setFilterPreplanHeaders] = useState<PreplanHeader[]>([]);
   const [tab, setTab] = useState<Tab>('USER');
   const [newPreplanModalModel, setNewPreplanModalModel] = useState<PreplanModalModel>({ open: false });
   const [editPreplanModalModel, setEditPreplanModalModel] = useState<PreplanModalModel>({ open: false });
@@ -95,22 +95,17 @@ const PreplanListPage: FC = () => {
   const { enqueueSnackbar } = useSnackbar();
 
   useEffect(() => {
-    if (preplanHeaders.length === 0) {
-      setPrePlanLoading(true);
-      PreplanService.getAllHeaders().then(result => {
-        setPrePlanLoading(false);
-        if (result.message) {
-          setLoadingMessage(result.message);
-          return;
-        }
+    setPrePlanLoading(true);
+    PreplanService.getAllHeaders().then(result => {
+      setPrePlanLoading(false);
+      if (result.message) {
+        setLoadingMessage(result.message);
+        return;
+      }
 
-        setPreplanHeaders(result.value!.map(p => new PreplanHeader(p)));
-        setFilterPreplanHeaders(result.value!.map(p => new PreplanHeader(p)));
-      });
-    } else {
-      setFilterPreplanHeaders(filterPreplan(preplanHeaders, query));
-    }
-  }, [preplanHeaders, query]);
+      setPreplanHeaders(result.value!.map(p => new PreplanHeader(p)));
+    });
+  }, []);
 
   function filterPreplan(preplanHeaders: PreplanHeader[], query: readonly string[]) {
     if (!query.length) return preplanHeaders;
@@ -130,7 +125,7 @@ const PreplanListPage: FC = () => {
 
   const { history } = useRouter();
   const classes = useStyles();
-
+  const filterPreplanHeaders = filterOnProperties(preplanHeaders, [query], ['name', 'simulationName', 'parentPreplanName']);
   return (
     <Fragment>
       <NavBar
@@ -185,8 +180,8 @@ const PreplanListPage: FC = () => {
                       <TableCell className={classes.preplanTableCell} component="th" scope="row">
                         <LinkTypography to={'preplan/' + preplanHeader.id}>{preplanHeader.name}</LinkTypography>
                       </TableCell>
-                      <TableCell className={classes.preplanTableCell}>{preplanHeader.lastEditDateTime.toDateString()}</TableCell>
-                      <TableCell className={classes.preplanTableCell}>{preplanHeader.creationDateTime.toDateString()}</TableCell>
+                      <TableCell className={classes.preplanTableCell}>{preplanHeader.lastEditDateTime.format('d')}</TableCell>
+                      <TableCell className={classes.preplanTableCell}>{preplanHeader.creationDateTime.format('d')}</TableCell>
                       <TableCell className={classes.preplanTableCell}>{preplanHeader.parentPreplanName}</TableCell>
                       <TableCell className={classes.preplanTableCell} align="center">
                         {preplanHeader.finalized ? <FinilizedIcon /> : ''}
@@ -327,7 +322,7 @@ const PreplanListPage: FC = () => {
                 endDate: Date.toJSON(newPreplanModalModel.endDate)
               };
 
-              const validation = new NewPreplanModelValidation(model, filterPreplanHeaders.filter(s => s.userId === persistant.authentication!.user.id).map(p => p.name));
+              const validation = new NewPreplanModelValidation(model, preplanHeaders.filter(s => s.userId === persistant.authentication!.user.id).map(p => p.name));
               if (!validation.ok) {
                 //TODO: Show error messages of form fields.
                 setNewPreplanModalModel({ ...newPreplanModalModel, loading: false });
@@ -401,7 +396,7 @@ const PreplanListPage: FC = () => {
 
               const validation = new EditPreplanModelValidation(
                 model,
-                filterPreplanHeaders.filter(s => s.userId === persistant.authentication!.user.id && s.id !== model.id).map(p => p.name)
+                preplanHeaders.filter(s => s.userId === persistant.authentication!.user.id && s.id !== model.id).map(p => p.name)
               );
 
               if (!validation.ok) {
@@ -477,7 +472,7 @@ const PreplanListPage: FC = () => {
                 endDate: Date.toJSON(copyPreplanModalModel.endDate)
               };
 
-              const validation = new NewPreplanModelValidation(model, filterPreplanHeaders.filter(s => s.userId === persistant.authentication!.user.id).map(p => p.name));
+              const validation = new NewPreplanModelValidation(model, preplanHeaders.filter(s => s.userId === persistant.authentication!.user.id).map(p => p.name));
 
               if (!validation.ok) {
                 //TODO: Show error messages of form fields.

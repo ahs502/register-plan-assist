@@ -1,5 +1,5 @@
-import React, { FC, useState } from 'react';
-import { Theme } from '@material-ui/core';
+import React, { FC, useState, Fragment, useRef } from 'react';
+import { Theme, Menu, MenuItem, MenuList, ClickAwayListener, Paper } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import Flight from 'src/view-models/flights/Flight';
 import Daytime from '@core/types/Daytime';
@@ -88,6 +88,10 @@ const useStyles = makeStyles((theme: Theme) => ({
         fontSize: '10px'
       }
     }
+  },
+  contextMenu: {
+    position: 'fixed',
+    zIndex: theme.zIndex.tooltip
   }
 }));
 
@@ -111,6 +115,10 @@ interface Bar {
   }[];
   icons: string[];
   notes: string;
+}
+
+interface FlightContextMenuModel {
+  open?: boolean;
 }
 
 export interface ResourceSchedulerViewProps {
@@ -148,29 +156,47 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = ({
     return { groups, items, options };
   });
 
+  const [flightContextMenuModel, setFlightContextMenuModel] = useState<FlightContextMenuModel>({});
+  const flightContextMenuRef = useRef<HTMLDivElement>(null);
+
   const classes = useStyles();
 
   return (
-    <VisTimeline
-      {...timelineData}
-      retrieveTimeline={t => timeline(t)}
-      onRangeChanged={properties => timeline().redraw()}
-      onMouseMove={properties => {
-        if (!properties.group) return;
-        const adjacentItem = findAdjacentFlights(timelineData.items, properties.group, properties.time);
-        onFreeSpaceMouseHover(aircraftRegisters.items.filter(item => item.id === properties.group)[0], adjacentItem[0], adjacentItem[1]);
-      }}
-      onMouseOver={properties => {
-        // onFreeSpaceMouseHover(AircraftRegisterOptionsDictionary[props.group], adjacentItem[0]&&adjacentItem[0].flight , adjacentItem[1].flight);
-      }}
-      onContextMenu={properties => {
-        const item = timelineData.items.find(item => item.id === properties.item);
-        if (!item) return;
-        item.title = 'Renewed';
-        console.log('item updated');
-        properties.event.preventDefault();
-      }}
-    />
+    <Fragment>
+      <VisTimeline
+        {...timelineData}
+        retrieveTimeline={t => timeline(t)}
+        onRangeChanged={properties => timeline().redraw()}
+        onMouseMove={properties => {
+          if (!properties.group) return;
+          const adjacentItem = findAdjacentFlights(timelineData.items, properties.group, properties.time);
+          onFreeSpaceMouseHover(aircraftRegisters.items.filter(item => item.id === properties.group)[0], adjacentItem[0], adjacentItem[1]);
+        }}
+        onMouseOver={properties => {
+          // onFreeSpaceMouseHover(AircraftRegisterOptionsDictionary[props.group], adjacentItem[0]&&adjacentItem[0].flight , adjacentItem[1].flight);
+        }}
+        onContextMenu={properties => {
+          properties.event.preventDefault();
+          const item = timelineData.items.find(item => item.id === properties.item);
+          if (!item) return;
+          const { pageX, pageY } = properties;
+          flightContextMenuRef.current!.style.top = `${pageY}px`;
+          flightContextMenuRef.current!.style.left = `${pageX}px`;
+          setFlightContextMenuModel({ open: true });
+        }}
+      />
+      <ClickAwayListener onClickAway={() => setFlightContextMenuModel({ ...flightContextMenuModel, open: false })}>
+        <div>
+          <Paper ref={flightContextMenuRef} className={classes.contextMenu}>
+            {flightContextMenuModel.open && (
+              <MenuList>
+                <MenuItem onClick={() => setFlightContextMenuModel({ ...flightContextMenuModel, open: false })}>Hi!</MenuItem>
+              </MenuList>
+            )}
+          </Paper>
+        </div>
+      </ClickAwayListener>
+    </Fragment>
   );
 };
 
@@ -382,6 +408,11 @@ function itemTemplate(item: DataItem, element: HTMLElement, data: DataItem): str
 
 function calculateTimelineOptions(startDate: Date): TimelineOptions {
   const options: TimelineOptions = {
+    align: 'center',
+    autoResize: true,
+    clickToUse: false,
+    // configure: false,
+    dataAttributes: [],
     editable: {
       add: false,
       remove: false,
@@ -406,7 +437,13 @@ function calculateTimelineOptions(startDate: Date): TimelineOptions {
         year: 'H'
       }
     },
+    groupEditable: false,
+    // groupTemplate(group: DataGroup, element: HTMLElement, data: DataGroup): string { return ''; },
+    // height: 0,
+    horizontalScroll: false,
     itemsAlwaysDraggable: true,
+    // locale: '',
+    // locales: {},
     moment(date) {
       return moment(date).utc();
     },
@@ -418,20 +455,36 @@ function calculateTimelineOptions(startDate: Date): TimelineOptions {
       }
     },
     max: startDate.clone().addDays(8),
-    maxMinorChars: 5,
     maxHeight: 'calc(100vh - 159px)',
+    maxMinorChars: 5,
     min: startDate,
     minHeight: 'calc(100vh - 160px)',
+    moveable: true,
+    multiselect: false,
+    multiselectPerGroup: false,
+    // onAdd(item, callback) {},
+    // onAddGroup(group, callback) {},
+    // onDragObjectOnItem(objectData, item) {},
+    // onInitialDrawComplete() {},
     onMove(item, callback) {
       console.log('Move', item.id);
       callback(item);
     },
+    // onMoveGroup(group, callback) {},
     onMoving(item, callback) {
       if (item.group) console.log('Moving', item.id);
       callback(item);
     },
+    // onRemove(item, callback) {},
+    // onRemoveGroup(group, callback) {},
+    // onUpdate(item, callback) {},
     orientation: 'top',
+    rtl: false,
+    selectable: true,
     showCurrentTime: false,
+    showMajorLabels: true,
+    showMinorLabels: true,
+    showTooltips: true,
     stack: true,
     stackSubgroups: true,
     snap(date, scale, step) {
@@ -443,15 +496,18 @@ function calculateTimelineOptions(startDate: Date): TimelineOptions {
     },
     start: startDate,
     template: itemTemplate,
+    // timeAxis: {},
+    type: 'range',
     tooltip: {
       followMouse: true,
       overflowMethod: 'cap'
     },
-    tooltipOnItemUpdateTime: true,
+    tooltipOnItemUpdateTime: true, //{ template(itemData: DataItem) { return ''; } },
     verticalScroll: true,
     width: '100%',
     zoomable: true,
     zoomKey: 'ctrlKey',
+    zoomMax: 315360000000000,
     zoomMin: 12 * 60 * 60 * 1000
   };
 

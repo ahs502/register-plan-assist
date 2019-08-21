@@ -158,6 +158,7 @@ declare module 'vis-timeline' {
     onAdd?: (item: DataItem, callback: (item: DataItem | null) => void) => void;
     onAddGroup?: (group: DataGroup, callback: (group: DataGroup | null) => void) => void;
     onDragObjectOnItem?: (objectData: any, item: DataItem) => void;
+    onInitialDrawComplete?: () => void;
     onMove?: (item: DataItem, callback: (item: DataItem | null) => void) => void;
     onMoveGroup?: (group: DataGroup, callback: (group: DataGroup | null) => void) => void;
     onMoving?: (item: DataItem, callback: (item: DataItem | null) => void) => void;

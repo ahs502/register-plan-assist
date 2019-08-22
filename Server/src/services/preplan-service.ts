@@ -8,6 +8,8 @@ import { requestMiddlewareWithDbAccess } from 'src/utils/requestMiddleware';
 import NewPreplanModel, { NewPreplanModelValidation } from '@core/models/NewPreplanModel';
 import EditPreplanModel from '@core/models/EditPreplanModel';
 import FlightRequirementModel from '@core/models/flights/FlightRequirementModel';
+import * as jsonToXml from 'xml-js'; //
+import * as XmlToJson from 'xml-to-json-stream';
 
 const router = Router();
 export default router;
@@ -106,52 +108,98 @@ router.post(
 // hessam ==> validation ==> input XXModel
 router.post(
   '/get',
-  requestMiddlewareWithDbAccess<{ id: string }, PreplanModel>(async (userId, { id }, {}) => {
-    throw 'Not implemented.';
+  requestMiddlewareWithDbAccess<{ id: string }, PreplanModel>(async (userId, { id }, { runSp }) => {
+    // PreplanValidator
+    const Preplans: readonly PreplanEntity[] | null = await runSp('[RPA].[SP_GetPreplan]', runSp.varCharParam('userId', userId), runSp.varCharParam('id', id));
+    const preplan: PreplanEntity | null = Preplans[0];
+
+    const flightRequirements: readonly FlightRequirementEntity[] = await runSp(
+      '[RPA].[Sp_GetFlightRequirement]',
+      runSp.bigIntParam('userId', userId),
+      runSp.intParam('preplanId', preplan.id)
+    );
+
+    const result: PreplanModel = convertPreplanEntityToModel(preplan, flightRequirements);
+    return result;
   })
 );
-
 router.post(
   '/finalize',
-  requestMiddlewareWithDbAccess<{ id: string }, PreplanModel>(async (userId, { id }, {}) => {
-    throw 'Not implemented.';
+  requestMiddlewareWithDbAccess<{ id: string }, PreplanModel>(async (userId, { id }, { runSp }) => {
+    // PreplanValidator
+    const Preplans: readonly PreplanEntity[] = await runSp(
+      '[RPA].[Sp_SetPreplanFinalized]',
+      runSp.bigIntParam('userId', userId),
+      runSp.varCharParam('Id', id),
+      runSp.bitParam('finalized', true)
+    );
+    const preplan: PreplanEntity | null = Preplans[0];
+
+    const flightRequirements: readonly FlightRequirementEntity[] = await runSp(
+      '[RPA].[Sp_GetFlightRequirement]',
+      runSp.bigIntParam('userId', userId),
+      runSp.intParam('preplanId', preplan.id)
+    );
+
+    const result: PreplanModel = convertPreplanEntityToModel(preplan, flightRequirements);
+    return result;
   })
 );
-
+//3
 router.post(
   '/add-flight-requirement',
   requestMiddlewareWithDbAccess<{ id: string; flightRequirement: FlightRequirementModel }, FlightRequirementModel>(async (userId, { id, flightRequirement }, {}) => {
     throw 'Not implemented.';
   })
 );
-
+//4
 router.post(
   '/remove-flight-requirement',
   requestMiddlewareWithDbAccess<{ flightRequirementId: string }, void>(async (userId, { flightRequirementId }, {}) => {
     throw 'Not implemented.';
   })
 );
-
+//5
 router.post(
   '/edit-flight-requirements',
   requestMiddlewareWithDbAccess<{ flightRequirements: readonly FlightRequirementModel[] }, FlightRequirementModel[]>(async (userId, { flightRequirements }, {}) => {
     throw 'Not implemented.';
   })
 );
-
+//6
 router.post(
   '/set-flight-requirement-included',
   requestMiddlewareWithDbAccess<{ flightRequirementId: string; included: boolean }, FlightRequirementModel>(async (userId, { flightRequirementId, included }, {}) => {
     throw 'Not implemented.';
   })
 );
-
+//7
 router.post(
   '/get-flight-requirements',
   requestMiddlewareWithDbAccess<{ id: string }, FlightRequirementModel[]>(async (userId, { id }, {}) => {
     throw 'Not implemented.';
   })
 );
+
+// convert json to xml : getXml(json);
+function getXml(json: any) {
+  var xml = jsonToXml.json2xml(json, { compact: true, ignoreComment: true });
+  return xml;
+}
+
+// convert xml to json : await getJson(xml);
+async function getJson(xml: any) {
+  return new Promise((resolve, reject) => {
+    const parser = XmlToJson({ attributeMode: false });
+    parser.xmlToJson(xml, (err, json) => {
+      if (err) {
+        reject(err);
+      }
+      resolve(json);
+    });
+  });
+}
+//---------------------------------Remove-----------------------------------------------------------
 
 // router.post('/clone', asyncMiddlewareWithTransactionalDbAccess(clonedPreplan));
 // router.post('/get', asyncMiddlewareWithDbAccess(getHandler));

@@ -7,6 +7,7 @@ import PreplanModel, { PreplanHeaderModel } from '@core/models/PreplanModel';
 import { requestMiddlewareWithDbAccess } from 'src/utils/requestMiddleware';
 import NewPreplanModel, { NewPreplanModelValidation } from '@core/models/NewPreplanModel';
 import EditPreplanModel from '@core/models/EditPreplanModel';
+import FlightRequirementModel from '@core/models/flights/FlightRequirementModel';
 
 const router = Router();
 export default router;
@@ -40,6 +41,26 @@ router.post(
 );
 
 router.post(
+  '/clone',
+  requestMiddlewareWithDbAccess<{ id: string; newPreplan: NewPreplanModel }, string>(async (userId, { id, newPreplan }, { runSp, runQuery }) => {
+    const userPreplanNames: string[] = await runQuery(`select [Name] from [RPA].[Preplan] where [Id_User] = '${userId}'`);
+    new NewPreplanModelValidation(newPreplan, userPreplanNames).throw('Invalid API input.');
+
+    const result: string[] = await runSp(
+      '[RPA].[SP_ClonePreplan]',
+      runSp.varCharParam('userId', userId),
+      runSp.varCharParam('id', id),
+      runSp.nVarCharParam('name', newPreplan.name, 200),
+      runSp.dateTimeParam('startDate', newPreplan.startDate),
+      runSp.dateTimeParam('endDate', newPreplan.endDate)
+    );
+    const newPreplanId = result[0] as any;
+
+    return newPreplanId.id;
+  })
+);
+
+router.post(
   '/edit-header',
   requestMiddlewareWithDbAccess<EditPreplanModel, PreplanHeaderModel[]>(async (userId, editPreplan, { runSp, runQuery }) => {
     const userPreplanNames: string[] = await runQuery(`select [Name] from [RPA].[Preplan] where [Id_User] = '${userId}' and [Id] <> '${editPreplan.id}'`);
@@ -61,17 +82,6 @@ router.post(
 );
 
 router.post(
-  '/remove',
-  requestMiddlewareWithDbAccess<{ id: string }, PreplanHeaderModel[]>(async (userId, { id }, { runSp }) => {
-    await runSp('[RPA].[Sp_RemovePrePlan]', runSp.varCharParam('userId', userId), runSp.varCharParam('id', id));
-
-    const preplanHeaderEntities: readonly PreplanHeaderEntity[] = await runSp('[RPA].[SP_GetPreplanHeaders]', runSp.varCharParam('userId', userId));
-    const preplanHeaderModels = preplanHeaderEntities.map(convertPreplanHeaderEntityToModel);
-    return preplanHeaderModels;
-  })
-);
-
-router.post(
   '/set-published',
   requestMiddlewareWithDbAccess<{ id: string; published: boolean }, PreplanHeaderModel[]>(async (userId, { id, published }, { runSp }) => {
     await runSp('[RPA].[Sp_SetPublished]', runSp.varCharParam('userId', userId), runSp.varCharParam('id', id), runSp.bitParam('published', published));
@@ -83,22 +93,63 @@ router.post(
 );
 
 router.post(
-  '/clone',
-  requestMiddlewareWithDbAccess<{ id: string; newPreplan: NewPreplanModel }, string>(async (userId, { id, newPreplan }, { runSp, runQuery }) => {
-    const userPreplanNames: string[] = await runQuery(`select [Name] from [RPA].[Preplan] where [Id_User] = '${userId}'`);
-    new NewPreplanModelValidation(newPreplan, userPreplanNames).throw('Invalid API input.');
+  '/remove',
+  requestMiddlewareWithDbAccess<{ id: string }, PreplanHeaderModel[]>(async (userId, { id }, { runSp }) => {
+    await runSp('[RPA].[Sp_RemovePrePlan]', runSp.varCharParam('userId', userId), runSp.varCharParam('id', id));
 
-    const result: string[] = await runSp(
-      '[RPA].[SP_ClonePreplan]',
-      runSp.varCharParam('userId', userId),
-      runSp.varCharParam('id', id),
-      runSp.nVarCharParam('name', newPreplan.name, 200),
-      runSp.dateTimeParam('startDate', newPreplan.startDate),
-      runSp.dateTimeParam('endDate', newPreplan.endDate)
-    );
-    const newPreplanId = result[0] as any;
+    const preplanHeaderEntities: readonly PreplanHeaderEntity[] = await runSp('[RPA].[SP_GetPreplanHeaders]', runSp.varCharParam('userId', userId));
+    const preplanHeaderModels = preplanHeaderEntities.map(convertPreplanHeaderEntityToModel);
+    return preplanHeaderModels;
+  })
+);
 
-    return newPreplanId.id;
+// hessam ==> validation ==> input XXModel
+router.post(
+  '/get',
+  requestMiddlewareWithDbAccess<{ id: string }, PreplanModel>(async (userId, { id }, {}) => {
+    throw 'Not implemented.';
+  })
+);
+
+router.post(
+  '/finalize',
+  requestMiddlewareWithDbAccess<{ id: string }, PreplanModel>(async (userId, { id }, {}) => {
+    throw 'Not implemented.';
+  })
+);
+
+router.post(
+  '/add-flight-requirement',
+  requestMiddlewareWithDbAccess<{ id: string; flightRequirement: FlightRequirementModel }, FlightRequirementModel>(async (userId, { id, flightRequirement }, {}) => {
+    throw 'Not implemented.';
+  })
+);
+
+router.post(
+  '/remove-flight-requirement',
+  requestMiddlewareWithDbAccess<{ flightRequirementId: string }, void>(async (userId, { flightRequirementId }, {}) => {
+    throw 'Not implemented.';
+  })
+);
+
+router.post(
+  '/edit-flight-requirements',
+  requestMiddlewareWithDbAccess<{ flightRequirements: readonly FlightRequirementModel[] }, FlightRequirementModel[]>(async (userId, { flightRequirements }, {}) => {
+    throw 'Not implemented.';
+  })
+);
+
+router.post(
+  '/set-flight-requirement-included',
+  requestMiddlewareWithDbAccess<{ flightRequirementId: string; included: boolean }, FlightRequirementModel>(async (userId, { flightRequirementId, included }, {}) => {
+    throw 'Not implemented.';
+  })
+);
+
+router.post(
+  '/get-flight-requirements',
+  requestMiddlewareWithDbAccess<{ id: string }, FlightRequirementModel[]>(async (userId, { id }, {}) => {
+    throw 'Not implemented.';
   })
 );
 

@@ -88,7 +88,6 @@ const PreplanListPage: FC = () => {
   const [deletePreplanModalModel, setDeletePreplanModalModel] = useState<PreplanModalModel>({ open: false });
   const [preplanLoading, setPrePlanLoading] = useState(false);
   const [publishLoadingStatus, setPublishLoadingStatus] = useState<PublishLoadingStatus>({} as PublishLoadingStatus);
-  const [publish, setPublish] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState();
   const [query, setQuery] = useState();
 
@@ -194,17 +193,22 @@ const PreplanListPage: FC = () => {
                             loading={publishLoadingStatus[preplanHeader.id]}
                             onChange={async (event, checked) => {
                               if (publishLoadingStatus[preplanHeader.id]) return;
-                              publishLoadingStatus[preplanHeader.id] = true;
-                              setPublishLoadingStatus({ ...publishLoadingStatus });
-                              setPublish(true);
+
+                              setPublishLoadingStatus(status => {
+                                return { ...status, [preplanHeader.id]: true };
+                              });
+
                               const result = await PreplanService.setPublished(preplanHeader.id, event.target.checked);
+
                               if (result.message) {
                                 snakbar(result.message, 'warning');
                               } else {
                                 setPreplanHeaders(result.value!.map(p => new PreplanHeader(p)));
                               }
-                              publishLoadingStatus[preplanHeader.id] = false;
-                              setPublishLoadingStatus({ ...publishLoadingStatus });
+
+                              setPublishLoadingStatus(status => {
+                                return { ...status, [preplanHeader.id]: false };
+                              });
                             }}
                           />
                         )}

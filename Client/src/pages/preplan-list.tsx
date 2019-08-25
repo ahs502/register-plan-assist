@@ -16,6 +16,7 @@ import useRouter from 'src/utils/useRouter';
 import { VariantType, useSnackbar } from 'notistack';
 import ProgressSwitch from 'src/components/ProgressSwitch';
 
+const waitingPaperSize = 250;
 const useStyles = makeStyles((theme: Theme) => ({
   root: {
     flexGrow: 1
@@ -50,7 +51,10 @@ const useStyles = makeStyles((theme: Theme) => ({
     marginLeft: -12
   },
   waitingPaper: {
-    height: 100
+    height: `${waitingPaperSize}px`
+  },
+  waitingPaperMessage: {
+    lineHeight: `${waitingPaperSize}px`
   },
   messagePosition: {
     paddingTop: 40
@@ -194,9 +198,7 @@ const PreplanListPage: FC = () => {
                             onChange={async (event, checked) => {
                               if (publishLoadingStatus[preplanHeader.id]) return;
 
-                              setPublishLoadingStatus(status => {
-                                return { ...status, [preplanHeader.id]: true };
-                              });
+                              setPublishLoadingStatus(state => ({ ...state, [preplanHeader.id]: true }));
 
                               const result = await PreplanService.setPublished(preplanHeader.id, event.target.checked);
 
@@ -206,8 +208,8 @@ const PreplanListPage: FC = () => {
                                 setPreplanHeaders(result.value!.map(p => new PreplanHeader(p)));
                               }
 
-                              setPublishLoadingStatus(status => {
-                                return { ...status, [preplanHeader.id]: false };
+                              setPublishLoadingStatus(state => {
+                                return { ...state, [preplanHeader.id]: false };
                               });
                             }}
                           />
@@ -264,7 +266,7 @@ const PreplanListPage: FC = () => {
               {preplanLoading ? (
                 <CircularProgress size={24} className={classes.progress} />
               ) : (
-                <Typography align="center" className={classes.messagePosition}>
+                <Typography align="center" classes={{ body1: classes.waitingPaperMessage }}>
                   {loadingMessage ? loadingMessage : 'No Preplan'}
                 </Typography>
               )}

@@ -78,9 +78,9 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
           <LinkIconButton color="inherit" to={`/preplan/${preplan.id}/flight-requirement-list`} title="Flight Requirments">
             <MahanIcon type={MahanIconType.FlightIcon} />
           </LinkIconButton>
-          <IconButton color="inherit" title="Reports">
+          <LinkIconButton color="inherit" title="Reports" to={`/preplan/${preplan.id}/reports`}>
             <MahanIcon type={MahanIconType.Chart} />
-          </IconButton>
+          </LinkIconButton>
           {/*
             <Select
             classes={{ select: classes.formDaysSelect }}

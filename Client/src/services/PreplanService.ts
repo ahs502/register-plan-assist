@@ -66,6 +66,41 @@ export default class PreplanService {
     return await request<PreplanModel>('finalize', { id });
   }
 
+  /**
+   * Adds a new flight requirement and provides it again including its new id.
+   */
+  static async addFlightRequirement(id: string, flightRequirement: FlightRequirementModel) {
+    return await request<FlightRequirementModel>('add-flight-requirement', { id, flightRequirement });
+  }
+
+  /**
+   * Removes a flight requirement.
+   */
+  static async removeFlightRequirement(flightRequirementId: string) {
+    return await request<void>('remove-flight-requirement', { flightRequirementId });
+  }
+
+  /**
+   * Edits all the given flight requirements and provides them with their new values.
+   */
+  static async editFlightRequirements(flightRequirements: readonly FlightRequirementModel[]) {
+    return await request<FlightRequirementModel[]>('edit-flight-requirements', { flightRequirements });
+  }
+
+  /**
+   * Sets a flight requirement included/excluded status and provides it again with new value.
+   */
+  static async setFlightRequiremnetIncluded(flightRequirementId: string, included: boolean) {
+    return await request<FlightRequirementModel>('set-flight-requirement-included', { flightRequirementId, included });
+  }
+
+  /**
+   * Provides all flight requirements allocated to the specified preplan.
+   */
+  static async getFlightRequirements(id: string) {
+    return await request<FlightRequirementModel[]>('get-flight-requirements', { id });
+  }
+
   // /**
   //  * Updates the auto-arranger options for some specified preplan and provides the same auto-arranger options.
   //  */
@@ -98,20 +133,20 @@ export default class PreplanService {
   //   return await request('update-aircraft-register-options-dictionary', { id, aircraftRegisterOptionsDictionary });
   // }
 
-  /**
-   * Adds/edits (according to the given id) some flight requirement including
-   * its day flight requirements for some specified preplan and provides
-   * the full new data model of the same flight requirement, including the id fields in case of adding.
-   */
-  static async addOrEditFlightRequirement(id: string, flightRequirement: Readonly<FlightRequirementModel>): Promise<ServerResult<Readonly<FlightRequirementModel>>> {
-    return await request('add-or-edit-flight-requirement', { id, flightRequirement });
-  }
+  // /**
+  //  * Adds/edits (according to the given id) some flight requirement including
+  //  * its day flight requirements for some specified preplan and provides
+  //  * the full new data model of the same flight requirement, including the id fields in case of adding.
+  //  */
+  // static async addOrEditFlightRequirement(id: string, flightRequirement: Readonly<FlightRequirementModel>): Promise<ServerResult<Readonly<FlightRequirementModel>>> {
+  //   return await request('add-or-edit-flight-requirement', { id, flightRequirement });
+  // }
 
-  /**
-   * Removes some flight requirement including its day flight requirements and
-   * provides the success statuc of that operation.
-   */
-  static async removeFlightRequirement(flightRequirementId: string): Promise<ServerResult<boolean>> {
-    return await request('remove-flight-requirement', { flightRequirementId });
-  }
+  // /**
+  //  * Removes some flight requirement including its day flight requirements and
+  //  * provides the success statuc of that operation.
+  //  */
+  // static async removeFlightRequirement(flightRequirementId: string): Promise<ServerResult<boolean>> {
+  //   return await request('remove-flight-requirement', { flightRequirementId });
+  // }
 }

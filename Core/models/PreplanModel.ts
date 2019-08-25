@@ -35,7 +35,7 @@ export default interface PreplanModel extends PreplanHeaderModel {
   readonly dummyAircraftRegisters: readonly DummyAircraftRegisterModel[];
   readonly aircraftRegisterOptionsDictionary: AircraftRegisterOptionsDictionaryModel;
 
-  readonly flightRequirements: readonly FlightRequirementModel[];
+  readonly flightRequirements: Promise<FlightRequirementModel>[];
 }
 
 // export interface NewPreplanHeaderModel {

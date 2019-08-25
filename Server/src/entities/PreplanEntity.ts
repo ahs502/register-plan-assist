@@ -1,6 +1,6 @@
 import PreplanModel, { PreplanHeaderModel } from '@core/models/PreplanModel';
 import { PreplanHeaderEntity } from './PreplanHeadersEntity';
-import FlightRequirementEntity from './flight/_FlightRequirementEntity';
+import FlightRequirementEntity, { convertFlightRequirementEntityToModel } from './flight/FlightRequirementEntity';
 
 export default interface PreplanEntity extends PreplanHeaderEntity {
   readonly AutoArrangerOptions?: string;
@@ -29,7 +29,7 @@ export default interface PreplanEntity extends PreplanHeaderEntity {
 //   };
 // }
 
-export function convertPreplanEntityToModel(data: PreplanEntity, flightRequirements: readonly FlightRequirementEntity[]): PreplanModel {
+export async function convertPreplanEntityToModel(data: PreplanEntity, flightRequirements: readonly FlightRequirementEntity[]): Promise<PreplanModel> {
   return {
     id: data.id.toString(),
     name: data.name,
@@ -50,6 +50,6 @@ export function convertPreplanEntityToModel(data: PreplanEntity, flightRequireme
     autoArrangerState: undefined, //convertAutoArrangerStateEntityToModel(data.autoArrangerState),
     dummyAircraftRegisters: undefined, //data.dummyAircraftRegisters.map(convertDummyAircraftRegisterEntityToModel),
     aircraftRegisterOptionsDictionary: undefined, //convertAircraftRegisterOptionsDictionaryEntityToModel(data.aircraftRegisterOptionsDictionary),
-    flightRequirements: undefined //flightRequirements.map(convertFlightRequirementEntityToModel)
+    flightRequirements: await flightRequirements.map(convertFlightRequirementEntityToModel)
   };
 }

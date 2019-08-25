@@ -68,6 +68,7 @@ const useStyles = makeStyles((theme: Theme) => ({
       flexWrap: 'wrap',
       paddingTop: 2,
       maxHeight: 170,
+      lineHeight: '8px',
       '& .rpa-item-icon': {
         fontSize: '10px',
         fontWeight: 'bold',

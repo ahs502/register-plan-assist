@@ -4,6 +4,7 @@ import AutoArrangerState from './AutoArrangerState';
 import FlightRequirement from './flights/FlightRequirement';
 import Flight from './flights/Flight';
 import AutoArrangerOptions from './AutoArrangerOptions';
+import FlightPack from './flights/FlightPack';
 
 export class PreplanHeader {
   readonly id: string;
@@ -48,6 +49,9 @@ export class PreplanHeader {
 }
 
 export default class Preplan extends PreplanHeader {
+  private allFlights?: readonly Flight[];
+  private allFlightPacks?: readonly FlightPack[];
+
   autoArrangerOptions: AutoArrangerOptions;
   autoArrangerState: AutoArrangerState;
 
@@ -58,7 +62,7 @@ export default class Preplan extends PreplanHeader {
    */
   readonly aircraftRegisters: PreplanAircraftRegisters;
 
-  flightRequirements: readonly FlightRequirement[];
+  readonly flightRequirements: readonly FlightRequirement[];
 
   constructor(raw: PreplanModel) {
     super(raw);
@@ -70,9 +74,39 @@ export default class Preplan extends PreplanHeader {
 
   /**
    * Gets the flattened list of this preplan's flights.
-   * > **NOTE:** USE WITH CAUTION, IT IS A COMPUTED PROPERTY AND HAS PROCESSING COSTS.
+   * It won't be changed by reference until something is changed within.
    */
   get flights(): readonly Flight[] {
-    return this.flightRequirements.map(w => w.days.map(d => d.flight)).flatten();
+    if (this.allFlights) return this.allFlights;
+    return (this.allFlights = this.flightRequirements.map(w => w.days.map(d => d.flight)).flatten());
+  }
+
+  /**
+   * Gets the packed format of this preplan's flights.
+   * It won't be changed by reference until something is changed within.
+   */
+  get flightPacks(): readonly FlightPack[] {
+    if (this.allFlightPacks) return this.allFlightPacks;
+    return (this.allFlightPacks = []); //...
+  }
+
+  mergeFlightRequirements(...flightRequirements: FlightRequirement[]): void {
+    this.allFlights = [];
+    this.allFlightPacks = [];
+    const allFlightRequirements = this.flightRequirements as FlightRequirement[];
+    allFlightRequirements.forEach((f, i) => {
+      if (flightRequirements.length === 0) return;
+      const j = flightRequirements.findIndex(h => h.id === f.id);
+      if (j < 0) return;
+      allFlightRequirements.splice(i, 1, flightRequirements.splice(j, 1)[0]);
+    });
+    flightRequirements.forEach(h => allFlightRequirements.push(h));
+  }
+
+  removeFlightRequirement(flightRequirementId: string): void {
+    this.allFlights = [];
+    this.allFlightPacks = [];
+    const allFlightRequirements = this.flightRequirements as FlightRequirement[];
+    allFlightRequirements.splice(allFlightRequirements.findIndex(f => f.id === flightRequirementId), 1);
   }
 }

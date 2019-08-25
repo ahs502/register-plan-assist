@@ -8,8 +8,10 @@ import { requestMiddlewareWithDbAccess } from 'src/utils/requestMiddleware';
 import NewPreplanModel, { NewPreplanModelValidation } from '@core/models/NewPreplanModel';
 import EditPreplanModel from '@core/models/EditPreplanModel';
 import FlightRequirementModel from '@core/models/flights/FlightRequirementModel';
-import { getXml } from 'src/utils/xml2json';
 import { TYPES } from 'tedious';
+import { convertFlightScopeModelToEntity } from 'src/entities/flight/FlightScopeEntity';
+import { xmlStringify } from 'src/utils/xml';
+import { convertWeekdayFlightRequirementListModelToEntity } from 'src/entities/flight/WeekdayFlightRequirementListEntity';
 
 const router = Router();
 export default router;
@@ -149,13 +151,13 @@ router.post(
 router.post(
   '/add-flight-requirement',
   requestMiddlewareWithDbAccess<{ id: string; flightRequirement: FlightRequirementModel }, FlightRequirementModel>(async (userId, { id, flightRequirement }, { runSp }) => {
-    // Validator
+    //TODO: Validator
     const newFlightRequirements: FlightRequirementEntity[] = await runSp(
-      '[RPA].[SP_AddFlightRrequirement]',
+      '[RPA].[SP_AddFlightRrequirements]',
       runSp.varCharParam('userId', userId),
       runSp.varCharParam('preplanId', id),
-      runSp.nVarCharParam('scope', getXml(flightRequirement.scope), 4000), // warning for over 4000
-      runSp.nVarCharParam('days', getXml(flightRequirement.days), 4000), // warning for over 4000
+      runSp.nVarCharParam('scope', xmlStringify(convertFlightScopeModelToEntity(flightRequirement.scope), 'Scope'), 4000), // warning for over 4000
+      runSp.nVarCharParam('days', xmlStringify(convertWeekdayFlightRequirementListModelToEntity(flightRequirement.days), 'WeekdayFlightRequirements'), 4000), // warning for over 4000
       runSp.bitParam('ignored', flightRequirement.ignored),
       runSp.varCharParam('arrivalAirportId', flightRequirement.definition.arrivalAirportId),
       runSp.varCharParam('departureAirportId', flightRequirement.definition.departureAirportId),
@@ -165,7 +167,7 @@ router.post(
       runSp.varCharParam('stcId', flightRequirement.definition.stcId)
     );
     const newFlightRequirement = newFlightRequirements[0];
-    const result: FlightRequirementModel = await convertFlightRequirementEntityToModel(newFlightRequirement);
+    const result: FlightRequirementModel = convertFlightRequirementEntityToModel(newFlightRequirement);
     return result;
   })
 );
@@ -175,26 +177,22 @@ router.post(
     await runSp('[RPA].[Sp_RemoveFlightRequirement]', runSp.varCharParam('userId', userId), runSp.varCharParam('id', flightRequirementId));
   })
 );
-//5
+
 router.post(
   '/edit-flight-requirements',
-  requestMiddlewareWithDbAccess<{ flightRequirements: readonly FlightRequirementModel[] }, Promise<FlightRequirementModel>[]>(async (userId, { flightRequirements }, { runSp }) => {
-    // ask ask question conver FlightRequirementEntity[] to any[][]
-    const rawFlightRequirements: FlightRequirementEntity[][] = flightRequirements.map(
-      f =>
-        ({
-          id: f.id,
-          scope: getXml(f.scope),
-          days: getXml(f.days),
-          ignored: f.ignored,
-          label: f.definition.label,
-          category: f.definition.category,
-          stcId: f.definition.stcId,
-          flightNumber: f.definition.flightNumber,
-          departureAirportId: f.definition.departureAirportId,
-          arrivalAirportId: f.definition.arrivalAirportId
-        }[0])
-    );
+  requestMiddlewareWithDbAccess<{ flightRequirements: readonly FlightRequirementModel[] }, FlightRequirementModel[]>(async (userId, { flightRequirements }, { runSp }) => {
+    const rawFlightRequirements: any[][] = flightRequirements.map(f => [
+      f.id,
+      xmlStringify(convertFlightScopeModelToEntity(f.scope), 'Scope'),
+      xmlStringify(convertWeekdayFlightRequirementListModelToEntity(f.days), 'WeekdayFlightRequirements'),
+      f.ignored,
+      f.definition.label,
+      f.definition.category,
+      f.definition.stcId,
+      f.definition.flightNumber,
+      f.definition.departureAirportId,
+      f.definition.arrivalAirportId
+    ]);
 
     const updatedFlightRequirement: FlightRequirementEntity[] = await runSp(
       '[RPA].[SP_EditFlightRequirements]',
@@ -217,7 +215,7 @@ router.post(
       )
     );
 
-    const result = await updatedFlightRequirement.map(convertFlightRequirementEntityToModel);
+    const result = updatedFlightRequirement.map(convertFlightRequirementEntityToModel);
     return result;
   })
 );
@@ -237,14 +235,14 @@ router.post(
 );
 router.post(
   '/get-flight-requirements',
-  requestMiddlewareWithDbAccess<{ id: string }, Promise<FlightRequirementModel>[]>(async (userId, { id }, { runSp }) => {
+  requestMiddlewareWithDbAccess<{ id: string }, FlightRequirementModel[]>(async (userId, { id }, { runSp }) => {
     const flightRequirements: readonly FlightRequirementEntity[] = await runSp(
       '[RPA].[Sp_GetFlightRequirement]',
       runSp.varCharParam('userId', userId),
       runSp.varCharParam('preplanId', id)
     );
 
-    const result = await flightRequirements.map(convertFlightRequirementEntityToModel);
+    const result = flightRequirements.map(convertFlightRequirementEntityToModel);
     return result;
   })
 );

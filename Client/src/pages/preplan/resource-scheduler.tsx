@@ -59,7 +59,6 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
   const classes = useStyles();
 
   const numberOfObjections: number = 12; //TODO: Not implemented.
-  const flights = preplan.flights; // For performance improvement.
 
   return (
     <Fragment>
@@ -138,7 +137,9 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
             }}
           />
         )}
-        {sideBar.sideBar === 'SEARCH_FLIGHTS' && <SearchFlightsSideBar initialSearch={sideBar.initialSearch} flights={flights} onClick={flight => alert('not implemented.')} />}
+        {sideBar.sideBar === 'SEARCH_FLIGHTS' && (
+          <SearchFlightsSideBar initialSearch={sideBar.initialSearch} flights={preplan.flights} onClick={flight => alert('not implemented.')} />
+        )}
         {sideBar.sideBar === 'AUTO_ARRANGER_CHANGE_LOG' && (
           <AutoArrangerChangeLogSideBar initialSearch={sideBar.initialSearch} changeLogs={preplan.autoArrangerState.changeLogs} onClick={flight => alert('not implemented.')} />
         )}
@@ -147,11 +148,12 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
 
       <ResourceSchedulerView
         startDate={preplan.startDate.getDatePart().addDays((preplan.startDate.getUTCDay() + 1) % 7)}
-        flights={flights}
+        readonly={false}
+        flights={preplan.flights}
+        flightPacks={preplan.flightPacks}
         aircraftRegisters={preplan.aircraftRegisters}
         changeLogs={preplan.autoArrangerState.changeLogs}
         selectedFlight={undefined}
-        readonly={false}
         onFlightContextMenu={(flight, pageX, pageY) => alert(`Flight ${flight.derivedId} @ ${pageX}:${pageY}\nNot implemented.`)}
         onFlightDragAndDrop={(flight, newStd, newAircraftRegister) =>
           alert(`D&D flight ${flight.derivedId} to ${newStd.toString()} with ${newAircraftRegister ? newAircraftRegister.name : '???'}\nNot implemented.`)
@@ -173,11 +175,7 @@ export default ResourceSchedulerPage;
 const calculateFreeSpaceTime = (previousFlight: Flight | null, nextFlight: Flight | null): Daytime => {
   if (previousFlight && nextFlight)
     return new Daytime(nextFlight.day * 24 * 60 + nextFlight.std.minutes - (previousFlight.day * 24 * 60 + previousFlight.std.minutes + previousFlight.blockTime));
-  else if (nextFlight) {
-    return new Daytime(nextFlight.day * 24 * 60 + nextFlight.std.minutes);
-  } else if (previousFlight) {
-    return new Daytime(7 * 24 * 60 - (previousFlight.day * 24 * 60 + previousFlight.std.minutes + previousFlight.blockTime));
-  } else {
-    return new Daytime(0);
-  }
+  if (nextFlight) return new Daytime(nextFlight.day * 24 * 60 + nextFlight.std.minutes);
+  if (previousFlight) return new Daytime(7 * 24 * 60 - (previousFlight.day * 24 * 60 + previousFlight.std.minutes + previousFlight.blockTime));
+  return new Daytime(0);
 };

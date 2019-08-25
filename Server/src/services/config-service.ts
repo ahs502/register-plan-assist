@@ -7,6 +7,7 @@ export default router;
 
 const clientConfig: ClientConfig = {
   env: config.env,
+  version: config.version,
   oauth: config.oauth
 };
 

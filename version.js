@@ -15,8 +15,7 @@ switch (process.argv[2]) {
 
   case 'post':
     exec(
-      `echo Apply to other projects...` +
-        `npm version --prefix Core ${package.version} &&` +
+      `npm version --prefix Core ${package.version} &&` +
         `npm version --prefix Server ${package.version} &&` +
         `npm version --prefix Client ${package.version} &&` +
         `git commit -am"${package.version}" &&` +

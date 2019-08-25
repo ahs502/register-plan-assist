@@ -149,7 +149,7 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
         startDate={preplan.startDate.getDatePart().addDays((preplan.startDate.getUTCDay() + 1) % 7)}
         flights={flights}
         aircraftRegisters={preplan.aircraftRegisters}
-        changeLogs={preplan.autoArrangerState.changeLogs}
+        changeLogs={preplan.autoArrangerState && preplan.autoArrangerState.changeLogs}
         selectedFlight={undefined}
         readonly={false}
         onFlightContextMenu={(flight, pageX, pageY) => alert(`Flight ${flight.derivedId} @ ${pageX}:${pageY}\nNot implemented.`)}

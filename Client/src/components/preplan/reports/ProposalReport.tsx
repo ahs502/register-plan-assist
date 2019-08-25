@@ -101,7 +101,7 @@ const useStyles = makeStyles((theme: Theme) => {
       backgroundColor: color.realBoarder.backgroundColor
     },
     datePosition: {
-      marginTop: 12
+      marginTop: theme.spacing(1)
     }
   };
 });

@@ -111,7 +111,7 @@ router.post(
 router.post(
   '/get',
   requestMiddlewareWithDbAccess<{ id: string }, PreplanModel>(async (userId, { id }, { runSp }) => {
-    // PreplanValidator
+    //TODO:Validator
     const Preplans: readonly PreplanEntity[] | null = await runSp('[RPA].[SP_GetPreplan]', runSp.varCharParam('userId', userId), runSp.varCharParam('id', id));
     const preplan: PreplanEntity | null = Preplans[0];
 
@@ -222,14 +222,14 @@ router.post(
 router.post(
   '/set-flight-requirement-included',
   requestMiddlewareWithDbAccess<{ flightRequirementId: string; included: boolean }, FlightRequirementModel>(async (userId, { flightRequirementId, included }, { runSp }) => {
-    const flightRequirements: readonly FlightRequirementEntity[] = await runSp(
-      '[RPA].[Sp_GetFlightRequirement]',
+    const flightRequirementEntities: readonly FlightRequirementEntity[] = await runSp(
+      '[RPA].[SP_SetFlightRequirementIncluded]',
       runSp.varCharParam('userId', userId),
       runSp.varCharParam('id', flightRequirementId),
-      runSp.bitParam('id', !included)
+      runSp.bitParam('ignored', !included)
     );
 
-    const flightRequirement: FlightRequirementModel = await convertFlightRequirementEntityToModel(flightRequirements[0]);
+    const flightRequirement: FlightRequirementModel = await convertFlightRequirementEntityToModel(flightRequirementEntities[0]);
     return flightRequirement;
   })
 );

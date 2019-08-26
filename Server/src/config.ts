@@ -10,9 +10,6 @@ export interface Config extends ClientConfig {
   readonly secretKey: string;
 }
 
-const config: Config = {
-  ...require('../config').default,
-  version: require('../package.json').version
-};
+const config: Config = require('../config').default;
 
 export default config;

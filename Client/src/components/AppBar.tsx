@@ -11,6 +11,7 @@ import {
 import classNames from 'classnames';
 import persistant from 'src/utils/persistant';
 import LinkIconButton from './LinkIconButton';
+import config from 'src/config';
 
 const useStyles = makeStyles((theme: Theme) => ({
   textMargin: {
@@ -60,7 +61,7 @@ const AppBar: FC<AppBarProps> = ({ loading }) => {
         <IconButton color="inherit" onClick={() => window.location.reload()} title={loading ? 'Loading...' : 'Refresh Page'}>
           <SyncIcon classes={{ root: classNames({ 'animate-spin-reverse': loading }) }} />
         </IconButton>
-        <Typography classes={{ root: classNames(classes.textMargin, classes.notSelectable) }} variant="h5" color="inherit">
+        <Typography classes={{ root: classNames(classes.textMargin, classes.notSelectable) }} variant="h5" color="inherit" title={config.version}>
           RPA
         </Typography>
 

@@ -1,5 +1,6 @@
 var config = {
   env: 'development',
+  version: require('../../package.json').version, // Only for development time, from the package.json file in the root folder.
   oauth: {
     serverUrl: 'https://login.mahan.aero/adfs/oauth2/token',
     serverIssuer: 'https://login.mahan.aero/adfs/oauth2/authorize',
@@ -14,7 +15,7 @@ var config = {
     username: 'MahanAppsServiceAccount',
     password: 'a45V6DPQZAHUpXz'
   },
-  secretKey: 'fsdjkla glsdfa kjglkjasfd ghasfdghasl;k ;lskg kjlahgfuiow rhtfurhgha g jkfangwreh gn89498 y353087 59w8 3570987Y*& ^%)&^#&^T&)*$@&Y)(*&@#Y $(@Y%()$YRURHfguisyreg ehrj'
+  secretKey: 'Some random generated secret key!'
 };
 
 module.exports = { default: config };

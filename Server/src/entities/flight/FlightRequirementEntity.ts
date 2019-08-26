@@ -1,8 +1,5 @@
 import FlightRequirementModel from '@core/models/flights/FlightRequirementModel';
-import { getJson } from 'src/utils/xml2json';
-import WeekdayFlightRequirementModel from '@core/models/flights/WeekdayFlightRequirementModel';
 import { convertflightScopeEntityToModel as convertFlightScopeEntityToModel } from './FlightScopeEntity';
-import { convertWeekdayFlightRequirementEntityToModel } from './WeekdayFlightRequirementEntity';
 import { xmlParse } from 'src/utils/xml';
 import { convertWeekdayFlightRequirementListEntityToModel } from './WeekdayFlightRequirementListEntity';
 

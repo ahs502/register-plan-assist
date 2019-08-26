@@ -22,7 +22,7 @@ export class FlightScopeValidation extends Validation<
     readonly aircraftSelection: AircraftSelectionValidation;
   }
 > {
-  constructor(flightScope: FlightScopeModel, dummyAircraftRegisters: readonly DummyAircraftRegisterModel[]) {
+  constructor(flightScope: FlightScopeModel, dummyAircraftRegistersId: readonly string[]) {
     super(
       validator => {}
       // validator.object(flightScope).do(({ blockTime, times, aircraftSelection, required }) => {

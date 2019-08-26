@@ -4,6 +4,8 @@ import AutoArrangerState from './AutoArrangerState';
 import FlightRequirement from './flights/FlightRequirement';
 import Flight from './flights/Flight';
 import AutoArrangerOptions from './AutoArrangerOptions';
+import FlightPack from './flights/FlightPack';
+import { Airport } from '@core/master-data';
 
 export class PreplanHeader {
   readonly id: string;
@@ -48,6 +50,9 @@ export class PreplanHeader {
 }
 
 export default class Preplan extends PreplanHeader {
+  private allFlights?: readonly Flight[];
+  private allFlightPacks?: readonly FlightPack[];
+
   autoArrangerOptions: AutoArrangerOptions;
   autoArrangerState: AutoArrangerState;
 
@@ -58,21 +63,98 @@ export default class Preplan extends PreplanHeader {
    */
   readonly aircraftRegisters: PreplanAircraftRegisters;
 
-  flightRequirements: readonly FlightRequirement[];
+  readonly flightRequirements: readonly FlightRequirement[];
 
   constructor(raw: PreplanModel) {
     super(raw);
     this.autoArrangerOptions = raw.autoArrangerOptions ? new AutoArrangerOptions(raw.autoArrangerOptions) : AutoArrangerOptions.default;
     this.aircraftRegisters = new PreplanAircraftRegisters(raw.dummyAircraftRegisters, raw.aircraftRegisterOptionsDictionary);
     this.flightRequirements = raw.flightRequirements.map(f => new FlightRequirement(f, this.aircraftRegisters));
-    this.autoArrangerState = new AutoArrangerState(raw.autoArrangerState, this.aircraftRegisters, this.flights);
+    this.autoArrangerState = raw.autoArrangerState && new AutoArrangerState(raw.autoArrangerState, this.aircraftRegisters, this.flights);
   }
 
   /**
    * Gets the flattened list of this preplan's flights.
-   * > **NOTE:** USE WITH CAUTION, IT IS A COMPUTED PROPERTY AND HAS PROCESSING COSTS.
+   * It won't be changed by reference until something is changed within.
    */
   get flights(): readonly Flight[] {
-    return this.flightRequirements.map(w => w.days.map(d => d.flight)).flatten();
+    if (this.allFlights) return this.allFlights;
+    return (this.allFlights = this.flightRequirements.map(w => w.days.map(d => d.flight)).flatten());
+  }
+
+  /**
+   * Gets the packed format of this preplan's flights.
+   * It won't be changed by reference until something is changed within.
+   */
+  get flightPacks(): readonly FlightPack[] {
+    if (this.allFlightPacks) return this.allFlightPacks;
+    const flightPacks: FlightPack[] = [];
+    const flightsByLabel = this.flights.groupBy('label');
+    for (const label in flightsByLabel) {
+      const flightsByRegister = flightsByLabel[label].groupBy(f => (f.aircraftRegister ? f.aircraftRegister.id : '???'));
+      for (const register in flightsByRegister) {
+        const flightGroup = flightsByRegister[register].sortBy(f => f.day * 24 * 60 + f.std.minutes, true);
+        while (flightGroup.length) {
+          const flight = flightGroup.pop()!;
+          let lastFlight = flight;
+          const flightPack = new FlightPack(flight);
+          flightPacks.push(flightPack);
+          if (getAirportBaseLevel(flight.departureAirport) <= getAirportBaseLevel(flight.arrivalAirport)) continue;
+          while (flightGroup.length) {
+            const nextFlight = flightGroup.pop()!;
+            const lastDayDiff = (nextFlight.day - lastFlight.day) * 24 * 60;
+            // Where next flight can NOT be appended to the bar:
+            if (
+              lastDayDiff + nextFlight.std.minutes <= lastFlight.std.minutes + lastFlight.blockTime ||
+              lastDayDiff + nextFlight.std.minutes > lastFlight.std.minutes + lastFlight.blockTime + 20 * 60 ||
+              nextFlight.departureAirport.id !== lastFlight.arrivalAirport.id ||
+              nextFlight.departureAirport.id === flight.departureAirport.id
+            ) {
+              flightGroup.push(nextFlight);
+              break;
+            }
+            flightPack.append(nextFlight);
+            lastFlight = nextFlight;
+          }
+          flightPack.close();
+        }
+      }
+    }
+    return (this.allFlightPacks = flightPacks);
+
+    function getAirportBaseLevel(airport: Airport): number {
+      switch (airport.name) {
+        case 'IKA':
+          return 4;
+        case 'THR':
+          return 3;
+        case 'KER':
+          return 2;
+        case 'MHD':
+          return 1;
+        default:
+          return 0;
+      }
+    }
+  }
+
+  mergeFlightRequirements(...flightRequirements: FlightRequirement[]): void {
+    this.allFlights = [];
+    this.allFlightPacks = [];
+    const allFlightRequirements = this.flightRequirements as FlightRequirement[];
+    allFlightRequirements.forEach((f, i) => {
+      if (flightRequirements.length === 0) return;
+      const j = flightRequirements.findIndex(h => h.id === f.id);
+      if (j < 0) return;
+      allFlightRequirements.splice(i, 1, flightRequirements.splice(j, 1)[0]);
+    });
+    flightRequirements.forEach(h => allFlightRequirements.push(h));
+  }
+
+  removeFlightRequirement(flightRequirementId: string): void {
+    this.allFlights = [];
+    this.allFlightPacks = [];
+    const allFlightRequirements = this.flightRequirements as FlightRequirement[];
+    allFlightRequirements.splice(allFlightRequirements.findIndex(f => f.id === flightRequirementId), 1);
   }
 }

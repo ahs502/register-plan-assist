@@ -2,6 +2,7 @@ const fs = require('fs');
 
 const config = {
   env: process.env['ENV'],
+  version: require('./package.json').version,
   oauth: {
     serverUrl: process.env['OAUTH_SERVER_URL'],
     serverIssuer: process.env['OAUTH_SERVER_ISSUER'],

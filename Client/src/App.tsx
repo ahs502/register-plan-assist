@@ -3,16 +3,13 @@ import React, { FC, useState, useEffect } from 'react';
 import { CircularProgress, Theme } from '@material-ui/core';
 import { ThemeProvider, makeStyles } from '@material-ui/styles';
 import theme from './theme';
-
 import RequestManager from './utils/RequestManager';
 import MasterDataService from './services/MasterDataService';
 import MasterData from '@core/master-data';
-
 import { HashRouter as Router, Switch, Route, Redirect } from 'react-router-dom';
 import PreplanListPage from './pages/preplan-list';
 import PreplanPage from './pages/preplan';
 import AppBar from './components/AppBar';
-
 import { SnackbarProvider } from 'notistack';
 
 const useStyles = makeStyles((theme: Theme) => ({

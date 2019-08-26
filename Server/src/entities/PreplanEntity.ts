@@ -29,9 +29,9 @@ export default interface PreplanEntity extends PreplanHeaderEntity {
 //   };
 // }
 
-export async function convertPreplanEntityToModel(data: PreplanEntity, flightRequirements: readonly FlightRequirementEntity[]): Promise<PreplanModel> {
+export function convertPreplanEntityToModel(data: PreplanEntity, flightRequirements: readonly FlightRequirementEntity[]): PreplanModel {
   return {
-    id: data.id.toString(),
+    id: data.id,
     name: data.name,
     published: data.published,
     finalized: data.finalized,
@@ -48,8 +48,8 @@ export async function convertPreplanEntityToModel(data: PreplanEntity, flightReq
     simulationName: data.simulationName,
     autoArrangerOptions: undefined, // data.autoArrangerOptions ? convertAutoArrangerOptionsEntityToModel(data.autoArrangerOptions) : undefined,
     autoArrangerState: undefined, //convertAutoArrangerStateEntityToModel(data.autoArrangerState),
-    dummyAircraftRegisters: undefined, //data.dummyAircraftRegisters.map(convertDummyAircraftRegisterEntityToModel),
+    dummyAircraftRegisters: undefined, // data.DummyAircraftRegisters.map(),
     aircraftRegisterOptionsDictionary: undefined, //convertAircraftRegisterOptionsDictionaryEntityToModel(data.aircraftRegisterOptionsDictionary),
-    flightRequirements: await flightRequirements.map(convertFlightRequirementEntityToModel)
+    flightRequirements: flightRequirements.map(convertFlightRequirementEntityToModel)
   };
 }

@@ -5,6 +5,7 @@ import FlightRequirement from './flights/FlightRequirement';
 import Flight from './flights/Flight';
 import AutoArrangerOptions from './AutoArrangerOptions';
 import FlightPack from './flights/FlightPack';
+import { Airport } from '@core/master-data';
 
 export class PreplanHeader {
   readonly id: string;
@@ -87,7 +88,54 @@ export default class Preplan extends PreplanHeader {
    */
   get flightPacks(): readonly FlightPack[] {
     if (this.allFlightPacks) return this.allFlightPacks;
-    return (this.allFlightPacks = []); //...
+    const flightPacks: FlightPack[] = [];
+    const flightsByLabel = this.flights.groupBy('label');
+    for (const label in flightsByLabel) {
+      const flightsByRegister = flightsByLabel[label].groupBy(f => (f.aircraftRegister ? f.aircraftRegister.id : '???'));
+      for (const register in flightsByRegister) {
+        const flightGroup = flightsByRegister[register].sortBy(f => f.day * 24 * 60 + f.std.minutes, true);
+        while (flightGroup.length) {
+          const flight = flightGroup.pop()!;
+          let lastFlight = flight;
+          const flightPack = new FlightPack(flight);
+          flightPacks.push(flightPack);
+          if (getAirportBaseLevel(flight.departureAirport) <= getAirportBaseLevel(flight.arrivalAirport)) continue;
+          while (flightGroup.length) {
+            const nextFlight = flightGroup.pop()!;
+            const lastDayDiff = (nextFlight.day - lastFlight.day) * 24 * 60;
+            // Where next flight can NOT be appended to the bar:
+            if (
+              lastDayDiff + nextFlight.std.minutes <= lastFlight.std.minutes + lastFlight.blockTime ||
+              lastDayDiff + nextFlight.std.minutes > lastFlight.std.minutes + lastFlight.blockTime + 20 * 60 ||
+              nextFlight.departureAirport.id !== lastFlight.arrivalAirport.id ||
+              nextFlight.departureAirport.id === flight.departureAirport.id
+            ) {
+              flightGroup.push(nextFlight);
+              break;
+            }
+            flightPack.append(nextFlight);
+            lastFlight = nextFlight;
+          }
+          flightPack.close();
+        }
+      }
+    }
+    return (this.allFlightPacks = flightPacks);
+
+    function getAirportBaseLevel(airport: Airport): number {
+      switch (airport.name) {
+        case 'IKA':
+          return 4;
+        case 'THR':
+          return 3;
+        case 'KER':
+          return 2;
+        case 'MHD':
+          return 1;
+        default:
+          return 0;
+      }
+    }
   }
 
   mergeFlightRequirements(...flightRequirements: FlightRequirement[]): void {

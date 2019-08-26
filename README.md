@@ -28,6 +28,14 @@ To check and install available updates for all dependencies:
 
     $ npm run install-updates
 
+#### Version
+
+To increment version after committing every staged changes:
+
+    $ npm run version-patch   # or
+    $ npm run version-minor   # or
+    $ npm run version-major
+
 ### Build
 
 To build into `./dist` folder, after _clone_:

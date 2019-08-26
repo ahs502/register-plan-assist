@@ -1,7 +1,10 @@
 import FlightRequirementModel from '@core/models/flights/FlightRequirementModel';
 import { getJson } from 'src/utils/xml2json';
-import { FlightScopeModel } from '@core/models/flights/FlightScopeModel';
 import WeekdayFlightRequirementModel from '@core/models/flights/WeekdayFlightRequirementModel';
+import { convertflightScopeEntityToModel as convertFlightScopeEntityToModel } from './FlightScopeEntity';
+import { convertWeekdayFlightRequirementEntityToModel } from './WeekdayFlightRequirementEntity';
+import { xmlParse } from 'src/utils/xml';
+import { convertWeekdayFlightRequirementListEntityToModel } from './WeekdayFlightRequirementListEntity';
 
 export default interface FlightRequirementEntity {
   readonly id: string;
@@ -17,7 +20,7 @@ export default interface FlightRequirementEntity {
   readonly arrivalAirportId: string;
 }
 
-export async function convertFlightRequirementEntityToModel(data: FlightRequirementEntity): Promise<FlightRequirementModel> {
+export function convertFlightRequirementEntityToModel(data: FlightRequirementEntity): FlightRequirementModel {
   return {
     id: data.id,
     definition: {
@@ -28,8 +31,8 @@ export async function convertFlightRequirementEntityToModel(data: FlightRequirem
       label: data.label,
       stcId: data.stcId
     },
-    scope: await getJson<FlightScopeModel>(data.scope),
-    days: await getJson<WeekdayFlightRequirementModel[]>(data.days),
+    scope: convertFlightScopeEntityToModel(xmlParse(data.scope, 'Scope')),
+    days: convertWeekdayFlightRequirementListEntityToModel(xmlParse(data.days, 'WeekdayFlightRequirements')),
     ignored: data.ignored
   };
 }

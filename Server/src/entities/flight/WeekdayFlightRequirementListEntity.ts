@@ -1,8 +1,9 @@
 import WeekdayFlightRequirementEntity, { convertWeekdayFlightRequirementModelToEntity, convertWeekdayFlightRequirementEntityToModel } from './WeekdayFlightRequirementEntity';
 import WeekdayFlightRequirementModel from '@core/models/flights/WeekdayFlightRequirementModel';
+import { XmlArray } from 'src/utils/xml';
 
 export default interface WeekdayFlightRequirementListEntity {
-  readonly WeekdayFlightRequirement: readonly WeekdayFlightRequirementEntity[];
+  readonly WeekdayFlightRequirement: XmlArray<WeekdayFlightRequirementEntity>;
 }
 
 export function convertWeekdayFlightRequirementListModelToEntity(data: readonly WeekdayFlightRequirementModel[]): WeekdayFlightRequirementListEntity {
@@ -12,5 +13,5 @@ export function convertWeekdayFlightRequirementListModelToEntity(data: readonly 
 }
 
 export function convertWeekdayFlightRequirementListEntityToModel(data: WeekdayFlightRequirementListEntity): readonly WeekdayFlightRequirementModel[] {
-  return data.WeekdayFlightRequirement.map(convertWeekdayFlightRequirementEntityToModel);
+  return !data.WeekdayFlightRequirement ? [] : [].concat(data.WeekdayFlightRequirement).map(convertWeekdayFlightRequirementEntityToModel);
 }

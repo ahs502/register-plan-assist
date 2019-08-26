@@ -14,6 +14,8 @@ import { xmlStringify } from 'src/utils/xml';
 import { convertWeekdayFlightRequirementListModelToEntity } from 'src/entities/flight/WeekdayFlightRequirementListEntity';
 import DummyAircraftRegisterModel from '@core/models/DummyAircraftRegisterModel';
 import { AircraftRegisterOptionsDictionaryModel } from '@core/models/AircraftRegisterOptionsModel';
+import { convertDummyAircraftRegisterListModelToEntity } from 'src/entities/DummyAircraftRegisterListEntity';
+import { convertAircraftRegisterOptionsListModelToEntity } from 'src/entities/AircraftRegisterOptionsListEntity';
 
 const router = Router();
 export default router;
@@ -248,6 +250,16 @@ router.post(
     },
     void
   >(async (userId, { id, dummyAircraftRegisters, aircraftRegisterOptionsDictionary }, { runSp }) => {
-    //...
+    await runSp(
+      '[RPA].[SP_SetAircraftRegisters]',
+      runSp.varCharParam('userId', userId),
+      runSp.varCharParam('id', id),
+      runSp.varCharParam('dummyAircraftRegisters', xmlStringify(convertDummyAircraftRegisterListModelToEntity(dummyAircraftRegisters), 'DummyAircraftRegisters')),
+      runSp.nVarCharParam(
+        'aircraftRegisterOptionsDictionary',
+        xmlStringify(convertAircraftRegisterOptionsListModelToEntity(aircraftRegisterOptionsDictionary), 'AircraftRegistersOptions'),
+        4000
+      )
+    );
   })
 );

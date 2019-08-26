@@ -15,11 +15,13 @@ export default interface FlightScopeEntity {
   readonly Times: {
     readonly Time: XmlArray<FlightTimeEntity>;
   };
-  readonly AllowedIdentities: {
-    readonly AllowedIdentity: XmlArray<AircraftIdentityEntity>;
-  };
-  readonly ForbiddenIdentities: {
-    readonly ForbiddenIdentity: XmlArray<AircraftIdentityEntity>;
+  readonly AircraftSelection: {
+    readonly AllowedIdentities: {
+      readonly AllowedIdentity: XmlArray<AircraftIdentityEntity>;
+    };
+    readonly ForbiddenIdentities: {
+      readonly ForbiddenIdentity: XmlArray<AircraftIdentityEntity>;
+    };
   };
 }
 
@@ -35,11 +37,13 @@ export function convertFlightScopeModelToEntity(data: FlightScopeModel): FlightS
     Times: {
       Time: data.times.map(convertFlightTimeModelToEntity)
     },
-    AllowedIdentities: {
-      AllowedIdentity: data.aircraftSelection.allowedIdentities.map(convertAircraftIdentityModelToEntity)
-    },
-    ForbiddenIdentities: {
-      ForbiddenIdentity: data.aircraftSelection.forbiddenIdentities.map(convertAircraftIdentityModelToEntity)
+    AircraftSelection: {
+      AllowedIdentities: {
+        AllowedIdentity: data.aircraftSelection.allowedIdentities.map(convertAircraftIdentityModelToEntity)
+      },
+      ForbiddenIdentities: {
+        ForbiddenIdentity: data.aircraftSelection.forbiddenIdentities.map(convertAircraftIdentityModelToEntity)
+      }
     }
   };
 }
@@ -50,8 +54,8 @@ export function convertflightScopeEntityToModel(data: FlightScopeEntity): Flight
     blockTime: Number(data._attributes.BlockTime),
     times: xmlArray(data.Times.Time).map(convertFlightTimeEntityToModel),
     aircraftSelection: {
-      allowedIdentities: xmlArray(data.AllowedIdentities.AllowedIdentity).map(convertAircraftIdentityEntityToModel),
-      forbiddenIdentities: xmlArray(data.ForbiddenIdentities.ForbiddenIdentity).map(convertAircraftIdentityEntityToModel)
+      allowedIdentities: xmlArray(data.AircraftSelection.AllowedIdentities.AllowedIdentity).map(convertAircraftIdentityEntityToModel),
+      forbiddenIdentities: xmlArray(data.AircraftSelection.ForbiddenIdentities.ForbiddenIdentity).map(convertAircraftIdentityEntityToModel)
     },
     originPermission: Boolean(data._attributes.OriginPermission),
     destinationPermission: Boolean(data._attributes.DestinationPermission),

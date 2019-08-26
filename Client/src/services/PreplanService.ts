@@ -3,6 +3,8 @@ import PreplanModel, { PreplanHeaderModel } from '@core/models/PreplanModel';
 import FlightRequirementModel from '@core/models/flights/FlightRequirementModel';
 import NewPreplanModel from '@core/models/NewPreplanModel';
 import EditPreplanModel from '@core/models/EditPreplanModel';
+import DummyAircraftRegisterModel from '@core/models/DummyAircraftRegisterModel';
+import { AircraftRegisterOptionsDictionaryModel } from '@core/models/AircraftRegisterOptionsModel';
 
 const request = RequestManager.makeRequester('preplan');
 
@@ -88,7 +90,18 @@ export default class PreplanService {
   /**
    * Sets a flight requirement included/excluded status and provides it again with new value.
    */
-  static async setFlightRequiremnetIncluded(flightRequirementId: string, included: boolean) {
+  static async setFlightRequirementIncluded(flightRequirementId: string, included: boolean) {
     return await request<FlightRequirementModel>('set-flight-requirement-included', { flightRequirementId, included });
+  }
+
+  /**
+   * Sets the status of aircraft registers.
+   */
+  static async setAircraftRegisters(
+    id: string,
+    dummyAircraftRegisters: readonly DummyAircraftRegisterModel[],
+    aircraftRegisterOptionsDictionary: AircraftRegisterOptionsDictionaryModel
+  ) {
+    return await request<void>('set-aircraft-registers', { id, dummyAircraftRegisters, aircraftRegisterOptionsDictionary });
   }
 }

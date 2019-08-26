@@ -1,14 +1,15 @@
 import PreplanModel, { PreplanHeaderModel } from '@core/models/PreplanModel';
 import { PreplanHeaderEntity, convertPreplanHeaderEntityToModel } from './PreplanHeadersEntity';
 import FlightRequirementEntity, { convertFlightRequirementEntityToModel } from './flight/FlightRequirementEntity';
-import DummyAircraftRegisterListEntity, { convertDummyAircraftRegisterListEntityToModel } from './DummyAircraftRegisterListEntity';
-import AircraftRegisterOptionsListEntity, { convertAircraftRegisterOptionsListEntityToModel } from './AircraftRegisterOptionsListEntity';
+import { convertDummyAircraftRegisterListEntityToModel } from './DummyAircraftRegisterListEntity';
+import { convertAircraftRegisterOptionsListEntityToModel } from './AircraftRegisterOptionsListEntity';
+import { xmlParse } from 'src/utils/xml';
 
 export default interface PreplanEntity extends PreplanHeaderEntity {
   readonly AutoArrangerOptions?: string;
   readonly AutoArrangerState: string;
-  readonly DummyAircraftRegisters: DummyAircraftRegisterListEntity;
-  readonly AircraftRegisterOptions: AircraftRegisterOptionsListEntity;
+  readonly DummyAircraftRegisters: string;
+  readonly AircraftRegisterOptions: string;
 }
 
 export function convertPreplanEntityToModel(data: PreplanEntity, flightRequirements: readonly FlightRequirementEntity[]): PreplanModel {
@@ -16,8 +17,8 @@ export function convertPreplanEntityToModel(data: PreplanEntity, flightRequireme
     ...convertPreplanHeaderEntityToModel(data),
     autoArrangerOptions: undefined, // data.autoArrangerOptions ? convertAutoArrangerOptionsEntityToModel(data.autoArrangerOptions) : undefined,
     autoArrangerState: undefined, //convertAutoArrangerStateEntityToModel(data.autoArrangerState),
-    dummyAircraftRegisters: convertDummyAircraftRegisterListEntityToModel(data.DummyAircraftRegisters),
-    aircraftRegisterOptionsDictionary: convertAircraftRegisterOptionsListEntityToModel(data.AircraftRegisterOptions),
+    dummyAircraftRegisters: convertDummyAircraftRegisterListEntityToModel(xmlParse(data.DummyAircraftRegisters, 'DummyAircraftRegisters')),
+    aircraftRegisterOptionsDictionary: convertAircraftRegisterOptionsListEntityToModel(xmlParse(data.AircraftRegisterOptions, 'AircraftRegistersOptions')),
     flightRequirements: flightRequirements.map(convertFlightRequirementEntityToModel)
   };
 }

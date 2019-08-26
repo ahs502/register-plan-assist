@@ -12,6 +12,8 @@ import { TYPES } from 'tedious';
 import { convertFlightScopeModelToEntity } from 'src/entities/flight/FlightScopeEntity';
 import { xmlStringify } from 'src/utils/xml';
 import { convertWeekdayFlightRequirementListModelToEntity } from 'src/entities/flight/WeekdayFlightRequirementListEntity';
+import DummyAircraftRegisterModel from '@core/models/DummyAircraftRegisterModel';
+import { AircraftRegisterOptionsDictionaryModel } from '@core/models/AircraftRegisterOptionsModel';
 
 const router = Router();
 export default router;
@@ -233,5 +235,19 @@ router.post(
 
     const flightRequirement: FlightRequirementModel = await convertFlightRequirementEntityToModel(flightRequirementEntities[0]);
     return flightRequirement;
+  })
+);
+
+router.post(
+  '/set-aircraft-registers',
+  requestMiddlewareWithDbAccess<
+    {
+      id: string;
+      dummyAircraftRegisters: readonly DummyAircraftRegisterModel[];
+      aircraftRegisterOptionsDictionary: AircraftRegisterOptionsDictionaryModel;
+    },
+    void
+  >(async (userId, { id, dummyAircraftRegisters, aircraftRegisterOptionsDictionary }, { runSp }) => {
+    //...
   })
 );

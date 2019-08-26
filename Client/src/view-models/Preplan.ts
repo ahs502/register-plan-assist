@@ -97,7 +97,7 @@ export default class Preplan extends PreplanHeader {
         while (flightGroup.length) {
           const flight = flightGroup.pop()!;
           let lastFlight = flight;
-          const flightPack = new FlightPack(flight);
+          const flightPack = new FlightPack(flight, this.autoArrangerState.changeLogs.some(l => l.flight === flight));
           flightPacks.push(flightPack);
           if (getAirportBaseLevel(flight.departureAirport) <= getAirportBaseLevel(flight.arrivalAirport)) continue;
           while (flightGroup.length) {
@@ -113,7 +113,7 @@ export default class Preplan extends PreplanHeader {
               flightGroup.push(nextFlight);
               break;
             }
-            flightPack.append(nextFlight);
+            flightPack.append(nextFlight, this.autoArrangerState.changeLogs.some(l => l.flight === nextFlight));
             lastFlight = nextFlight;
           }
           flightPack.close();

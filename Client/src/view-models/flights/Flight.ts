@@ -20,8 +20,8 @@ export default class Flight {
   readonly freezed: boolean;
   readonly day: number;
   readonly blockTime: number;
-  readonly departurePermission: boolean;
-  readonly arrivalPermission: boolean;
+  readonly originPermission: boolean;
+  readonly destinationPermission: boolean;
   readonly rsx: Rsx;
   readonly required: boolean;
   readonly std: Daytime;
@@ -41,8 +41,8 @@ export default class Flight {
     this.freezed = weekdayRequiremnet.freezed;
     this.day = weekdayRequiremnet.day;
     this.blockTime = weekdayRequiremnet.scope.blockTime;
-    this.departurePermission = weekdayRequiremnet.scope.originPermission;
-    this.arrivalPermission = weekdayRequiremnet.scope.destinationPermission;
+    this.originPermission = weekdayRequiremnet.scope.originPermission;
+    this.destinationPermission = weekdayRequiremnet.scope.destinationPermission;
     this.rsx = weekdayRequiremnet.scope.rsx;
     this.required = weekdayRequiremnet.scope.required;
     this.std = new Daytime(raw.std);

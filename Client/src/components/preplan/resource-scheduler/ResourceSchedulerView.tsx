@@ -28,6 +28,12 @@ const useStyles = makeStyles((theme: Theme) => ({
               left: '0 !important',
               width: '100% !important'
             }
+          },
+          '&.vis-selected': {
+            '& .vis-item-overflow': {
+              boxShadow: '0px 0px 10px 1px green, inset 0px 0px 9px -1px green',
+              borderRadius: '4px'
+            }
           }
         }
       }
@@ -42,6 +48,17 @@ const useStyles = makeStyles((theme: Theme) => ({
         '&.rpa-item-sta': {
           textAlign: 'right'
         }
+      },
+      '& .rpa-required-asterisk': {
+        color: 'red',
+        fontSize: '12px',
+        lineHeight: '10px',
+        '&.rpa-required-asterisk-full': {
+          textShadow: '0 0 0.5px red'
+        },
+        '&.rpa-required-asterisk-semi': {
+          opacity: 0.5
+        }
       }
     },
     '.rpa-item-body': {
@@ -50,6 +67,27 @@ const useStyles = makeStyles((theme: Theme) => ({
       border: '1px solid rgba(0, 20, 110, 0.5)',
       borderRadius: '3px',
       backgroundColor: 'rgba(0, 20, 110, 0.15)',
+      '&.rpa-unknown-aircraft-register': {
+        opacity: 0.5
+      },
+      '&.rpa-origin-permission': {
+        borderLeftWidth: 4,
+        '&.rpa-origin-permission-semi': {
+          borderLeftStyle: 'double'
+        }
+      },
+      '&.rpa-destination-permission': {
+        borderRightWidth: 4,
+        '&.rpa-destination-permission-semi': {
+          borderRightStyle: 'double'
+        }
+      },
+      '&.rpa-changed': {
+        borderTopWidth: 2,
+        borderBottomWidth: 2,
+        borderTopStyle: 'dashed',
+        borderBottomStyle: 'dashed'
+      },
       '& .rpa-item-section': {
         position: 'absolute',
         top: 0,
@@ -59,8 +97,26 @@ const useStyles = makeStyles((theme: Theme) => ({
       '& .rpa-item-label': {
         flexGrow: 1,
         textAlign: 'center',
-        fontSize: '110%',
+        fontSize: '16px',
+        lineHeight: '25px',
+        paddingTop: 1,
         textShadow: '0 0 2px #797979'
+      },
+      '& .rpa-dot': {
+        display: 'inline-block',
+        height: 5,
+        width: 5,
+        borderRadius: '50%',
+        backgroundColor: 'white',
+        border: '1px solid black',
+        position: 'absolute',
+        '&.rpa-dot-semi': {
+          opacity: 0.4
+        },
+        '&.rpa-dot-left': { left: 1 },
+        '&.rpa-dot-right': { right: 1 },
+        '&.rpa-dot-top': { top: 1 },
+        '&.rpa-dot-bottom': { bottom: 1 }
       }
     },
     '.rpa-item-footer': {
@@ -293,17 +349,60 @@ function itemTemplate(item: DataItem, element: HTMLElement, data: DataItem): str
   return `
     <div class="rpa-item-header">
       <div class="rpa-item-time rpa-item-std">
-        ${flightPack.start.toString(true)}&nbsp;
+        ${flightPack.start.toString(true)}
+        ${flightPack.required === false ? '&nbsp;' : ''}
       </div>
+      ${
+        flightPack.required === true
+          ? `<div class="rpa-required-asterisk rpa-required-asterisk-full">&#10045;</div>`
+          : flightPack.required === undefined
+          ? `<div class="rpa-required-asterisk rpa-required-asterisk-semi">&#10045;</div>`
+          : ''
+      }
       <div class="rpa-item-time rpa-item-sta">
+        ${flightPack.required === false ? '&nbsp;' : ''}
         ${flightPack.end.toString(true)}
       </div>
     </div>
-    <div class="rpa-item-body">
+    <div class="rpa-item-body
+    ${flightPack.knownAircraftRegister ? ' rpa-known-aircraft-register' : ' rpa-unknown-aircraft-register'}
+    ${
+      flightPack.originPermission === true
+        ? ' rpa-origin-permission rpa-origin-permission-full'
+        : flightPack.originPermission === undefined
+        ? ' rpa-origin-permission rpa-origin-permission-semi'
+        : ''
+    }
+    ${
+      flightPack.destinationPermission === true
+        ? ' rpa-destination-permission rpa-destination-permission-full'
+        : flightPack.destinationPermission === undefined
+        ? ' rpa-destination-permission rpa-destination-permission-semi'
+        : ''
+    }
+    ${flightPack.changed === true ? ' rpa-changed rpa-changed-full' : flightPack.changed === undefined ? ' rpa-changed rpa-changed-semi' : ''}
+    ">
       ${flightPack.sections.map(s => `<div class="rpa-item-section" style="left: ${s.start * 100}%; right: ${(1 - s.end) * 100}%;"></div>`).join(' ')}
       <div class="rpa-item-label">
         ${flightPack.label}
       </div>
+      ${
+        flightPack.freezed === true
+          ? `
+            <span class="rpa-dot rpa-dot-full rpa-dot-top rpa-dot-left"></span>
+            <span class="rpa-dot rpa-dot-full rpa-dot-top rpa-dot-right"></span>
+            <span class="rpa-dot rpa-dot-full rpa-dot-bottom rpa-dot-left"></span>
+            <span class="rpa-dot rpa-dot-full rpa-dot-bottom rpa-dot-right"></span>
+          `
+          : flightPack.freezed === undefined
+          ? `
+            <span class="rpa-dot rpa-dot-semi rpa-dot-top rpa-dot-left"></span>
+            <span class="rpa-dot rpa-dot-semi rpa-dot-top rpa-dot-right"></span>
+            <span class="rpa-dot rpa-dot-semi rpa-dot-bottom rpa-dot-left"></span>
+            <span class="rpa-dot rpa-dot-semi rpa-dot-bottom rpa-dot-right"></span>
+          `
+          : ''
+      }
     </div>
     ${
       flightPack.icons.length === 0 && !flightPack.notes
@@ -400,10 +499,10 @@ function calculateTimelineOptions(startDate: Date): TimelineOptions {
       //   console.log('start');
       //   item.end = new Date(calclulatedStart + (originalEnd - originalStart));
       // }
-      if (calculatedEnd - calclulatedStart !== originalEnd - originalStart) {
-        item.start = new Date(originalStart);
-        item.end = new Date(originalEnd);
-      }
+      // if (calculatedEnd - calclulatedStart !== originalEnd - originalStart) {
+      //   item.start = new Date(originalStart);
+      //   item.end = new Date(originalEnd);
+      // }
       callback(item);
     },
     // onRemove(item, callback) {},

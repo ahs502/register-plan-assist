@@ -43,8 +43,16 @@ declare interface Array<T> {
   /**
    * Returns a grouped dictionary of this array.
    * @param groupName The property of the items or a group name generator to group items with.
+   * @param mapper Optional, the mapper function for items.
    */
-  groupBy(groupName: keyof T | ((item: T) => string)): { [groupName: string]: T[] };
+  groupBy<I = T>(groupName: keyof T | ((item: T) => string), mapper?: (item: T) => I): { [groupName: string]: I[] };
+
+  /**
+   * Returns a dictionary of this array.
+   * @param key The property of the items or a key extractor to point to the items with.
+   * @param mapper Optional, the mapper function for items.
+   */
+  toDictionary<I = T>(key: keyof T | ((item: T) => string), mapper?: (item: T) => I): { [key: string]: I };
 }
 
 declare interface ReadonlyArray<T> {
@@ -69,8 +77,16 @@ declare interface ReadonlyArray<T> {
   /**
    * Returns a grouped dictionary of this array.
    * @param groupName The property of the items or a group name generator to group items with.
+   * @param mapper Optional, the mapper function for items.
    */
-  groupBy(groupName: keyof T | ((item: T) => string)): { [groupName: string]: T[] };
+  groupBy<I = T>(groupName: keyof T | ((item: T) => string), mapper?: (item: T) => I): { [groupName: string]: I[] };
+
+  /**
+   * Returns a dictionary of this array.
+   * @param key The property of the items or a key extractor to point to the items with.
+   * @param mapper Optional, the mapper function for items.
+   */
+  toDictionary<I = T>(key: keyof T | ((item: T) => string), mapper?: (item: T) => I): { [key: string]: I };
 }
 
 declare type DateFormat = 'D' | 'D#' | 'd' | 'd#' | 'D$' | '~D$' | 'T' | 'T0' | 't' | 'T#' | 't#' | 'DT' | 'DT0';

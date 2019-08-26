@@ -1,22 +1,8 @@
-import * as xmlJson from 'xml-js';
 import { FlightScopeModel } from '@core/models/flights/FlightScopeModel';
 import Rsx from '@core/types/flight-requirement/Rsx';
-import AircraftIdentityType from '@core/types/aircraft-identity/AircraftIdentityType';
-import { XmlArray } from 'src/utils/xml';
-
-interface FlightTimeEntity {
-  readonly _attributes: {
-    readonly StdLowerBound: string;
-    readonly StdUpperBound: string;
-  };
-}
-
-interface FlightIdentityEntity {
-  readonly _attributes: {
-    readonly Type: string;
-    readonly Id_Entity: string;
-  };
-}
+import { XmlArray, xmlArray } from 'src/utils/xml';
+import FlightTimeEntity, { convertFlightTimeEntityToModel, convertFlightTimeModelToEntity } from './FlightTimeEntity';
+import AircraftIdentityEntity, { convertAircraftIdentityModelToEntity, convertAircraftIdentityEntityToModel } from '../AircraftIdentityEntity';
 
 export default interface FlightScopeEntity {
   readonly _attributes: {
@@ -30,10 +16,10 @@ export default interface FlightScopeEntity {
     readonly Time: XmlArray<FlightTimeEntity>;
   };
   readonly AllowedIdentities: {
-    readonly AllowedIdentity: XmlArray<FlightIdentityEntity>;
+    readonly AllowedIdentity: XmlArray<AircraftIdentityEntity>;
   };
   readonly ForbiddenIdentities: {
-    readonly ForbiddenIdentity: XmlArray<FlightIdentityEntity>;
+    readonly ForbiddenIdentity: XmlArray<AircraftIdentityEntity>;
   };
 }
 
@@ -47,28 +33,13 @@ export function convertFlightScopeModelToEntity(data: FlightScopeModel): FlightS
       Rsx: data.rsx
     },
     Times: {
-      Time: data.times.map(t => ({
-        _attributes: {
-          StdLowerBound: String(t.stdLowerBound),
-          StdUpperBound: String(t.stdUpperBound)
-        }
-      }))
+      Time: data.times.map(convertFlightTimeModelToEntity)
     },
     AllowedIdentities: {
-      AllowedIdentity: data.aircraftSelection.allowedIdentities.map(i => ({
-        _attributes: {
-          Type: i.type,
-          Id_Entity: i.entityId
-        }
-      }))
+      AllowedIdentity: data.aircraftSelection.allowedIdentities.map(convertAircraftIdentityModelToEntity)
     },
     ForbiddenIdentities: {
-      ForbiddenIdentity: data.aircraftSelection.forbiddenIdentities.map(i => ({
-        _attributes: {
-          Type: i.type,
-          Id_Entity: i.entityId
-        }
-      }))
+      ForbiddenIdentity: data.aircraftSelection.forbiddenIdentities.map(convertAircraftIdentityModelToEntity)
     }
   };
 }
@@ -77,25 +48,10 @@ export function convertflightScopeEntityToModel(data: FlightScopeEntity): Flight
   console.log(data);
   return {
     blockTime: Number(data._attributes.BlockTime),
-    times: !data.Times.Time
-      ? []
-      : [].concat(data.Times.Time).map(t => ({
-          stdLowerBound: Number(t.StdLowerBound),
-          stdUpperBound: Number(t.StdUpperBound)
-        })),
+    times: xmlArray(data.Times.Time).map(convertFlightTimeEntityToModel),
     aircraftSelection: {
-      allowedIdentities: !data.AllowedIdentities.AllowedIdentity
-        ? []
-        : [].concat(data.AllowedIdentities.AllowedIdentity).map(i => ({
-            type: i._attributes.Type as AircraftIdentityType,
-            entityId: i._attributes.Id_Entity
-          })),
-      forbiddenIdentities: !data.ForbiddenIdentities.ForbiddenIdentity
-        ? []
-        : [].concat(data.ForbiddenIdentities.ForbiddenIdentity).map(i => ({
-            type: i._attributes.Type as AircraftIdentityType,
-            entityId: i._attributes.Id_Entity
-          }))
+      allowedIdentities: xmlArray(data.AllowedIdentities.AllowedIdentity).map(convertAircraftIdentityEntityToModel),
+      forbiddenIdentities: xmlArray(data.ForbiddenIdentities.ForbiddenIdentity).map(convertAircraftIdentityEntityToModel)
     },
     originPermission: Boolean(data._attributes.OriginPermission),
     destinationPermission: Boolean(data._attributes.DestinationPermission),

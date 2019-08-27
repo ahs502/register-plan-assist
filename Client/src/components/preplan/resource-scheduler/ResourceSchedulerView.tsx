@@ -170,11 +170,15 @@ export interface ResourceSchedulerViewProps {
   flightPacks: readonly FlightPack[];
   aircraftRegisters: PreplanAircraftRegisters;
   changeLogs: readonly ChangeLog[];
-  selectedFlight?: Flight;
-  onFlightContextMenu(flight: Flight, pageX: number, pageY: number): void;
-  onFlightDragAndDrop(flight: Flight, newStd: Daytime, newAircraftRegister: PreplanAircraftRegister): void;
-  onFlightMouseHover(flight: Flight): void;
-  onFreeSpaceMouseHover(aircraftRegister: PreplanAircraftRegister | null, previousFlight: Flight | null, nextFlight: Flight | null): void;
+  selectedFlightPack?: FlightPack;
+  onSelectFlightPack(flightPack?: FlightPack): void;
+  onFreezeFlightPack(flightPack: FlightPack, freezed: boolean): void;
+  onRequireFlightPack(flightPack: FlightPack, required: boolean): void;
+  onOpenFlightModal(flight: Flight): void;
+  onOpenFlightPackModal(flightPack: FlightPack): void;
+  onFlightPackDragAndDrop(flightPack: FlightPack, newStd0: Daytime, newAircraftRegister?: PreplanAircraftRegister): void;
+  onFlightPackMouseHover(flightPack: FlightPack, flight?: Flight): void;
+  onFreeSpaceMouseHover(aircraftRegister: PreplanAircraftRegister | null, previousFlightPack: FlightPack | null, nextFlightPack: FlightPack | null): void;
 }
 
 const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = ({
@@ -184,10 +188,14 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = ({
   flightPacks,
   aircraftRegisters,
   changeLogs,
-  selectedFlight,
-  onFlightContextMenu,
-  onFlightDragAndDrop,
-  onFlightMouseHover,
+  selectedFlightPack,
+  onSelectFlightPack,
+  onFreezeFlightPack,
+  onRequireFlightPack,
+  onOpenFlightModal,
+  onOpenFlightPackModal,
+  onFlightPackDragAndDrop,
+  onFlightPackMouseHover,
   onFreeSpaceMouseHover
 }) => {
   const timeline = useProperty<Timeline>(null as any);
@@ -233,6 +241,7 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = ({
           <Paper ref={flightContextMenuRef} className={classes.contextMenu}>
             {flightContextMenuModel.open && (
               <MenuList>
+                <MenuItem onClick={() => setFlightContextMenuModel({ ...flightContextMenuModel, open: false })}>Hi!</MenuItem>
                 <MenuItem onClick={() => setFlightContextMenuModel({ ...flightContextMenuModel, open: false })}>Hi!</MenuItem>
               </MenuList>
             )}
@@ -499,10 +508,10 @@ function calculateTimelineOptions(startDate: Date): TimelineOptions {
       //   console.log('start');
       //   item.end = new Date(calclulatedStart + (originalEnd - originalStart));
       // }
-      // if (calculatedEnd - calclulatedStart !== originalEnd - originalStart) {
-      //   item.start = new Date(originalStart);
-      //   item.end = new Date(originalEnd);
-      // }
+      if (calculatedEnd - calclulatedStart !== originalEnd - originalStart) {
+        item.start = new Date(originalStart);
+        item.end = new Date(originalEnd);
+      }
       callback(item);
     },
     // onRemove(item, callback) {},

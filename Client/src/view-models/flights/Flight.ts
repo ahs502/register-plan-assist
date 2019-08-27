@@ -5,10 +5,12 @@ import Daytime from '@core/types/Daytime';
 import PreplanAircraftRegister, { PreplanAircraftRegisters } from 'src/view-models/PreplanAircraftRegister';
 import FlightModel from '@core/models/flights/FlightModel';
 import Rsx from '@core/types/flight-requirement/Rsx';
+import FlightPack from './FlightPack';
 
 export default class Flight {
   readonly requirement: FlightRequirement;
   readonly weekdayRequirement: WeekdayFlightRequirement;
+  readonly pack!: FlightPack; // To be set when initiating its flight pack.
   readonly derivedId: string;
   readonly label: string;
   readonly category: string;

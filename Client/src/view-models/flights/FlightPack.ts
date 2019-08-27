@@ -20,10 +20,11 @@ export default class FlightPack {
   readonly originPermission: boolean | undefined;
   readonly destinationPermission: boolean | undefined;
   readonly changed: boolean | undefined;
-  readonly icons: readonly string[];
+  readonly icons: readonly string[]; //TODO: Check if it is really required.
   readonly notes: string;
 
   constructor(flight: Flight, changed: boolean) {
+    (flight as { pack: FlightPack }).pack = this;
     this.derivedId = flight.derivedId;
     this.label = flight.label;
     this.aircraftRegister = flight.aircraftRegister;
@@ -43,6 +44,7 @@ export default class FlightPack {
   }
 
   append(flight: Flight, changed: boolean): void {
+    (flight as { pack: FlightPack }).pack = this;
     const flightPack = (this as unknown) as {
       flights: Flight[];
       end: Daytime;

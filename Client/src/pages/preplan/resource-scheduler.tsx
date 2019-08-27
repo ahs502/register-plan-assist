@@ -16,6 +16,8 @@ import FlightRequirement from 'src/view-models/flights/FlightRequirement';
 import WeekdayFlightRequirement from 'src/view-models/flights/WeekdayFlightRequirement';
 import Flight from 'src/view-models/flights/Flight';
 import Daytime from '@core/types/Daytime';
+import FlightPack from 'src/view-models/flights/FlightPack';
+import PreplanService from 'src/services/PreplanService';
 
 const useStyles = makeStyles((theme: Theme) => ({
   sideBarBackdrop: {
@@ -41,6 +43,10 @@ const useStyles = makeStyles((theme: Theme) => ({
 
 type SideBar = 'SETTINGS' | 'SELECT_AIRCRAFT_REGISTERS' | 'SEARCH_FLIGHTS' | 'AUTO_ARRANGER_CHANGE_LOG' | 'OBJECTIONS';
 
+interface ResourceSchedulerViewModel {
+  selectedFlightPack?: FlightPack;
+}
+
 export interface ResourceSchedulerPageProps {
   preplan: Preplan;
   onEditFlight(flight: Flight): void;
@@ -52,9 +58,10 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
   const [sideBar, setSideBar] = useState<{ sideBar?: SideBar; open: boolean; initialSearch?: string }>({ open: false });
   const [autoArrangerRunning, setAutoArrangerRunning] = useState(() => false); //TODO: Initialize by data from server.
   const [allFlightsFreezed, setAllFlightsFreezed] = useState(() => false); //TODO: Initialize from preplan flights.
-  const navBarToolsContainer = useContext(NavBarToolsContainerContext);
-
+  const [resourceSchedulerViewModel, setResourceSchedulerViewModel] = useState<ResourceSchedulerViewModel>({});
   const [statusBarText, setStatusBarText] = useState('');
+
+  const navBarToolsContainer = useContext(NavBarToolsContainerContext);
 
   const classes = useStyles();
 
@@ -153,17 +160,29 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
         flightPacks={preplan.flightPacks}
         aircraftRegisters={preplan.aircraftRegisters}
         changeLogs={preplan.autoArrangerState.changeLogs}
-        selectedFlight={undefined}
-        onFlightContextMenu={(flight, pageX, pageY) => alert(`Flight ${flight.derivedId} @ ${pageX}:${pageY}\nNot implemented.`)}
-        onFlightDragAndDrop={(flight, newStd, newAircraftRegister) =>
-          alert(`D&D flight ${flight.derivedId} to ${newStd.toString()} with ${newAircraftRegister ? newAircraftRegister.name : '???'}\nNot implemented.`)
-        }
-        onFlightMouseHover={flight => console.log('Mouse on', flight.derivedId)}
-        onFreeSpaceMouseHover={
-          (aircraftRegister, previousFlight, nextFlight) =>
-            setStatusBarText(`${previousFlight ? previousFlight.arrivalAirport.name : ''} ${calculateFreeSpaceTime(previousFlight, nextFlight).toString()}`)
-          // console.log(`Mouse on free space... ${previousFlight && previousFlight.std} ${nextFlight && nextFlight.std}`)
-        }
+        selectedFlightPack={resourceSchedulerViewModel.selectedFlightPack}
+        onSelectFlightPack={flightPack => setResourceSchedulerViewModel({ ...resourceSchedulerViewModel, selectedFlightPack: flightPack })}
+        onFreezeFlightPack={(flightPack, freezed) => {
+          //TODO: Not implemented.
+        }}
+        onRequireFlightPack={(flightPack, required) => {
+          //TODO: Not implemented.
+        }}
+        onOpenFlightModal={flight => {
+          //TODO: Not implemented.
+        }}
+        onOpenFlightPackModal={flightPack => {
+          //TODO: Not implemented.
+        }}
+        onFlightPackDragAndDrop={(flightPack, newStd0, newAircraftRegister) => {
+          //TODO: Not implemented.
+        }}
+        onFlightPackMouseHover={(flightPack, flight) => {
+          //TODO: Not implemented.
+        }}
+        onFreeSpaceMouseHover={(aircraftRegister, previousFlightPack, nextFlightPack) => {
+          //TODO: Not implemented.
+        }}
       />
       <div className={classes.statusBar}>{statusBarText}</div>
     </Fragment>

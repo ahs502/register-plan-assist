@@ -202,7 +202,7 @@ router.post(
     const updatedFlightRequirement: FlightRequirementEntity[] = await runSp(
       '[RPA].[SP_EditFlightRequirements]',
       runSp.varCharParam('userId', userId),
-      runSp.tableparam(
+      runSp.tableParam(
         'flightRequirementParameter',
         [
           { name: 'id', type: TYPES.Int },
@@ -213,8 +213,8 @@ router.post(
           { name: 'category', type: TYPES.NVarChar, length: 100 },
           { name: 'stcId', type: TYPES.Int },
           { name: 'flightNumber', type: TYPES.VarChar, length: 10 },
-          { name: 'departureAirportId', type: TYPES.BigInt },
-          { name: 'stcId', type: TYPES.BigInt }
+          { name: 'departureAirportId', type: TYPES.VarChar },
+          { name: 'arrivalAirportId', type: TYPES.VarChar }
         ],
         rawFlightRequirements
       )

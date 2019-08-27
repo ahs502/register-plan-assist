@@ -37,7 +37,7 @@ export function convertWeekdayFlightRequirementEntityToModel(data: WeekdayFlight
   return {
     scope: convertflightScopeEntityToModel(data.Scope),
     notes: data._attributes.Notes,
-    freezed: Boolean(data._attributes.Freezed),
+    freezed: data._attributes.Freezed === 'true',
     day: Number(data._attributes.Day),
     flight: {
       std: Number(data.Flight._attributes.Std),

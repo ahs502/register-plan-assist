@@ -21,7 +21,7 @@ export function convertAircraftRegisterOptionsModelToEntity(data: AircraftRegist
 
 export function convertAircraftRegisterOptionsEntityToModel(data: AircraftRegisterOptionsEntity): AircraftRegisterOptionsModel {
   return {
-    startingAirportId: data._attributes.Id_AircraftRegister || undefined,
+    startingAirportId: data._attributes.Id_StartingAirport || undefined,
     status: data._attributes.Status as AircraftRegisterStatus
   };
 }

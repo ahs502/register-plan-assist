@@ -49,13 +49,17 @@ export interface ResourceSchedulerPageProps {
   onEditWeekdayFlightRequirement(weekdayFlightRequirement: WeekdayFlightRequirement): void;
 }
 
+interface SidebarState {
+  loading: boolean;
+  errorMessage: string | undefined;
+}
+
 const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEditFlight, onEditFlightRequirement, onEditWeekdayFlightRequirement }) => {
   const [sideBar, setSideBar] = useState<{ sideBar?: SideBar; open: boolean; initialSearch?: string }>({ open: false });
   const [autoArrangerRunning, setAutoArrangerRunning] = useState(() => false); //TODO: Initialize by data from server.
   const [allFlightsFreezed, setAllFlightsFreezed] = useState(() => false); //TODO: Initialize from preplan flights.
   const navBarToolsContainer = useContext(NavBarToolsContainerContext);
-  const [loading, setLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
+  const [sidebarState, setSidebarState] = useState<SidebarState>({ loading: false, errorMessage: undefined });
   const [statusBarText, setStatusBarText] = useState('');
 
   const classes = useStyles();
@@ -133,13 +137,12 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
           <SelectAircraftRegistersSideBar
             initialSearch={sideBar.initialSearch}
             aircraftRegisters={preplan.aircraftRegisters}
-            loading={loading}
-            errorMessage={errorMessage}
+            loading={sidebarState.loading}
+            errorMessage={sidebarState.errorMessage}
             onApply={async (dummyAircraftRegisters, aircraftRegisterOptionsDictionary) => {
-              setLoading(true);
-              console.table(dummyAircraftRegisters, aircraftRegisterOptionsDictionary);
-              await PreplanService.setAircraftRegisters(preplan.id, dummyAircraftRegisters, aircraftRegisterOptionsDictionary);
-              setLoading(false);
+              setSidebarState({ loading: true, errorMessage: undefined });
+              const result = await PreplanService.setAircraftRegisters(preplan.id, dummyAircraftRegisters, aircraftRegisterOptionsDictionary);
+              setSidebarState({ loading: false, errorMessage: result.message });
             }}
           />
         )}

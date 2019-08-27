@@ -24,9 +24,7 @@
     "jsonwebtoken": "^8.5.1",
     "node-fetch": "^2.6.0",
     "tedious": "^6.2.0",
-    "xml-js": "^1.6.11",
-    "xml-to-json-stream": "^1.1.0",
-    "xml2js": "^0.4.19"
+    "xml-js": "^1.6.11"
   },
   "devDependencies": {
     "@types/colors": "^1.2.1",

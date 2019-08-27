@@ -174,6 +174,9 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
         onRequireFlightPack={(flightPack, required) => {
           //TODO: Not implemented.
         }}
+        onIgnoreFlightPack={flightPack => {
+          //TODO: Not implemented.
+        }}
         onOpenFlightModal={flight => {
           //TODO: Not implemented.
         }}
@@ -183,10 +186,16 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
         onFlightPackDragAndDrop={(flightPack, newStd0, newAircraftRegister) => {
           //TODO: Not implemented.
         }}
-        onFlightPackMouseHover={(flightPack, flight) => {
+        onFlightPackMouseHover={flightPack => {
+          console.log('flight pack', flightPack);
           //TODO: Not implemented.
         }}
         onFreeSpaceMouseHover={(aircraftRegister, previousFlightPack, nextFlightPack) => {
+          console.log('free space', aircraftRegister, previousFlightPack, nextFlightPack);
+          //TODO: Not implemented.
+        }}
+        onNowhereMouseHover={() => {
+          console.log('nowhere');
           //TODO: Not implemented.
         }}
       />

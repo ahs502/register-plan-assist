@@ -1,6 +1,7 @@
 import React, { FC, useState, Fragment, useRef } from 'react';
-import { Theme, Menu, MenuItem, MenuList, ClickAwayListener, Paper } from '@material-ui/core';
+import { Theme, Menu, MenuItem, MenuList, ClickAwayListener, Paper, ListItemIcon, Typography, Divider } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
+import { Check as CheckIcon } from '@material-ui/icons';
 import Flight from 'src/view-models/flights/Flight';
 import Daytime from '@core/types/Daytime';
 import PreplanAircraftRegister, { PreplanAircraftRegisters } from 'src/view-models/PreplanAircraftRegister';
@@ -9,7 +10,6 @@ import { DataGroup, DataItem, TimelineOptions, Id, Timeline } from 'vis-timeline
 import Weekday from '@core/types/Weekday';
 import VisTimeline from 'src/components/VisTimeline';
 import moment from 'moment';
-import { Airport } from '@core/master-data';
 import useProperty from 'src/utils/useProperty';
 import FlightPack from 'src/view-models/flights/FlightPack';
 
@@ -150,6 +150,9 @@ const useStyles = makeStyles((theme: Theme) => ({
   contextMenu: {
     position: 'fixed',
     zIndex: theme.zIndex.tooltip
+  },
+  semiCheckIcon: {
+    opacity: 0.3
   }
 }));
 
@@ -159,8 +162,9 @@ interface TimelineData {
   options: TimelineOptions;
 }
 
-interface FlightContextMenuModel {
+interface FlightPackContextMenuModel {
   open?: boolean;
+  flightPack?: FlightPack;
 }
 
 export interface ResourceSchedulerViewProps {
@@ -174,11 +178,13 @@ export interface ResourceSchedulerViewProps {
   onSelectFlightPack(flightPack?: FlightPack): void;
   onFreezeFlightPack(flightPack: FlightPack, freezed: boolean): void;
   onRequireFlightPack(flightPack: FlightPack, required: boolean): void;
+  onIgnoreFlightPack(flightPack: FlightPack): void;
   onOpenFlightModal(flight: Flight): void;
   onOpenFlightPackModal(flightPack: FlightPack): void;
   onFlightPackDragAndDrop(flightPack: FlightPack, newStd0: Daytime, newAircraftRegister?: PreplanAircraftRegister): void;
-  onFlightPackMouseHover(flightPack: FlightPack, flight?: Flight): void;
+  onFlightPackMouseHover(flightPack: FlightPack): void;
   onFreeSpaceMouseHover(aircraftRegister: PreplanAircraftRegister | null, previousFlightPack: FlightPack | null, nextFlightPack: FlightPack | null): void;
+  onNowhereMouseHover(): void;
 }
 
 const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = ({
@@ -192,11 +198,13 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = ({
   onSelectFlightPack,
   onFreezeFlightPack,
   onRequireFlightPack,
+  onIgnoreFlightPack,
   onOpenFlightModal,
   onOpenFlightPackModal,
   onFlightPackDragAndDrop,
   onFlightPackMouseHover,
-  onFreeSpaceMouseHover
+  onFreeSpaceMouseHover,
+  onNowhereMouseHover
 }) => {
   const timeline = useProperty<Timeline>(null as any);
   const [timelineData, setTimelineData] = useState<TimelineData>(() => {
@@ -207,8 +215,8 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = ({
     return { groups, items, options };
   });
 
-  const [flightContextMenuModel, setFlightContextMenuModel] = useState<FlightContextMenuModel>({});
-  const flightContextMenuRef = useRef<HTMLDivElement>(null);
+  const [flightPackContextMenuModel, setFlightPackContextMenuModel] = useState<FlightPackContextMenuModel>({});
+  const flightPackContextMenuRef = useRef<HTMLDivElement>(null);
 
   const classes = useStyles();
 
@@ -216,33 +224,136 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = ({
     <Fragment>
       <VisTimeline
         {...timelineData}
+        selection={selectedFlightPack && selectedFlightPack.derivedId}
         retrieveTimeline={t => timeline(t)}
         onRangeChanged={properties => timeline().redraw()}
-        onMouseMove={properties => {
-          if (!properties.group) return;
-          const adjacentItem = findAdjacentFlights(timelineData.items, properties.group, properties.time);
-          onFreeSpaceMouseHover(aircraftRegisters.items.filter(item => item.id === properties.group)[0], adjacentItem[0], adjacentItem[1]);
-        }}
         onMouseOver={properties => {
-          // onFreeSpaceMouseHover(AircraftRegisterOptionsDictionary[props.group], adjacentItem[0]&&adjacentItem[0].flight , adjacentItem[1].flight);
+          switch (properties.what) {
+            case 'item':
+              const item = timelineData.items.find(item => item.id === properties.item);
+              if (!item) return onNowhereMouseHover();
+              onFlightPackMouseHover(item.data);
+              break;
+
+            case 'background':
+              if (properties.group === '???') return onFreeSpaceMouseHover(null, null, null);
+              const register = aircraftRegisters.id[properties.group as any];
+              if (!register) return onNowhereMouseHover();
+              const registerFlightPacks = flightPacks.filter(f => !!f.aircraftRegister && f.aircraftRegister.id === register.id);
+              if (registerFlightPacks.length === 0) return onFreeSpaceMouseHover(register, null, null);
+              let previousFlightPack: FlightPack | null = null,
+                nextFlightPack: FlightPack | null = registerFlightPacks.shift() || null;
+              do {
+                const start = previousFlightPack ? startDate.getTime() + previousFlightPack.day * 24 * 60 * 60 * 1000 + previousFlightPack.end.minutes * 60 * 1000 : -Infinity,
+                  end = nextFlightPack ? startDate.getTime() + nextFlightPack.day * 24 * 60 * 60 * 1000 + nextFlightPack.start.minutes * 60 * 1000 : Infinity;
+                if (start <= properties.time.getTime() && properties.time.getTime() <= end) return onFreeSpaceMouseHover(register, previousFlightPack, nextFlightPack);
+                previousFlightPack = nextFlightPack;
+                nextFlightPack = registerFlightPacks.shift() || null;
+              } while (previousFlightPack || nextFlightPack);
+              onFreeSpaceMouseHover(register, null, null);
+              break;
+
+            default:
+              onNowhereMouseHover();
+          }
+        }}
+        onSelect={({ items, event }) => {
+          const item = timelineData.items.find(item => item.id === items[0]);
+          onSelectFlightPack(item ? item.data : undefined);
         }}
         onContextMenu={properties => {
           properties.event.preventDefault();
           const item = timelineData.items.find(item => item.id === properties.item);
           if (!item) return;
           const { pageX, pageY } = properties;
-          flightContextMenuRef.current!.style.top = `${pageY}px`;
-          flightContextMenuRef.current!.style.left = `${pageX}px`;
-          setFlightContextMenuModel({ open: true });
+          flightPackContextMenuRef.current!.style.top = `${pageY}px`;
+          flightPackContextMenuRef.current!.style.left = `${pageX}px`;
+          setFlightPackContextMenuModel({ open: true, flightPack: item.data });
         }}
       />
-      <ClickAwayListener onClickAway={() => setFlightContextMenuModel({ ...flightContextMenuModel, open: false })}>
+      <ClickAwayListener onClickAway={() => setFlightPackContextMenuModel({ ...flightPackContextMenuModel, open: false })}>
         <div>
-          <Paper ref={flightContextMenuRef} className={classes.contextMenu}>
-            {flightContextMenuModel.open && (
+          <Paper ref={flightPackContextMenuRef} className={classes.contextMenu}>
+            {flightPackContextMenuModel.open && (
               <MenuList>
-                <MenuItem onClick={() => setFlightContextMenuModel({ ...flightContextMenuModel, open: false })}>Hi!</MenuItem>
-                <MenuItem onClick={() => setFlightContextMenuModel({ ...flightContextMenuModel, open: false })}>Hi!</MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    setFlightPackContextMenuModel({ ...flightPackContextMenuModel, open: false });
+                    onFreezeFlightPack(flightPackContextMenuModel.flightPack!, flightPackContextMenuModel.flightPack!.freezed !== true);
+                  }}
+                >
+                  <ListItemIcon>
+                    {flightPackContextMenuModel.flightPack!.freezed === true ? (
+                      <CheckIcon />
+                    ) : flightPackContextMenuModel.flightPack!.freezed === undefined ? (
+                      <CheckIcon classes={{ root: classes.semiCheckIcon }} />
+                    ) : (
+                      <span />
+                    )}
+                  </ListItemIcon>
+                  <Typography>Freezed</Typography>
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    setFlightPackContextMenuModel({ ...flightPackContextMenuModel, open: false });
+                    onRequireFlightPack(flightPackContextMenuModel.flightPack!, flightPackContextMenuModel.flightPack!.required !== true);
+                  }}
+                >
+                  <ListItemIcon>
+                    {flightPackContextMenuModel.flightPack!.required === true ? (
+                      <CheckIcon />
+                    ) : flightPackContextMenuModel.flightPack!.required === undefined ? (
+                      <CheckIcon classes={{ root: classes.semiCheckIcon }} />
+                    ) : (
+                      <span />
+                    )}
+                  </ListItemIcon>
+                  <Typography>Required</Typography>
+                </MenuItem>
+                <Divider />
+                <MenuItem
+                  onClick={() => {
+                    setFlightPackContextMenuModel({ ...flightPackContextMenuModel, open: false });
+                    onIgnoreFlightPack(flightPackContextMenuModel.flightPack!);
+                  }}
+                >
+                  <ListItemIcon>
+                    <span />
+                  </ListItemIcon>
+                  <Typography>Ignore</Typography>
+                </MenuItem>
+                <Divider />
+                <MenuItem
+                  onClick={() => {
+                    setFlightPackContextMenuModel({ ...flightPackContextMenuModel, open: false });
+                    onOpenFlightPackModal(flightPackContextMenuModel.flightPack!);
+                  }}
+                >
+                  <ListItemIcon>
+                    <span />
+                  </ListItemIcon>
+                  <Typography>Flight Pack...</Typography>
+                </MenuItem>
+                {flightPackContextMenuModel.flightPack!.flights.map(f => (
+                  <MenuItem
+                    key={f.derivedId}
+                    onClick={() => {
+                      setFlightPackContextMenuModel({ ...flightPackContextMenuModel, open: false });
+                      onOpenFlightModal(f);
+                    }}
+                  >
+                    <ListItemIcon>
+                      <span />
+                    </ListItemIcon>
+                    <Typography>
+                      Flight&nbsp;&nbsp;
+                      <Typography variant="body2" display="inline">
+                        {f.flightNumber}
+                      </Typography>
+                      &nbsp;&nbsp;{f.departureAirport.name}&ndash;{f.arrivalAirport.name}...
+                    </Typography>
+                  </MenuItem>
+                ))}
               </MenuList>
             )}
           </Paper>
@@ -551,25 +662,4 @@ function calculateTimelineOptions(startDate: Date): TimelineOptions {
   };
 
   return options;
-}
-
-function findAdjacentFlights(items: DataItem[], groupId: Id, freeSpaceDateTime: Date) {
-  var nextItem: any;
-  var previousItem: any;
-  const itemInGroups = items.filter(item => item.group === groupId).sort((a, b) => (a.start > b.start ? 1 : a.start < b.start ? -1 : 0));
-  for (var i = 0; i < itemInGroups.length; i++) {
-    if (+itemInGroups[i].start > +freeSpaceDateTime) {
-      nextItem = itemInGroups[i];
-      if (i > 0) {
-        previousItem = itemInGroups[i - 1];
-      }
-      break;
-    }
-  }
-  if (!nextItem && itemInGroups.length) {
-    previousItem = itemInGroups[itemInGroups.length - 1];
-  }
-  const nextFlight = !nextItem ? nextItem : nextItem.flight;
-  const previousFlight = !previousItem ? previousItem : previousItem.flight;
-  return [previousFlight, nextFlight];
 }

@@ -16,7 +16,7 @@ export function convertPreplanEntityToModel(data: PreplanEntity, flightRequireme
   return {
     ...convertPreplanHeaderEntityToModel(data),
     autoArrangerOptions: undefined, // data.autoArrangerOptions ? convertAutoArrangerOptionsEntityToModel(data.autoArrangerOptions) : undefined,
-    autoArrangerState: undefined, //convertAutoArrangerStateEntityToModel(data.autoArrangerState),
+    autoArrangerState: { solving: false, messageViewed: true, changeLogs: [], changeLogsViewed: true }, //convertAutoArrangerStateEntityToModel(data.autoArrangerState),
     dummyAircraftRegisters: convertDummyAircraftRegisterListEntityToModel(xmlParse(data.DummyAircraftRegisters, 'DummyAircraftRegisters')),
     aircraftRegisterOptionsDictionary: convertAircraftRegisterOptionsListEntityToModel(xmlParse(data.AircraftRegisterOptions, 'AircraftRegistersOptions')),
     flightRequirements: flightRequirements.map(convertFlightRequirementEntityToModel)

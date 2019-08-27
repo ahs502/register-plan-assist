@@ -49,7 +49,6 @@ export function convertFlightScopeModelToEntity(data: FlightScopeModel): FlightS
 }
 
 export function convertflightScopeEntityToModel(data: FlightScopeEntity): FlightScopeModel {
-  console.log(data);
   return {
     blockTime: Number(data._attributes.BlockTime),
     times: xmlArray(data.Times.Time).map(convertFlightTimeEntityToModel),

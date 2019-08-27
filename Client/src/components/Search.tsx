@@ -17,9 +17,10 @@ export interface SearchProps {
   outlined?: boolean;
   initialSearch?: string;
   onQueryChange?: (query: ReadonlyArray<string>) => void;
+  disabled?: boolean;
 }
 
-const Search: FC<SearchProps> = ({ outlined, initialSearch, onQueryChange }) => {
+const Search: FC<SearchProps> = ({ outlined, initialSearch, onQueryChange, disabled }) => {
   const [value, setValue] = useState(initialSearch || '');
 
   useEffect(() => {
@@ -40,7 +41,7 @@ const Search: FC<SearchProps> = ({ outlined, initialSearch, onQueryChange }) => 
         <div className={classes.wrapper}>
           <MahanIcon type={MahanIconType.Search} />
           <span className={classes.space} />
-          <TextField label="Search" value={value} fullWidth onChange={e => setValue(e.target.value)} />
+          <TextField disabled={disabled} label="Search" value={value} fullWidth onChange={e => setValue(e.target.value)} />
         </div>
       )}
       {outlined && (
@@ -48,6 +49,7 @@ const Search: FC<SearchProps> = ({ outlined, initialSearch, onQueryChange }) => 
           placeholder="Search"
           variant="outlined"
           margin="dense"
+          disabled={disabled}
           fullWidth
           value={value}
           onChange={e => setValue(e.target.value)}

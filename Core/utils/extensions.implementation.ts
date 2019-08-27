@@ -67,14 +67,23 @@
     return result;
   };
 
-  Array.prototype.groupBy = function Array_prototype_groupBy<T>(groupName: keyof T | ((item: T) => string)): { [groupName: string]: T[] } {
-    const groups: { [groupName: string]: T[] } = {};
+  Array.prototype.groupBy = function Array_prototype_groupBy<T, I = T>(groupName: keyof T | ((item: T) => string), mapper?: (item: T) => I): { [groupName: string]: I[] } {
+    const result: { [groupName: string]: I[] } = {};
     this.forEach(item => {
       const name = typeof groupName === 'function' ? groupName(item) : item[groupName];
-      groups[name] = groups[name] || [];
-      groups[name].push(item);
+      result[name] = result[name] || [];
+      result[name].push(mapper ? mapper(item) : item);
     });
-    return groups;
+    return result;
+  };
+
+  Array.prototype.toDictionary = function Array_prototype_toDictionary<T, I = T>(key: keyof T | ((item: T) => string), mapper?: (item: T) => I): { [key: string]: I } {
+    const result: { [key: string]: I } = {};
+    this.forEach(item => {
+      const name = typeof key === 'function' ? key(item) : item[key];
+      result[name] = mapper ? mapper(item) : item;
+    });
+    return result;
   };
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////

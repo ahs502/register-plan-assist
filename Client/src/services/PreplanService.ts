@@ -1,10 +1,10 @@
 import RequestManager from 'src/utils/RequestManager';
 import PreplanModel, { PreplanHeaderModel } from '@core/models/PreplanModel';
-import AutoArrangerOptions from '@core/models/AutoArrangerOptionsModel';
 import FlightRequirementModel from '@core/models/flights/FlightRequirementModel';
-import ServerResult from '@core/types/ServerResult';
 import NewPreplanModel from '@core/models/NewPreplanModel';
 import EditPreplanModel from '@core/models/EditPreplanModel';
+import DummyAircraftRegisterModel from '@core/models/DummyAircraftRegisterModel';
+import { AircraftRegisterOptionsDictionaryModel } from '@core/models/AircraftRegisterOptionsModel';
 
 const request = RequestManager.makeRequester('preplan');
 
@@ -66,52 +66,42 @@ export default class PreplanService {
     return await request<PreplanModel>('finalize', { id });
   }
 
-  // /**
-  //  * Updates the auto-arranger options for some specified preplan and provides the same auto-arranger options.
-  //  */
-  // static async updateAutoArrangerOptions(id: string, autoArrangerOptions: Readonly<AutoArrangerOptions>): Promise<ServerResult<Readonly<AutoArrangerOptions>>> {
-  //   return await request('update-auto-arranger-options', { id, autoArrangerOptions });
-  // }
-
-  // /**
-  //  * Adds/edits (according to the given id in model) some dummy aircraft register for
-  //  * some specified preplan and provides the complete data model of that preplan.
-  //  */
-  // static async addOrEditDummyAircraftRegister(id: string, dummyAircraftRegister: Readonly<DummyAircraftRegisterModel>): Promise<ServerResult<Readonly<PreplanModel>>> {
-  //   return await request('add-or-edit-dummy-aircraft-register', { id, dummyAircraftRegister });
-  // }
-
-  // /**
-  //  * Removes some dummy aircraft register and provides the complete data model of its preplan.
-  //  */
-  // static async removeDummyAircraftRegister(dummyAircraftRegisterId: string): Promise<ServerResult<Readonly<PreplanModel>>> {
-  //   return await request('remove-dummy-aircraft-register', { dummyAircraftRegisterId });
-  // }
-
-  // /**
-  //  * Updates the aircraft register options dictionary for some specified preplan and provides the complete data model of that preplan.
-  //  */
-  // static async updateAircraftRegisterOptionsDictionary(
-  //   id: string,
-  //   aircraftRegisterOptionsDictionary: Readonly<AircraftRegisterOptionsDictionary>
-  // ): Promise<ServerResult<Readonly<PreplanModel>>> {
-  //   return await request('update-aircraft-register-options-dictionary', { id, aircraftRegisterOptionsDictionary });
-  // }
-
   /**
-   * Adds/edits (according to the given id) some flight requirement including
-   * its day flight requirements for some specified preplan and provides
-   * the full new data model of the same flight requirement, including the id fields in case of adding.
+   * Adds a new flight requirement and provides it again including its new id.
    */
-  static async addOrEditFlightRequirement(id: string, flightRequirement: Readonly<FlightRequirementModel>): Promise<ServerResult<Readonly<FlightRequirementModel>>> {
-    return await request('add-or-edit-flight-requirement', { id, flightRequirement });
+  static async addFlightRequirement(id: string, flightRequirement: FlightRequirementModel) {
+    return await request<FlightRequirementModel>('add-flight-requirement', { id, flightRequirement });
   }
 
   /**
-   * Removes some flight requirement including its day flight requirements and
-   * provides the success statuc of that operation.
+   * Removes a flight requirement.
    */
-  static async removeFlightRequirement(flightRequirementId: string): Promise<ServerResult<boolean>> {
-    return await request('remove-flight-requirement', { flightRequirementId });
+  static async removeFlightRequirement(flightRequirementId: string) {
+    return await request<void>('remove-flight-requirement', { flightRequirementId });
+  }
+
+  /**
+   * Edits all the given flight requirements and provides them with their new values.
+   */
+  static async editFlightRequirements(flightRequirements: readonly FlightRequirementModel[]) {
+    return await request<FlightRequirementModel[]>('edit-flight-requirements', { flightRequirements });
+  }
+
+  /**
+   * Sets a flight requirement included/excluded status and provides it again with new value.
+   */
+  static async setFlightRequirementIncluded(flightRequirementId: string, included: boolean) {
+    return await request<FlightRequirementModel>('set-flight-requirement-included', { flightRequirementId, included });
+  }
+
+  /**
+   * Sets the status of aircraft registers.
+   */
+  static async setAircraftRegisters(
+    id: string,
+    dummyAircraftRegisters: readonly DummyAircraftRegisterModel[],
+    aircraftRegisterOptionsDictionary: AircraftRegisterOptionsDictionaryModel
+  ) {
+    return await request<void>('set-aircraft-registers', { id, dummyAircraftRegisters, aircraftRegisterOptionsDictionary });
   }
 }

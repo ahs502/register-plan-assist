@@ -46,7 +46,9 @@ export class PreplanAircraftRegisters extends MasterDataItems<PreplanAircraftReg
   constructor(dummyAircraftRegisters: readonly DummyAircraftRegisterModel[], aircraftRegisterOptionsDictionary: AircraftRegisterOptionsDictionaryModel) {
     const dictionary = new AircraftRegisterOptionsDictionary(aircraftRegisterOptionsDictionary);
     let masterDataItems = MasterData.all.aircraftRegisters.items.map(a => new PreplanAircraftRegister(a.id, a.name, a.aircraftType, false, dictionary[a.id]));
-    let dummyItems = dummyAircraftRegisters.map(a => new PreplanAircraftRegister(a.id, a.name, MasterData.all.aircraftTypes.id[a.aircraftTypeId], true, dictionary[a.id]));
+    let dummyItems = dummyAircraftRegisters
+      ? dummyAircraftRegisters.map(a => new PreplanAircraftRegister(a.id, a.name, MasterData.all.aircraftTypes.id[a.aircraftTypeId], true, dictionary[a.id]))
+      : [];
     super(masterDataItems.concat(dummyItems));
   }
 

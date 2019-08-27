@@ -65,8 +65,9 @@ const SimpleModal: FC<SimpleModalProps> = ({ children, loading, title, cancelabl
         )}
       </DialogContent>
       <DialogActions>
-        {modalActions.map(ma => (
+        {modalActions.map((ma, index) => (
           <Button
+            key={index}
             onClick={() => {
               const handler = ma.action || onClose;
               handler && handler();

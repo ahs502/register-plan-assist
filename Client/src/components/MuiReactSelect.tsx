@@ -160,6 +160,12 @@ const MuiReactSelect = <T extends {}>({ label, isMulti, ...others }: MuiReactSel
       '& input': {
         font: 'inherit'
       }
+    }),
+    indicatorsContainer: (base: CSSProperties) => ({
+      ...base,
+      '& div': {
+        padding: '6px'
+      }
     })
   };
 

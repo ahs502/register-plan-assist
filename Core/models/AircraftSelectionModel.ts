@@ -14,15 +14,15 @@ export class AircraftSelectionValidation extends Validation<
     readonly forbiddenIdentities: readonly AircraftIdentityValidation[];
   }
 > {
-  constructor(aircraftSelection: AircraftSelectionModel, dummyAircraftRegisters: readonly DummyAircraftRegisterModel[]) {
+  constructor(aircraftSelection: AircraftSelectionModel, dummyAircraftRegistersId: readonly string[]) {
     super(validator =>
       validator.object(aircraftSelection).do(({ allowedIdentities, forbiddenIdentities }) => {
         validator
           .array(allowedIdentities)
-          .each((allowedIdentity, index) => validator.into('allowedIdentities', index).set(() => new AircraftIdentityValidation(allowedIdentity, dummyAircraftRegisters)));
+          .each((allowedIdentity, index) => validator.into('allowedIdentities', index).set(() => new AircraftIdentityValidation(allowedIdentity, dummyAircraftRegistersId)));
         validator
           .array(forbiddenIdentities)
-          .each((forbiddenIdentity, index) => validator.into('forbiddenIdentities', index).set(() => new AircraftIdentityValidation(forbiddenIdentity, dummyAircraftRegisters)));
+          .each((forbiddenIdentity, index) => validator.into('forbiddenIdentities', index).set(() => new AircraftIdentityValidation(forbiddenIdentity, dummyAircraftRegistersId)));
       })
     );
   }

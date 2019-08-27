@@ -16,7 +16,10 @@ import FlightRequirement from 'src/view-models/flights/FlightRequirement';
 import WeekdayFlightRequirement from 'src/view-models/flights/WeekdayFlightRequirement';
 import Flight from 'src/view-models/flights/Flight';
 import Daytime from '@core/types/Daytime';
+<<<<<<< HEAD
 import FlightPack from 'src/view-models/flights/FlightPack';
+=======
+>>>>>>> origin/ui-implement
 import PreplanService from 'src/services/PreplanService';
 
 const useStyles = makeStyles((theme: Theme) => ({
@@ -58,7 +61,13 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
   const [sideBar, setSideBar] = useState<{ sideBar?: SideBar; open: boolean; initialSearch?: string }>({ open: false });
   const [autoArrangerRunning, setAutoArrangerRunning] = useState(() => false); //TODO: Initialize by data from server.
   const [allFlightsFreezed, setAllFlightsFreezed] = useState(() => false); //TODO: Initialize from preplan flights.
+<<<<<<< HEAD
   const [resourceSchedulerViewModel, setResourceSchedulerViewModel] = useState<ResourceSchedulerViewModel>({});
+=======
+  const navBarToolsContainer = useContext(NavBarToolsContainerContext);
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+>>>>>>> origin/ui-implement
   const [statusBarText, setStatusBarText] = useState('');
 
   const navBarToolsContainer = useContext(NavBarToolsContainerContext);
@@ -84,9 +93,9 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
           <LinkIconButton color="inherit" to={`/preplan/${preplan.id}/flight-requirement-list`} title="Flight Requirments">
             <MahanIcon type={MahanIconType.FlightIcon} />
           </LinkIconButton>
-          <IconButton color="inherit" title="Reports">
+          <LinkIconButton color="inherit" title="Reports" to={`/preplan/${preplan.id}/reports`}>
             <MahanIcon type={MahanIconType.Chart} />
-          </IconButton>
+          </LinkIconButton>
           {/*
             <Select
             classes={{ select: classes.formDaysSelect }}
@@ -138,9 +147,13 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
           <SelectAircraftRegistersSideBar
             initialSearch={sideBar.initialSearch}
             aircraftRegisters={preplan.aircraftRegisters}
-            onApply={(dummyAircraftRegisters, aircraftRegisterOptionsDictionary) => {
+            loading={loading}
+            errorMessage={errorMessage}
+            onApply={async (dummyAircraftRegisters, aircraftRegisterOptionsDictionary) => {
+              setLoading(true);
               console.table(dummyAircraftRegisters, aircraftRegisterOptionsDictionary);
-              alert('Not implemented.');
+              await PreplanService.setAircraftRegisters(preplan.id, dummyAircraftRegisters, aircraftRegisterOptionsDictionary);
+              setLoading(false);
             }}
           />
         )}
@@ -159,6 +172,7 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
         flights={preplan.flights}
         flightPacks={preplan.flightPacks}
         aircraftRegisters={preplan.aircraftRegisters}
+<<<<<<< HEAD
         changeLogs={preplan.autoArrangerState.changeLogs}
         selectedFlightPack={resourceSchedulerViewModel.selectedFlightPack}
         onSelectFlightPack={flightPack => setResourceSchedulerViewModel({ ...resourceSchedulerViewModel, selectedFlightPack: flightPack })}
@@ -183,6 +197,20 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
         onFreeSpaceMouseHover={(aircraftRegister, previousFlightPack, nextFlightPack) => {
           //TODO: Not implemented.
         }}
+=======
+        changeLogs={preplan.autoArrangerState && preplan.autoArrangerState.changeLogs}
+        selectedFlight={undefined}
+        onFlightContextMenu={(flight, pageX, pageY) => alert(`Flight ${flight.derivedId} @ ${pageX}:${pageY}\nNot implemented.`)}
+        onFlightDragAndDrop={(flight, newStd, newAircraftRegister) =>
+          alert(`D&D flight ${flight.derivedId} to ${newStd.toString()} with ${newAircraftRegister ? newAircraftRegister.name : '???'}\nNot implemented.`)
+        }
+        onFlightMouseHover={flight => console.log('Mouse on', flight.derivedId)}
+        onFreeSpaceMouseHover={
+          (aircraftRegister, previousFlight, nextFlight) =>
+            setStatusBarText(`${previousFlight ? previousFlight.arrivalAirport.name : ''} ${calculateFreeSpaceTime(previousFlight, nextFlight).toString()}`)
+          // console.log(`Mouse on free space... ${previousFlight && previousFlight.std} ${nextFlight && nextFlight.std}`)
+        }
+>>>>>>> origin/ui-implement
       />
       <div className={classes.statusBar}>{statusBarText}</div>
     </Fragment>

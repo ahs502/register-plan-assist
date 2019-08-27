@@ -1,6 +1,7 @@
 import React, { FC, useState, Fragment, useRef } from 'react';
-import { Theme, Menu, MenuItem, MenuList, ClickAwayListener, Paper } from '@material-ui/core';
+import { Theme, Menu, MenuItem, MenuList, ClickAwayListener, Paper, ListItemIcon, Typography, Divider } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
+import { Check as CheckIcon } from '@material-ui/icons';
 import Flight from 'src/view-models/flights/Flight';
 import Daytime from '@core/types/Daytime';
 import PreplanAircraftRegister, { PreplanAircraftRegisters } from 'src/view-models/PreplanAircraftRegister';
@@ -9,7 +10,6 @@ import { DataGroup, DataItem, TimelineOptions, Id, Timeline } from 'vis-timeline
 import Weekday from '@core/types/Weekday';
 import VisTimeline from 'src/components/VisTimeline';
 import moment from 'moment';
-import { Airport } from '@core/master-data';
 import useProperty from 'src/utils/useProperty';
 import FlightPack from 'src/view-models/flights/FlightPack';
 
@@ -28,6 +28,12 @@ const useStyles = makeStyles((theme: Theme) => ({
               left: '0 !important',
               width: '100% !important'
             }
+          },
+          '&.vis-selected': {
+            '& .vis-item-overflow': {
+              boxShadow: '0px 0px 10px 1px green, inset 0px 0px 9px -1px green',
+              borderRadius: '4px'
+            }
           }
         }
       }
@@ -42,6 +48,17 @@ const useStyles = makeStyles((theme: Theme) => ({
         '&.rpa-item-sta': {
           textAlign: 'right'
         }
+      },
+      '& .rpa-required-asterisk': {
+        color: 'red',
+        fontSize: '12px',
+        lineHeight: '10px',
+        '&.rpa-required-asterisk-full': {
+          textShadow: '0 0 0.5px red'
+        },
+        '&.rpa-required-asterisk-semi': {
+          opacity: 0.5
+        }
       }
     },
     '.rpa-item-body': {
@@ -50,6 +67,27 @@ const useStyles = makeStyles((theme: Theme) => ({
       border: '1px solid rgba(0, 20, 110, 0.5)',
       borderRadius: '3px',
       backgroundColor: 'rgba(0, 20, 110, 0.15)',
+      '&.rpa-unknown-aircraft-register': {
+        opacity: 0.5
+      },
+      '&.rpa-origin-permission': {
+        borderLeftWidth: 4,
+        '&.rpa-origin-permission-semi': {
+          borderLeftStyle: 'double'
+        }
+      },
+      '&.rpa-destination-permission': {
+        borderRightWidth: 4,
+        '&.rpa-destination-permission-semi': {
+          borderRightStyle: 'double'
+        }
+      },
+      '&.rpa-changed': {
+        borderTopWidth: 2,
+        borderBottomWidth: 2,
+        borderTopStyle: 'dashed',
+        borderBottomStyle: 'dashed'
+      },
       '& .rpa-item-section': {
         position: 'absolute',
         top: 0,
@@ -59,8 +97,26 @@ const useStyles = makeStyles((theme: Theme) => ({
       '& .rpa-item-label': {
         flexGrow: 1,
         textAlign: 'center',
-        fontSize: '110%',
+        fontSize: '16px',
+        lineHeight: '25px',
+        paddingTop: 1,
         textShadow: '0 0 2px #797979'
+      },
+      '& .rpa-dot': {
+        display: 'inline-block',
+        height: 5,
+        width: 5,
+        borderRadius: '50%',
+        backgroundColor: 'white',
+        border: '1px solid black',
+        position: 'absolute',
+        '&.rpa-dot-semi': {
+          opacity: 0.4
+        },
+        '&.rpa-dot-left': { left: 1 },
+        '&.rpa-dot-right': { right: 1 },
+        '&.rpa-dot-top': { top: 1 },
+        '&.rpa-dot-bottom': { bottom: 1 }
       }
     },
     '.rpa-item-footer': {
@@ -94,6 +150,9 @@ const useStyles = makeStyles((theme: Theme) => ({
   contextMenu: {
     position: 'fixed',
     zIndex: theme.zIndex.tooltip
+  },
+  semiCheckIcon: {
+    opacity: 0.3
   }
 }));
 
@@ -103,8 +162,9 @@ interface TimelineData {
   options: TimelineOptions;
 }
 
-interface FlightContextMenuModel {
+interface FlightPackContextMenuModel {
   open?: boolean;
+  flightPack?: FlightPack;
 }
 
 export interface ResourceSchedulerViewProps {
@@ -114,11 +174,17 @@ export interface ResourceSchedulerViewProps {
   flightPacks: readonly FlightPack[];
   aircraftRegisters: PreplanAircraftRegisters;
   changeLogs: readonly ChangeLog[];
-  selectedFlight?: Flight;
-  onFlightContextMenu(flight: Flight, pageX: number, pageY: number): void;
-  onFlightDragAndDrop(flight: Flight, newStd: Daytime, newAircraftRegister: PreplanAircraftRegister): void;
-  onFlightMouseHover(flight: Flight): void;
-  onFreeSpaceMouseHover(aircraftRegister: PreplanAircraftRegister | null, previousFlight: Flight | null, nextFlight: Flight | null): void;
+  selectedFlightPack?: FlightPack;
+  onSelectFlightPack(flightPack?: FlightPack): void;
+  onFreezeFlightPack(flightPack: FlightPack, freezed: boolean): void;
+  onRequireFlightPack(flightPack: FlightPack, required: boolean): void;
+  onIgnoreFlightPack(flightPack: FlightPack): void;
+  onOpenFlightModal(flight: Flight): void;
+  onOpenFlightPackModal(flightPack: FlightPack): void;
+  onFlightPackDragAndDrop(flightPack: FlightPack, newStd0: Daytime, newAircraftRegister?: PreplanAircraftRegister): void;
+  onFlightPackMouseHover(flightPack: FlightPack): void;
+  onFreeSpaceMouseHover(aircraftRegister: PreplanAircraftRegister | null, previousFlightPack: FlightPack | null, nextFlightPack: FlightPack | null): void;
+  onNowhereMouseHover(): void;
 }
 
 const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = ({
@@ -128,11 +194,17 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = ({
   flightPacks,
   aircraftRegisters,
   changeLogs,
-  selectedFlight,
-  onFlightContextMenu,
-  onFlightDragAndDrop,
-  onFlightMouseHover,
-  onFreeSpaceMouseHover
+  selectedFlightPack,
+  onSelectFlightPack,
+  onFreezeFlightPack,
+  onRequireFlightPack,
+  onIgnoreFlightPack,
+  onOpenFlightModal,
+  onOpenFlightPackModal,
+  onFlightPackDragAndDrop,
+  onFlightPackMouseHover,
+  onFreeSpaceMouseHover,
+  onNowhereMouseHover
 }) => {
   const timeline = useProperty<Timeline>(null as any);
   const [timelineData, setTimelineData] = useState<TimelineData>(() => {
@@ -143,8 +215,8 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = ({
     return { groups, items, options };
   });
 
-  const [flightContextMenuModel, setFlightContextMenuModel] = useState<FlightContextMenuModel>({});
-  const flightContextMenuRef = useRef<HTMLDivElement>(null);
+  const [flightPackContextMenuModel, setFlightPackContextMenuModel] = useState<FlightPackContextMenuModel>({});
+  const flightPackContextMenuRef = useRef<HTMLDivElement>(null);
 
   const classes = useStyles();
 
@@ -152,32 +224,136 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = ({
     <Fragment>
       <VisTimeline
         {...timelineData}
+        selection={selectedFlightPack && selectedFlightPack.derivedId}
         retrieveTimeline={t => timeline(t)}
         onRangeChanged={properties => timeline().redraw()}
-        onMouseMove={properties => {
-          if (!properties.group) return;
-          const adjacentItem = findAdjacentFlights(timelineData.items, properties.group, properties.time);
-          onFreeSpaceMouseHover(aircraftRegisters.items.filter(item => item.id === properties.group)[0], adjacentItem[0], adjacentItem[1]);
-        }}
         onMouseOver={properties => {
-          // onFreeSpaceMouseHover(AircraftRegisterOptionsDictionary[props.group], adjacentItem[0]&&adjacentItem[0].flight , adjacentItem[1].flight);
+          switch (properties.what) {
+            case 'item':
+              const item = timelineData.items.find(item => item.id === properties.item);
+              if (!item) return onNowhereMouseHover();
+              onFlightPackMouseHover(item.data);
+              break;
+
+            case 'background':
+              if (properties.group === '???') return onFreeSpaceMouseHover(null, null, null);
+              const register = aircraftRegisters.id[properties.group as any];
+              if (!register) return onNowhereMouseHover();
+              const registerFlightPacks = flightPacks.filter(f => !!f.aircraftRegister && f.aircraftRegister.id === register.id);
+              if (registerFlightPacks.length === 0) return onFreeSpaceMouseHover(register, null, null);
+              let previousFlightPack: FlightPack | null = null,
+                nextFlightPack: FlightPack | null = registerFlightPacks.shift() || null;
+              do {
+                const start = previousFlightPack ? startDate.getTime() + previousFlightPack.day * 24 * 60 * 60 * 1000 + previousFlightPack.end.minutes * 60 * 1000 : -Infinity,
+                  end = nextFlightPack ? startDate.getTime() + nextFlightPack.day * 24 * 60 * 60 * 1000 + nextFlightPack.start.minutes * 60 * 1000 : Infinity;
+                if (start <= properties.time.getTime() && properties.time.getTime() <= end) return onFreeSpaceMouseHover(register, previousFlightPack, nextFlightPack);
+                previousFlightPack = nextFlightPack;
+                nextFlightPack = registerFlightPacks.shift() || null;
+              } while (previousFlightPack || nextFlightPack);
+              onFreeSpaceMouseHover(register, null, null);
+              break;
+
+            default:
+              onNowhereMouseHover();
+          }
+        }}
+        onSelect={({ items, event }) => {
+          const item = timelineData.items.find(item => item.id === items[0]);
+          onSelectFlightPack(item ? item.data : undefined);
         }}
         onContextMenu={properties => {
           properties.event.preventDefault();
           const item = timelineData.items.find(item => item.id === properties.item);
           if (!item) return;
           const { pageX, pageY } = properties;
-          flightContextMenuRef.current!.style.top = `${pageY}px`;
-          flightContextMenuRef.current!.style.left = `${pageX}px`;
-          setFlightContextMenuModel({ open: true });
+          flightPackContextMenuRef.current!.style.top = `${pageY}px`;
+          flightPackContextMenuRef.current!.style.left = `${pageX}px`;
+          setFlightPackContextMenuModel({ open: true, flightPack: item.data });
         }}
       />
-      <ClickAwayListener onClickAway={() => setFlightContextMenuModel({ ...flightContextMenuModel, open: false })}>
+      <ClickAwayListener onClickAway={() => setFlightPackContextMenuModel({ ...flightPackContextMenuModel, open: false })}>
         <div>
-          <Paper ref={flightContextMenuRef} className={classes.contextMenu}>
-            {flightContextMenuModel.open && (
+          <Paper ref={flightPackContextMenuRef} className={classes.contextMenu}>
+            {flightPackContextMenuModel.open && (
               <MenuList>
-                <MenuItem onClick={() => setFlightContextMenuModel({ ...flightContextMenuModel, open: false })}>Hi!</MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    setFlightPackContextMenuModel({ ...flightPackContextMenuModel, open: false });
+                    onFreezeFlightPack(flightPackContextMenuModel.flightPack!, flightPackContextMenuModel.flightPack!.freezed !== true);
+                  }}
+                >
+                  <ListItemIcon>
+                    {flightPackContextMenuModel.flightPack!.freezed === true ? (
+                      <CheckIcon />
+                    ) : flightPackContextMenuModel.flightPack!.freezed === undefined ? (
+                      <CheckIcon classes={{ root: classes.semiCheckIcon }} />
+                    ) : (
+                      <span />
+                    )}
+                  </ListItemIcon>
+                  <Typography>Freezed</Typography>
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    setFlightPackContextMenuModel({ ...flightPackContextMenuModel, open: false });
+                    onRequireFlightPack(flightPackContextMenuModel.flightPack!, flightPackContextMenuModel.flightPack!.required !== true);
+                  }}
+                >
+                  <ListItemIcon>
+                    {flightPackContextMenuModel.flightPack!.required === true ? (
+                      <CheckIcon />
+                    ) : flightPackContextMenuModel.flightPack!.required === undefined ? (
+                      <CheckIcon classes={{ root: classes.semiCheckIcon }} />
+                    ) : (
+                      <span />
+                    )}
+                  </ListItemIcon>
+                  <Typography>Required</Typography>
+                </MenuItem>
+                <Divider />
+                <MenuItem
+                  onClick={() => {
+                    setFlightPackContextMenuModel({ ...flightPackContextMenuModel, open: false });
+                    onIgnoreFlightPack(flightPackContextMenuModel.flightPack!);
+                  }}
+                >
+                  <ListItemIcon>
+                    <span />
+                  </ListItemIcon>
+                  <Typography>Ignore</Typography>
+                </MenuItem>
+                <Divider />
+                <MenuItem
+                  onClick={() => {
+                    setFlightPackContextMenuModel({ ...flightPackContextMenuModel, open: false });
+                    onOpenFlightPackModal(flightPackContextMenuModel.flightPack!);
+                  }}
+                >
+                  <ListItemIcon>
+                    <span />
+                  </ListItemIcon>
+                  <Typography>Flight Pack...</Typography>
+                </MenuItem>
+                {flightPackContextMenuModel.flightPack!.flights.map(f => (
+                  <MenuItem
+                    key={f.derivedId}
+                    onClick={() => {
+                      setFlightPackContextMenuModel({ ...flightPackContextMenuModel, open: false });
+                      onOpenFlightModal(f);
+                    }}
+                  >
+                    <ListItemIcon>
+                      <span />
+                    </ListItemIcon>
+                    <Typography>
+                      Flight&nbsp;&nbsp;
+                      <Typography variant="body2" display="inline">
+                        {f.flightNumber}
+                      </Typography>
+                      &nbsp;&nbsp;{f.departureAirport.name}&ndash;{f.arrivalAirport.name}...
+                    </Typography>
+                  </MenuItem>
+                ))}
               </MenuList>
             )}
           </Paper>
@@ -293,17 +469,60 @@ function itemTemplate(item: DataItem, element: HTMLElement, data: DataItem): str
   return `
     <div class="rpa-item-header">
       <div class="rpa-item-time rpa-item-std">
-        ${flightPack.start.toString(true)}&nbsp;
+        ${flightPack.start.toString(true)}
+        ${flightPack.required === false ? '&nbsp;' : ''}
       </div>
+      ${
+        flightPack.required === true
+          ? `<div class="rpa-required-asterisk rpa-required-asterisk-full">&#10045;</div>`
+          : flightPack.required === undefined
+          ? `<div class="rpa-required-asterisk rpa-required-asterisk-semi">&#10045;</div>`
+          : ''
+      }
       <div class="rpa-item-time rpa-item-sta">
+        ${flightPack.required === false ? '&nbsp;' : ''}
         ${flightPack.end.toString(true)}
       </div>
     </div>
-    <div class="rpa-item-body">
+    <div class="rpa-item-body
+    ${flightPack.knownAircraftRegister ? ' rpa-known-aircraft-register' : ' rpa-unknown-aircraft-register'}
+    ${
+      flightPack.originPermission === true
+        ? ' rpa-origin-permission rpa-origin-permission-full'
+        : flightPack.originPermission === undefined
+        ? ' rpa-origin-permission rpa-origin-permission-semi'
+        : ''
+    }
+    ${
+      flightPack.destinationPermission === true
+        ? ' rpa-destination-permission rpa-destination-permission-full'
+        : flightPack.destinationPermission === undefined
+        ? ' rpa-destination-permission rpa-destination-permission-semi'
+        : ''
+    }
+    ${flightPack.changed === true ? ' rpa-changed rpa-changed-full' : flightPack.changed === undefined ? ' rpa-changed rpa-changed-semi' : ''}
+    ">
       ${flightPack.sections.map(s => `<div class="rpa-item-section" style="left: ${s.start * 100}%; right: ${(1 - s.end) * 100}%;"></div>`).join(' ')}
       <div class="rpa-item-label">
         ${flightPack.label}
       </div>
+      ${
+        flightPack.freezed === true
+          ? `
+            <span class="rpa-dot rpa-dot-full rpa-dot-top rpa-dot-left"></span>
+            <span class="rpa-dot rpa-dot-full rpa-dot-top rpa-dot-right"></span>
+            <span class="rpa-dot rpa-dot-full rpa-dot-bottom rpa-dot-left"></span>
+            <span class="rpa-dot rpa-dot-full rpa-dot-bottom rpa-dot-right"></span>
+          `
+          : flightPack.freezed === undefined
+          ? `
+            <span class="rpa-dot rpa-dot-semi rpa-dot-top rpa-dot-left"></span>
+            <span class="rpa-dot rpa-dot-semi rpa-dot-top rpa-dot-right"></span>
+            <span class="rpa-dot rpa-dot-semi rpa-dot-bottom rpa-dot-left"></span>
+            <span class="rpa-dot rpa-dot-semi rpa-dot-bottom rpa-dot-right"></span>
+          `
+          : ''
+      }
     </div>
     ${
       flightPack.icons.length === 0 && !flightPack.notes
@@ -443,25 +662,4 @@ function calculateTimelineOptions(startDate: Date): TimelineOptions {
   };
 
   return options;
-}
-
-function findAdjacentFlights(items: DataItem[], groupId: Id, freeSpaceDateTime: Date) {
-  var nextItem: any;
-  var previousItem: any;
-  const itemInGroups = items.filter(item => item.group === groupId).sort((a, b) => (a.start > b.start ? 1 : a.start < b.start ? -1 : 0));
-  for (var i = 0; i < itemInGroups.length; i++) {
-    if (+itemInGroups[i].start > +freeSpaceDateTime) {
-      nextItem = itemInGroups[i];
-      if (i > 0) {
-        previousItem = itemInGroups[i - 1];
-      }
-      break;
-    }
-  }
-  if (!nextItem && itemInGroups.length) {
-    previousItem = itemInGroups[itemInGroups.length - 1];
-  }
-  const nextFlight = !nextItem ? nextItem : nextItem.flight;
-  const previousFlight = !previousItem ? previousItem : previousItem.flight;
-  return [previousFlight, nextFlight];
 }

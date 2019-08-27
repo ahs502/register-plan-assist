@@ -108,7 +108,9 @@ export default class VisTimeline extends Component<TimelineProps> {
 
     this.timeline.setOptions(options);
     this.timeline.setData({ groups: new DataSet(groups), items: new DataSet(items) });
-    selection && this.timeline.setSelection(selection);
+    this.timeline.setSelection(selection || []);
+
+    this.timeline.redraw();
   }
 
   render() {

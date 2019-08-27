@@ -255,11 +255,7 @@ router.post(
       runSp.varCharParam('userId', userId),
       runSp.varCharParam('id', id),
       runSp.varCharParam('dummyAircraftRegisters', xmlStringify(convertDummyAircraftRegisterListModelToEntity(dummyAircraftRegisters), 'DummyAircraftRegisters')),
-      runSp.nVarCharParam(
-        'aircraftRegisterOptionsDictionary',
-        xmlStringify(convertAircraftRegisterOptionsListModelToEntity(aircraftRegisterOptionsDictionary), 'AircraftRegistersOptions'),
-        4000
-      )
+      runSp.varCharParam('AircraftRegisterOptions', xmlStringify(convertAircraftRegisterOptionsListModelToEntity(aircraftRegisterOptionsDictionary), 'AircraftRegistersOptions'))
     );
   })
 );

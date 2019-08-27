@@ -16,6 +16,7 @@ import FlightRequirement from 'src/view-models/flights/FlightRequirement';
 import WeekdayFlightRequirement from 'src/view-models/flights/WeekdayFlightRequirement';
 import Flight from 'src/view-models/flights/Flight';
 import Daytime from '@core/types/Daytime';
+import PreplanService from 'src/services/PreplanService';
 
 const useStyles = makeStyles((theme: Theme) => ({
   sideBarBackdrop: {
@@ -53,7 +54,8 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
   const [autoArrangerRunning, setAutoArrangerRunning] = useState(() => false); //TODO: Initialize by data from server.
   const [allFlightsFreezed, setAllFlightsFreezed] = useState(() => false); //TODO: Initialize from preplan flights.
   const navBarToolsContainer = useContext(NavBarToolsContainerContext);
-
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const [statusBarText, setStatusBarText] = useState('');
 
   const classes = useStyles();
@@ -131,9 +133,13 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
           <SelectAircraftRegistersSideBar
             initialSearch={sideBar.initialSearch}
             aircraftRegisters={preplan.aircraftRegisters}
-            onApply={(dummyAircraftRegisters, aircraftRegisterOptionsDictionary) => {
+            loading={loading}
+            errorMessage={errorMessage}
+            onApply={async (dummyAircraftRegisters, aircraftRegisterOptionsDictionary) => {
+              setLoading(true);
               console.table(dummyAircraftRegisters, aircraftRegisterOptionsDictionary);
-              alert('Not implemented.');
+              await PreplanService.setAircraftRegisters(preplan.id, dummyAircraftRegisters, aircraftRegisterOptionsDictionary);
+              setLoading(false);
             }}
           />
         )}

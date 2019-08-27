@@ -1,4 +1,4 @@
-import React, { FC, useState, useContext } from 'react';
+import React, { FC, useState, useContext, useEffect } from 'react';
 import { Theme, Paper, Tabs, Tab, IconButton, Grid, TableHead, TableRow, TableCell, Table, TableBody, Typography, Switch, Button } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import { NavBarToolsContainerContext } from 'src/pages/preplan';
@@ -61,225 +61,271 @@ export interface FlightRequirementListPageProps {
   onRemoveFlightRequirement: (flightRequirement: FlightRequirement) => void;
   onEditFlightRequirement: (flightRequirement: FlightRequirement) => void;
   onAddReturnFlightRequirement: (flightRequirement: FlightRequirement) => void;
-  onRemoveWeekdayFlightRequirement: (weekdayFlightRequirement: WeekdayFlightRequirement) => void;
-  onEditWeekdayFlightRequirement: (weekdayFlightRequirement: WeekdayFlightRequirement) => void;
+  onRemoveWeekdayFlightRequirement: (weekdayFlightRequirement: WeekdayFlightRequirement, flightRequirement: FlightRequirement) => void;
+  onEditWeekdayFlightRequirement: (weekdayFlightRequirement: WeekdayFlightRequirement, flightRequirement: FlightRequirement) => void;
 }
 
 type Tab = 'ALL' | 'INCLUDE' | 'IGNORE';
 
-type IfEquals<X, Y, A = X, B = never> = (<T>() => T extends X ? 1 : 2) extends (<T>() => T extends Y ? 1 : 2) ? A : B;
+const FlightRequirementListPage: FC<FlightRequirementListPageProps> = React.memo(
+  ({
+    flightRequirements,
+    onAddFlightRequirement,
+    onRemoveFlightRequirement,
+    onEditFlightRequirement,
+    onAddReturnFlightRequirement,
+    onRemoveWeekdayFlightRequirement,
+    onEditWeekdayFlightRequirement
+  }) => {
+    useEffect(() => {
+      console.log('flightRequirements', flightRequirements);
+    }, [flightRequirements]);
 
-type WritableKeys<T> = { [P in keyof T]-?: IfEquals<{ [Q in P]: T[P] }, { -readonly [Q in P]: T[P] }, P> }[keyof T];
+    useEffect(() => {
+      console.log('onAddFlightRequirement', onAddFlightRequirement);
+    }, [onAddFlightRequirement]);
 
-type ReadonlyKeys<T> = { [P in keyof T]-?: IfEquals<{ [Q in P]: T[P] }, { -readonly [Q in P]: T[P] }, never, P> }[keyof T];
+    useEffect(() => {
+      console.log('onRemoveFlightRequirement', onRemoveFlightRequirement);
+    }, [onRemoveFlightRequirement]);
 
-const FlightRequirementListPage: FC<FlightRequirementListPageProps> = ({
-  flightRequirements,
-  onAddFlightRequirement,
-  onRemoveFlightRequirement,
-  onEditFlightRequirement,
-  onAddReturnFlightRequirement,
-  onRemoveWeekdayFlightRequirement,
-  onEditWeekdayFlightRequirement
-}) => {
-  console.log(flightRequirements);
+    useEffect(() => {
+      console.log('onEditFlightRequirement', onEditFlightRequirement);
+    }, [onEditFlightRequirement]);
 
-  const navBarToolsContainer = useContext(NavBarToolsContainerContext);
-  const [tab, setTab] = useState<Tab>('ALL');
-  const [searchValue, setSearchValue] = useState<readonly string[]>([]);
-  const [numberOfAllFR, setNumberOfAllFr] = useState(0);
-  const [numberOfIgnoreFR, setNumberOfIgnoreFr] = useState(0);
-  const [filterFlightRequirment, setFilterFlightRequirment] = useState<ReadonlyArray<FlightRequirement>>(flightRequirements);
-  const [pageNumber, setPageNumber] = useState(0);
-  const [rowPerPage, setRowPerPage] = useState(10);
+    useEffect(() => {
+      console.log('onAddReturnFlightRequirement', onAddReturnFlightRequirement);
+    }, [onAddReturnFlightRequirement]);
 
-  const classes = useStyles();
+    useEffect(() => {
+      console.log('onRemoveWeekdayFlightRequirement', onRemoveWeekdayFlightRequirement);
+    }, [onRemoveWeekdayFlightRequirement]);
 
-  const handleChange = <T extends {}>(list: ReadonlyArray<T>, item: T, propertyName: keyof T, newValue: any, settter: (value: React.SetStateAction<ReadonlyArray<T>>) => void) => {
-    const tempList = [...list];
-    const index = list.indexOf(item);
-    tempList[index][propertyName] = newValue;
-    settter(tempList);
-  };
+    useEffect(() => {
+      console.log('onEditWeekdayFlightRequirement', onEditWeekdayFlightRequirement);
+    }, [onEditWeekdayFlightRequirement]);
 
-  const filterOnProperties = (query: readonly string[]): ReadonlyArray<FlightRequirement> => {
-    if (!query || query.length <= 0) return flightRequirements;
+    console.log(flightRequirements);
 
-    return flightRequirements.filter(item => {
-      for (let j = 0; j < query.length; ++j) {
-        if (((item.definition.label || '') as string).toLowerCase().includes(query[j])) return true;
-        if (((item.definition.arrivalAirport.name || '') as string).toLowerCase().includes(query[j])) return true;
-        if (((item.definition.departureAirport.name || '') as string).toLowerCase().includes(query[j])) return true;
-        if (((item.definition.flightNumber || '') as string).toLowerCase().includes(query[j])) return true;
-      }
-    });
-  };
+    const navBarToolsContainer = useContext(NavBarToolsContainerContext);
+    const [tab, setTab] = useState<Tab>('ALL');
+    const [searchValue, setSearchValue] = useState<readonly string[]>([]);
+    const [numberOfAllFR, setNumberOfAllFr] = useState(0);
+    const [numberOfIgnoreFR, setNumberOfIgnoreFr] = useState(0);
+    const [filterFlightRequirment, setFilterFlightRequirment] = useState<ReadonlyArray<FlightRequirement>>(flightRequirements);
+    const [pageNumber, setPageNumber] = useState(0);
+    const [rowPerPage, setRowPerPage] = useState(10);
 
-  const filterFlightRequiermentBySelectedTab = (filterItem: ReadonlyArray<FlightRequirement>, t: Tab) => {
-    setNumberOfAllFr(filterItem.length);
-    setNumberOfIgnoreFr(filterItem.filter(fr => fr.ignored === true).length);
-    setPageNumber(0);
+    const classes = useStyles();
 
-    if (t === 'ALL') return setFilterFlightRequirment(filterItem);
-    if (t === 'INCLUDE') return setFilterFlightRequirment(filterItem.filter(fr => fr.ignored === false));
-    if (t === 'IGNORE') return setFilterFlightRequirment(filterItem.filter(fr => fr.ignored === true));
-  };
+    const handleChange = <T extends {}>(
+      list: ReadonlyArray<T>,
+      item: T,
+      propertyName: keyof T,
+      newValue: any,
+      settter: (value: React.SetStateAction<ReadonlyArray<T>>) => void
+    ) => {
+      const tempList = [...list];
+      const index = list.indexOf(item);
+      tempList[index][propertyName] = newValue;
+      settter(tempList);
+    };
 
-  return (
-    <div className={classes.contentPage}>
-      <Tabs
-        className={classes.tabsStyle}
-        value={tab}
-        indicatorColor="primary"
-        textColor="primary"
-        onChange={(event, t) => {
-          setTab(t);
-          filterFlightRequiermentBySelectedTab(filterOnProperties(searchValue), t);
-        }}
-      >
-        <Tab value="ALL" label={'ALL (' + numberOfAllFR + ')'} />
-        <Tab value="INCLUDE" label={'INCLUDE (' + (numberOfAllFR - numberOfIgnoreFR) + ')'} />
-        <Tab value="IGNORE" label={'IGNORE (' + numberOfIgnoreFR + ')'} />
-        <Search
-          outlined
-          onQueryChange={query => {
-            setSearchValue(query);
-            filterFlightRequiermentBySelectedTab(filterOnProperties(query), tab);
+    const filterOnProperties = (query: readonly string[]): ReadonlyArray<FlightRequirement> => {
+      if (!query || query.length <= 0) return flightRequirements;
+
+      return flightRequirements.filter(item => {
+        for (let j = 0; j < query.length; ++j) {
+          if (((item.definition.label || '') as string).toLowerCase().includes(query[j])) return true;
+          if (((item.definition.arrivalAirport.name || '') as string).toLowerCase().includes(query[j])) return true;
+          if (((item.definition.departureAirport.name || '') as string).toLowerCase().includes(query[j])) return true;
+          if (((item.definition.flightNumber || '') as string).toLowerCase().includes(query[j])) return true;
+        }
+      });
+    };
+
+    const filterFlightRequiermentBySelectedTab = (filterItem: ReadonlyArray<FlightRequirement>, t: Tab) => {
+      setNumberOfAllFr(filterItem.length);
+      setNumberOfIgnoreFr(filterItem.filter(fr => fr.ignored === true).length);
+      setPageNumber(0);
+
+      if (t === 'ALL') return setFilterFlightRequirment(filterItem);
+      if (t === 'INCLUDE') return setFilterFlightRequirment(filterItem.filter(fr => fr.ignored === false));
+      if (t === 'IGNORE') return setFilterFlightRequirment(filterItem.filter(fr => fr.ignored === true));
+    };
+
+    return (
+      <div className={classes.contentPage}>
+        <Tabs
+          className={classes.tabsStyle}
+          value={tab}
+          indicatorColor="primary"
+          textColor="primary"
+          onChange={(event, t) => {
+            setTab(t);
+            filterFlightRequiermentBySelectedTab(filterOnProperties(searchValue), t);
           }}
-        />
-        <IconButton color="primary" title="Add Preplan" onClick={() => onAddFlightRequirement()}>
-          <AddIcon fontSize="large" />
-        </IconButton>
-      </Tabs>
+        >
+          <Tab value="ALL" label={'ALL (' + numberOfAllFR + ')'} />
+          <Tab value="INCLUDE" label={'INCLUDE (' + (numberOfAllFR - numberOfIgnoreFR) + ')'} />
+          <Tab value="IGNORE" label={'IGNORE (' + numberOfIgnoreFR + ')'} />
+          <Search
+            outlined
+            onQueryChange={query => {
+              setSearchValue(query);
+              filterFlightRequiermentBySelectedTab(filterOnProperties(query), tab);
+            }}
+          />
+          <IconButton color="primary" title="Add Preplan" onClick={() => onAddFlightRequirement()}>
+            <AddIcon fontSize="large" />
+          </IconButton>
+        </Tabs>
 
-      {filterFlightRequirment.slice(pageNumber * rowPerPage, (pageNumber + 1) * rowPerPage).map(d => {
-        return (
-          <Paper key={d.id} className={classNames(classes.flightRequirmentStyle, d.ignored && classes.paperDisableStyle)}>
-            <Grid container direction="row" justify="space-between" alignItems="center" className={classes.flightDefinitionStyle}>
-              <Grid item className={classNames(d.ignored && classes.disableOpacityStyle)}>
-                <Grid container direction="row" justify="center" alignItems="center" spacing={3}>
-                  <Grid item>
-                    <Typography variant="h6">{d.definition.label}</Typography>
+        {filterFlightRequirment.slice(pageNumber * rowPerPage, (pageNumber + 1) * rowPerPage).map(d => {
+          return (
+            <Paper key={d.id} className={classNames(classes.flightRequirmentStyle, d.ignored && classes.paperDisableStyle)}>
+              <Grid container direction="row" justify="space-between" alignItems="center" className={classes.flightDefinitionStyle}>
+                <Grid item className={classNames(d.ignored && classes.disableOpacityStyle)}>
+                  <Grid container direction="row" justify="center" alignItems="center" spacing={3}>
+                    <Grid item>
+                      <Typography variant="h6">{d.definition.label}</Typography>
+                    </Grid>
+                    <Grid item>
+                      <Typography variant="h6">{d.definition.flightNumber}</Typography>
+                    </Grid>
+                    <Grid item>
+                      <Typography variant="h6">
+                        {d.definition.departureAirport.name}-{d.definition.arrivalAirport.name}
+                      </Typography>
+                    </Grid>
                   </Grid>
-                  <Grid item>
-                    <Typography variant="h6">{d.definition.flightNumber}</Typography>
-                  </Grid>
-                  <Grid item>
-                    <Typography variant="h6">
-                      {d.definition.departureAirport.name}-{d.definition.arrivalAirport.name}
-                    </Typography>
+                </Grid>
+                <Grid item>
+                  <Grid container direction="row" justify="center" alignItems="center" spacing={3}>
+                    <Grid item>Include</Grid>
+                    <Grid item>
+                      <Switch
+                        checked={!d.ignored}
+                        onChange={e => {
+                          handleChange(filterFlightRequirment, d, 'ignored', !e.target.checked, setFilterFlightRequirment);
+                          filterFlightRequiermentBySelectedTab(filterOnProperties(searchValue), tab);
+                        }}
+                        color="primary"
+                        inputProps={{ 'aria-label': 'primary checkbox' }}
+                      />
+                    </Grid>
+                    <Grid item className={d.ignored ? classes.disableOpacityStyle : ''}>
+                      <Button color="primary">RETURN</Button>
+                    </Grid>
+                    <Grid item className={classNames(d.ignored && classes.disableOpacityStyle)}>
+                      <IconButton size="small" disabled={d.ignored} onClick={() => onEditFlightRequirement(d)}>
+                        <EditIcon fontSize="large" />
+                      </IconButton>
+                    </Grid>
+                    <Grid item className={classNames(d.ignored && classes.disableOpacityStyle)}>
+                      <IconButton
+                        size="small"
+                        disabled={d.ignored}
+                        onClick={() => {
+                          onRemoveFlightRequirement(d);
+                        }}
+                      >
+                        <ClearIcon fontSize="large" />
+                      </IconButton>
+                    </Grid>
                   </Grid>
                 </Grid>
               </Grid>
-              <Grid item>
-                <Grid container direction="row" justify="center" alignItems="center" spacing={3}>
-                  <Grid item>Include</Grid>
-                  <Grid item>
-                    <Switch
-                      checked={!d.ignored}
-                      onChange={e => {
-                        handleChange(filterFlightRequirment, d, 'ignored', !e.target.checked, setFilterFlightRequirment);
-                        filterFlightRequiermentBySelectedTab(filterOnProperties(searchValue), tab);
-                      }}
-                      color="primary"
-                      inputProps={{ 'aria-label': 'primary checkbox' }}
-                    />
-                  </Grid>
-                  <Grid item className={d.ignored ? classes.disableOpacityStyle : ''}>
-                    <Button color="primary">RETURN</Button>
-                  </Grid>
-                  <Grid item className={classNames(d.ignored && classes.disableOpacityStyle)}>
-                    <IconButton size="small" disabled={d.ignored} onClick={() => onEditFlightRequirement(d)}>
-                      <EditIcon fontSize="large" />
-                    </IconButton>
-                  </Grid>
-                  <Grid item className={classNames(d.ignored && classes.disableOpacityStyle)}>
-                    <IconButton size="small" disabled={d.ignored}>
-                      <ClearIcon fontSize="large" />
-                    </IconButton>
-                  </Grid>
-                </Grid>
-              </Grid>
-            </Grid>
-            <Grid container className={classNames(d.ignored && classes.disableOpacityStyle)}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>WeekDay</TableCell>
-                    <TableCell>BlockTime</TableCell>
-                    <TableCell>Allowed Registers</TableCell>
-                    <TableCell>Forbidden Registers</TableCell>
-                    <TableCell align="center">STD Lower Bound</TableCell>
-                    <TableCell align="center">STD Upper Bound</TableCell>
-                    <TableCell>Requierd</TableCell>
-                    <TableCell align="center">Action</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {d.days.map(item => {
-                    console.log(item);
-                    return (
-                      <TableRow key={item.derivedId} hover={true}>
-                        <TableCell>{Weekday[item.day]}</TableCell>
-                        <TableCell>{item.scope.blockTime}</TableCell>
-                        {/* <TableCell>{item.scope.aircraftSelection.allowedIdentities.map(a => a.entity.name).join(', ')}</TableCell>
+              <Grid container className={classNames(d.ignored && classes.disableOpacityStyle)}>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>WeekDay</TableCell>
+                      <TableCell>BlockTime</TableCell>
+                      <TableCell>Allowed Registers</TableCell>
+                      <TableCell>Forbidden Registers</TableCell>
+                      <TableCell align="center">STD Lower Bound</TableCell>
+                      <TableCell align="center">STD Upper Bound</TableCell>
+                      <TableCell>Requierd</TableCell>
+                      <TableCell align="center">Action</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {d.days.map(item => {
+                      console.log(item);
+                      return (
+                        <TableRow key={item.derivedId} hover={true}>
+                          <TableCell>{Weekday[item.day]}</TableCell>
+                          <TableCell>{item.scope.blockTime}</TableCell>
+                          {/* <TableCell>{item.scope.aircraftSelection.allowedIdentities.map(a => a.entity.name).join(', ')}</TableCell>
                         <TableCell>{item.scope.aircraftSelection.forbiddenIdentities.map(a => a.entity.name).join(', ')}</TableCell> */}
-                        <TableCell />
-                        <TableCell />
-                        <TableCell align="center" className={classes.STDpadding}>
-                          {item.scope.times.map(t => {
-                            return (
-                              <div className={classNames(classes.STDStyle, classes.STDpadding)} key={'timescopeLowerBound' + Math.random() + d.id}>
-                                <div>{t.stdLowerBound.toString()}</div>
-                              </div>
-                            );
-                          })}
-                        </TableCell>
-                        <TableCell align="center" className={classes.STDpadding}>
-                          {item.scope.times.map(t => {
-                            return (
-                              <div className={classNames(classes.STDStyle, classes.STDpadding)} key={'timescopeUpperBound' + Math.random() + d.id}>
-                                <div>{t.stdUpperBound.toString()}</div>
-                              </div>
-                            );
-                          })}
-                        </TableCell>
-                        <TableCell>{item.scope.required && <DoneIcon />}</TableCell>
-                        <TableCell>
-                          <IconButton disabled={d.ignored}>
-                            <EditIcon />
-                          </IconButton>
-                          <IconButton disabled={d.ignored}>
-                            <ClearIcon />
-                          </IconButton>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </Grid>
-          </Paper>
-        );
-      })}
-      <div />
-      <TablePagination
-        classes={{ root: classes.divContent }}
-        rowsPerPageOptions={[5, 10, 25, 50]}
-        count={filterFlightRequirment.length}
-        onChangePage={(e, n) => {
-          setPageNumber(n);
-        }}
-        page={pageNumber}
-        rowsPerPage={rowPerPage}
-        onChangeRowsPerPage={e => {
-          setRowPerPage(+e.target.value);
-          setPageNumber(0);
-        }}
-        ActionsComponent={TablePaginationActions}
-      />
-    </div>
-  );
-};
+                          <TableCell />
+                          <TableCell />
+                          <TableCell align="center" className={classes.STDpadding}>
+                            {item.scope.times.map(t => {
+                              return (
+                                <div className={classNames(classes.STDStyle, classes.STDpadding)} key={'timescopeLowerBound' + Math.random() + d.id}>
+                                  <div>{t.stdLowerBound.toString()}</div>
+                                </div>
+                              );
+                            })}
+                          </TableCell>
+                          <TableCell align="center" className={classes.STDpadding}>
+                            {item.scope.times.map(t => {
+                              return (
+                                <div className={classNames(classes.STDStyle, classes.STDpadding)} key={'timescopeUpperBound' + Math.random() + d.id}>
+                                  <div>{t.stdUpperBound.toString()}</div>
+                                </div>
+                              );
+                            })}
+                          </TableCell>
+                          <TableCell>{item.scope.required && <DoneIcon />}</TableCell>
+                          <TableCell>
+                            <IconButton
+                              disabled={d.ignored}
+                              onClick={() => {
+                                onEditWeekdayFlightRequirement(item, d);
+                              }}
+                            >
+                              <EditIcon />
+                            </IconButton>
+                            <IconButton
+                              disabled={d.ignored}
+                              onClick={() => {
+                                onRemoveWeekdayFlightRequirement(item, d);
+                              }}
+                            >
+                              <ClearIcon />
+                            </IconButton>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </Grid>
+            </Paper>
+          );
+        })}
+        <div />
+        <TablePagination
+          classes={{ root: classes.divContent }}
+          rowsPerPageOptions={[5, 10, 25, 50]}
+          count={filterFlightRequirment.length}
+          onChangePage={(e, n) => {
+            setPageNumber(n);
+          }}
+          page={pageNumber}
+          rowsPerPage={rowPerPage}
+          onChangeRowsPerPage={e => {
+            setRowPerPage(+e.target.value);
+            setPageNumber(0);
+          }}
+          ActionsComponent={TablePaginationActions}
+        />
+      </div>
+    );
+  }
+);
 
 export default FlightRequirementListPage;

@@ -202,7 +202,7 @@ router.post(
     const updatedFlightRequirement: FlightRequirementEntity[] = await runSp(
       '[RPA].[SP_EditFlightRequirements]',
       runSp.varCharParam('userId', userId),
-      runSp.tableparam(
+      runSp.tableParam(
         'flightRequirementParameter',
         [
           { name: 'id', type: TYPES.Int },
@@ -213,8 +213,8 @@ router.post(
           { name: 'category', type: TYPES.NVarChar, length: 100 },
           { name: 'stcId', type: TYPES.Int },
           { name: 'flightNumber', type: TYPES.VarChar, length: 10 },
-          { name: 'departureAirportId', type: TYPES.BigInt },
-          { name: 'stcId', type: TYPES.BigInt }
+          { name: 'departureAirportId', type: TYPES.VarChar },
+          { name: 'arrivalAirportId', type: TYPES.VarChar }
         ],
         rawFlightRequirements
       )
@@ -255,11 +255,7 @@ router.post(
       runSp.varCharParam('userId', userId),
       runSp.varCharParam('id', id),
       runSp.varCharParam('dummyAircraftRegisters', xmlStringify(convertDummyAircraftRegisterListModelToEntity(dummyAircraftRegisters), 'DummyAircraftRegisters')),
-      runSp.nVarCharParam(
-        'aircraftRegisterOptionsDictionary',
-        xmlStringify(convertAircraftRegisterOptionsListModelToEntity(aircraftRegisterOptionsDictionary), 'AircraftRegistersOptions'),
-        4000
-      )
+      runSp.varCharParam('AircraftRegisterOptions', xmlStringify(convertAircraftRegisterOptionsListModelToEntity(aircraftRegisterOptionsDictionary), 'AircraftRegistersOptions'))
     );
   })
 );

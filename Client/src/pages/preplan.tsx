@@ -25,6 +25,8 @@ import { Clear as ClearIcon, Add as AddIcon } from '@material-ui/icons';
 import Rsx, { Rsxes } from '@core/types/flight-requirement/Rsx';
 import AircraftIdentityModel from '@core/models/AircraftIdentityModel';
 import ServerResult from '@core/types/ServerResult';
+import MultiSelect from 'src/components/MultiSelect';
+import PreplanAircraftSelection from 'src/view-models/PreplanAircraftSelection';
 
 const useStyles = makeStyles((theme: Theme) => ({
   flightRequirementStyle: {
@@ -82,8 +84,8 @@ export interface FlightRequirementModalModel {
   arrivalAirport?: string;
   blockTime?: string;
   times?: { stdLowerBound: string; stdUpperBound: string }[];
-  allowedAircraftIdentities?: Partial<PreplanAircraftIdentity>[];
-  forbiddenAircraftIdentities?: Partial<PreplanAircraftIdentity>[];
+  allowedAircraftIdentities?: AircraftIdentity[];
+  forbiddenAircraftIdentities?: AircraftIdentity[];
   originPermission?: boolean;
   destinationPermission?: boolean;
   notes?: string;
@@ -110,6 +112,13 @@ const rsxes = Rsxes.map(r => {
 
 type modeType = 'add' | 'edit' | 'readOnly' | 'return' | 'remove';
 
+interface AircraftIdentity {
+  id: string;
+  masterDataId: string;
+  name: string;
+  type: AircraftIdentityType;
+}
+
 const PreplanPage: FC = () => {
   const [preplan, setPreplan] = useState<Preplan | null>(null);
   const [showContents, setShowContents] = useState(false);
@@ -119,6 +128,37 @@ const PreplanPage: FC = () => {
 
   const classes = useStyles();
   const { match } = useRouter<{ id: string }>();
+
+  const registerIdentities: AircraftIdentity[] = preplan
+    ? preplan.aircraftRegisters.items.map((a, index) => ({ masterDataId: a.id, name: a.name, type: 'REGISTER', id: index + 'register' } as AircraftIdentity))
+    : [];
+  const groupIdentities: AircraftIdentity[] = MasterData.all.aircraftGroups.items.map(
+    (a, index) => ({ masterDataId: a.id, name: a.name, type: 'GROUP', id: index + 'group' } as AircraftIdentity)
+  );
+  const typeIdentities: AircraftIdentity[] = MasterData.all.aircraftTypes.items.flatMap((a, index) => {
+    return [
+      {
+        masterDataId: a.id,
+        name: a.name,
+        type: 'TYPE',
+        id: index + 'type'
+      } as AircraftIdentity,
+      {
+        masterDataId: a.id,
+        name: a.name + '_Dummy',
+        type: 'TYPE_DUMMY',
+        id: index + 'type_dummy'
+      } as AircraftIdentity,
+      {
+        masterDataId: a.id,
+        name: a.name + '_Existing',
+        type: 'TYPE_EXISTING',
+        id: index + 'type_existing'
+      } as AircraftIdentity
+    ];
+  });
+
+  const aircraftIdentities: AircraftIdentity[] = registerIdentities.concat(groupIdentities).concat(typeIdentities);
 
   useEffect(() => {
     //TODO: Load preplan by match.params.id from server if not loaded yet.
@@ -141,6 +181,50 @@ const PreplanPage: FC = () => {
   const resourceSchedulerPageSelected = window.location.href.startsWith(`${window.location.host}/#${match.url}/resource-scheduler`);
   const flightRequirementListPageSelected = window.location.href.startsWith(`${window.location.host}/#${match.url}/flight-requirement-list`);
   const reportsPageSelected = window.location.href.startsWith(`${window.location.host}/#${match.url}/reports`);
+
+  function initializeFlightRequirementModalModel(mode: modeType, flightRequirement?: FlightRequirement) {
+    const modalModel: FlightRequirementModalModel = {
+      open: false,
+      loading: false,
+      actionTitle: mode === 'add' || mode === 'return' ? 'Add' : 'Edit',
+      mode: mode,
+      rsx: 'REAL',
+      times: [],
+      stc: MasterData.all.stcs.items.find(n => n.name === 'J'),
+      flightRequirement: {} as FlightRequirement
+    };
+
+    modalModel.times!.push({} as { stdLowerBound: string; stdUpperBound: string });
+
+    if (!flightRequirement) return modalModel;
+
+    const days = Array.range(0, 6).map(() => false);
+    flightRequirement.days.map(d => d.day).forEach(n => (days[n] = true));
+
+    modalModel.flightRequirement = flightRequirement;
+    modalModel.days = days;
+    modalModel.allowedAircraftIdentities = convertePreplanAircraftIdentityToAircraftIdentity(flightRequirement.scope.aircraftSelection.allowedIdentities!, aircraftIdentities);
+    modalModel.forbiddenAircraftIdentities = convertePreplanAircraftIdentityToAircraftIdentity(flightRequirement.scope.aircraftSelection.forbiddenIdentities!, aircraftIdentities);
+    modalModel.arrivalAirport = flightRequirement.definition.arrivalAirport.name;
+    modalModel.departureAirport = flightRequirement.definition.departureAirport.name;
+    modalModel.blockTime = parseMinute(flightRequirement.scope.blockTime);
+    modalModel.category = flightRequirement.definition.category;
+    modalModel.destinationPermission = flightRequirement.scope.destinationPermission;
+    modalModel.flightNumber = flightRequirement.definition.flightNumber;
+    modalModel.label = flightRequirement.definition.label;
+    //modalModel.notes =
+    modalModel.originPermission = flightRequirement.scope.originPermission;
+    modalModel.required = flightRequirement.scope.required;
+    modalModel.rsx = flightRequirement.scope.rsx;
+    modalModel.stc = flightRequirement.definition.stc;
+    modalModel.times = flightRequirement.scope.times.map(t => ({ stdLowerBound: parseMinute(t.stdLowerBound.minutes), stdUpperBound: parseMinute(t.stdUpperBound.minutes) }));
+    //modalModel.unavailableDays =
+    return modalModel;
+  }
+
+  function convertePreplanAircraftIdentityToAircraftIdentity(preplanAircraftIdentities: readonly PreplanAircraftIdentity[], aircraftIdentities: AircraftIdentity[]) {
+    return preplanAircraftIdentities.map(n => aircraftIdentities.find(a => a.masterDataId === n.entity.id && a.type === n.type)!);
+  }
 
   return (
     <Fragment>
@@ -203,6 +287,7 @@ const PreplanPage: FC = () => {
                 return (
                   <FlightRequirementListPage
                     flightRequirements={flightRequirements!}
+                    preplan={preplan}
                     onAddFlightRequirement={() => {
                       const modalModel = initializeFlightRequirementModalModel('add');
                       modalModel.open = true;
@@ -244,8 +329,10 @@ const PreplanPage: FC = () => {
                       modalModel.originPermission = weekday.scope.originPermission;
                       modalModel.destinationPermission = weekday.scope.destinationPermission;
                       modalModel.required = weekday.scope.required;
-                      modalModel.allowedAircraftIdentities = [...weekday.scope.aircraftSelection.allowedIdentities];
-                      modalModel.forbiddenAircraftIdentities = [...weekday.scope.aircraftSelection.forbiddenIdentities];
+                      modalModel.allowedAircraftIdentities =
+                        convertePreplanAircraftIdentityToAircraftIdentity(weekday.scope.aircraftSelection.allowedIdentities, aircraftIdentities) || [];
+                      modalModel.forbiddenAircraftIdentities =
+                        convertePreplanAircraftIdentityToAircraftIdentity(weekday.scope.aircraftSelection.forbiddenIdentities, aircraftIdentities) || [];
 
                       setFlightRequirementModalModel(modalModel);
                     }}
@@ -291,10 +378,16 @@ const PreplanPage: FC = () => {
                   required: !!fr.required,
                   rsx: fr.rsx!,
                   aircraftSelection: {
-                    allowedIdentities: [],
-                    forbiddenIdentities: []
+                    allowedIdentities: fr.allowedAircraftIdentities
+                      ? fr.allowedAircraftIdentities.map(a => ({ entityId: a.masterDataId, type: a.type } as AircraftIdentityModel))
+                      : [],
+                    forbiddenIdentities: fr.forbiddenAircraftIdentities
+                      ? fr.forbiddenAircraftIdentities.map(a => ({ entityId: a.masterDataId, type: a.type } as AircraftIdentityModel))
+                      : []
                   }
                 };
+
+                const aircraftRegister = new PreplanAircraftSelection(scope.aircraftSelection, preplan!.aircraftRegisters).resolveIncluded()[0];
 
                 const model: FlightRequirementModel = {
                   id: fr.flightRequirement!.id,
@@ -317,7 +410,8 @@ const PreplanPage: FC = () => {
                           scope: scope,
                           freezed: false,
                           flight: {
-                            std: scope.times[0].stdLowerBound
+                            std: scope.times[0].stdLowerBound,
+                            aircraftRegisterId: aircraftRegister && aircraftRegister.id
                           }
                         } as WeekdayFlightRequirementModel)
                     ),
@@ -363,10 +457,10 @@ const PreplanPage: FC = () => {
                   rsx: weekfr.rsx!,
                   aircraftSelection: {
                     allowedIdentities: weekfr.allowedAircraftIdentities
-                      ? weekfr.allowedAircraftIdentities.map(a => ({ entityId: a.entity && a.entity!.id, type: a.type } as AircraftIdentityModel))
+                      ? weekfr.allowedAircraftIdentities.map(a => ({ entityId: a.masterDataId, type: a.type } as AircraftIdentityModel))
                       : [],
                     forbiddenIdentities: weekfr.forbiddenAircraftIdentities
-                      ? weekfr.forbiddenAircraftIdentities.map(a => ({ entityId: a.entity && a.entity!.id, type: a.type } as AircraftIdentityModel))
+                      ? weekfr.forbiddenAircraftIdentities.map(a => ({ entityId: a.masterDataId, type: a.type } as AircraftIdentityModel))
                       : []
                   }
                 };
@@ -422,10 +516,13 @@ const PreplanPage: FC = () => {
                     return result;
                   });
 
+                const aircraftRegister = new PreplanAircraftSelection(weekDayScope.aircraftSelection, preplan!.aircraftRegisters).resolveIncluded()[0];
+
                 const day: WeekdayFlightRequirementModel = {
                   day: weekfr.day!,
                   flight: {
-                    std: weekDayScope.times[0].stdLowerBound
+                    std: weekDayScope.times[0].stdLowerBound,
+                    aircraftRegisterId: aircraftRegister && aircraftRegister.id
                   },
                   freezed: false,
                   notes: weekfr.notes || '',
@@ -632,15 +729,29 @@ const PreplanPage: FC = () => {
               <Grid item xs={12}>
                 <Grid container spacing={1}>
                   <Grid item xs={12}>
-                    <Typography variant="caption" className={classes.captionTextColor}>
-                      Allowed Aircrafts
-                    </Typography>
+                    {
+                      <Typography variant="caption" className={classes.captionTextColor}>
+                        Allowed Aircrafts
+                      </Typography>
+                    }
                   </Grid>
                   <Grid item xs={6}>
-                    <TextField fullWidth label="Include Aircraft" />
+                    <MultiSelect
+                      options={aircraftIdentities}
+                      getOptionLabel={l => l.name}
+                      getOptionValue={l => l.id}
+                      value={flightRequirementModalModel.allowedAircraftIdentities}
+                      onSelect={l => setFlightRequirementModalModel({ ...flightRequirementModalModel, allowedAircraftIdentities: l ? [...l] : [] })}
+                    ></MultiSelect>
                   </Grid>
                   <Grid item xs={6}>
-                    <TextField fullWidth label="Exclude Aircraft" />
+                    <MultiSelect
+                      options={aircraftIdentities}
+                      getOptionLabel={l => l.name}
+                      getOptionValue={l => l.id}
+                      value={flightRequirementModalModel.forbiddenAircraftIdentities}
+                      onSelect={l => setFlightRequirementModalModel({ ...flightRequirementModalModel, forbiddenAircraftIdentities: l ? [...l] : [] })}
+                    ></MultiSelect>
                   </Grid>
                   <Grid item xs={6}>
                     <Typography variant="body2" className={classes.captionTextColor}>
@@ -820,7 +931,13 @@ const PreplanPage: FC = () => {
                 setFlightRequirementModalModel({ ...weekfr, loading: false, errorMessage: resultMessage });
               } else {
                 setFlightRequirementModalModel({ ...weekfr, loading: false, open: false });
-                result ? preplan!.mergeFlightRequirements(result) : preplan!.mergeFlightRequirements();
+
+                if (flightRequirementModalModel.weekly || flightRequirment.days.length === 1) {
+                  preplan!.removeFlightRequirement(flightRequirementModalModel.flightRequirement!.id);
+                } else {
+                  result ? preplan!.mergeFlightRequirements(result) : preplan!.mergeFlightRequirements();
+                }
+
                 setFlightRequirements([...preplan!.flightRequirements]);
               }
             }
@@ -838,43 +955,3 @@ const PreplanPage: FC = () => {
 };
 
 export default PreplanPage;
-
-function initializeFlightRequirementModalModel(mode: modeType, flightRequirement?: FlightRequirement) {
-  const modalModel: FlightRequirementModalModel = {
-    open: false,
-    loading: false,
-    actionTitle: mode === 'add' || mode === 'return' ? 'Add' : 'Edit',
-    mode: mode,
-    rsx: 'REAL',
-    times: [],
-    stc: MasterData.all.stcs.items.find(n => n.name === 'J'),
-    flightRequirement: {} as FlightRequirement
-  };
-
-  modalModel.times!.push({} as { stdLowerBound: string; stdUpperBound: string });
-
-  if (!flightRequirement) return modalModel;
-
-  const days = Array.range(0, 6).map(() => false);
-  flightRequirement.days.map(d => d.day).forEach(n => (days[n] = true));
-
-  modalModel.flightRequirement = flightRequirement;
-  modalModel.days = days;
-  modalModel.allowedAircraftIdentities = [...flightRequirement.scope.aircraftSelection.allowedIdentities!];
-  modalModel.forbiddenAircraftIdentities = [...flightRequirement.scope.aircraftSelection.forbiddenIdentities!];
-  modalModel.arrivalAirport = flightRequirement.definition.arrivalAirport.name;
-  modalModel.departureAirport = flightRequirement.definition.departureAirport.name;
-  modalModel.blockTime = parseMinute(flightRequirement.scope.blockTime);
-  modalModel.category = flightRequirement.definition.category;
-  modalModel.destinationPermission = flightRequirement.scope.destinationPermission;
-  modalModel.flightNumber = flightRequirement.definition.flightNumber;
-  modalModel.label = flightRequirement.definition.label;
-  //modalModel.notes =
-  modalModel.originPermission = flightRequirement.scope.originPermission;
-  modalModel.required = flightRequirement.scope.required;
-  modalModel.rsx = flightRequirement.scope.rsx;
-  modalModel.stc = flightRequirement.definition.stc;
-  modalModel.times = flightRequirement.scope.times.map(t => ({ stdLowerBound: parseMinute(t.stdLowerBound.minutes), stdUpperBound: parseMinute(t.stdUpperBound.minutes) }));
-  //modalModel.unavailableDays =
-  return modalModel;
-}

@@ -13,6 +13,9 @@ import TablePaginationActions from 'src/components/PaginationAction';
 
 import FlightRequirement from 'src/view-models/flights/FlightRequirement';
 import WeekdayFlightRequirement from 'src/view-models/flights/WeekdayFlightRequirement';
+import AircraftIdentityType from '@core/types/aircraft-identity/AircraftIdentityType';
+import Preplan from 'src/view-models/Preplan';
+import MasterData from '@core/master-data';
 
 const useStyles = makeStyles((theme: Theme) => ({
   contentPage: {
@@ -57,6 +60,7 @@ const useStyles = makeStyles((theme: Theme) => ({
 
 export interface FlightRequirementListPageProps {
   flightRequirements: ReadonlyArray<FlightRequirement>;
+  preplan: Preplan;
   onAddFlightRequirement: () => void;
   onRemoveFlightRequirement: (flightRequirement: FlightRequirement) => void;
   onEditFlightRequirement: (flightRequirement: FlightRequirement) => void;
@@ -70,6 +74,7 @@ type Tab = 'ALL' | 'INCLUDE' | 'IGNORE';
 const FlightRequirementListPage: FC<FlightRequirementListPageProps> = React.memo(
   ({
     flightRequirements,
+    preplan,
     onAddFlightRequirement,
     onRemoveFlightRequirement,
     onEditFlightRequirement,
@@ -77,33 +82,33 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = React.memo
     onRemoveWeekdayFlightRequirement,
     onEditWeekdayFlightRequirement
   }) => {
-    useEffect(() => {
-      console.log('flightRequirements', flightRequirements);
-    }, [flightRequirements]);
+    // useEffect(() => {
+    //   console.log('flightRequirements', flightRequirements);
+    // }, [flightRequirements]);
 
-    useEffect(() => {
-      console.log('onAddFlightRequirement', onAddFlightRequirement);
-    }, [onAddFlightRequirement]);
+    // useEffect(() => {
+    //   console.log('onAddFlightRequirement', onAddFlightRequirement);
+    // }, [onAddFlightRequirement]);
 
-    useEffect(() => {
-      console.log('onRemoveFlightRequirement', onRemoveFlightRequirement);
-    }, [onRemoveFlightRequirement]);
+    // useEffect(() => {
+    //   console.log('onRemoveFlightRequirement', onRemoveFlightRequirement);
+    // }, [onRemoveFlightRequirement]);
 
-    useEffect(() => {
-      console.log('onEditFlightRequirement', onEditFlightRequirement);
-    }, [onEditFlightRequirement]);
+    // useEffect(() => {
+    //   console.log('onEditFlightRequirement', onEditFlightRequirement);
+    // }, [onEditFlightRequirement]);
 
-    useEffect(() => {
-      console.log('onAddReturnFlightRequirement', onAddReturnFlightRequirement);
-    }, [onAddReturnFlightRequirement]);
+    // useEffect(() => {
+    //   console.log('onAddReturnFlightRequirement', onAddReturnFlightRequirement);
+    // }, [onAddReturnFlightRequirement]);
 
-    useEffect(() => {
-      console.log('onRemoveWeekdayFlightRequirement', onRemoveWeekdayFlightRequirement);
-    }, [onRemoveWeekdayFlightRequirement]);
+    // useEffect(() => {
+    //   console.log('onRemoveWeekdayFlightRequirement', onRemoveWeekdayFlightRequirement);
+    // }, [onRemoveWeekdayFlightRequirement]);
 
-    useEffect(() => {
-      console.log('onEditWeekdayFlightRequirement', onEditWeekdayFlightRequirement);
-    }, [onEditWeekdayFlightRequirement]);
+    // useEffect(() => {
+    //   console.log('onEditWeekdayFlightRequirement', onEditWeekdayFlightRequirement);
+    // }, [onEditWeekdayFlightRequirement]);
 
     console.log(flightRequirements);
 
@@ -257,10 +262,8 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = React.memo
                         <TableRow key={item.derivedId} hover={true}>
                           <TableCell>{Weekday[item.day]}</TableCell>
                           <TableCell>{item.scope.blockTime}</TableCell>
-                          {/* <TableCell>{item.scope.aircraftSelection.allowedIdentities.map(a => a.entity.name).join(', ')}</TableCell>
-                        <TableCell>{item.scope.aircraftSelection.forbiddenIdentities.map(a => a.entity.name).join(', ')}</TableCell> */}
-                          <TableCell />
-                          <TableCell />
+                          <TableCell>{item.scope.aircraftSelection.allowedIdentities.map(a => a.entity.name).join(', ')}</TableCell>
+                          <TableCell>{item.scope.aircraftSelection.forbiddenIdentities.map(a => a.entity.name).join(', ')}</TableCell>
                           <TableCell align="center" className={classes.STDpadding}>
                             {item.scope.times.map(t => {
                               return (

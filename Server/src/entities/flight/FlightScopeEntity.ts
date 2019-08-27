@@ -49,7 +49,6 @@ export function convertFlightScopeModelToEntity(data: FlightScopeModel): FlightS
 }
 
 export function convertflightScopeEntityToModel(data: FlightScopeEntity): FlightScopeModel {
-  console.log(data);
   return {
     blockTime: Number(data._attributes.BlockTime),
     times: xmlArray(data.Times.Time).map(convertFlightTimeEntityToModel),
@@ -57,9 +56,9 @@ export function convertflightScopeEntityToModel(data: FlightScopeEntity): Flight
       allowedIdentities: xmlArray(data.AircraftSelection.AllowedIdentities.AllowedIdentity).map(convertAircraftIdentityEntityToModel),
       forbiddenIdentities: xmlArray(data.AircraftSelection.ForbiddenIdentities.ForbiddenIdentity).map(convertAircraftIdentityEntityToModel)
     },
-    originPermission: Boolean(data._attributes.OriginPermission),
-    destinationPermission: Boolean(data._attributes.DestinationPermission),
+    originPermission: data._attributes.OriginPermission === 'true',
+    destinationPermission: data._attributes.DestinationPermission === 'true',
     rsx: data._attributes.Rsx as Rsx,
-    required: Boolean(data._attributes.Required)
+    required: data._attributes.Required === 'true'
   };
 }

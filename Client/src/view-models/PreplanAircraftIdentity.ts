@@ -45,20 +45,16 @@ export default abstract class PreplanAircraftIdentity {
 }
 
 export class PreplanAircraftRegisterIdentity extends PreplanAircraftIdentity {
-  readonly entity!: PreplanAircraftRegister;
-
   constructor(raw: AircraftIdentityModel, aircraftRegisters: PreplanAircraftRegisters) {
     super(raw, aircraftRegisters.id[raw.entityId], aircraftRegisters);
   }
 
   resolve(): Set<PreplanAircraftRegister> {
-    return new Set([this.entity]);
+    return new Set([this.entity as PreplanAircraftRegister]);
   }
 }
 
 export class PreplanAircraftTypeIdentity extends PreplanAircraftIdentity {
-  readonly entity!: AircraftType;
-
   constructor(raw: AircraftIdentityModel, aircraftRegisters: PreplanAircraftRegisters) {
     super(raw, MasterData.all.aircraftTypes.id[raw.entityId], aircraftRegisters);
   }
@@ -69,8 +65,6 @@ export class PreplanAircraftTypeIdentity extends PreplanAircraftIdentity {
 }
 
 export class PreplanAircraftTypeExistingIdentity extends PreplanAircraftIdentity {
-  readonly entity!: AircraftType;
-
   constructor(raw: AircraftIdentityModel, aircraftRegisters: PreplanAircraftRegisters) {
     super(raw, MasterData.all.aircraftTypes.id[raw.entityId], aircraftRegisters);
   }
@@ -81,8 +75,6 @@ export class PreplanAircraftTypeExistingIdentity extends PreplanAircraftIdentity
 }
 
 export class PreplanAircraftTypeDummyIdentity extends PreplanAircraftIdentity {
-  readonly entity!: AircraftType;
-
   constructor(raw: AircraftIdentityModel, aircraftRegisters: PreplanAircraftRegisters) {
     super(raw, MasterData.all.aircraftTypes.id[raw.entityId], aircraftRegisters);
   }
@@ -93,13 +85,11 @@ export class PreplanAircraftTypeDummyIdentity extends PreplanAircraftIdentity {
 }
 
 export class PreplanAircraftGroupIdentity extends PreplanAircraftIdentity {
-  readonly entity!: AircraftGroup;
-
   constructor(raw: AircraftIdentityModel, aircraftRegisters: PreplanAircraftRegisters) {
     super(raw, MasterData.all.aircraftGroups.id[raw.entityId], aircraftRegisters);
   }
 
   resolve(): Set<PreplanAircraftRegister> {
-    return new Set(this.entity.aircraftRegisters.map(r => this.aircraftRegisters.id[r.id]));
+    return new Set((this.entity as AircraftGroup).aircraftRegisters.map(r => this.aircraftRegisters.id[r.id]));
   }
 }

@@ -179,9 +179,9 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
         changeLogs={preplan.autoArrangerState.changeLogs}
         selectedFlightPack={resourceSchedulerViewModel.selectedFlightPack}
         onSelectFlightPack={flightPack => setResourceSchedulerViewModel({ ...resourceSchedulerViewModel, selectedFlightPack: flightPack })}
-        onFreezeFlightPack={(flightPack, freezed) => {
+        onFreezeFlightPack={async (flightPack, freezed) => {
           //TODO: remove
-
+          setResourceSchedulerViewModel({ ...resourceSchedulerViewModel, loading: true });
           const flightInfo = flightPack.flights.map(f => ({ fr: f.requirement, wfr: f.weekdayRequirement }));
 
           const newFrModel = flightInfo.map(fi => {
@@ -254,10 +254,13 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
             return model;
           });
 
-          PreplanService.editFlightRequirements(newFrModel);
+          await PreplanService.editFlightRequirements(newFrModel);
+          setResourceSchedulerViewModel({ ...resourceSchedulerViewModel, loading: false });
         }}
-        onRequireFlightPack={(flightPack, required) => {
+        onRequireFlightPack={async (flightPack, required) => {
           //TODO: Not implemented.
+
+          setResourceSchedulerViewModel({ ...resourceSchedulerViewModel, loading: true });
 
           const flightInfo = flightPack.flights.map(f => ({ fr: f.requirement, wfr: f.weekdayRequirement }));
 
@@ -331,12 +334,14 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
             return model;
           });
 
-          PreplanService.editFlightRequirements(newFrModel);
+          await PreplanService.editFlightRequirements(newFrModel);
+
+          setResourceSchedulerViewModel({ ...resourceSchedulerViewModel, loading: false });
         }}
-        onIgnoreFlightPack={flightPack => {
+        onIgnoreFlightPack={async flightPack => {
           //TODO: Not implemented.
           //TODO:
-
+          setResourceSchedulerViewModel({ ...resourceSchedulerViewModel, loading: true });
           const flightInfo = flightPack.flights.map(f => ({ fr: f.requirement, wfr: f.weekdayRequirement }));
 
           const newFrModel = flightInfo.map(fi => {
@@ -408,7 +413,8 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
             return model;
           });
 
-          PreplanService.editFlightRequirements(newFrModel);
+          await PreplanService.editFlightRequirements(newFrModel);
+          setResourceSchedulerViewModel({ ...resourceSchedulerViewModel, loading: false });
         }}
         onOpenFlightModal={flight => {
           //TODO: Not implemented.

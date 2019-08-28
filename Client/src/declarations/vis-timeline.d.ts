@@ -9,7 +9,7 @@ declare module 'vis-timeline' {
     align?: 'auto' | 'center' | 'left' | 'right';
     content: string;
     end?: CustomTime;
-    group?: any;
+    group?: Id;
     id?: Id;
     start: CustomTime;
     style?: string;

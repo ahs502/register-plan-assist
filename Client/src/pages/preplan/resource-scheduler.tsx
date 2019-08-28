@@ -502,15 +502,15 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
           setResourceSchedulerViewModel({ ...resourceSchedulerViewModel, loading: false });
         }}
         onFlightPackMouseHover={flightPack => {
-          console.log('flight pack', flightPack);
+          // console.log('flight pack', flightPack);
           //TODO: Not implemented.
         }}
         onFreeSpaceMouseHover={(aircraftRegister, previousFlightPack, nextFlightPack) => {
-          console.log('free space', aircraftRegister, previousFlightPack, nextFlightPack);
+          // console.log('free space', aircraftRegister, previousFlightPack, nextFlightPack);
           //TODO: Not implemented.
         }}
         onNowhereMouseHover={() => {
-          console.log('nowhere');
+          // console.log('nowhere');
           //TODO: Not implemented.
         }}
       />

@@ -480,14 +480,16 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
                   }
                 };
 
+                const std = d.day === wfr.day ? d.flight.std.minutes + deltaStd : d.flight.std.minutes;
+                const registerId = d.day === wfr.day ? newAircraftRegister && newAircraftRegister.id : d.flight.aircraftRegister && d.flight.aircraftRegister.id;
                 return {
                   day: d.day,
                   notes: d.notes,
                   scope: dayScope,
                   freezed: d.freezed,
                   flight: {
-                    std: d.flight.std.minutes + deltaStd,
-                    aircraftRegisterId: newAircraftRegister && newAircraftRegister.id
+                    std: std,
+                    aircraftRegisterId: registerId
                   }
                 } as WeekdayFlightRequirementModel;
               }),

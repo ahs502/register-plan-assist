@@ -79,7 +79,10 @@ export default class Preplan extends PreplanHeader {
    */
   get flights(): readonly Flight[] {
     if (this.allFlights) return this.allFlights;
-    return (this.allFlights = this.flightRequirements.map(w => w.days.map(d => d.flight)).flatten());
+    return (this.allFlights = this.flightRequirements
+      .filter(f => !f.ignored)
+      .map(w => w.days.map(d => d.flight))
+      .flatten());
   }
 
   /**

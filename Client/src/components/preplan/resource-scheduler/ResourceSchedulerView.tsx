@@ -181,7 +181,7 @@ export interface ResourceSchedulerViewProps {
   onIgnoreFlightPack(flightPack: FlightPack): void;
   onOpenFlightModal(flight: Flight): void;
   onOpenFlightPackModal(flightPack: FlightPack): void;
-  onFlightPackDragAndDrop(flightPack: FlightPack, newStd0: Daytime, newAircraftRegister?: PreplanAircraftRegister): void;
+  onFlightPackDragAndDrop(flightPack: FlightPack, deltaStd: number, newAircraftRegister?: PreplanAircraftRegister): void;
   onFlightPackMouseHover(flightPack: FlightPack): void;
   onFreeSpaceMouseHover(aircraftRegister: PreplanAircraftRegister | null, previousFlightPack: FlightPack | null, nextFlightPack: FlightPack | null): void;
   onNowhereMouseHover(): void;

@@ -422,8 +422,82 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
         onOpenFlightPackModal={flightPack => {
           //TODO: Not implemented.
         }}
-        onFlightPackDragAndDrop={(flightPack, newStd0, newAircraftRegister) => {
-          //TODO: Not implemented.
+        onFlightPackDragAndDrop={async (flightPack, deltaStd, newAircraftRegister) => {
+          setResourceSchedulerViewModel({ ...resourceSchedulerViewModel, loading: true });
+
+          const flightInfo = flightPack.flights.map(f => ({ fr: f.requirement, wfr: f.weekdayRequirement }));
+
+          const newFrModel = flightInfo.map(fi => {
+            const fr = fi.fr;
+            const wfr = fi.wfr;
+            const frScope: FlightScopeModel = {
+              blockTime: fr.scope.blockTime,
+              times: fr.scope.times!.map(t => {
+                return { stdLowerBound: t.stdLowerBound.minutes, stdUpperBound: t.stdUpperBound.minutes } as FlightTimeModel;
+              }),
+              destinationPermission: !!fr.scope.destinationPermission,
+              originPermission: !!fr.scope.originPermission,
+              required: !!fr.scope.required,
+              rsx: fr.scope.rsx!,
+              aircraftSelection: {
+                allowedIdentities: fr.scope.aircraftSelection.allowedIdentities
+                  ? fr.scope.aircraftSelection.allowedIdentities.map(a => ({ entityId: a.entity.id, type: a.type } as AircraftIdentityModel))
+                  : [],
+                forbiddenIdentities: fr.scope.aircraftSelection.forbiddenIdentities
+                  ? fr.scope.aircraftSelection.forbiddenIdentities.map(a => ({ entityId: a.entity.id, type: a.type } as AircraftIdentityModel))
+                  : []
+              }
+            };
+
+            const model: FlightRequirementModel = {
+              id: fr.id,
+              definition: {
+                label: fr.definition.label || '',
+                category: fr.definition.category || '',
+                stcId: fr.definition.stc ? fr.definition.stc.id : '',
+                flightNumber: (fr.definition.flightNumber || '').toUpperCase(),
+                departureAirportId: fr.definition.departureAirport.id,
+                arrivalAirportId: fr.definition.arrivalAirport.id
+              },
+              scope: frScope,
+              days: fr.days.map(d => {
+                const dayScope: FlightScopeModel = {
+                  blockTime: d.scope.blockTime,
+                  times: d.scope.times!.map(t => {
+                    return { stdLowerBound: t.stdLowerBound.minutes, stdUpperBound: t.stdUpperBound.minutes } as FlightTimeModel;
+                  }),
+                  destinationPermission: !!d.scope.destinationPermission,
+                  originPermission: !!d.scope.originPermission,
+                  required: d.scope.required,
+                  rsx: d.scope.rsx!,
+                  aircraftSelection: {
+                    allowedIdentities: d.scope.aircraftSelection.allowedIdentities
+                      ? d.scope.aircraftSelection.allowedIdentities.map(a => ({ entityId: a.entity.id, type: a.type } as AircraftIdentityModel))
+                      : [],
+                    forbiddenIdentities: d.scope.aircraftSelection.forbiddenIdentities
+                      ? d.scope.aircraftSelection.forbiddenIdentities.map(a => ({ entityId: a.entity.id, type: a.type } as AircraftIdentityModel))
+                      : []
+                  }
+                };
+
+                return {
+                  day: d.day,
+                  notes: d.notes,
+                  scope: dayScope,
+                  freezed: d.freezed,
+                  flight: {
+                    std: d.flight.std.minutes + deltaStd,
+                    aircraftRegisterId: newAircraftRegister && newAircraftRegister.id
+                  }
+                } as WeekdayFlightRequirementModel;
+              }),
+              ignored: false
+            };
+            return model;
+          });
+
+          await PreplanService.editFlightRequirements(newFrModel);
+          setResourceSchedulerViewModel({ ...resourceSchedulerViewModel, loading: false });
         }}
         onFlightPackMouseHover={flightPack => {
           console.log('flight pack', flightPack);

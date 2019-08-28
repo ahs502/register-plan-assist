@@ -27,6 +27,7 @@ import AircraftIdentityModel from '@core/models/AircraftIdentityModel';
 import ServerResult from '@core/types/ServerResult';
 import MultiSelect from 'src/components/MultiSelect';
 import PreplanAircraftSelection from 'src/view-models/PreplanAircraftSelection';
+import FlightModel from '@core/models/flights/FlightModel';
 
 const useStyles = makeStyles((theme: Theme) => ({
   flightRequirementStyle: {
@@ -401,20 +402,29 @@ const PreplanPage: FC = () => {
                   },
                   scope: scope,
                   days: fr
-                    .days!.filter(n => n)
-                    .map(
-                      (d, index) =>
-                        ({
-                          day: index,
-                          notes: fr.notes,
-                          scope: scope,
-                          freezed: false,
-                          flight: {
-                            std: scope.times[0].stdLowerBound,
-                            aircraftRegisterId: aircraftRegister && aircraftRegister.id
-                          }
-                        } as WeekdayFlightRequirementModel)
-                    ),
+                    .days!.map((e, i) => (e ? i : ''))
+                    .filter(String)
+                    .map(d => {
+                      let flight: FlightModel;
+                      if (flightRequirementModalModel.mode === 'add') {
+                        flight = {
+                          std: scope.times[0].stdLowerBound,
+                          aircraftRegisterId: aircraftRegister && aircraftRegister.id
+                        };
+                      } else {
+                      }
+
+                      return {
+                        day: d,
+                        notes: fr.notes,
+                        scope: scope,
+                        freezed: false,
+                        flight: {
+                          std: scope.times[0].stdLowerBound,
+                          aircraftRegisterId: aircraftRegister && aircraftRegister.id
+                        }
+                      } as WeekdayFlightRequirementModel;
+                    }),
                   ignored: false
                 };
 

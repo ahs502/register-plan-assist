@@ -16,6 +16,13 @@ import WeekdayFlightRequirement from 'src/view-models/flights/WeekdayFlightRequi
 import AircraftIdentityType from '@core/types/aircraft-identity/AircraftIdentityType';
 import Preplan from 'src/view-models/Preplan';
 import MasterData from '@core/master-data';
+import { FlightScopeModel } from '@core/models/flights/FlightScopeModel';
+import FlightTimeModel from '@core/models/flights/FlightTimeModel';
+import AircraftIdentityModel from '@core/models/AircraftIdentityModel';
+import FlightRequirementModel from '@core/models/flights/FlightRequirementModel';
+import { required } from 'yargs';
+import WeekdayFlightRequirementModel from '@core/models/flights/WeekdayFlightRequirementModel';
+import PreplanService from 'src/services/PreplanService';
 
 const useStyles = makeStyles((theme: Theme) => ({
   contentPage: {
@@ -134,6 +141,7 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = React.memo
       const index = list.indexOf(item);
       tempList[index][propertyName] = newValue;
       settter(tempList);
+      return tempList[index];
     };
 
     const filterOnProperties = (query: readonly string[]): ReadonlyArray<FlightRequirement> => {
@@ -211,8 +219,83 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = React.memo
                     <Grid item>
                       <Switch
                         checked={!d.ignored}
-                        onChange={e => {
-                          handleChange(filterFlightRequirment, d, 'ignored', !e.target.checked, setFilterFlightRequirment);
+                        onChange={async e => {
+                          //TODO remove
+                          const newValue = handleChange(filterFlightRequirment, d, 'ignored', !e.target.checked, setFilterFlightRequirment);
+
+                          const flightRequirement = newValue as FlightRequirement;
+
+                          const newFrModel = [flightRequirement].map(fi => {
+                            const fr = fi;
+
+                            const frScope: FlightScopeModel = {
+                              blockTime: fr.scope.blockTime,
+                              times: fr.scope.times!.map(t => {
+                                return { stdLowerBound: t.stdLowerBound.minutes, stdUpperBound: t.stdUpperBound.minutes } as FlightTimeModel;
+                              }),
+                              destinationPermission: !!fr.scope.destinationPermission,
+                              originPermission: !!fr.scope.originPermission,
+                              required: !!fr.scope.required,
+                              rsx: fr.scope.rsx!,
+                              aircraftSelection: {
+                                allowedIdentities: fr.scope.aircraftSelection.allowedIdentities
+                                  ? fr.scope.aircraftSelection.allowedIdentities.map(a => ({ entityId: a.entity.id, type: a.type } as AircraftIdentityModel))
+                                  : [],
+                                forbiddenIdentities: fr.scope.aircraftSelection.forbiddenIdentities
+                                  ? fr.scope.aircraftSelection.forbiddenIdentities.map(a => ({ entityId: a.entity.id, type: a.type } as AircraftIdentityModel))
+                                  : []
+                              }
+                            };
+
+                            const model: FlightRequirementModel = {
+                              id: fr.id,
+                              definition: {
+                                label: fr.definition.label || '',
+                                category: fr.definition.category || '',
+                                stcId: fr.definition.stc ? fr.definition.stc.id : '',
+                                flightNumber: (fr.definition.flightNumber || '').toUpperCase(),
+                                departureAirportId: fr.definition.departureAirport.id,
+                                arrivalAirportId: fr.definition.arrivalAirport.id
+                              },
+                              scope: frScope,
+                              days: fr.days.map(d => {
+                                const dayScope: FlightScopeModel = {
+                                  blockTime: d.scope.blockTime,
+                                  times: d.scope.times!.map(t => {
+                                    return { stdLowerBound: t.stdLowerBound.minutes, stdUpperBound: t.stdUpperBound.minutes } as FlightTimeModel;
+                                  }),
+                                  destinationPermission: !!d.scope.destinationPermission,
+                                  originPermission: !!d.scope.originPermission,
+                                  required: d.scope.required,
+                                  rsx: d.scope.rsx!,
+                                  aircraftSelection: {
+                                    allowedIdentities: d.scope.aircraftSelection.allowedIdentities
+                                      ? d.scope.aircraftSelection.allowedIdentities.map(a => ({ entityId: a.entity.id, type: a.type } as AircraftIdentityModel))
+                                      : [],
+                                    forbiddenIdentities: d.scope.aircraftSelection.forbiddenIdentities
+                                      ? d.scope.aircraftSelection.forbiddenIdentities.map(a => ({ entityId: a.entity.id, type: a.type } as AircraftIdentityModel))
+                                      : []
+                                  }
+                                };
+
+                                return {
+                                  day: d.day,
+                                  notes: d.notes,
+                                  scope: dayScope,
+                                  freezed: d.freezed,
+                                  flight: {
+                                    std: d.flight.std.minutes,
+                                    aircraftRegisterId: d.flight.aircraftRegister && d.flight.aircraftRegister.id
+                                  }
+                                } as WeekdayFlightRequirementModel;
+                              }),
+                              ignored: !e.target.checked
+                            };
+                            return model;
+                          });
+
+                          await PreplanService.editFlightRequirements(newFrModel);
+
                           filterFlightRequiermentBySelectedTab(filterOnProperties(searchValue), tab);
                         }}
                         color="primary"

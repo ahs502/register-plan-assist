@@ -33,14 +33,22 @@ export default class FlightPack {
     this.start = flight.std;
     this.end = new Daytime(flight.std.minutes + flight.blockTime);
     this.sections = [{ start: 0, end: 1 }];
-    this.knownAircraftRegister = !['MMR', 'MMD'].includes((flight.aircraftRegister && flight.aircraftRegister.name) || ''); //!!flight.aircraftRegister && !flight.aircraftRegister.dummy;
-    this.required = Math.random() < 0.25 ? undefined : Math.random() < 0.3; //flight.required;
-    this.freezed = Math.random() < 0.25 ? undefined : Math.random() < 0.5; //flight.freezed;
-    this.originPermission = Math.random() < 0.25 ? undefined : Math.random() < 0.5; //flight.originPermission
-    this.destinationPermission = Math.random() < 0.25 ? undefined : Math.random() < 0.5; //flight.destinationPermission
-    this.changed = Math.random() < 0.2 ? undefined : Math.random() < 0.2; //changed
+    // this.knownAircraftRegister = !['MMR', 'MMD'].includes((flight.aircraftRegister && flight.aircraftRegister.name) || ''); //!!flight.aircraftRegister && !flight.aircraftRegister.dummy;
+    // this.required = Math.random() < 0.25 ? undefined : Math.random() < 0.3; //flight.required;
+    // this.freezed = Math.random() < 0.25 ? undefined : Math.random() < 0.5; //flight.freezed;
+    // this.originPermission = Math.random() < 0.25 ? undefined : Math.random() < 0.5; //flight.originPermission
+    // this.destinationPermission = Math.random() < 0.25 ? undefined : Math.random() < 0.5; //flight.destinationPermission
+    // this.changed = Math.random() < 0.2 ? undefined : Math.random() < 0.2; //changed
+    // this.icons = [];
+    // this.notes = Math.random() < 0.4 ? '' : ['note', 'a longer note', 'some very very long note'][Math.floor(Math.random() * 3)]; //flight.notes
+    this.knownAircraftRegister = !!flight.aircraftRegister && !flight.aircraftRegister.dummy;
+    this.required = flight.required;
+    this.freezed = flight.freezed;
+    this.originPermission = flight.originPermission;
+    this.destinationPermission = flight.destinationPermission;
+    this.changed = changed;
     this.icons = [];
-    this.notes = Math.random() < 0.4 ? '' : ['note', 'a longer note', 'some very very long note'][Math.floor(Math.random() * 3)]; //flight.notes
+    this.notes = flight.notes;
   }
 
   append(flight: Flight, changed: boolean): void {
@@ -56,11 +64,11 @@ export default class FlightPack {
     };
     flightPack.flights.push(flight);
     flightPack.end = new Daytime((flight.day - this.day) * 24 * 60 + flight.std.minutes + flight.blockTime);
-    // flightPack.required !== undefined && flightPack.required !== flight.required && delete flightPack.required;
-    // flightPack.freezed !== undefined && flightPack.freezed !== flight.freezed && delete flightPack.freezed;
-    // flightPack.originPermission !== undefined && flightPack.originPermission !== flight.originPermission && delete flightPack.originPermission;
-    // flightPack.destinationPermission !== undefined && flightPack.destinationPermission !== flight.destinationPermission && delete flightPack.destinationPermission;
-    // flightPack.changed !== undefined && flightPack.changed !== changed && delete flightPack.changed;
+    flightPack.required !== undefined && flightPack.required !== flight.required && delete flightPack.required;
+    flightPack.freezed !== undefined && flightPack.freezed !== flight.freezed && delete flightPack.freezed;
+    flightPack.originPermission !== undefined && flightPack.originPermission !== flight.originPermission && delete flightPack.originPermission;
+    flightPack.destinationPermission !== undefined && flightPack.destinationPermission !== flight.destinationPermission && delete flightPack.destinationPermission;
+    flightPack.changed !== undefined && flightPack.changed !== changed && delete flightPack.changed;
   }
 
   close(): void {

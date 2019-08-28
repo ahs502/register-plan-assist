@@ -366,7 +366,18 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = ({
 export default ResourceSchedulerView;
 
 function calculateTimelineGroups(flights: readonly Flight[], aircraftRegisters: PreplanAircraftRegisters): DataGroup[] {
-  const registers = aircraftRegisters.items.filter(r => flights.some(f => f.aircraftRegister && f.aircraftRegister.id === r.id)).sortBy('name');
+  // const registers = aircraftRegisters.items.filter(r => flights.some(f => f.aircraftRegister && f.aircraftRegister.id === r.id)).sortBy('name');
+  const registers = aircraftRegisters.items
+    .filter(r => r.options.status !== 'IGNORED')
+    .sort((a, b) => {
+      if (a.options.status === 'BACKUP' && b.options.status === 'INCLUDED') return 1;
+      if (a.options.status === 'INCLUDED' && b.options.status === 'BACKUP') return -1;
+      if (a.dummy && !b.dummy) return 1;
+      if (!a.dummy && b.dummy) return -1;
+      if (a.name > b.name) return 1;
+      if (a.name < b.name) return -1;
+      return 0;
+    });
 
   const types = registers
     .map(r => r.aircraftType)
@@ -383,19 +394,24 @@ function calculateTimelineGroups(flights: readonly Flight[], aircraftRegisters: 
   );
 
   const typeGroups = types.map(
-    (t): DataGroup => ({
-      id: t.id,
-      content: t.name,
-      title: t.name,
-      nestedGroups: registers.filter(r => r.aircraftType.id === t.id).map(r => r.id),
-      data: t
-    })
+    (t): DataGroup => {
+      let typeRegisters = registers.filter(r => r.aircraftType.id === t.id);
+      typeRegisters = typeRegisters.filter(r => !r.dummy).concat(typeRegisters.filter(r => r.dummy));
+      typeRegisters = typeRegisters.filter(r => r.options.status === 'INCLUDED').concat(typeRegisters.filter(r => r.options.status === 'BACKUP'));
+      return {
+        id: t.id,
+        content: t.name,
+        title: t.name,
+        nestedGroups: typeRegisters.map(r => r.id),
+        data: t
+      };
+    }
   );
 
   const groups = registerGroups.concat(typeGroups).concat({
     id: '???',
     content: '???',
-    title: 'Flights without allocated aircraft register'
+    title: 'Flights without known allocated aircraft registers'
   });
 
   return groups;

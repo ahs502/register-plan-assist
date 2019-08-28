@@ -210,7 +210,7 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = ({
   const [timelineData, setTimelineData] = useState<TimelineData>(() => {
     const groups = calculateTimelineGroups(flights, aircraftRegisters);
     const items = calculateTimelineItems(flightPacks, startDate);
-    const options = calculateTimelineOptions(startDate);
+    const options = calculateTimelineOptions(startDate, aircraftRegisters, onFlightPackDragAndDrop);
 
     return { groups, items, options };
   });
@@ -227,6 +227,19 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = ({
         selection={selectedFlightPack && selectedFlightPack.derivedId}
         retrieveTimeline={t => timeline(t)}
         onRangeChanged={properties => timeline().redraw()}
+        onSelect={({ items, event }) => {
+          const item = timelineData.items.find(item => item.id === items[0]);
+          onSelectFlightPack(item ? item.data : undefined);
+        }}
+        onContextMenu={properties => {
+          properties.event.preventDefault();
+          const item = timelineData.items.find(item => item.id === properties.item);
+          if (!item) return;
+          const { pageX, pageY } = properties;
+          flightPackContextMenuRef.current!.style.top = `${pageY}px`;
+          flightPackContextMenuRef.current!.style.left = `${pageX}px`;
+          setFlightPackContextMenuModel({ open: true, flightPack: item.data });
+        }}
         onMouseOver={properties => {
           switch (properties.what) {
             case 'item':
@@ -256,19 +269,6 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = ({
             default:
               onNowhereMouseHover();
           }
-        }}
-        onSelect={({ items, event }) => {
-          const item = timelineData.items.find(item => item.id === items[0]);
-          onSelectFlightPack(item ? item.data : undefined);
-        }}
-        onContextMenu={properties => {
-          properties.event.preventDefault();
-          const item = timelineData.items.find(item => item.id === properties.item);
-          if (!item) return;
-          const { pageX, pageY } = properties;
-          flightPackContextMenuRef.current!.style.top = `${pageY}px`;
-          flightPackContextMenuRef.current!.style.left = `${pageX}px`;
-          setFlightPackContextMenuModel({ open: true, flightPack: item.data });
         }}
       />
       <ClickAwayListener onClickAway={() => setFlightPackContextMenuModel({ ...flightPackContextMenuModel, open: false })}>
@@ -394,18 +394,13 @@ function calculateTimelineGroups(flights: readonly Flight[], aircraftRegisters: 
   );
 
   const typeGroups = types.map(
-    (t): DataGroup => {
-      let typeRegisters = registers.filter(r => r.aircraftType.id === t.id);
-      typeRegisters = typeRegisters.filter(r => !r.dummy).concat(typeRegisters.filter(r => r.dummy));
-      typeRegisters = typeRegisters.filter(r => r.options.status === 'INCLUDED').concat(typeRegisters.filter(r => r.options.status === 'BACKUP'));
-      return {
-        id: t.id,
-        content: t.name,
-        title: t.name,
-        nestedGroups: typeRegisters.map(r => r.id),
-        data: t
-      };
-    }
+    (t): DataGroup => ({
+      id: t.id,
+      content: t.name,
+      title: t.name,
+      nestedGroups: registers.filter(r => r.aircraftType.id === t.id).map(r => r.id),
+      data: t
+    })
   );
 
   const groups = registerGroups.concat(typeGroups).concat({
@@ -556,7 +551,11 @@ function itemTemplate(item: DataItem, element: HTMLElement, data: DataItem): str
   `;
 }
 
-function calculateTimelineOptions(startDate: Date): TimelineOptions {
+function calculateTimelineOptions(
+  startDate: Date,
+  aircraftRegisters: PreplanAircraftRegisters,
+  onFlightPackDragAndDrop: (flightPack: FlightPack, deltaStd: number, newAircraftRegister?: PreplanAircraftRegister) => void
+): TimelineOptions {
   const options: TimelineOptions = {
     align: 'center',
     autoResize: true,
@@ -617,7 +616,11 @@ function calculateTimelineOptions(startDate: Date): TimelineOptions {
     // onDragObjectOnItem(objectData, item) {},
     // onInitialDrawComplete() {},
     onMove(item, callback) {
-      //TODO: Apply to database...
+      const flightPack: FlightPack = item.data;
+      const newAircraftRegister = aircraftRegisters.id[item.group as any];
+      const deltaStd = Math.round((new Date(item.start).getTime() - flightPack.startDateTime(startDate).getTime()) / (5 * 60 * 1000)) * 5;
+      onFlightPackDragAndDrop(flightPack, deltaStd, newAircraftRegister);
+      callback(item);
     },
     // onMoveGroup(group, callback) {},
     onMoving(item, callback) {

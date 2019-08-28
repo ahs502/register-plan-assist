@@ -77,4 +77,12 @@ export default class FlightPack {
       };
     });
   }
+
+  startDateTime(startDate: Date): Date {
+    return new Date(startDate.getTime() + this.day * 24 * 60 * 60 * 1000 + this.start.minutes * 60 * 1000);
+  }
+
+  endDateTime(startDate: Date): Date {
+    return new Date(startDate.getTime() + this.day * 24 * 60 * 60 * 1000 + this.end.minutes * 60 * 1000);
+  }
 }

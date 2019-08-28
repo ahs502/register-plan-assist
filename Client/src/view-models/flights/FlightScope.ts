@@ -3,6 +3,10 @@ import PreplanAircraftSelection from 'src/view-models/PreplanAircraftSelection';
 import FlightTime from './FlightTime';
 import { PreplanAircraftRegisters } from '../PreplanAircraftRegister';
 import Rsx from '@core/types/flight-requirement/Rsx';
+import DeepOptional from '@core/types/DeepOptional';
+import { parseHHMM } from 'src/utils/model-parsers';
+import FlightTimeModel from '@core/models/flights/FlightTimeModel';
+import AircraftIdentityModel from '@core/models/AircraftIdentityModel';
 
 export default class FlightScope {
   /** In minutes, greater than 0. */ readonly blockTime: number;
@@ -21,5 +25,9 @@ export default class FlightScope {
     this.destinationPermission = raw.destinationPermission;
     this.rsx = raw.rsx;
     this.required = raw.required;
+  }
+
+  extractModel(overrides?: DeepOptional<FlightScopeModel>) {
+    //TODO: include overrides
   }
 }

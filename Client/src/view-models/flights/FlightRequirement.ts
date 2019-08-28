@@ -3,6 +3,14 @@ import FlightDefinition from './FlightDefinition';
 import FlightScope from './FlightScope';
 import WeekdayFlightRequirement from './WeekdayFlightRequirement';
 import { PreplanAircraftRegisters } from 'src/view-models/PreplanAircraftRegister';
+import DeepOptional from '@core/types/DeepOptional';
+import { FlightScopeModel } from '@core/models/flights/FlightScopeModel';
+import { parseHHMM, parseAirport } from 'src/utils/model-parsers';
+import FlightTimeModel from '@core/models/flights/FlightTimeModel';
+import AircraftIdentityModel from '@core/models/AircraftIdentityModel';
+import PreplanAircraftSelection from '../PreplanAircraftSelection';
+import FlightModel from '@core/models/flights/FlightModel';
+import WeekdayFlightRequirementModel from '@core/models/flights/WeekdayFlightRequirementModel';
 
 export default class FlightRequirement {
   readonly id: string;
@@ -25,5 +33,9 @@ export default class FlightRequirement {
    */
   getDay(day: number): WeekdayFlightRequirement | undefined {
     return this.days.find(d => d.day === day);
+  }
+
+  extractModel(overrides?: DeepOptional<FlightRequirementModel>) {
+    //TODO: impement
   }
 }

@@ -412,6 +412,7 @@ const PreplanPage: FC = () => {
                           aircraftRegisterId: aircraftRegister && aircraftRegister.id
                         };
                       } else {
+                        const flight = flightRequirementModalModel.flightRequirement!.days.find(m => m.day === d)!.flight;
                       }
 
                       return {

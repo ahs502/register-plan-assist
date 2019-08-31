@@ -121,7 +121,7 @@ const PreplanListPage: FC = () => {
     });
   }
 
-  function snakbar(message: string, variant: VariantType) {
+  function snackbar(message: string, variant: VariantType) {
     // variant could be success, error, warning, info, or default
     enqueueSnackbar(message, { variant });
   }
@@ -203,7 +203,7 @@ const PreplanListPage: FC = () => {
                               const result = await PreplanService.setPublished(preplanHeader.id, event.target.checked);
 
                               if (result.message) {
-                                snakbar(result.message, 'warning');
+                                snackbar(result.message, 'warning');
                               } else {
                                 setPreplanHeaders(result.value!.map(p => new PreplanHeader(p)));
                               }

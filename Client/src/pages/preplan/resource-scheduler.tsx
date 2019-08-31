@@ -1,5 +1,5 @@
-import React, { FC, Fragment, useState, useContext, useEffect } from 'react';
-import { Theme, IconButton, Select, OutlinedInput, Badge, Drawer, Portal } from '@material-ui/core';
+import React, { FC, Fragment, useState, useContext } from 'react';
+import { Theme, IconButton, Badge, Drawer, Portal } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import { DoneAll as FinilizedIcon, LockOutlined as LockIcon, LockOpenOutlined as LockOpenIcon, Search as SearchIcon, SettingsOutlined as SettingsIcon } from '@material-ui/icons';
 import MahanIcon, { MahanIconType } from 'src/components/MahanIcon';
@@ -19,12 +19,11 @@ import Daytime from '@core/types/Daytime';
 import FlightPack from 'src/view-models/flights/FlightPack';
 import PreplanService from 'src/services/PreplanService';
 import { FlightScopeModel } from '@core/models/flights/FlightScopeModel';
-import { parseHHMM, parseAirport } from 'src/utils/model-parsers';
 import FlightTimeModel from '@core/models/flights/FlightTimeModel';
 import AircraftIdentityModel from '@core/models/AircraftIdentityModel';
 import FlightRequirementModel from '@core/models/flights/FlightRequirementModel';
-import FlightModel from '@core/models/flights/FlightModel';
 import WeekdayFlightRequirementModel from '@core/models/flights/WeekdayFlightRequirementModel';
+import { useSnackbar, VariantType } from 'notistack';
 
 const useStyles = makeStyles((theme: Theme) => ({
   sideBarBackdrop: {
@@ -67,19 +66,25 @@ interface SidebarState {
   errorMessage: string | undefined;
 }
 
-const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEditFlight, onEditFlightRequirement, onEditWeekdayFlightRequirement }) => {
+const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
   const [sideBar, setSideBar] = useState<{ sideBar?: SideBar; open: boolean; initialSearch?: string }>({ open: false });
-  const [autoArrangerRunning, setAutoArrangerRunning] = useState(() => false); //TODO: Initialize by data from server.
-  const [allFlightsFreezed, setAllFlightsFreezed] = useState(() => false); //TODO: Initialize from preplan flights.
+  const [] = useState(() => false); //TODO: Initialize by data from server.
+  const [allFlightsFreezed] = useState(() => false); //TODO: Initialize from preplan flights.
   const [resourceSchedulerViewModel, setResourceSchedulerViewModel] = useState<ResourceSchedulerViewModel>({});
   const [sidebarState, setSidebarState] = useState<SidebarState>({ loading: false, errorMessage: undefined });
-  const [statusBarText, setStatusBarText] = useState('');
+  const [statusBarText] = useState('');
 
   const navBarToolsContainer = useContext(NavBarToolsContainerContext);
 
+  const { enqueueSnackbar } = useSnackbar();
   const classes = useStyles();
 
   const numberOfObjections: number = 12; //TODO: Not implemented.
+
+  function snackbar(message: string, variant: VariantType) {
+    // variant could be success, error, warning, info, or default
+    enqueueSnackbar(message, { variant });
+  }
 
   return (
     <Fragment>
@@ -147,7 +152,7 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
         ModalProps={{ BackdropProps: { classes: { root: classes.sideBarBackdrop } } }}
         classes={{ paper: classes.sideBarPaper }}
       >
-        {sideBar.sideBar === 'SETTINGS' && <SettingsSideBar autoArrangerOptions={preplan.autoArrangerOptions} onApply={autoArrangerOptions => alert('TODO: Not implemented.')} />}
+        {sideBar.sideBar === 'SETTINGS' && <SettingsSideBar autoArrangerOptions={preplan.autoArrangerOptions} onApply={() => alert('TODO: Not implemented.')} />}
         {sideBar.sideBar === 'SELECT_AIRCRAFT_REGISTERS' && (
           <SelectAircraftRegistersSideBar
             initialSearch={sideBar.initialSearch}
@@ -161,11 +166,9 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
             }}
           />
         )}
-        {sideBar.sideBar === 'SEARCH_FLIGHTS' && (
-          <SearchFlightsSideBar initialSearch={sideBar.initialSearch} flights={preplan.flights} onClick={flight => alert('not implemented.')} />
-        )}
+        {sideBar.sideBar === 'SEARCH_FLIGHTS' && <SearchFlightsSideBar initialSearch={sideBar.initialSearch} flights={preplan.flights} onClick={() => alert('not implemented.')} />}
         {sideBar.sideBar === 'AUTO_ARRANGER_CHANGE_LOG' && (
-          <AutoArrangerChangeLogSideBar initialSearch={sideBar.initialSearch} changeLogs={preplan.autoArrangerState.changeLogs} onClick={flight => alert('not implemented.')} />
+          <AutoArrangerChangeLogSideBar initialSearch={sideBar.initialSearch} changeLogs={preplan.autoArrangerState.changeLogs} onClick={() => alert('not implemented.')} />
         )}
         {sideBar.sideBar === 'OBJECTIONS' && <ErrorsAndWarningsSideBar initialSearch={sideBar.initialSearch} objections={[]} />}
       </Drawer>
@@ -180,332 +183,102 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
         selectedFlightPack={resourceSchedulerViewModel.selectedFlightPack}
         onSelectFlightPack={flightPack => setResourceSchedulerViewModel({ ...resourceSchedulerViewModel, selectedFlightPack: flightPack })}
         onFreezeFlightPack={async (flightPack, freezed) => {
-          //TODO: remove
           setResourceSchedulerViewModel({ ...resourceSchedulerViewModel, loading: true });
-          const flightInfo = flightPack.flights.map(f => ({ fr: f.requirement, wfr: f.weekdayRequirement }));
-
-          const newFrModel = flightInfo.map(fi => {
-            const fr = fi.fr;
-            const wfr = fi.wfr;
-            const frScope: FlightScopeModel = {
-              blockTime: fr.scope.blockTime,
-              times: fr.scope.times!.map(t => {
-                return { stdLowerBound: t.stdLowerBound.minutes, stdUpperBound: t.stdUpperBound.minutes } as FlightTimeModel;
-              }),
-              destinationPermission: !!fr.scope.destinationPermission,
-              originPermission: !!fr.scope.originPermission,
-              required: !!fr.scope.required,
-              rsx: fr.scope.rsx!,
-              aircraftSelection: {
-                allowedIdentities: fr.scope.aircraftSelection.allowedIdentities
-                  ? fr.scope.aircraftSelection.allowedIdentities.map(a => ({ entityId: a.entity.id, type: a.type } as AircraftIdentityModel))
-                  : [],
-                forbiddenIdentities: fr.scope.aircraftSelection.forbiddenIdentities
-                  ? fr.scope.aircraftSelection.forbiddenIdentities.map(a => ({ entityId: a.entity.id, type: a.type } as AircraftIdentityModel))
-                  : []
+          const newFlightRequirementsModel = flightPack.flights.map(f => {
+            return f.requirement.extractModel({
+              days: {
+                [f.requirement.days.findIndex(d => d.day === f.day)]: { freezed }
               }
-            };
-
-            const model: FlightRequirementModel = {
-              id: fr.id,
-              definition: {
-                label: fr.definition.label || '',
-                category: fr.definition.category || '',
-                stcId: fr.definition.stc ? fr.definition.stc.id : '',
-                flightNumber: (fr.definition.flightNumber || '').toUpperCase(),
-                departureAirportId: fr.definition.departureAirport.id,
-                arrivalAirportId: fr.definition.arrivalAirport.id
-              },
-              scope: frScope,
-              days: fr.days.map(d => {
-                const dayFreezed = d.day === wfr.day ? freezed : d.freezed;
-                const dayScope: FlightScopeModel = {
-                  blockTime: d.scope.blockTime,
-                  times: d.scope.times!.map(t => {
-                    return { stdLowerBound: t.stdLowerBound.minutes, stdUpperBound: t.stdUpperBound.minutes } as FlightTimeModel;
-                  }),
-                  destinationPermission: !!d.scope.destinationPermission,
-                  originPermission: !!d.scope.originPermission,
-                  required: !!d.scope.required,
-                  rsx: d.scope.rsx!,
-                  aircraftSelection: {
-                    allowedIdentities: d.scope.aircraftSelection.allowedIdentities
-                      ? d.scope.aircraftSelection.allowedIdentities.map(a => ({ entityId: a.entity.id, type: a.type } as AircraftIdentityModel))
-                      : [],
-                    forbiddenIdentities: d.scope.aircraftSelection.forbiddenIdentities
-                      ? d.scope.aircraftSelection.forbiddenIdentities.map(a => ({ entityId: a.entity.id, type: a.type } as AircraftIdentityModel))
-                      : []
-                  }
-                };
-
-                return {
-                  day: d.day,
-                  notes: d.notes,
-                  scope: dayScope,
-                  freezed: dayFreezed,
-                  flight: {
-                    std: d.flight.std.minutes,
-                    aircraftRegisterId: d.flight.aircraftRegister && d.flight.aircraftRegister.id
-                  }
-                } as WeekdayFlightRequirementModel;
-              }),
-              ignored: false
-            };
-            return model;
+            });
           });
+          const result = await PreplanService.editFlightRequirements(newFlightRequirementsModel);
 
-          await PreplanService.editFlightRequirements(newFrModel);
+          if (result.message) {
+            snackbar(result.message, 'error');
+          } else {
+            preplan.mergeFlightRequirements(...result.value!.map(f => new FlightRequirement(f, preplan.aircraftRegisters)));
+          }
+
           setResourceSchedulerViewModel({ ...resourceSchedulerViewModel, loading: false });
         }}
         onRequireFlightPack={async (flightPack, required) => {
-          //TODO: Not implemented.
-
           setResourceSchedulerViewModel({ ...resourceSchedulerViewModel, loading: true });
 
-          const flightInfo = flightPack.flights.map(f => ({ fr: f.requirement, wfr: f.weekdayRequirement }));
-
-          const newFrModel = flightInfo.map(fi => {
-            const fr = fi.fr;
-            const wfr = fi.wfr;
-            const frScope: FlightScopeModel = {
-              blockTime: fr.scope.blockTime,
-              times: fr.scope.times!.map(t => {
-                return { stdLowerBound: t.stdLowerBound.minutes, stdUpperBound: t.stdUpperBound.minutes } as FlightTimeModel;
-              }),
-              destinationPermission: !!fr.scope.destinationPermission,
-              originPermission: !!fr.scope.originPermission,
-              required: !!fr.scope.required,
-              rsx: fr.scope.rsx!,
-              aircraftSelection: {
-                allowedIdentities: fr.scope.aircraftSelection.allowedIdentities
-                  ? fr.scope.aircraftSelection.allowedIdentities.map(a => ({ entityId: a.entity.id, type: a.type } as AircraftIdentityModel))
-                  : [],
-                forbiddenIdentities: fr.scope.aircraftSelection.forbiddenIdentities
-                  ? fr.scope.aircraftSelection.forbiddenIdentities.map(a => ({ entityId: a.entity.id, type: a.type } as AircraftIdentityModel))
-                  : []
+          const newFlightRequirementsModel = flightPack.flights.map(f => {
+            return f.requirement.extractModel({
+              days: {
+                [f.requirement.days.findIndex(d => d.day === f.day)]: { scope: { required } }
               }
-            };
-
-            const model: FlightRequirementModel = {
-              id: fr.id,
-              definition: {
-                label: fr.definition.label || '',
-                category: fr.definition.category || '',
-                stcId: fr.definition.stc ? fr.definition.stc.id : '',
-                flightNumber: (fr.definition.flightNumber || '').toUpperCase(),
-                departureAirportId: fr.definition.departureAirport.id,
-                arrivalAirportId: fr.definition.arrivalAirport.id
-              },
-              scope: frScope,
-              days: fr.days.map(d => {
-                const dayRequired = d.day === wfr.day ? required : d.scope.required;
-                const dayScope: FlightScopeModel = {
-                  blockTime: d.scope.blockTime,
-                  times: d.scope.times!.map(t => {
-                    return { stdLowerBound: t.stdLowerBound.minutes, stdUpperBound: t.stdUpperBound.minutes } as FlightTimeModel;
-                  }),
-                  destinationPermission: !!d.scope.destinationPermission,
-                  originPermission: !!d.scope.originPermission,
-                  required: dayRequired,
-                  rsx: d.scope.rsx!,
-                  aircraftSelection: {
-                    allowedIdentities: d.scope.aircraftSelection.allowedIdentities
-                      ? d.scope.aircraftSelection.allowedIdentities.map(a => ({ entityId: a.entity.id, type: a.type } as AircraftIdentityModel))
-                      : [],
-                    forbiddenIdentities: d.scope.aircraftSelection.forbiddenIdentities
-                      ? d.scope.aircraftSelection.forbiddenIdentities.map(a => ({ entityId: a.entity.id, type: a.type } as AircraftIdentityModel))
-                      : []
-                  }
-                };
-
-                return {
-                  day: d.day,
-                  notes: d.notes,
-                  scope: dayScope,
-                  freezed: d.freezed,
-                  flight: {
-                    std: d.flight.std.minutes,
-                    aircraftRegisterId: d.flight.aircraftRegister && d.flight.aircraftRegister.id
-                  }
-                } as WeekdayFlightRequirementModel;
-              }),
-              ignored: false
-            };
-            return model;
+            });
           });
 
-          await PreplanService.editFlightRequirements(newFrModel);
+          const result = await PreplanService.editFlightRequirements(newFlightRequirementsModel);
+
+          if (result.message) {
+            snackbar(result.message, 'error');
+          } else {
+            preplan.mergeFlightRequirements(...result.value!.map(f => new FlightRequirement(f, preplan.aircraftRegisters)));
+          }
 
           setResourceSchedulerViewModel({ ...resourceSchedulerViewModel, loading: false });
         }}
         onIgnoreFlightPack={async flightPack => {
-          //TODO: Not implemented.
-          //TODO:
           setResourceSchedulerViewModel({ ...resourceSchedulerViewModel, loading: true });
-          const flightInfo = flightPack.flights.map(f => ({ fr: f.requirement, wfr: f.weekdayRequirement }));
 
-          const newFrModel = flightInfo.map(fi => {
-            const fr = fi.fr;
-            const wfr = fi.wfr;
-            const frScope: FlightScopeModel = {
-              blockTime: fr.scope.blockTime,
-              times: fr.scope.times!.map(t => {
-                return { stdLowerBound: t.stdLowerBound.minutes, stdUpperBound: t.stdUpperBound.minutes } as FlightTimeModel;
-              }),
-              destinationPermission: !!fr.scope.destinationPermission,
-              originPermission: !!fr.scope.originPermission,
-              required: !!fr.scope.required,
-              rsx: fr.scope.rsx!,
-              aircraftSelection: {
-                allowedIdentities: fr.scope.aircraftSelection.allowedIdentities
-                  ? fr.scope.aircraftSelection.allowedIdentities.map(a => ({ entityId: a.entity.id, type: a.type } as AircraftIdentityModel))
-                  : [],
-                forbiddenIdentities: fr.scope.aircraftSelection.forbiddenIdentities
-                  ? fr.scope.aircraftSelection.forbiddenIdentities.map(a => ({ entityId: a.entity.id, type: a.type } as AircraftIdentityModel))
-                  : []
-              }
-            };
-
-            const model: FlightRequirementModel = {
-              id: fr.id,
-              definition: {
-                label: fr.definition.label || '',
-                category: fr.definition.category || '',
-                stcId: fr.definition.stc ? fr.definition.stc.id : '',
-                flightNumber: (fr.definition.flightNumber || '').toUpperCase(),
-                departureAirportId: fr.definition.departureAirport.id,
-                arrivalAirportId: fr.definition.arrivalAirport.id
-              },
-              scope: frScope,
-              days: fr.days.map(d => {
-                const dayScope: FlightScopeModel = {
-                  blockTime: d.scope.blockTime,
-                  times: d.scope.times!.map(t => {
-                    return { stdLowerBound: t.stdLowerBound.minutes, stdUpperBound: t.stdUpperBound.minutes } as FlightTimeModel;
-                  }),
-                  destinationPermission: !!d.scope.destinationPermission,
-                  originPermission: !!d.scope.originPermission,
-                  required: d.scope.required,
-                  rsx: d.scope.rsx!,
-                  aircraftSelection: {
-                    allowedIdentities: d.scope.aircraftSelection.allowedIdentities
-                      ? d.scope.aircraftSelection.allowedIdentities.map(a => ({ entityId: a.entity.id, type: a.type } as AircraftIdentityModel))
-                      : [],
-                    forbiddenIdentities: d.scope.aircraftSelection.forbiddenIdentities
-                      ? d.scope.aircraftSelection.forbiddenIdentities.map(a => ({ entityId: a.entity.id, type: a.type } as AircraftIdentityModel))
-                      : []
-                  }
-                };
-
-                return {
-                  day: d.day,
-                  notes: d.notes,
-                  scope: dayScope,
-                  freezed: d.freezed,
-                  flight: {
-                    std: d.flight.std.minutes,
-                    aircraftRegisterId: d.flight.aircraftRegister && d.flight.aircraftRegister.id
-                  }
-                } as WeekdayFlightRequirementModel;
-              }),
+          const newFlightRequirementsModel = flightPack.flights.map(f => {
+            return f.requirement.extractModel({
               ignored: true
-            };
-            return model;
+            });
           });
 
-          await PreplanService.editFlightRequirements(newFrModel);
+          //TODO: change included sp, get multi flightRequirments id
+          const result = await PreplanService.editFlightRequirements(newFlightRequirementsModel);
+
+          if (result.message) {
+            snackbar(result.message, 'error');
+          } else {
+            newFlightRequirementsModel.forEach(f => preplan.removeFlightRequirement(f.id!));
+          }
+
           setResourceSchedulerViewModel({ ...resourceSchedulerViewModel, loading: false });
         }}
-        onOpenFlightModal={flight => {
+        onOpenFlightModal={() => {
           //TODO: Not implemented.
         }}
-        onOpenFlightPackModal={flightPack => {
+        onOpenFlightPackModal={() => {
           //TODO: Not implemented.
         }}
         onFlightPackDragAndDrop={async (flightPack, deltaStd, newAircraftRegister) => {
           setResourceSchedulerViewModel({ ...resourceSchedulerViewModel, loading: true });
 
-          const flightInfo = flightPack.flights.map(f => ({ fr: f.requirement, wfr: f.weekdayRequirement }));
-
-          const newFrModel = flightInfo.map(fi => {
-            const fr = fi.fr;
-            const wfr = fi.wfr;
-            const frScope: FlightScopeModel = {
-              blockTime: fr.scope.blockTime,
-              times: fr.scope.times!.map(t => {
-                return { stdLowerBound: t.stdLowerBound.minutes, stdUpperBound: t.stdUpperBound.minutes } as FlightTimeModel;
-              }),
-              destinationPermission: !!fr.scope.destinationPermission,
-              originPermission: !!fr.scope.originPermission,
-              required: !!fr.scope.required,
-              rsx: fr.scope.rsx!,
-              aircraftSelection: {
-                allowedIdentities: fr.scope.aircraftSelection.allowedIdentities
-                  ? fr.scope.aircraftSelection.allowedIdentities.map(a => ({ entityId: a.entity.id, type: a.type } as AircraftIdentityModel))
-                  : [],
-                forbiddenIdentities: fr.scope.aircraftSelection.forbiddenIdentities
-                  ? fr.scope.aircraftSelection.forbiddenIdentities.map(a => ({ entityId: a.entity.id, type: a.type } as AircraftIdentityModel))
-                  : []
-              }
-            };
-
-            const model: FlightRequirementModel = {
-              id: fr.id,
-              definition: {
-                label: fr.definition.label || '',
-                category: fr.definition.category || '',
-                stcId: fr.definition.stc ? fr.definition.stc.id : '',
-                flightNumber: (fr.definition.flightNumber || '').toUpperCase(),
-                departureAirportId: fr.definition.departureAirport.id,
-                arrivalAirportId: fr.definition.arrivalAirport.id
-              },
-              scope: frScope,
-              days: fr.days.map(d => {
-                const dayScope: FlightScopeModel = {
-                  blockTime: d.scope.blockTime,
-                  times: d.scope.times!.map(t => {
-                    return { stdLowerBound: t.stdLowerBound.minutes, stdUpperBound: t.stdUpperBound.minutes } as FlightTimeModel;
-                  }),
-                  destinationPermission: !!d.scope.destinationPermission,
-                  originPermission: !!d.scope.originPermission,
-                  required: d.scope.required,
-                  rsx: d.scope.rsx!,
-                  aircraftSelection: {
-                    allowedIdentities: d.scope.aircraftSelection.allowedIdentities
-                      ? d.scope.aircraftSelection.allowedIdentities.map(a => ({ entityId: a.entity.id, type: a.type } as AircraftIdentityModel))
-                      : [],
-                    forbiddenIdentities: d.scope.aircraftSelection.forbiddenIdentities
-                      ? d.scope.aircraftSelection.forbiddenIdentities.map(a => ({ entityId: a.entity.id, type: a.type } as AircraftIdentityModel))
-                      : []
-                  }
-                };
-
-                const std = d.day === wfr.day ? d.flight.std.minutes + deltaStd : d.flight.std.minutes;
-                const registerId = d.day === wfr.day ? newAircraftRegister && newAircraftRegister.id : d.flight.aircraftRegister && d.flight.aircraftRegister.id;
-                return {
-                  day: d.day,
-                  notes: d.notes,
-                  scope: dayScope,
-                  freezed: d.freezed,
+          const newFlightRequirementsModel = flightPack.flights.map(f => {
+            return f.requirement.extractModel({
+              days: {
+                [f.requirement.days.findIndex(d => d.day === f.day)]: {
                   flight: {
-                    std: std,
-                    aircraftRegisterId: registerId
+                    std: f.std.minutes + deltaStd,
+                    aircraftRegisterId: newAircraftRegister && newAircraftRegister.id
                   }
-                } as WeekdayFlightRequirementModel;
-              }),
-              ignored: false
-            };
-            return model;
+                }
+              }
+            });
           });
 
-          await PreplanService.editFlightRequirements(newFrModel);
+          const result = await PreplanService.editFlightRequirements(newFlightRequirementsModel);
+
+          if (result.message) {
+            snackbar(result.message, 'error');
+          } else {
+            preplan.mergeFlightRequirements(...result.value!.map(f => new FlightRequirement(f, preplan.aircraftRegisters)));
+          }
+
           setResourceSchedulerViewModel({ ...resourceSchedulerViewModel, loading: false });
         }}
-        onFlightPackMouseHover={flightPack => {
+        onFlightPackMouseHover={() => {
           // console.log('flight pack', flightPack);
           //TODO: Not implemented.
         }}
-        onFreeSpaceMouseHover={(aircraftRegister, previousFlightPack, nextFlightPack) => {
+        onFreeSpaceMouseHover={() => {
           // console.log('free space', aircraftRegister, previousFlightPack, nextFlightPack);
           //TODO: Not implemented.
         }}
@@ -520,11 +293,3 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
 };
 
 export default ResourceSchedulerPage;
-
-const calculateFreeSpaceTime = (previousFlight: Flight | null, nextFlight: Flight | null): Daytime => {
-  if (previousFlight && nextFlight)
-    return new Daytime(nextFlight.day * 24 * 60 + nextFlight.std.minutes - (previousFlight.day * 24 * 60 + previousFlight.std.minutes + previousFlight.blockTime));
-  if (nextFlight) return new Daytime(nextFlight.day * 24 * 60 + nextFlight.std.minutes);
-  if (previousFlight) return new Daytime(7 * 24 * 60 - (previousFlight.day * 24 * 60 + previousFlight.std.minutes + previousFlight.blockTime));
-  return new Daytime(0);
-};

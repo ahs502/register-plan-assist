@@ -10,7 +10,6 @@ import {
 } from '@material-ui/icons';
 import classNames from 'classnames';
 import persistant from 'src/utils/persistant';
-import LinkIconButton from './LinkIconButton';
 import config from 'src/config';
 
 const useStyles = makeStyles((theme: Theme) => ({

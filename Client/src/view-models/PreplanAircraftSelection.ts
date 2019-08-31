@@ -1,6 +1,8 @@
 import PreplanAircraftIdentity from './PreplanAircraftIdentity';
 import PreplanAircraftRegister, { PreplanAircraftRegisters } from './PreplanAircraftRegister';
 import AircraftSelectionModel from '@core/models/AircraftSelectionModel';
+import ModelConvertable, { getOverridedArray } from 'src/utils/ModelConvertable';
+import DeepWritablePartial from '@core/types/DeepWritablePartial';
 
 /**
  * A data structure describing a range of aircraft registers.
@@ -8,13 +10,20 @@ import AircraftSelectionModel from '@core/models/AircraftSelectionModel';
  * in at least one of the allowed aircraft identities while it is not
  * included in any of the forbidden aircraft identities.
  */
-export default class PreplanAircraftSelection {
+export default class PreplanAircraftSelection implements ModelConvertable<AircraftSelectionModel> {
   readonly allowedIdentities: readonly PreplanAircraftIdentity[];
   readonly forbiddenIdentities: readonly PreplanAircraftIdentity[];
 
   constructor(raw: AircraftSelectionModel, aircraftRegisters: PreplanAircraftRegisters) {
     this.allowedIdentities = raw.allowedIdentities.map(i => PreplanAircraftIdentity.parse(i, aircraftRegisters));
     this.forbiddenIdentities = raw.forbiddenIdentities.map(i => PreplanAircraftIdentity.parse(i, aircraftRegisters));
+  }
+
+  extractModel(overrides?: DeepWritablePartial<AircraftSelectionModel>): AircraftSelectionModel {
+    return {
+      allowedIdentities: getOverridedArray(this.allowedIdentities, overrides, 'allowedIdentities'),
+      forbiddenIdentities: getOverridedArray(this.forbiddenIdentities, overrides, 'forbiddenIdentities')
+    };
   }
 
   /**

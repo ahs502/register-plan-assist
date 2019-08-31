@@ -2,12 +2,14 @@ import AircraftIdentityType from '@core/types/aircraft-identity/AircraftIdentity
 import MasterData, { MasterDataItem, AircraftType, AircraftGroup } from '@core/master-data';
 import PreplanAircraftRegister, { PreplanAircraftRegisters } from './PreplanAircraftRegister';
 import AircraftIdentityModel from '@core/models/AircraftIdentityModel';
+import ModelConvertable, { getOverrided } from 'src/utils/ModelConvertable';
+import DeepWritablePartial from '@core/types/DeepWritablePartial';
 
 /**
  * A representive object identifying one or more aircraft registers
  * by pointing to a specific item in master data.
  */
-export default abstract class PreplanAircraftIdentity {
+export default abstract class PreplanAircraftIdentity implements ModelConvertable<AircraftIdentityModel> {
   readonly type: AircraftIdentityType;
   readonly entity: MasterDataItem;
 
@@ -35,6 +37,13 @@ export default abstract class PreplanAircraftIdentity {
       default:
         throw 'Invalid aircraft identity type.';
     }
+  }
+
+  extractModel(overrides?: DeepWritablePartial<AircraftIdentityModel>): AircraftIdentityModel {
+    return {
+      entityId: getOverrided(this.entity.id, overrides, 'entityId'),
+      type: getOverrided(this.type, overrides, 'type')
+    };
   }
 
   /**

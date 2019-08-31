@@ -3,12 +3,13 @@ import PreplanAircraftSelection from 'src/view-models/PreplanAircraftSelection';
 import FlightTime from './FlightTime';
 import { PreplanAircraftRegisters } from '../PreplanAircraftRegister';
 import Rsx from '@core/types/flight-requirement/Rsx';
-import DeepOptional from '@core/types/DeepOptional';
 import { parseHHMM } from 'src/utils/model-parsers';
 import FlightTimeModel from '@core/models/flights/FlightTimeModel';
 import AircraftIdentityModel from '@core/models/AircraftIdentityModel';
+import ModelConvertable, { getOverrided, getOverridedArray, getOverridedObject } from 'src/utils/ModelConvertable';
+import DeepWritablePartial from '@core/types/DeepWritablePartial';
 
-export default class FlightScope {
+export default class FlightScope implements ModelConvertable<FlightScopeModel> {
   /** In minutes, greater than 0. */ readonly blockTime: number;
   readonly times: readonly FlightTime[];
   readonly aircraftSelection: PreplanAircraftSelection;
@@ -27,7 +28,15 @@ export default class FlightScope {
     this.required = raw.required;
   }
 
-  extractModel(overrides?: DeepOptional<FlightScopeModel>) {
-    //TODO: include overrides
+  extractModel(overrides?: DeepWritablePartial<FlightScopeModel>): FlightScopeModel {
+    return {
+      blockTime: getOverrided(this.blockTime, overrides, 'blockTime'),
+      times: getOverridedArray(this.times, overrides, 'times'),
+      destinationPermission: getOverrided(this.destinationPermission, overrides, 'destinationPermission'),
+      originPermission: getOverrided(this.originPermission, overrides, 'originPermission'),
+      required: getOverrided(this.required, overrides, 'required'),
+      rsx: getOverrided(this.rsx, overrides, 'rsx'),
+      aircraftSelection: getOverridedObject(this.aircraftSelection, overrides, 'aircraftSelection')
+    };
   }
 }

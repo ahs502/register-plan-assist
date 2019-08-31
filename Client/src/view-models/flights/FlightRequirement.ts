@@ -3,16 +3,10 @@ import FlightDefinition from './FlightDefinition';
 import FlightScope from './FlightScope';
 import WeekdayFlightRequirement from './WeekdayFlightRequirement';
 import { PreplanAircraftRegisters } from 'src/view-models/PreplanAircraftRegister';
-import DeepOptional from '@core/types/DeepOptional';
-import { FlightScopeModel } from '@core/models/flights/FlightScopeModel';
-import { parseHHMM, parseAirport } from 'src/utils/model-parsers';
-import FlightTimeModel from '@core/models/flights/FlightTimeModel';
-import AircraftIdentityModel from '@core/models/AircraftIdentityModel';
-import PreplanAircraftSelection from '../PreplanAircraftSelection';
-import FlightModel from '@core/models/flights/FlightModel';
-import WeekdayFlightRequirementModel from '@core/models/flights/WeekdayFlightRequirementModel';
+import ModelConvertable, { getOverrided, getOverridedObject, getOverridedArray } from 'src/utils/ModelConvertable';
+import DeepWritablePartial from '@core/types/DeepWritablePartial';
 
-export default class FlightRequirement {
+export default class FlightRequirement implements ModelConvertable<FlightRequirementModel> {
   readonly id: string;
   readonly definition: FlightDefinition;
   readonly scope: FlightScope;
@@ -35,7 +29,13 @@ export default class FlightRequirement {
     return this.days.find(d => d.day === day);
   }
 
-  extractModel(overrides?: DeepOptional<FlightRequirementModel>) {
-    //TODO: impement
+  extractModel(overrides?: DeepWritablePartial<FlightRequirementModel>): FlightRequirementModel {
+    return {
+      id: getOverrided(this.id, overrides, 'id'),
+      definition: getOverridedObject(this.definition, overrides, 'definition'),
+      scope: getOverridedObject(this.scope, overrides, 'scope'),
+      days: getOverridedArray(this.days, overrides, 'days'),
+      ignored: getOverrided(this.ignored, overrides, 'ignored')
+    };
   }
 }

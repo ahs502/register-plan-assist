@@ -12,27 +12,42 @@ import VisTimeline from 'src/components/VisTimeline';
 import moment from 'moment';
 import useProperty from 'src/utils/useProperty';
 import FlightPack from 'src/view-models/flights/FlightPack';
+import { AircraftType, AircraftRegister } from '@core/master-data';
 
 const useStyles = makeStyles((theme: Theme) => ({
   '@global': {
     '.vis-timeline': {
-      '& .vis-item': {
-        '&.vis-range': {
-          border: 'none',
-          backgroundColor: 'transparent',
-          // minWidth: 50,
-          '& .vis-item-overflow': {
-            // overflow: 'visible',
-            '& .vis-item-content': {
-              padding: 0,
-              left: '0 !important',
-              width: '100% !important'
+      '& .vis-panel': {
+        '& .vis-labelset': {
+          '& .vis-label': {
+            '&.vis-nesting-group': {
+              '& .vis-inner': { padding: 0 }
             }
+          }
+        },
+        '& .vis-item': {
+          '&.vis-background': {
+            '&.rpa-group-item-aircraft-type': { backgroundColor: 'rgba(71, 90, 152, 0.16)' },
+            '&.rpa-group-item-backup-aircraft-register': { backgroundColor: 'rgba(255, 255, 142, 0.2)' },
+            '&.rpa-group-item-unknown-aircraft-register': { backgroundColor: 'rgba(192, 192, 192, 0.2)' }
           },
-          '&.vis-selected': {
+          '&.vis-range': {
+            border: 'none',
+            backgroundColor: 'transparent',
+            // minWidth: 50,
             '& .vis-item-overflow': {
-              boxShadow: '0px 0px 10px 1px green, inset 0px 0px 9px -1px green',
-              borderRadius: '4px'
+              // overflow: 'visible',
+              '& .vis-item-content': {
+                padding: 0,
+                left: '0 !important',
+                width: '100% !important'
+              }
+            },
+            '&.vis-selected': {
+              '& .vis-item-overflow': {
+                boxShadow: '0px 0px 10px 1px green, inset 0px 0px 9px -1px green',
+                borderRadius: '4px'
+              }
             }
           }
         }
@@ -207,14 +222,12 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = ({
   onNowhereMouseHover
 }) => {
   const timeline = useProperty<Timeline>(null as any);
-  const timelineData = useMemo<TimelineData>(
-    () => ({
-      groups: calculateTimelineGroups(),
-      items: calculateTimelineItems(),
-      options: calculateTimelineOptions()
-    }),
-    [startDate, flightPacks, aircraftRegisters]
-  );
+  const timelineData = useMemo<TimelineData>(() => {
+    const groups = calculateTimelineGroups();
+    const options = calculateTimelineOptions();
+    const items = calculateTimelineItems(groups, options);
+    return { groups, items, options };
+  }, [startDate, flightPacks, aircraftRegisters]);
 
   const [flightPackContextMenuModel, setFlightPackContextMenuModel] = useState<FlightPackContextMenuModel>({});
   const flightPackContextMenuRef = useRef<HTMLDivElement>(null);
@@ -393,7 +406,7 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = ({
 
     const typeGroups = types.map(
       (t): DataGroup => ({
-        id: t.id,
+        id: 'T' + t.id,
         content: t.name,
         title: t.name,
         nestedGroups: registers.filter(r => r.aircraftType.id === t.id).map(r => r.id),
@@ -410,8 +423,8 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = ({
     return groups;
   }
 
-  function calculateTimelineItems(): DataItem[] {
-    return flightPacks.map(
+  function calculateTimelineItems(groups: DataGroup[], options: TimelineOptions): DataItem[] {
+    const items = flightPacks.map(
       (f): DataItem => ({
         id: f.derivedId,
         start: new Date(startDate.getTime() + (f.day * 24 * 60 + f.start.minutes) * 60 * 1000),
@@ -423,6 +436,46 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = ({
         data: f
       })
     );
+
+    groups.forEach(group => {
+      if ((group.id as string).startsWith('T')) {
+        const aircraftType: AircraftType = group.data;
+        return items.push({
+          className: 'rpa-group-item-aircraft-type',
+          id: group.id,
+          start: options.start!,
+          end: options.end,
+          group: group.id,
+          content: '',
+          type: 'background',
+          data: aircraftType
+        });
+      }
+      if (group.id === '???')
+        return items.push({
+          className: 'rpa-group-item-unknown-aircraft-register',
+          id: group.id,
+          start: options.start!,
+          end: options.end,
+          group: group.id,
+          content: '',
+          type: 'background'
+        });
+      const aircraftRegister: PreplanAircraftRegister = group.data;
+      if (aircraftRegister.options.status !== 'BACKUP') return;
+      items.push({
+        className: 'rpa-group-item-backup-aircraft-register',
+        id: group.id,
+        start: options.start!,
+        end: options.end,
+        group: group.id,
+        content: '',
+        type: 'background',
+        data: aircraftRegister
+      });
+    });
+
+    return items;
 
     function itemTooltipTemplate(flightPack: FlightPack): string {
       return `
@@ -503,7 +556,7 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = ({
         }
       },
       groupEditable: false,
-      // groupTemplate(group: DataGroup, element: HTMLElement, data: DataGroup): string { return ''; },
+      groupTemplate,
       // height: 0,
       horizontalScroll: false,
       itemsAlwaysDraggable: true,
@@ -540,6 +593,7 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = ({
       },
       // onMoveGroup(group, callback) {},
       onMoving(item, callback) {
+        if ((item.group as string).startsWith('T')) return callback(null);
         const flightPack: FlightPack = item.data;
         const originalStart = startDate.getTime() + (flightPack.day * 24 * 60 + flightPack.start.minutes) * 60 * 1000;
         const originalEnd = startDate.getTime() + (flightPack.day * 24 * 60 + flightPack.end.minutes) * 60 * 1000;
@@ -582,7 +636,7 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = ({
       start: startDate,
       template: itemTemplate,
       // timeAxis: {},
-      type: 'range',
+      //type: 'range',
       tooltip: {
         followMouse: true,
         overflowMethod: 'cap'
@@ -596,7 +650,17 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = ({
       zoomMin: 12 * 60 * 60 * 1000
     };
 
+    function groupTemplate(group: DataGroup, element: HTMLElement, data: DataGroup): string {
+      return `
+        <div>
+          <small>${group.content}</small>
+        </div>
+      `;
+    }
+
     function itemTemplate(item: DataItem, element: HTMLElement, data: DataItem): string {
+      if (item.className && item.className.startsWith('rpa-group-item-')) return '';
+
       const flightPack: FlightPack = item.data;
       return `
         <div class="rpa-item-header">

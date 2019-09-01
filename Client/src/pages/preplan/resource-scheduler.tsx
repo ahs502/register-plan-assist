@@ -1,4 +1,4 @@
-import React, { FC, Fragment as div, useState, useContext, useEffect, Fragment } from 'react';
+import React, { FC, Fragment, useState, useContext, useCallback } from 'react';
 import { Theme, IconButton, Badge, Drawer, Portal, CircularProgress, Typography, Grid, TextField, Checkbox, FormControlLabel } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import { DoneAll as FinilizedIcon, LockOutlined as LockIcon, LockOpenOutlined as LockOpenIcon, Search as SearchIcon, SettingsOutlined as SettingsIcon } from '@material-ui/icons';
@@ -15,15 +15,10 @@ import Preplan from 'src/view-models/Preplan';
 import FlightRequirement from 'src/view-models/flights/FlightRequirement';
 import WeekdayFlightRequirement from 'src/view-models/flights/WeekdayFlightRequirement';
 import Flight from 'src/view-models/flights/Flight';
-import Daytime from '@core/types/Daytime';
 import FlightPack from 'src/view-models/flights/FlightPack';
 import PreplanService from 'src/services/PreplanService';
-import { FlightScopeModel } from '@core/models/flights/FlightScopeModel';
-import FlightTimeModel from '@core/models/flights/FlightTimeModel';
-import AircraftIdentityModel from '@core/models/AircraftIdentityModel';
-import FlightRequirementModel from '@core/models/flights/FlightRequirementModel';
-import WeekdayFlightRequirementModel from '@core/models/flights/WeekdayFlightRequirementModel';
 import { useSnackbar, VariantType } from 'notistack';
+import PreplanAircraftRegister from 'src/view-models/PreplanAircraftRegister';
 import SimpleModal from 'src/components/SimpleModal';
 import Weekday from '@core/types/Weekday';
 import { red, blue, green, cyan, indigo, orange, purple } from '@material-ui/core/colors';
@@ -40,9 +35,10 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
   statusBar: {
     height: 54,
-    backgroundColor: theme.palette.extraColors.backupRegister,
     margin: 0,
-    padding: theme.spacing(2)
+    padding: theme.spacing(2),
+    backgroundColor: theme.palette.common.white,
+    whiteSpace: 'pre'
   },
   errorBadge: {
     margin: theme.spacing(2)
@@ -143,14 +139,14 @@ interface SidebarState {
 }
 
 const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
-  const [] = useState(() => false); //TODO: Initialize by data from server.
-  const [allFlightsFreezed] = useState(() => false); //TODO: Initialize from preplan flights.
+  const [sidebarState, setSidebarState] = useState<SidebarState>({ open: false, loading: false, errorMessage: undefined });
+  const [autoArrangerRunning, setAutoArrangerRunning] = useState(() => false); //TODO: Initialize by data from server.
+  const [allFlightsFreezed, setAllFlightsFreezed] = useState(() => false); //TODO: Initialize from preplan flights.
   const [resourceSchedulerViewModel, setResourceSchedulerViewModel] = useState<ResourceSchedulerViewModel>({ loading: false });
+  const [statusBarText, setStatusBarText] = useState('');
   const [ignoreFlightPackModalModel, setIgnoreFlightPackModalModel] = useState<IgnoreFlightPackModalModel>({ open: false });
   const [openFlightModalModel, setOpenFlightModalModel] = useState<OpenFlightModalModel>({ open: false });
   const [openFlightPackModalModel, setOpenFlightPackModalModel] = useState<OpenFlightPackModalModel>({ open: false });
-  const [sidebarState, setSidebarState] = useState<SidebarState>({ open: false, loading: false, errorMessage: undefined });
-  const [statusBarText] = useState('');
 
   const navBarToolsContainer = useContext(NavBarToolsContainerContext);
 
@@ -164,12 +160,8 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
     enqueueSnackbar(message, { variant });
   }
 
-  useEffect(() => {
-    console.log(sidebarState);
-  }, [sidebarState]);
-
   return (
-    <div>
+    <Fragment>
       {resourceSchedulerViewModel.loading && <CircularProgress size={48} className={classes.progress} />}
       <Portal container={navBarToolsContainer}>
         <div className={resourceSchedulerViewModel.loading ? classes.disable : ''}>
@@ -292,6 +284,7 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
         )}
         {sidebarState.sideBar === 'OBJECTIONS' && <ErrorsAndWarningsSideBar initialSearch={sidebarState.initialSearch} objections={[]} />}
       </Drawer>
+
       <div className={resourceSchedulerViewModel.loading ? classes.disable : ''}>
         <ResourceSchedulerView
           startDate={preplan.startDate.getDatePart().addDays((preplan.startDate.getUTCDay() + 1) % 7)}
@@ -401,21 +394,15 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
 
             setResourceSchedulerViewModel({ ...resourceSchedulerViewModel, loading: false });
           }}
-          onFlightPackMouseHover={() => {
-            // console.log('flight pack', flightPack);
-            //TODO: Not implemented.
-          }}
-          onFreeSpaceMouseHover={() => {
-            // console.log('free space', aircraftRegister, previousFlightPack, nextFlightPack);
-            //TODO: Not implemented.
-          }}
-          onNowhereMouseHover={() => {
-            // console.log('nowhere');
-            //TODO: Not implemented.
-          }}
+          // onFlightPackMouseHover={flightPack => setStatusBarText(flightPack.label)}
+          // onFreeSpaceMouseHover={(aircraftRegister, previousFlightPack, nextFlightPack) => setStatusBarText(aircraftRegister ? aircraftRegister.name : '???')}
+          // onNowhereMouseHover={() => setStatusBarText('')}
+          onFlightPackMouseHover={flightPack => console.log(flightPack.label)}
+          onFreeSpaceMouseHover={(aircraftRegister, previousFlightPack, nextFlightPack) => console.log(aircraftRegister ? aircraftRegister.name : '???')}
+          onNowhereMouseHover={() => console.log('')}
         />
+        <div className={classes.statusBar}>{statusBarText}</div>
       </div>
-      <div className={classes.statusBar}>{statusBarText}</div>
 
       <SimpleModal
         key="ignore-flight-requirment-confirm-modal"
@@ -618,7 +605,7 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
           </Grid>
         </Grid>
       </SimpleModal>
-    </div>
+    </Fragment>
   );
 };
 

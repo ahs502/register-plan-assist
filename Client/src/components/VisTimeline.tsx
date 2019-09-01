@@ -14,8 +14,8 @@ interface TimelineEventProps {
   onMouseMove?(properties: TimelineEventProperties): void;
   onGroupDragged?(group: Id): void;
   onChanged?(): void;
-  onRangeChange?(properties: { start: number; end: number; byUser: boolean; event: Event }): void;
-  onRangeChanged?(properties: { start: number; end: number; byUser: boolean; event: Event }): void;
+  onRangeChange?(properties: { start: Date; end: Date; byUser: boolean; event: Event }): void;
+  onRangeChanged?(properties: { start: Date; end: Date; byUser: boolean; event: Event }): void;
   onSelect?(properties: { items: Array<Id>; event: Event }): void;
   onItemOver?(properties: { item: Id; event: Event }): void;
   onItemOut?(properties: { item: Id; event: Event }): void;
@@ -28,12 +28,14 @@ export interface TimelineProps extends TimelineEventProps {
   groups: DataGroup[];
   options: TimelineOptions;
   selection?: Id | Id[];
-
+  scrollTop?: number;
+  onScrollY?(scrollTop: number): void;
   retrieveTimeline?(timeline: Timeline): void;
 }
 
 export default class VisTimeline extends Component<TimelineProps> {
   private timeline!: Timeline;
+  private verticalScrollingElement!: Element;
 
   private static eventHandlers: { event: TimelineEvents; handler: keyof TimelineEventProps }[] = [
     { event: 'currentTimeTick', handler: 'onCurrentTimeTick' },
@@ -68,6 +70,11 @@ export default class VisTimeline extends Component<TimelineProps> {
     VisTimeline.eventHandlers.forEach(({ event, handler }) => {
       this.props[handler] && this.timeline.on(event as any, this.props[handler] as any);
     });
+
+    if (this.props.onScrollY) {
+      this.verticalScrollingElement = (container as Element).getElementsByClassName('vis-panel vis-left')[0];
+      this.verticalScrollingElement.addEventListener('scroll', () => this.props.onScrollY!(this.verticalScrollingElement.scrollTop));
+    }
 
     const { retrieveTimeline } = this.props;
     retrieveTimeline && retrieveTimeline(this.timeline);
@@ -104,13 +111,16 @@ export default class VisTimeline extends Component<TimelineProps> {
   }
 
   init() {
-    const { items, groups, options, selection } = this.props;
+    const { items, groups, options, selection, scrollTop } = this.props;
 
     this.timeline.setOptions(options);
     this.timeline.setData({ groups: new DataSet(groups), items: new DataSet(items) });
     this.timeline.setSelection(selection || []);
 
     this.timeline.redraw();
+
+    console.log('=======================================', scrollTop);
+    scrollTop === undefined || this.verticalScrollingElement.scrollTo(0, scrollTop);
   }
 
   render() {

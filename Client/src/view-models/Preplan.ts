@@ -142,8 +142,8 @@ export default class Preplan extends PreplanHeader {
   }
 
   mergeFlightRequirements(...flightRequirements: FlightRequirement[]): void {
-    this.allFlights = [];
-    this.allFlightPacks = [];
+    delete this.allFlights;
+    delete this.allFlightPacks;
     const allFlightRequirements = this.flightRequirements as FlightRequirement[];
     allFlightRequirements.forEach((f, i) => {
       if (flightRequirements.length === 0) return;
@@ -155,8 +155,8 @@ export default class Preplan extends PreplanHeader {
   }
 
   removeFlightRequirement(flightRequirementId: string): void {
-    this.allFlights = [];
-    this.allFlightPacks = [];
+    delete this.allFlights;
+    delete this.allFlightPacks;
     const allFlightRequirements = this.flightRequirements as FlightRequirement[];
     allFlightRequirements.splice(allFlightRequirements.findIndex(f => f.id === flightRequirementId), 1);
   }

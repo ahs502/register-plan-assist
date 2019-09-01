@@ -28,6 +28,7 @@ import ServerResult from '@core/types/ServerResult';
 import MultiSelect from 'src/components/MultiSelect';
 import PreplanAircraftSelection from 'src/view-models/PreplanAircraftSelection';
 import FlightModel from '@core/models/flights/FlightModel';
+import WeekdayFlightRequirement from 'src/view-models/flights/WeekdayFlightRequirement';
 
 const useStyles = makeStyles((theme: Theme) => ({
   flightRequirementStyle: {
@@ -146,13 +147,13 @@ const PreplanPage: FC = () => {
       } as AircraftIdentity,
       {
         masterDataId: a.id,
-        name: a.name + '_Dummy',
+        name: a.name + '_DUMMY',
         type: 'TYPE_DUMMY',
         id: index + 'type_dummy'
       } as AircraftIdentity,
       {
         masterDataId: a.id,
-        name: a.name + '_Existing',
+        name: a.name + '_EXISTING',
         type: 'TYPE_EXISTING',
         id: index + 'type_existing'
       } as AircraftIdentity
@@ -183,7 +184,7 @@ const PreplanPage: FC = () => {
   const flightRequirementListPageSelected = window.location.href.startsWith(`${window.location.host}/#${match.url}/flight-requirement-list`);
   const reportsPageSelected = window.location.href.startsWith(`${window.location.host}/#${match.url}/reports`);
 
-  function initializeFlightRequirementModalModel(mode: modeType, flightRequirement?: FlightRequirement) {
+  function initializeFlightRequirementModalModel(mode: modeType, flightRequirement?: FlightRequirement, weekdayFlightRequirement?: WeekdayFlightRequirement) {
     const modalModel: FlightRequirementModalModel = {
       open: false,
       loading: false,
@@ -213,7 +214,8 @@ const PreplanPage: FC = () => {
     modalModel.destinationPermission = flightRequirement.scope.destinationPermission;
     modalModel.flightNumber = flightRequirement.definition.flightNumber;
     modalModel.label = flightRequirement.definition.label;
-    //modalModel.notes =
+    modalModel.notes = weekdayFlightRequirement && weekdayFlightRequirement.notes;
+    modalModel.weekly = !weekdayFlightRequirement;
     modalModel.originPermission = flightRequirement.scope.originPermission;
     modalModel.required = flightRequirement.scope.required;
     modalModel.rsx = flightRequirement.scope.rsx;
@@ -292,34 +294,32 @@ const PreplanPage: FC = () => {
                     onAddFlightRequirement={() => {
                       const modalModel = initializeFlightRequirementModalModel('add');
                       modalModel.open = true;
-                      modalModel.weekly = true;
+
                       setFlightRequirementModalModel(modalModel);
                     }}
                     onRemoveFlightRequirement={f => {
                       const modalModel = initializeFlightRequirementModalModel('remove', f);
                       modalModel.open = true;
-                      modalModel.weekly = true;
+
                       setFlightRequirementModalModel(modalModel);
                     }}
                     onEditFlightRequirement={f => {
                       const modalModel = initializeFlightRequirementModalModel('edit', f);
                       modalModel.open = true;
-                      modalModel.weekly = true;
+
                       setFlightRequirementModalModel(modalModel);
                     }}
                     onAddReturnFlightRequirement={() => setFlightRequirementModalModel({ ...flightRequirementModalModel, open: true, weekly: true /*TODO*/ })}
                     onRemoveWeekdayFlightRequirement={(weekday, fr) => {
-                      const modalModel = initializeFlightRequirementModalModel('remove', fr);
+                      const modalModel = initializeFlightRequirementModalModel('remove', fr, weekday);
                       modalModel.open = true;
-                      modalModel.weekly = false;
+
                       modalModel.day = weekday.day;
                       setFlightRequirementModalModel(modalModel);
                     }}
                     onEditWeekdayFlightRequirement={(weekday, fr) => {
-                      const modalModel = initializeFlightRequirementModalModel('edit', fr);
+                      const modalModel = initializeFlightRequirementModalModel('edit', fr, weekday);
                       modalModel.open = true;
-                      modalModel.weekly = false;
-
                       modalModel.day = weekday.day;
                       modalModel.blockTime = parseMinute(weekday.scope.blockTime);
                       modalModel.rsx = weekday.scope.rsx;
@@ -827,14 +827,16 @@ const PreplanPage: FC = () => {
               </Grid>
               <Grid item xs={12}>
                 <Grid container spacing={1}>
-                  <Grid item xs={12}>
-                    <TextField
-                      fullWidth
-                      label="Notes"
-                      value={flightRequirementModalModel.notes}
-                      onChange={s => setFlightRequirementModalModel({ ...flightRequirementModalModel, notes: s.target.value })}
-                    />
-                  </Grid>
+                  {!flightRequirementModalModel.weekly && (
+                    <Grid item xs={12}>
+                      <TextField
+                        fullWidth
+                        label="Notes"
+                        value={flightRequirementModalModel.notes}
+                        onChange={s => setFlightRequirementModalModel({ ...flightRequirementModalModel, notes: s.target.value })}
+                      />
+                    </Grid>
+                  )}
                 </Grid>
               </Grid>
             </Grid>

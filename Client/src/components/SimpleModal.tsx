@@ -1,4 +1,4 @@
-import React, { FC, useState, useEffect } from 'react';
+import React, { FC, useState, useEffect, ReactElement } from 'react';
 import { Theme, DialogTitle, DialogContent, DialogActions, Button, CircularProgress, Paper, Typography } from '@material-ui/core';
 import { makeStyles, useTheme } from '@material-ui/styles';
 import DraggableDialog, { DraggableDialogProps } from './DraggableDialog';
@@ -33,11 +33,11 @@ const useStyles = makeStyles((theme: Theme) => ({
 export interface SimpleModalProps extends DraggableDialogProps {
   open: boolean;
   loading?: boolean;
-  title: string;
   errorMessage?: string;
   cancelable?: boolean;
   onClose?(): void;
   actions: ModalAction[];
+  complexTitle?: ReactElement;
 }
 
 export interface ModalAction {
@@ -45,13 +45,13 @@ export interface ModalAction {
   action?(): void;
 }
 
-const SimpleModal: FC<SimpleModalProps> = ({ children, loading, title, cancelable, onClose, actions: modalActions, errorMessage, ...other }) => {
+const SimpleModal: FC<SimpleModalProps> = ({ children, loading, title, cancelable, onClose, actions: modalActions, errorMessage, complexTitle, ...other }) => {
   if (cancelable && !onClose) throw 'Cancelable SimpleModals need onClose handler to be defined.';
   const classes = useStyles();
   return (
     <DraggableDialog {...other} aria-labelledby="form-dialog-title" disableBackdropClick={loading || !cancelable} disableEscapeKeyDown={loading || !cancelable} onClose={onClose}>
       <DialogTitle className={loading ? classes.disable : ''} id="form-dialog-title">
-        {title}
+        {title ? title : complexTitle}
       </DialogTitle>
       <DialogContent>
         <div className={classNames(loading ? classes.disable : '')}>{children}</div>

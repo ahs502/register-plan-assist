@@ -1,4 +1,4 @@
-import React, { FC, Fragment, useState, useContext } from 'react';
+import React, { FC, Fragment, useState, useContext, useCallback } from 'react';
 import { Theme, IconButton, Badge, Drawer, Portal } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import { DoneAll as FinilizedIcon, LockOutlined as LockIcon, LockOpenOutlined as LockOpenIcon, Search as SearchIcon, SettingsOutlined as SettingsIcon } from '@material-ui/icons';
@@ -15,15 +15,10 @@ import Preplan from 'src/view-models/Preplan';
 import FlightRequirement from 'src/view-models/flights/FlightRequirement';
 import WeekdayFlightRequirement from 'src/view-models/flights/WeekdayFlightRequirement';
 import Flight from 'src/view-models/flights/Flight';
-import Daytime from '@core/types/Daytime';
 import FlightPack from 'src/view-models/flights/FlightPack';
 import PreplanService from 'src/services/PreplanService';
-import { FlightScopeModel } from '@core/models/flights/FlightScopeModel';
-import FlightTimeModel from '@core/models/flights/FlightTimeModel';
-import AircraftIdentityModel from '@core/models/AircraftIdentityModel';
-import FlightRequirementModel from '@core/models/flights/FlightRequirementModel';
-import WeekdayFlightRequirementModel from '@core/models/flights/WeekdayFlightRequirementModel';
 import { useSnackbar, VariantType } from 'notistack';
+import PreplanAircraftRegister from 'src/view-models/PreplanAircraftRegister';
 
 const useStyles = makeStyles((theme: Theme) => ({
   sideBarBackdrop: {
@@ -35,9 +30,10 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
   statusBar: {
     height: 54,
-    backgroundColor: theme.palette.extraColors.backupRegister,
     margin: 0,
-    padding: theme.spacing(2)
+    padding: theme.spacing(2),
+    backgroundColor: theme.palette.common.white,
+    whiteSpace: 'pre'
   },
   errorBadge: {
     margin: theme.spacing(2)
@@ -68,11 +64,11 @@ interface SidebarState {
 
 const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
   const [sideBar, setSideBar] = useState<{ sideBar?: SideBar; open: boolean; initialSearch?: string }>({ open: false });
-  const [] = useState(() => false); //TODO: Initialize by data from server.
-  const [allFlightsFreezed] = useState(() => false); //TODO: Initialize from preplan flights.
+  const [autoArrangerRunning, setAutoArrangerRunning] = useState(() => false); //TODO: Initialize by data from server.
+  const [allFlightsFreezed, setAllFlightsFreezed] = useState(() => false); //TODO: Initialize from preplan flights.
   const [resourceSchedulerViewModel, setResourceSchedulerViewModel] = useState<ResourceSchedulerViewModel>({});
   const [sidebarState, setSidebarState] = useState<SidebarState>({ loading: false, errorMessage: undefined });
-  const [statusBarText] = useState('');
+  const [statusBarText, setStatusBarText] = useState('');
 
   const navBarToolsContainer = useContext(NavBarToolsContainerContext);
 
@@ -274,19 +270,14 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
 
           setResourceSchedulerViewModel({ ...resourceSchedulerViewModel, loading: false });
         }}
-        onFlightPackMouseHover={flightPack => {
-          console.log('flight pack', flightPack);
-          //TODO: Not implemented.
-        }}
-        onFreeSpaceMouseHover={(aircraftRegister, previousFlightPack, nextFlightPack) => {
-          console.log('free space', aircraftRegister, previousFlightPack, nextFlightPack);
-          //TODO: Not implemented.
-        }}
-        onNowhereMouseHover={() => {
-          console.log('nowhere');
-          //TODO: Not implemented.
-        }}
+        // onFlightPackMouseHover={flightPack => setStatusBarText(flightPack.label)}
+        // onFreeSpaceMouseHover={(aircraftRegister, previousFlightPack, nextFlightPack) => setStatusBarText(aircraftRegister ? aircraftRegister.name : '???')}
+        // onNowhereMouseHover={() => setStatusBarText('')}
+        onFlightPackMouseHover={flightPack => console.log(flightPack.label)}
+        onFreeSpaceMouseHover={(aircraftRegister, previousFlightPack, nextFlightPack) => console.log(aircraftRegister ? aircraftRegister.name : '???')}
+        onNowhereMouseHover={() => console.log('')}
       />
+
       <div className={classes.statusBar}>{statusBarText}</div>
     </Fragment>
   );

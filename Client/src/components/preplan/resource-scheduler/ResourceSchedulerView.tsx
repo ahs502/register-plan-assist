@@ -1,4 +1,4 @@
-import React, { FC, useState, Fragment, useRef, useMemo } from 'react';
+import React, { FC, useState, Fragment, useRef, useMemo, memo } from 'react';
 import { Theme, Menu, MenuItem, MenuList, ClickAwayListener, Paper, ListItemIcon, Typography, Divider } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import { Check as CheckIcon } from '@material-ui/icons';
@@ -173,8 +173,8 @@ const useStyles = makeStyles((theme: Theme) => ({
 
 interface TimelineData {
   groups: DataGroup[];
-  items: DataItem[];
   options: TimelineOptions;
+  items: DataItem[];
 }
 
 interface FlightPackContextMenuModel {
@@ -191,6 +191,7 @@ export interface ResourceSchedulerViewProps {
   changeLogs: readonly ChangeLog[];
   selectedFlightPack?: FlightPack;
   onSelectFlightPack(flightPack?: FlightPack): void;
+  // onViewChange(start?:Date,end?:Date,)
   onFreezeFlightPack(flightPack: FlightPack, freezed: boolean): void;
   onRequireFlightPack(flightPack: FlightPack, required: boolean): void;
   onIgnoreFlightPack(flightPack: FlightPack): void;
@@ -222,11 +223,14 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = ({
   onNowhereMouseHover
 }) => {
   const timeline = useProperty<Timeline>(null as any);
+  const timelineStart = useProperty<Date | undefined>(undefined);
+  const timelineEnd = useProperty<Date | undefined>(undefined);
+  const timelineScrollTop = useProperty<number | undefined>(undefined);
   const timelineData = useMemo<TimelineData>(() => {
     const groups = calculateTimelineGroups();
     const options = calculateTimelineOptions();
     const items = calculateTimelineItems(groups, options);
-    return { groups, items, options };
+    return { groups, options, items };
   }, [startDate, flightPacks, aircraftRegisters]);
 
   const [flightPackContextMenuModel, setFlightPackContextMenuModel] = useState<FlightPackContextMenuModel>({});
@@ -239,8 +243,14 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = ({
       <VisTimeline
         {...timelineData}
         selection={selectedFlightPack && selectedFlightPack.derivedId}
+        scrollTop={timelineScrollTop()}
+        onScrollY={scrollTop => timelineScrollTop(scrollTop)}
         retrieveTimeline={t => timeline(t)}
-        onRangeChanged={properties => timeline().redraw()}
+        onRangeChanged={({ start, end, byUser, event }) => {
+          timelineStart(start);
+          timelineEnd(end);
+          timeline().redraw();
+        }}
         onSelect={({ items, event }) => {
           const item = timelineData.items.find(item => item.id === items[0]);
           onSelectFlightPack(item ? item.data : undefined);
@@ -334,7 +344,7 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = ({
                   <ListItemIcon>
                     <span />
                   </ListItemIcon>
-                  <Typography>Ignore</Typography>
+                  <Typography>Ignore...</Typography>
                 </MenuItem>
                 <Divider />
                 <MenuItem
@@ -423,107 +433,6 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = ({
     return groups;
   }
 
-  function calculateTimelineItems(groups: DataGroup[], options: TimelineOptions): DataItem[] {
-    const items = flightPacks.map(
-      (f): DataItem => ({
-        id: f.derivedId,
-        start: new Date(startDate.getTime() + (f.day * 24 * 60 + f.start.minutes) * 60 * 1000),
-        end: new Date(startDate.getTime() + (f.day * 24 * 60 + f.end.minutes) * 60 * 1000),
-        group: f.aircraftRegister ? f.aircraftRegister.id : '???',
-        content: f.label,
-        title: itemTooltipTemplate(f),
-        type: 'range',
-        data: f
-      })
-    );
-
-    groups.forEach(group => {
-      if ((group.id as string).startsWith('T')) {
-        const aircraftType: AircraftType = group.data;
-        return items.push({
-          className: 'rpa-group-item-aircraft-type',
-          id: group.id,
-          start: options.start!,
-          end: options.end,
-          group: group.id,
-          content: '',
-          type: 'background',
-          data: aircraftType
-        });
-      }
-      if (group.id === '???')
-        return items.push({
-          className: 'rpa-group-item-unknown-aircraft-register',
-          id: group.id,
-          start: options.start!,
-          end: options.end,
-          group: group.id,
-          content: '',
-          type: 'background'
-        });
-      const aircraftRegister: PreplanAircraftRegister = group.data;
-      if (aircraftRegister.options.status !== 'BACKUP') return;
-      items.push({
-        className: 'rpa-group-item-backup-aircraft-register',
-        id: group.id,
-        start: options.start!,
-        end: options.end,
-        group: group.id,
-        content: '',
-        type: 'background',
-        data: aircraftRegister
-      });
-    });
-
-    return items;
-
-    function itemTooltipTemplate(flightPack: FlightPack): string {
-      return `
-        <div>
-          <div>
-            <em><small>Label:</small></em>
-            <strong>${flightPack.label}</strong>
-          </div>
-          <div>
-            <em><small>Flights:</small></em>
-            ${flightPack.flights
-              .map(
-                f => `
-                  <div>
-                    &nbsp;&nbsp;&nbsp;&nbsp;
-                    ${f.flightNumber}:
-                    ${f.departureAirport.name} (${f.std.toString()}) &dash;
-                    ${f.arrivalAirport.name} (${new Daytime(f.std.minutes + f.blockTime).toString()})
-                  </div>
-                `
-              )
-              .join('')}
-          </div>
-          ${
-            flightPack.icons.length === 0
-              ? ''
-              : `
-                  <div>
-                    <em><small>Flags:</small></em>
-                    ${flightPack.icons.map(i => `<strong>${i}</strong>`).join(' | ')}
-                  </div>
-                `
-          }
-          ${
-            !flightPack.notes
-              ? ''
-              : `
-                  <div>
-                    <em><small>Notes:</small></em>
-                    ${flightPack.notes}
-                  </div>
-                `
-          }
-        </div>
-      `;
-    }
-  }
-
   function calculateTimelineOptions(): TimelineOptions {
     return {
       align: 'center',
@@ -538,7 +447,7 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = ({
         updateTime: true,
         overrideItems: false
       },
-      end: startDate.clone().addDays(7),
+      end: timelineEnd() || startDate.clone().addDays(7),
       format: {
         majorLabels(date, scale, step) {
           return Weekday[((new Date(date).setUTCHours(0, 0, 0, 0) - startDate.getTime()) / (24 * 60 * 60 * 1000) + 7) % 7].slice(0, 3);
@@ -633,7 +542,7 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = ({
           rounded = Math.round(fraction / timeStep) * timeStep;
         return new Date(ticks - fraction + rounded);
       },
-      start: startDate,
+      start: timelineStart() || startDate,
       template: itemTemplate,
       // timeAxis: {},
       //type: 'range',
@@ -651,11 +560,14 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = ({
     };
 
     function groupTemplate(group: DataGroup, element: HTMLElement, data: DataGroup): string {
-      return `
-        <div>
-          <small>${group.content}</small>
-        </div>
-      `;
+      if (!group) return '';
+      if ((group.id as string).startsWith('T'))
+        return `
+          <div>
+            <small>${group.content}</small>
+          </div>
+        `;
+      return `<div>${group.content}</div>`;
     }
 
     function itemTemplate(item: DataItem, element: HTMLElement, data: DataItem): string {
@@ -733,6 +645,107 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = ({
                 </div>
               `
         }
+      `;
+    }
+  }
+
+  function calculateTimelineItems(groups: DataGroup[], options: TimelineOptions): DataItem[] {
+    const items = flightPacks.map(
+      (f): DataItem => ({
+        id: f.derivedId,
+        start: new Date(startDate.getTime() + (f.day * 24 * 60 + f.start.minutes) * 60 * 1000),
+        end: new Date(startDate.getTime() + (f.day * 24 * 60 + f.end.minutes) * 60 * 1000),
+        group: f.aircraftRegister ? f.aircraftRegister.id : '???',
+        content: f.label,
+        title: itemTooltipTemplate(f),
+        type: 'range',
+        data: f
+      })
+    );
+
+    groups.forEach(group => {
+      if ((group.id as string).startsWith('T')) {
+        const aircraftType: AircraftType = group.data;
+        return items.push({
+          className: 'rpa-group-item-aircraft-type',
+          id: group.id,
+          start: options.min!,
+          end: options.max,
+          group: group.id,
+          content: '',
+          type: 'background',
+          data: aircraftType
+        });
+      }
+      if (group.id === '???')
+        return items.push({
+          className: 'rpa-group-item-unknown-aircraft-register',
+          id: group.id,
+          start: options.min!,
+          end: options.max,
+          group: group.id,
+          content: '',
+          type: 'background'
+        });
+      const aircraftRegister: PreplanAircraftRegister = group.data;
+      if (aircraftRegister.options.status !== 'BACKUP') return;
+      items.push({
+        className: 'rpa-group-item-backup-aircraft-register',
+        id: group.id,
+        start: options.min!,
+        end: options.max,
+        group: group.id,
+        content: '',
+        type: 'background',
+        data: aircraftRegister
+      });
+    });
+
+    return items;
+
+    function itemTooltipTemplate(flightPack: FlightPack): string {
+      return `
+        <div>
+          <div>
+            <em><small>Label:</small></em>
+            <strong>${flightPack.label}</strong>
+          </div>
+          <div>
+            <em><small>Flights:</small></em>
+            ${flightPack.flights
+              .map(
+                f => `
+                  <div>
+                    &nbsp;&nbsp;&nbsp;&nbsp;
+                    ${f.flightNumber}:
+                    ${f.departureAirport.name} (${f.std.toString()}) &dash;
+                    ${f.arrivalAirport.name} (${new Daytime(f.std.minutes + f.blockTime).toString()})
+                  </div>
+                `
+              )
+              .join('')}
+          </div>
+          ${
+            flightPack.icons.length === 0
+              ? ''
+              : `
+                  <div>
+                    <em><small>Flags:</small></em>
+                    ${flightPack.icons.map(i => `<strong>${i}</strong>`).join(' | ')}
+                  </div>
+                `
+          }
+          ${
+            !flightPack.notes
+              ? ''
+              : `
+                  <div>
+                    <em><small>Notes:</small></em>
+                    ${flightPack.notes}
+                  </div>
+                `
+          }
+        </div>
       `;
     }
   }

@@ -303,7 +303,14 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = React.memo
                       />
                     </Grid>
                     <Grid item className={d.ignored ? classes.disableOpacityStyle : ''}>
-                      <Button color="primary">RETURN</Button>
+                      <Button
+                        color="primary"
+                        onClick={() => {
+                          onAddReturnFlightRequirement(d);
+                        }}
+                      >
+                        RETURN
+                      </Button>
                     </Grid>
                     <Grid item className={classNames(d.ignored && classes.disableOpacityStyle)}>
                       <IconButton size="small" disabled={d.ignored} onClick={() => onEditFlightRequirement(d)}>

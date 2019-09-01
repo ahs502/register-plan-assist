@@ -24,6 +24,7 @@ import Weekday from '@core/types/Weekday';
 import { red, blue, green, cyan, indigo, orange, purple } from '@material-ui/core/colors';
 import { parseMinute, parseHHMM } from 'src/utils/model-parsers';
 import MasterData from '@core/master-data';
+import { async } from 'q';
 
 const useStyles = makeStyles((theme: Theme) => ({
   sideBarBackdrop: {
@@ -87,14 +88,14 @@ interface ResourceSchedulerViewModel {
   loading?: boolean;
 }
 
-interface IgnoreFlightPackModalModel {
+interface ConfirmIgnoreFlightPackModalModel {
   open: boolean;
   selectedFlightPack?: FlightPack;
   loading?: boolean;
   errorMessage?: string;
 }
 
-interface OpenFlightModalModel {
+interface EditFlightModalModel {
   open: boolean;
   loading?: boolean;
   errorMessage?: string;
@@ -109,7 +110,7 @@ interface OpenFlightModalModel {
   notes?: string;
 }
 
-interface OpenFlightPackModalModel {
+interface EditFlightPackModalModel {
   open: boolean;
   selectedFlightPack?: FlightPack;
   loading?: boolean;
@@ -144,9 +145,9 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
   const [allFlightsFreezed, setAllFlightsFreezed] = useState(() => false); //TODO: Initialize from preplan flights.
   const [resourceSchedulerViewModel, setResourceSchedulerViewModel] = useState<ResourceSchedulerViewModel>({ loading: false });
   const [statusBarText, setStatusBarText] = useState('');
-  const [ignoreFlightPackModalModel, setIgnoreFlightPackModalModel] = useState<IgnoreFlightPackModalModel>({ open: false });
-  const [openFlightModalModel, setOpenFlightModalModel] = useState<OpenFlightModalModel>({ open: false });
-  const [openFlightPackModalModel, setOpenFlightPackModalModel] = useState<OpenFlightPackModalModel>({ open: false });
+  const [confirmIgnoreFlightPackModalModel, setConfirmIgnoreFlightPackModalModel] = useState<ConfirmIgnoreFlightPackModalModel>({ open: false });
+  const [editFlightModalModel, setEditFlightModalModel] = useState<EditFlightModalModel>({ open: false });
+  const [editFlightPackModalModel, setEditFlightPackModalModel] = useState<EditFlightPackModalModel>({ open: false });
 
   const navBarToolsContainer = useContext(NavBarToolsContainerContext);
 
@@ -337,11 +338,11 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
           }}
           onIgnoreFlightPack={async flightPack => {
             //setResourceSchedulerViewModel({ ...resourceSchedulerViewModel, selectedFlightPack: flightPack, ignoreFlightPack: true, errorMessage: undefined });
-            setIgnoreFlightPackModalModel({ ...ignoreFlightPackModalModel, open: true });
+            setConfirmIgnoreFlightPackModalModel({ ...confirmIgnoreFlightPackModalModel, open: true });
           }}
           onOpenFlightModal={flight => {
-            setOpenFlightModalModel({
-              ...openFlightModalModel,
+            setEditFlightModalModel({
+              ...editFlightModalModel,
               open: true,
               flight: flight,
               std: parseMinute(flight.std.minutes),
@@ -355,8 +356,8 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
             });
           }}
           onOpenFlightPackModal={flightPack => {
-            setOpenFlightPackModalModel({
-              ...openFlightPackModalModel,
+            setEditFlightPackModalModel({
+              ...editFlightPackModalModel,
               open: true,
               std: parseMinute(flightPack.start.minutes),
               aircraftRegister: flightPack.aircraftRegister && flightPack.aircraftRegister.name,
@@ -407,15 +408,15 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
       <SimpleModal
         key="ignore-flight-requirment-confirm-modal"
         title="Ignore flight requirment"
-        open={ignoreFlightPackModalModel.open}
-        loading={ignoreFlightPackModalModel.loading}
-        errorMessage={ignoreFlightPackModalModel.errorMessage}
+        open={confirmIgnoreFlightPackModalModel.open}
+        loading={confirmIgnoreFlightPackModalModel.loading}
+        errorMessage={confirmIgnoreFlightPackModalModel.errorMessage}
         actions={[
           { title: 'No' },
           {
             title: 'Yes',
             action: async () => {
-              setIgnoreFlightPackModalModel({ ...ignoreFlightPackModalModel, loading: true, errorMessage: undefined });
+              setConfirmIgnoreFlightPackModalModel({ ...confirmIgnoreFlightPackModalModel, loading: true, errorMessage: undefined });
 
               const newFlightRequirementsModel = resourceSchedulerViewModel!.selectedFlightPack!.flights.map(f => {
                 return f.requirement.extractModel({
@@ -428,15 +429,15 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
 
               if (result.message) {
                 snackbar(result.message, 'error');
-                setIgnoreFlightPackModalModel(ignoreFlightPackModalModel => ({ ...ignoreFlightPackModalModel, errorMessage: result.message, loading: false }));
+                setConfirmIgnoreFlightPackModalModel(ignoreFlightPackModalModel => ({ ...ignoreFlightPackModalModel, errorMessage: result.message, loading: false }));
               } else {
                 newFlightRequirementsModel.forEach(f => preplan.removeFlightRequirement(f.id!));
-                setIgnoreFlightPackModalModel(ignoreFlightPackModalModel => ({ ...ignoreFlightPackModalModel, loading: false, open: false }));
+                setConfirmIgnoreFlightPackModalModel(ignoreFlightPackModalModel => ({ ...ignoreFlightPackModalModel, loading: false, open: false }));
               }
             }
           }
         ]}
-        onClose={() => setIgnoreFlightPackModalModel(ignoreFlightPackModalModel => ({ ...ignoreFlightPackModalModel, open: false }))}
+        onClose={() => setConfirmIgnoreFlightPackModalModel(ignoreFlightPackModalModel => ({ ...ignoreFlightPackModalModel, open: false }))}
       >
         Are you sure you want to ignore{' '}
         {resourceSchedulerViewModel.selectedFlightPack &&
@@ -449,106 +450,74 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
 
       <SimpleModal
         key="edit-flight-pack-modal"
-        title="Edit flight pack"
-        open={openFlightPackModalModel.open}
-        actions={[{ title: 'Cancle' }, { title: 'Edit' }]}
-        onClose={() => setOpenFlightPackModalModel({ ...openFlightPackModalModel, open: false })}
-      >
-        Edit Flight Pack
-      </SimpleModal>
-
-      <SimpleModal
-        key="edit-flight-modal"
-        title=""
-        complexTitle={
-          openFlightModalModel.flight && (
-            <Fragment>
-              Flight
-              <span className={classes.openflightModalLabel}> {openFlightModalModel.flight.label} </span>
-              <span className={classes.openflightModalFlightNumber}>{openFlightModalModel.flight.flightNumber} </span>
-              <span className={classes.openflightModalAirports}>
-                {openFlightModalModel.flight.departureAirport.name}-{openFlightModalModel.flight.arrivalAirport.name}{' '}
-              </span>
-              <span className={classes.openflightModalWeekDay}>{Weekday[openFlightModalModel.flight.day]}s </span>
-              <span className={classes.openflightModalStc}>{openFlightModalModel.flight.stc.name} </span>
-              {<span className={classes.openflightModalRsx}>{openFlightModalModel.flight.rsx} </span>}
-              <span className={classes.openflightModalCategory}>{openFlightModalModel.flight.category} </span>
-            </Fragment>
-          )
-        }
-        loading={openFlightModalModel.loading}
-        errorMessage={openFlightModalModel.errorMessage}
-        open={openFlightModalModel.open}
+        title={'Flight pack ' + (editFlightPackModalModel.selectedFlightPack && editFlightPackModalModel.selectedFlightPack.label)}
+        open={editFlightPackModalModel.open}
+        loading={editFlightPackModalModel.loading}
+        errorMessage={editFlightPackModalModel.errorMessage}
         actions={[
           { title: 'Close' },
-          { title: 'Objections' },
-          { title: 'Flight Requirment' },
-          { title: 'Weekday Flight Requirment' },
           {
-            title: 'Apply',
+            title: 'Submit',
             action: async () => {
-              setOpenFlightModalModel({ ...openFlightModalModel, loading: true, errorMessage: undefined });
-              const flightRequirment = openFlightModalModel.flight!.requirement;
-              const register = MasterData.all.aircraftRegisters.items.find(n => n.name.toUpperCase() === (openFlightModalModel.aircraftRegister || '').toUpperCase());
-              const model = flightRequirment.extractModel({
-                days: {
-                  [flightRequirment.days.findIndex(d => d.day === openFlightModalModel.flight!.day)]: {
-                    scope: {
-                      blockTime: parseHHMM(openFlightModalModel.blockTime),
-                      required: openFlightModalModel.required,
-                      destinationPermission: openFlightModalModel.destinationPermission,
-                      originPermission: openFlightModalModel.originPermission
-                    },
-                    flight: {
-                      std: parseHHMM(openFlightModalModel.std),
-                      aircraftRegisterId: register && register.id
-                    },
-                    freezed: openFlightModalModel.freezed,
-                    notes: openFlightModalModel.notes
+              setEditFlightPackModalModel({ ...editFlightPackModalModel, loading: true, errorMessage: undefined });
+
+              const register = MasterData.all.aircraftRegisters.items.find(n => n.name.toUpperCase() === (editFlightPackModalModel.aircraftRegister || '').toUpperCase());
+              const firstFlightStd = parseHHMM(editFlightPackModalModel.std);
+              const sortedFlights = editFlightPackModalModel.selectedFlightPack!.flights.orderBy(f => f.std.minutes);
+              const firstFlight = sortedFlights[0];
+              const delta = firstFlightStd - firstFlight.std.minutes;
+              const models = sortedFlights.map(n => {
+                return n.requirement.extractModel({
+                  days: {
+                    [n.requirement.days.findIndex(d => d.day === n.day)]: {
+                      scope: {
+                        required: editFlightPackModalModel.required,
+                        destinationPermission: editFlightPackModalModel.destinationPermission,
+                        originPermission: editFlightPackModalModel.originPermission
+                      },
+                      flight: {
+                        std: n.std.minutes + delta,
+                        aircraftRegisterId: register && register.id
+                      },
+                      freezed: editFlightPackModalModel.freezed,
+                      notes: editFlightPackModalModel.notes
+                    }
                   }
-                }
+                });
               });
-              const result = await PreplanService.editFlightRequirements([model]);
+
+              const result = await PreplanService.editFlightRequirements(models);
 
               if (result.message) {
-                setOpenFlightModalModel(openFlightModalModel => ({ ...openFlightModalModel, loading: false, errorMessage: result.message }));
+                setEditFlightPackModalModel(openFlightPackModalModel => ({ ...openFlightPackModalModel, loading: false, errorMessage: result.message }));
               } else {
-                setOpenFlightModalModel(openFlightModalModel => ({ ...openFlightModalModel, loading: false, open: false, errorMessage: undefined }));
-                preplan.mergeFlightRequirements(new FlightRequirement(result.value![0], preplan.aircraftRegisters));
+                setEditFlightPackModalModel(openFlightPackModalModel => ({ ...openFlightPackModalModel, loading: false, open: false, errorMessage: undefined }));
+                preplan.mergeFlightRequirements(...result.value!.map(n => new FlightRequirement(n, preplan.aircraftRegisters)));
               }
             }
           }
         ]}
-        onClose={() => setOpenFlightModalModel({ ...openFlightModalModel, open: false })}
+        onClose={() => setEditFlightPackModalModel({ ...editFlightPackModalModel, open: false, errorMessage: undefined })}
       >
         <Grid container>
-          <Grid item xs={4}>
+          <Grid item xs={6}>
             <TextField
               fullWidth
-              label="STD"
-              value={openFlightModalModel.std}
+              label="Flirst Leg STD"
+              value={editFlightPackModalModel.std}
               onChange={s => {
-                setOpenFlightModalModel({ ...openFlightModalModel, std: s.target.value });
+                setEditFlightPackModalModel({ ...editFlightPackModalModel, std: s.target.value });
               }}
             />
           </Grid>
-          <Grid item xs={4}>
-            <TextField
-              fullWidth
-              label="Block Time"
-              value={openFlightModalModel.blockTime}
-              onChange={s => {
-                setOpenFlightModalModel({ ...openFlightModalModel, blockTime: s.target.value });
-              }}
-            />
-          </Grid>
-          <Grid item xs={4}>
+
+          <Grid item xs={6}>
             <TextField
               fullWidth
               label="Aircraft Register"
-              value={openFlightModalModel.aircraftRegister}
+              value={editFlightPackModalModel.aircraftRegister}
               onChange={s => {
-                setOpenFlightModalModel({ ...openFlightModalModel, aircraftRegister: s.target.value });
+                setEditFlightPackModalModel({ ...editFlightPackModalModel, aircraftRegister: s.target.value });
               }}
             />
           </Grid>
@@ -559,8 +528,8 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
               control={
                 <Checkbox
                   color="primary"
-                  checked={openFlightModalModel.required}
-                  onChange={e => setOpenFlightModalModel({ ...openFlightModalModel, required: e.target.checked })}
+                  checked={editFlightPackModalModel.required}
+                  onChange={e => setEditFlightPackModalModel({ ...editFlightPackModalModel, required: e.target.checked })}
                 />
               }
             />
@@ -570,7 +539,11 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
             <FormControlLabel
               label="Freezed"
               control={
-                <Checkbox color="primary" checked={openFlightModalModel.freezed} onChange={e => setOpenFlightModalModel({ ...openFlightModalModel, freezed: e.target.checked })} />
+                <Checkbox
+                  color="primary"
+                  checked={editFlightPackModalModel.freezed}
+                  onChange={e => setEditFlightPackModalModel({ ...editFlightPackModalModel, freezed: e.target.checked })}
+                />
               }
             />
           </Grid>
@@ -581,8 +554,8 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
               control={
                 <Checkbox
                   color="primary"
-                  checked={openFlightModalModel.destinationPermission}
-                  onChange={e => setOpenFlightModalModel({ ...openFlightModalModel, destinationPermission: e.target.checked })}
+                  checked={editFlightPackModalModel.destinationPermission}
+                  onChange={e => setEditFlightPackModalModel({ ...editFlightPackModalModel, destinationPermission: e.target.checked })}
                 />
               }
             />
@@ -594,14 +567,168 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
               control={
                 <Checkbox
                   color="primary"
-                  checked={openFlightModalModel.originPermission}
-                  onChange={e => setOpenFlightModalModel({ ...openFlightModalModel, originPermission: e.target.checked })}
+                  checked={editFlightPackModalModel.originPermission}
+                  onChange={e => setEditFlightPackModalModel({ ...editFlightPackModalModel, originPermission: e.target.checked })}
                 />
               }
             />
           </Grid>
           <Grid xs={12}>
-            <TextField fullWidth label="Notes" value={openFlightModalModel.notes} onChange={s => setOpenFlightModalModel({ ...openFlightModalModel, notes: s.target.value })} />
+            <TextField
+              fullWidth
+              label="Notes"
+              value={editFlightPackModalModel.notes}
+              onChange={s => setEditFlightPackModalModel({ ...editFlightPackModalModel, notes: s.target.value })}
+            />
+          </Grid>
+        </Grid>
+      </SimpleModal>
+
+      <SimpleModal
+        key="edit-flight-modal"
+        title=""
+        complexTitle={
+          editFlightModalModel.flight && (
+            <Fragment>
+              Flight
+              <span className={classes.openflightModalLabel}> {editFlightModalModel.flight.label} </span>
+              <span className={classes.openflightModalFlightNumber}>{editFlightModalModel.flight.flightNumber} </span>
+              <span className={classes.openflightModalAirports}>
+                {editFlightModalModel.flight.departureAirport.name}-{editFlightModalModel.flight.arrivalAirport.name}{' '}
+              </span>
+              <span className={classes.openflightModalWeekDay}>{Weekday[editFlightModalModel.flight.day]}s </span>
+              <span className={classes.openflightModalStc}>{editFlightModalModel.flight.stc.name} </span>
+              {<span className={classes.openflightModalRsx}>{editFlightModalModel.flight.rsx} </span>}
+              <span className={classes.openflightModalCategory}>{editFlightModalModel.flight.category} </span>
+            </Fragment>
+          )
+        }
+        loading={editFlightModalModel.loading}
+        errorMessage={editFlightModalModel.errorMessage}
+        open={editFlightModalModel.open}
+        actions={[
+          { title: 'Close' },
+          { title: 'Objections' },
+          { title: 'Flight Requirment' },
+          { title: 'Weekday Flight Requirment' },
+          {
+            title: 'Apply',
+            action: async () => {
+              setEditFlightModalModel({ ...editFlightModalModel, loading: true, errorMessage: undefined });
+              const flightRequirment = editFlightModalModel.flight!.requirement;
+              const register = MasterData.all.aircraftRegisters.items.find(n => n.name.toUpperCase() === (editFlightModalModel.aircraftRegister || '').toUpperCase());
+              const model = flightRequirment.extractModel({
+                days: {
+                  [flightRequirment.days.findIndex(d => d.day === editFlightModalModel.flight!.day)]: {
+                    scope: {
+                      blockTime: parseHHMM(editFlightModalModel.blockTime),
+                      required: editFlightModalModel.required,
+                      destinationPermission: editFlightModalModel.destinationPermission,
+                      originPermission: editFlightModalModel.originPermission
+                    },
+                    flight: {
+                      std: parseHHMM(editFlightModalModel.std),
+                      aircraftRegisterId: register && register.id
+                    },
+                    freezed: editFlightModalModel.freezed,
+                    notes: editFlightModalModel.notes
+                  }
+                }
+              });
+              const result = await PreplanService.editFlightRequirements([model]);
+
+              if (result.message) {
+                setEditFlightModalModel(openFlightModalModel => ({ ...openFlightModalModel, loading: false, errorMessage: result.message }));
+              } else {
+                setEditFlightModalModel(openFlightModalModel => ({ ...openFlightModalModel, loading: false, open: false, errorMessage: undefined }));
+                preplan.mergeFlightRequirements(new FlightRequirement(result.value![0], preplan.aircraftRegisters));
+              }
+            }
+          }
+        ]}
+        onClose={() => setEditFlightModalModel({ ...editFlightModalModel, open: false })}
+      >
+        <Grid container>
+          <Grid item xs={4}>
+            <TextField
+              fullWidth
+              label="STD"
+              value={editFlightModalModel.std}
+              onChange={s => {
+                setEditFlightModalModel({ ...editFlightModalModel, std: s.target.value });
+              }}
+            />
+          </Grid>
+          <Grid item xs={4}>
+            <TextField
+              fullWidth
+              label="Block Time"
+              value={editFlightModalModel.blockTime}
+              onChange={s => {
+                setEditFlightModalModel({ ...editFlightModalModel, blockTime: s.target.value });
+              }}
+            />
+          </Grid>
+          <Grid item xs={4}>
+            <TextField
+              fullWidth
+              label="Aircraft Register"
+              value={editFlightModalModel.aircraftRegister}
+              onChange={s => {
+                setEditFlightModalModel({ ...editFlightModalModel, aircraftRegister: s.target.value });
+              }}
+            />
+          </Grid>
+
+          <Grid item xs={6}>
+            <FormControlLabel
+              label="Required"
+              control={
+                <Checkbox
+                  color="primary"
+                  checked={editFlightModalModel.required}
+                  onChange={e => setEditFlightModalModel({ ...editFlightModalModel, required: e.target.checked })}
+                />
+              }
+            />
+          </Grid>
+
+          <Grid item xs={6}>
+            <FormControlLabel
+              label="Freezed"
+              control={
+                <Checkbox color="primary" checked={editFlightModalModel.freezed} onChange={e => setEditFlightModalModel({ ...editFlightModalModel, freezed: e.target.checked })} />
+              }
+            />
+          </Grid>
+
+          <Grid item xs={6}>
+            <FormControlLabel
+              label="Destination Permission"
+              control={
+                <Checkbox
+                  color="primary"
+                  checked={editFlightModalModel.destinationPermission}
+                  onChange={e => setEditFlightModalModel({ ...editFlightModalModel, destinationPermission: e.target.checked })}
+                />
+              }
+            />
+          </Grid>
+
+          <Grid item xs={6}>
+            <FormControlLabel
+              label="Origin Permission"
+              control={
+                <Checkbox
+                  color="primary"
+                  checked={editFlightModalModel.originPermission}
+                  onChange={e => setEditFlightModalModel({ ...editFlightModalModel, originPermission: e.target.checked })}
+                />
+              }
+            />
+          </Grid>
+          <Grid xs={12}>
+            <TextField fullWidth label="Notes" value={editFlightModalModel.notes} onChange={s => setEditFlightModalModel({ ...editFlightModalModel, notes: s.target.value })} />
           </Grid>
         </Grid>
       </SimpleModal>

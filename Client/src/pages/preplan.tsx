@@ -207,8 +207,8 @@ const PreplanPage: FC = () => {
     modalModel.days = days;
     modalModel.allowedAircraftIdentities = convertePreplanAircraftIdentityToAircraftIdentity(flightRequirement.scope.aircraftSelection.allowedIdentities!, aircraftIdentities);
     modalModel.forbiddenAircraftIdentities = convertePreplanAircraftIdentityToAircraftIdentity(flightRequirement.scope.aircraftSelection.forbiddenIdentities!, aircraftIdentities);
-    modalModel.arrivalAirport = flightRequirement.definition.arrivalAirport.name;
-    modalModel.departureAirport = flightRequirement.definition.departureAirport.name;
+    modalModel.arrivalAirport = mode !== 'return' ? flightRequirement.definition.arrivalAirport.name : flightRequirement.definition.departureAirport.name;
+    modalModel.departureAirport = mode !== 'return' ? flightRequirement.definition.departureAirport.name : flightRequirement.definition.arrivalAirport.name;
     modalModel.blockTime = parseMinute(flightRequirement.scope.blockTime);
     modalModel.category = flightRequirement.definition.category;
     modalModel.destinationPermission = flightRequirement.scope.destinationPermission;
@@ -220,7 +220,10 @@ const PreplanPage: FC = () => {
     modalModel.required = flightRequirement.scope.required;
     modalModel.rsx = flightRequirement.scope.rsx;
     modalModel.stc = flightRequirement.definition.stc;
-    modalModel.times = flightRequirement.scope.times.map(t => ({ stdLowerBound: parseMinute(t.stdLowerBound.minutes), stdUpperBound: parseMinute(t.stdUpperBound.minutes) }));
+    modalModel.times = flightRequirement.scope.times.map(t => ({
+      stdLowerBound: parseMinute(t.stdLowerBound.minutes + (mode === 'return' ? 120 : 0)),
+      stdUpperBound: parseMinute(t.stdUpperBound.minutes + (mode === 'return' ? 120 : 0))
+    }));
     //modalModel.unavailableDays =
     return modalModel;
   }
@@ -294,26 +297,26 @@ const PreplanPage: FC = () => {
                     onAddFlightRequirement={() => {
                       const modalModel = initializeFlightRequirementModalModel('add');
                       modalModel.open = true;
-
                       setFlightRequirementModalModel(modalModel);
                     }}
                     onRemoveFlightRequirement={f => {
                       const modalModel = initializeFlightRequirementModalModel('remove', f);
                       modalModel.open = true;
-
                       setFlightRequirementModalModel(modalModel);
                     }}
                     onEditFlightRequirement={f => {
                       const modalModel = initializeFlightRequirementModalModel('edit', f);
                       modalModel.open = true;
-
                       setFlightRequirementModalModel(modalModel);
                     }}
-                    onAddReturnFlightRequirement={() => setFlightRequirementModalModel({ ...flightRequirementModalModel, open: true, weekly: true /*TODO*/ })}
+                    onAddReturnFlightRequirement={f => {
+                      const modalModel = initializeFlightRequirementModalModel('return', f);
+                      modalModel.open = true;
+                      setFlightRequirementModalModel(modalModel);
+                    }}
                     onRemoveWeekdayFlightRequirement={(weekday, fr) => {
                       const modalModel = initializeFlightRequirementModalModel('remove', fr, weekday);
                       modalModel.open = true;
-
                       modalModel.day = weekday.day;
                       setFlightRequirementModalModel(modalModel);
                     }}
@@ -350,7 +353,10 @@ const PreplanPage: FC = () => {
       <SimpleModal
         key="flightRequirementEditor"
         title={flightRequirmentTitleMessage[flightRequirementModalModel.mode!]}
-        open={flightRequirementModalModel.open && (flightRequirementModalModel.mode === 'add' || flightRequirementModalModel.mode === 'edit')}
+        open={
+          flightRequirementModalModel.open &&
+          (flightRequirementModalModel.mode === 'add' || flightRequirementModalModel.mode === 'edit' || flightRequirementModalModel.mode === 'return')
+        }
         loading={flightRequirementModalModel.loading}
         errorMessage={flightRequirementModalModel.errorMessage}
         cancelable={true}
@@ -362,7 +368,7 @@ const PreplanPage: FC = () => {
           {
             title: flightRequirementModalModel.actionTitle!,
             action: async () => {
-              if (flightRequirementModalModel.mode === 'add') await addOrEditWeeklyFlightRequirment(flightRequirementModalModel);
+              if (flightRequirementModalModel.mode === 'add' || flightRequirementModalModel.mode === 'return') await addOrEditWeeklyFlightRequirment(flightRequirementModalModel);
               if (flightRequirementModalModel.mode === 'edit' && flightRequirementModalModel.weekly) await addOrEditWeeklyFlightRequirment(flightRequirementModalModel);
               if (flightRequirementModalModel.mode === 'edit' && !flightRequirementModalModel.weekly) await editDailyFlightRequirment(flightRequirementModalModel);
 
@@ -391,9 +397,9 @@ const PreplanPage: FC = () => {
                 const aircraftRegister = new PreplanAircraftSelection(scope.aircraftSelection, preplan!.aircraftRegisters).resolveIncluded()[0];
 
                 const model: FlightRequirementModel = {
-                  id: fr.flightRequirement!.id,
+                  id: flightRequirementModalModel.mode === 'edit' ? fr.flightRequirement!.id : undefined,
                   definition: {
-                    label: fr.label || '',
+                    label: (fr.label || '').toUpperCase(),
                     category: fr.category || '',
                     stcId: fr.stc ? fr.stc.id : '',
                     flightNumber: (fr.flightNumber || '').toUpperCase(),
@@ -544,7 +550,7 @@ const PreplanPage: FC = () => {
                 const model: FlightRequirementModel = {
                   id: weekfr.flightRequirement!.id,
                   definition: {
-                    label: weekfr.label || '',
+                    label: (weekfr.label || '').toUpperCase(),
                     category: weekfr.category || '',
                     stcId: weekfr.stc ? weekfr.stc.id : '',
                     flightNumber: (weekfr.flightNumber || '').toUpperCase(),
@@ -608,7 +614,7 @@ const PreplanPage: FC = () => {
                       label="Label"
                       value={flightRequirementModalModel.label || ''}
                       onChange={l => setFlightRequirementModalModel({ ...flightRequirementModalModel, label: l.target.value })}
-                      disabled={!flightRequirementModalModel.weekly || flightRequirementModalModel.disable}
+                      disabled={(!flightRequirementModalModel.weekly && flightRequirementModalModel.mode !== 'add') || flightRequirementModalModel.disable}
                     />
                   </Grid>
                   <Grid item xs={4}>
@@ -629,7 +635,7 @@ const PreplanPage: FC = () => {
                       label="Category"
                       value={flightRequirementModalModel.category || ''}
                       onChange={l => setFlightRequirementModalModel({ ...flightRequirementModalModel, category: l.target.value })}
-                      disabled={!flightRequirementModalModel.weekly || flightRequirementModalModel.disable}
+                      disabled={(!flightRequirementModalModel.weekly && flightRequirementModalModel.mode !== 'add') || flightRequirementModalModel.disable}
                     />
                   </Grid>
                   <Grid item xs={4}>
@@ -637,7 +643,7 @@ const PreplanPage: FC = () => {
                       label="Departure"
                       value={flightRequirementModalModel.departureAirport || ''}
                       onChange={a => setFlightRequirementModalModel({ ...flightRequirementModalModel, departureAirport: a.target.value })}
-                      disabled={!flightRequirementModalModel.weekly || flightRequirementModalModel.disable}
+                      disabled={(!flightRequirementModalModel.weekly && flightRequirementModalModel.mode !== 'add') || flightRequirementModalModel.disable}
                     />
                   </Grid>
                   <Grid item xs={4}>
@@ -645,7 +651,7 @@ const PreplanPage: FC = () => {
                       label="Arrival"
                       value={flightRequirementModalModel.arrivalAirport || ''}
                       onChange={a => setFlightRequirementModalModel({ ...flightRequirementModalModel, arrivalAirport: a.target.value })}
-                      disabled={!flightRequirementModalModel.weekly || flightRequirementModalModel.disable}
+                      disabled={(!flightRequirementModalModel.weekly && flightRequirementModalModel.mode !== 'add') || flightRequirementModalModel.disable}
                     />
                   </Grid>
                   <Grid item xs={4}>
@@ -653,7 +659,7 @@ const PreplanPage: FC = () => {
                       label="Flight Number"
                       value={flightRequirementModalModel.flightNumber || ''}
                       onChange={l => setFlightRequirementModalModel({ ...flightRequirementModalModel, flightNumber: l.target.value })}
-                      disabled={!flightRequirementModalModel.weekly || flightRequirementModalModel.disable}
+                      disabled={(!flightRequirementModalModel.weekly && flightRequirementModalModel.mode !== 'add') || flightRequirementModalModel.disable}
                     />
                   </Grid>
                   <Grid item xs={6}>
@@ -675,7 +681,7 @@ const PreplanPage: FC = () => {
                       onSelect={s => {
                         setFlightRequirementModalModel({ ...flightRequirementModalModel, stc: s });
                       }}
-                      isDisabled={!flightRequirementModalModel.weekly || flightRequirementModalModel.disable}
+                      isDisabled={(!flightRequirementModalModel.weekly && flightRequirementModalModel.mode !== 'add') || flightRequirementModalModel.disable}
                     />
                   </Grid>
                 </Grid>
@@ -779,7 +785,7 @@ const PreplanPage: FC = () => {
                       <DaysPicker
                         selectedDays={flightRequirementModalModel.days}
                         onItemClick={w => setFlightRequirementModalModel({ ...flightRequirementModalModel, days: w })}
-                        disabled={!flightRequirementModalModel.weekly || flightRequirementModalModel.disable}
+                        disabled={(!flightRequirementModalModel.weekly && flightRequirementModalModel.mode !== 'add') || flightRequirementModalModel.disable}
                       />
                     </Grid>
                   </Grid>
@@ -923,7 +929,7 @@ const PreplanPage: FC = () => {
                 const model: FlightRequirementModel = {
                   id: weekfr.flightRequirement!.id,
                   definition: {
-                    label: weekfr.label || '',
+                    label: (weekfr.label || '').toUpperCase(),
                     category: weekfr.category || '',
                     stcId: weekfr.stc ? weekfr.stc.id : '',
                     flightNumber: (weekfr.flightNumber || '').toUpperCase(),

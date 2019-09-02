@@ -15,6 +15,7 @@ import EditPreplanModel, { EditPreplanModelValidation } from '@core/models/EditP
 import useRouter from 'src/utils/useRouter';
 import { VariantType, useSnackbar } from 'notistack';
 import ProgressSwitch from 'src/components/ProgressSwitch';
+import classNames from 'classnames';
 
 const waitingPaperSize = 250;
 const useStyles = makeStyles((theme: Theme) => ({
@@ -62,6 +63,9 @@ const useStyles = makeStyles((theme: Theme) => ({
   error: {},
   switchProgressBar: {
     position: 'relative'
+  },
+  linkTableCell: {
+    cursor: 'pointer'
   }
 }));
 
@@ -179,9 +183,16 @@ const PreplanListPage: FC = () => {
                   .filter(p => (tab === 'USER' ? p.userId === persistant.authentication!.user.id : p.userId !== persistant.authentication!.user.id))
                   .map(preplanHeader => (
                     <TableRow key={preplanHeader.id}>
-                      <TableCell className={classes.preplanTableCell} component="th" scope="row">
-                        <LinkTypography to={'preplan/' + preplanHeader.id}>{preplanHeader.name}</LinkTypography>
+                      <TableCell
+                        onClick={() => history.push('preplan/' + preplanHeader.id)}
+                        className={classNames(classes.preplanTableCell, classes.linkTableCell)}
+                        component="th"
+                        scope="row"
+                      >
+                        {/* <LinkTypography to={'preplan/' + preplanHeader.id}>{preplanHeader.name}</LinkTypography> */}
+                        {preplanHeader.name}
                       </TableCell>
+
                       {tab === 'PUBLIC' && <TableCell>{preplanHeader.userDisplayName}</TableCell>}
                       <TableCell className={classes.preplanTableCell}>{preplanHeader.lastEditDateTime.format('d')}</TableCell>
                       <TableCell className={classes.preplanTableCell}>{preplanHeader.creationDateTime.format('d')}</TableCell>

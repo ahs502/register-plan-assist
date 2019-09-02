@@ -6,6 +6,8 @@ import Flight from './flights/Flight';
 import AutoArrangerOptions from './AutoArrangerOptions';
 import FlightPack from './flights/FlightPack';
 import { Airport } from '@core/master-data';
+import { FlightRequirementModalModel } from 'src/pages/preplan';
+import FlightRequirementModel from '@core/models/flights/FlightRequirementModel';
 
 export class PreplanHeader {
   readonly id: string;
@@ -141,9 +143,10 @@ export default class Preplan extends PreplanHeader {
     }
   }
 
-  mergeFlightRequirements(...flightRequirements: FlightRequirement[]): void {
+  mergeFlightRequirements(...flightRequirementsModel: FlightRequirementModel[]): void {
     delete this.allFlights;
     delete this.allFlightPacks;
+    const flightRequirements = flightRequirementsModel.map(f => new FlightRequirement(f, this.aircraftRegisters));
     const allFlightRequirements = this.flightRequirements as FlightRequirement[];
     allFlightRequirements.forEach((f, i) => {
       if (flightRequirements.length === 0) return;

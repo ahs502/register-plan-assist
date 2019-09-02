@@ -7,20 +7,15 @@ import Search from 'src/components/Search';
 import { DoneAll as FinilizedIcon, Add as AddIcon, Edit as EditIcon, Clear as ClearIcon, Done as DoneIcon } from '@material-ui/icons';
 import classNames from 'classnames';
 import Weekday from '@core/types/Weekday';
-
 import TablePagination from '@material-ui/core/TablePagination';
 import TablePaginationActions from 'src/components/PaginationAction';
-
 import FlightRequirement from 'src/view-models/flights/FlightRequirement';
 import WeekdayFlightRequirement from 'src/view-models/flights/WeekdayFlightRequirement';
-import AircraftIdentityType from '@core/types/aircraft-identity/AircraftIdentityType';
 import Preplan from 'src/view-models/Preplan';
-import MasterData from '@core/master-data';
 import { FlightScopeModel } from '@core/models/flights/FlightScopeModel';
 import FlightTimeModel from '@core/models/flights/FlightTimeModel';
 import AircraftIdentityModel from '@core/models/AircraftIdentityModel';
 import FlightRequirementModel from '@core/models/flights/FlightRequirementModel';
-import { required } from 'yargs';
 import WeekdayFlightRequirementModel from '@core/models/flights/WeekdayFlightRequirementModel';
 import PreplanService from 'src/services/PreplanService';
 

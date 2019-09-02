@@ -227,8 +227,8 @@ const PreplanPage: FC = () => {
     modalModel.rsx = weekdayFlightRequirement ? weekdayFlightRequirement.scope.rsx : flightRequirement.scope.rsx;
     modalModel.stc = flightRequirement.definition.stc;
     modalModel.times = (weekdayFlightRequirement ? weekdayFlightRequirement.scope.times : flightRequirement.scope.times).map(t => ({
-      stdLowerBound: parseMinute(t.stdLowerBound.minutes + (mode === 'return' ? 120 : 0)),
-      stdUpperBound: parseMinute(t.stdUpperBound.minutes + (mode === 'return' ? 120 : 0))
+      stdLowerBound: parseMinute(t.stdLowerBound.minutes + (mode === 'return' ? 120 + flightRequirement.scope.blockTime : 0)),
+      stdUpperBound: parseMinute(t.stdUpperBound.minutes + (mode === 'return' ? 120 + flightRequirement.scope.blockTime : 0))
     }));
     modalModel.day = weekdayFlightRequirement && weekdayFlightRequirement.day;
     //modalModel.unavailableDays =
@@ -454,7 +454,7 @@ const PreplanPage: FC = () => {
                   setFlightRequirementModalModel({ ...fr, loading: false, errorMessage: resultMessage });
                 } else {
                   setFlightRequirementModalModel({ ...fr, loading: false, open: false });
-                  preplan!.mergeFlightRequirements(new FlightRequirement(result!, preplan!.aircraftRegisters));
+                  preplan!.mergeFlightRequirements(result!);
                   setFlightRequirements([...preplan!.flightRequirements]);
                 }
               }
@@ -571,7 +571,7 @@ const PreplanPage: FC = () => {
                   setFlightRequirementModalModel({ ...weekfr, loading: false, errorMessage: result.message });
                 } else {
                   setFlightRequirementModalModel({ ...weekfr, loading: false, open: false });
-                  preplan!.mergeFlightRequirements(new FlightRequirement(result.value![0], preplan!.aircraftRegisters));
+                  preplan!.mergeFlightRequirements(result.value![0]);
                   setFlightRequirements([...preplan!.flightRequirements]);
                 }
               }
@@ -742,12 +742,15 @@ const PreplanPage: FC = () => {
               </Grid>
               <Grid item xs={12}>
                 <Grid container spacing={1}>
-                  <Grid item xs={12}>
-                    {
-                      <Typography variant="caption" className={classes.captionTextColor}>
-                        Allowed Aircrafts
-                      </Typography>
-                    }
+                  <Grid item xs={6}>
+                    <Typography variant="caption" className={classes.captionTextColor}>
+                      Allowed Aircrafts
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={6}>
+                    <Typography variant="caption" className={classes.captionTextColor}>
+                      Forbidden Aircrafts
+                    </Typography>
                   </Grid>
                   <Grid item xs={6}>
                     <MultiSelect
@@ -866,7 +869,7 @@ const PreplanPage: FC = () => {
               const weekfr = flightRequirementModalModel;
               const flightRequirment = weekfr.flightRequirement!;
 
-              let result: FlightRequirement | undefined;
+              let result: FlightRequirementModel[] | undefined;
               let resultMessage: string | undefined;
 
               if (flightRequirementModalModel.weekly || flightRequirment.days.length === 1) {
@@ -940,7 +943,7 @@ const PreplanPage: FC = () => {
 
                 const response = await PreplanService.editFlightRequirements([model]);
                 resultMessage = response.message;
-                result = new FlightRequirement(response.value![0], preplan!.aircraftRegisters);
+                result = response.value;
               }
 
               if (resultMessage) {
@@ -951,7 +954,7 @@ const PreplanPage: FC = () => {
                 if (flightRequirementModalModel.weekly || flightRequirment.days.length === 1) {
                   preplan!.removeFlightRequirement(flightRequirementModalModel.flightRequirement!.id);
                 } else {
-                  result ? preplan!.mergeFlightRequirements(result) : preplan!.mergeFlightRequirements();
+                  result && result[0] ? preplan!.mergeFlightRequirements(result[0]) : preplan!.mergeFlightRequirements();
                 }
 
                 setFlightRequirements([...preplan!.flightRequirements]);

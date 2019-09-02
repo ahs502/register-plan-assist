@@ -313,7 +313,7 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
             if (result.message) {
               snackbar(result.message, 'error');
             } else {
-              preplan.mergeFlightRequirements(...result.value!.map(f => new FlightRequirement(f, preplan.aircraftRegisters)));
+              preplan.mergeFlightRequirements(...result.value!);
             }
 
             setResourceSchedulerViewModel({ ...resourceSchedulerViewModel, loading: false });
@@ -334,7 +334,7 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
             if (result.message) {
               snackbar(result.message, 'error');
             } else {
-              preplan.mergeFlightRequirements(...result.value!.map(f => new FlightRequirement(f, preplan.aircraftRegisters)));
+              preplan.mergeFlightRequirements(...result.value!);
             }
 
             setResourceSchedulerViewModel({ ...resourceSchedulerViewModel, loading: false });
@@ -393,7 +393,7 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
             if (result.message) {
               snackbar(result.message, 'error');
             } else {
-              preplan.mergeFlightRequirements(...result.value!.map(f => new FlightRequirement(f, preplan.aircraftRegisters)));
+              preplan.mergeFlightRequirements(...result.value!);
             }
 
             setResourceSchedulerViewModel({ ...resourceSchedulerViewModel, loading: false });
@@ -435,7 +435,7 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
                 snackbar(result.message, 'error');
                 setConfirmIgnoreFlightPackModalModel(ignoreFlightPackModalModel => ({ ...ignoreFlightPackModalModel, errorMessage: result.message, loading: false }));
               } else {
-                newFlightRequirementsModel.forEach(f => preplan.removeFlightRequirement(f.id!));
+                preplan.mergeFlightRequirements(...result.value!);
                 setConfirmIgnoreFlightPackModalModel(ignoreFlightPackModalModel => ({ ...ignoreFlightPackModalModel, loading: false, open: false }));
               }
             }
@@ -504,7 +504,7 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
               if (result.message) {
                 setEditFlightPackModalModel(openFlightPackModalModel => ({ ...openFlightPackModalModel, loading: false, errorMessage: result.message }));
               } else {
-                preplan.mergeFlightRequirements(...result.value!.map(n => new FlightRequirement(n, preplan.aircraftRegisters)));
+                preplan.mergeFlightRequirements(...result.value!);
                 setEditFlightPackModalModel(openFlightPackModalModel => ({ ...openFlightPackModalModel, loading: false, open: false, errorMessage: undefined }));
               }
             }
@@ -626,7 +626,13 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
         cancelable={true}
         actions={[
           { title: 'Close' },
-          { title: 'Objections' },
+          {
+            title: 'Objections',
+            action: () => {
+              setEditFlightModalModel({ ...editFlightModalModel, open: false });
+              setSidebarState({ ...sidebarState, initialSearch: editFlightModalModel.flight!.flightNumber, sideBar: 'OBJECTIONS', open: true });
+            }
+          },
           {
             title: 'Weekday F.R',
             action: () => {
@@ -670,7 +676,7 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
               if (result.message) {
                 setEditFlightModalModel(openFlightModalModel => ({ ...openFlightModalModel, loading: false, errorMessage: result.message }));
               } else {
-                preplan.mergeFlightRequirements(new FlightRequirement(result.value![0], preplan.aircraftRegisters));
+                preplan.mergeFlightRequirements(result.value![0]);
                 setEditFlightModalModel(openFlightModalModel => ({ ...openFlightModalModel, loading: false, open: false, errorMessage: undefined }));
               }
             }

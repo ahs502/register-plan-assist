@@ -156,8 +156,8 @@ const PreplanListPage: FC = () => {
             <Table>
               <TableHead>
                 <TableRow>
-                  {tab === 'PUBLIC' && <TableCell className={classes.preplanTableCell}>User</TableCell>}
                   <TableCell className={classes.preplanTableCell}>Name</TableCell>
+                  {tab === 'PUBLIC' && <TableCell className={classes.preplanTableCell}>User</TableCell>}
                   <TableCell className={classes.preplanTableCell}>Last Modified</TableCell>
                   <TableCell className={classes.preplanTableCell}>Created at</TableCell>
                   <TableCell className={classes.preplanTableCell}>Copy Source</TableCell>
@@ -179,10 +179,10 @@ const PreplanListPage: FC = () => {
                   .filter(p => (tab === 'USER' ? p.userId === persistant.authentication!.user.id : p.userId !== persistant.authentication!.user.id))
                   .map(preplanHeader => (
                     <TableRow key={preplanHeader.id}>
-                      {tab === 'PUBLIC' && <TableCell>{preplanHeader.userDisplayName}</TableCell>}
                       <TableCell className={classes.preplanTableCell} component="th" scope="row">
                         <LinkTypography to={'preplan/' + preplanHeader.id}>{preplanHeader.name}</LinkTypography>
                       </TableCell>
+                      {tab === 'PUBLIC' && <TableCell>{preplanHeader.userDisplayName}</TableCell>}
                       <TableCell className={classes.preplanTableCell}>{preplanHeader.lastEditDateTime.format('d')}</TableCell>
                       <TableCell className={classes.preplanTableCell}>{preplanHeader.creationDateTime.format('d')}</TableCell>
                       <TableCell className={classes.preplanTableCell}>{preplanHeader.parentPreplanName}</TableCell>

@@ -27,6 +27,7 @@ import MasterData from '@core/master-data';
 import { async } from 'q';
 import DeepWritablePartial from '@core/types/DeepWritablePartial';
 import { FlightScopeModel } from '@core/models/flights/FlightScopeModel';
+import WeekdayFlightRequirementModel from '@core/models/flights/WeekdayFlightRequirementModel';
 
 const useStyles = makeStyles((theme: Theme) => ({
   sideBarBackdrop: {
@@ -472,25 +473,29 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
               const delta = firstFlightStd - firstFlight.std.minutes;
               const models = sortedFlights.map(n =>
                 n.requirement.extractModel({
-                  days: {
-                    [n.requirement.days.findIndex(d => d.day === n.day)]: {
-                      scope: (function() {
-                        const scopeOverrides: DeepWritablePartial<FlightScopeModel> = {};
+                  days: (function() {
+                    const dayOverride: DeepWritablePartial<WeekdayFlightRequirementModel> = {
+                      [n.requirement.days.findIndex(d => d.day === n.day)]: {
+                        scope: (function() {
+                          const scopeOverrides: DeepWritablePartial<FlightScopeModel> = {};
+                          editFlightPackModalModel.required !== undefined && (scopeOverrides.required = editFlightPackModalModel.required);
+                          editFlightPackModalModel.destinationPermission !== undefined && (scopeOverrides.destinationPermission = editFlightPackModalModel.destinationPermission);
+                          editFlightPackModalModel.originPermission !== undefined && (scopeOverrides.originPermission = editFlightPackModalModel.originPermission);
+                          return scopeOverrides;
+                        })(),
+                        flight: {
+                          std: n.std.minutes + delta,
+                          aircraftRegisterId: register && register.id
+                        },
+                        freezed: editFlightPackModalModel.freezed,
+                        notes: editFlightPackModalModel.notes
+                      }
+                    };
 
-                        editFlightPackModalModel.required !== undefined && (scopeOverrides.required = editFlightPackModalModel.required);
-                        editFlightPackModalModel.destinationPermission !== undefined && (scopeOverrides.destinationPermission = editFlightPackModalModel.destinationPermission);
-                        editFlightPackModalModel.originPermission !== undefined && (scopeOverrides.originPermission = editFlightPackModalModel.originPermission);
+                    editFlightPackModalModel.freezed !== undefined && (dayOverride.freezed = editFlightPackModalModel.freezed);
 
-                        return scopeOverrides;
-                      })(),
-                      flight: {
-                        std: n.std.minutes + delta,
-                        aircraftRegisterId: register && register.id
-                      },
-                      freezed: editFlightPackModalModel.freezed,
-                      notes: editFlightPackModalModel.notes
-                    }
-                  }
+                    return dayOverride;
+                  })()
                 })
               );
 
@@ -560,20 +565,6 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
 
           <Grid item xs={6}>
             <FormControlLabel
-              label="Destination Permission"
-              control={
-                <Checkbox
-                  color="primary"
-                  indeterminate={editFlightPackModalModel.destinationPermission === undefined}
-                  checked={editFlightPackModalModel.destinationPermission === undefined ? true : editFlightPackModalModel.destinationPermission}
-                  onChange={e => setEditFlightPackModalModel({ ...editFlightPackModalModel, destinationPermission: e.target.checked })}
-                />
-              }
-            />
-          </Grid>
-
-          <Grid item xs={6}>
-            <FormControlLabel
               label="Origin Permission"
               control={
                 <Checkbox
@@ -581,6 +572,20 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
                   indeterminate={editFlightPackModalModel.originPermission === undefined}
                   checked={editFlightPackModalModel.originPermission === undefined ? true : editFlightPackModalModel.originPermission}
                   onChange={e => setEditFlightPackModalModel({ ...editFlightPackModalModel, originPermission: e.target.checked })}
+                />
+              }
+            />
+          </Grid>
+
+          <Grid item xs={6}>
+            <FormControlLabel
+              label="Destination Permission"
+              control={
+                <Checkbox
+                  color="primary"
+                  indeterminate={editFlightPackModalModel.destinationPermission === undefined}
+                  checked={editFlightPackModalModel.destinationPermission === undefined ? true : editFlightPackModalModel.destinationPermission}
+                  onChange={e => setEditFlightPackModalModel({ ...editFlightPackModalModel, destinationPermission: e.target.checked })}
                 />
               }
             />
@@ -729,6 +734,19 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
 
           <Grid item xs={6}>
             <FormControlLabel
+              label="Origin Permission"
+              control={
+                <Checkbox
+                  color="primary"
+                  checked={editFlightModalModel.originPermission}
+                  onChange={e => setEditFlightModalModel({ ...editFlightModalModel, originPermission: e.target.checked })}
+                />
+              }
+            />
+          </Grid>
+
+          <Grid item xs={6}>
+            <FormControlLabel
               label="Destination Permission"
               control={
                 <Checkbox
@@ -740,18 +758,6 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
             />
           </Grid>
 
-          <Grid item xs={6}>
-            <FormControlLabel
-              label="Origin Permission"
-              control={
-                <Checkbox
-                  color="primary"
-                  checked={editFlightModalModel.originPermission}
-                  onChange={e => setEditFlightModalModel({ ...editFlightModalModel, originPermission: e.target.checked })}
-                />
-              }
-            />
-          </Grid>
           <Grid item xs={12}>
             <TextField fullWidth label="Notes" value={editFlightModalModel.notes} onChange={s => setEditFlightModalModel({ ...editFlightModalModel, notes: s.target.value })} />
           </Grid>

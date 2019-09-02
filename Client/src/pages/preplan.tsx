@@ -203,27 +203,34 @@ const PreplanPage: FC = () => {
     const days = Array.range(0, 6).map(() => false);
     flightRequirement.days.map(d => d.day).forEach(n => (days[n] = true));
 
+    const allowedIdentities = weekdayFlightRequirement
+      ? weekdayFlightRequirement.scope.aircraftSelection.allowedIdentities
+      : flightRequirement.scope.aircraftSelection.allowedIdentities;
+    const forbiddenIdentities = weekdayFlightRequirement
+      ? weekdayFlightRequirement.scope.aircraftSelection.forbiddenIdentities
+      : flightRequirement.scope.aircraftSelection.forbiddenIdentities;
     modalModel.flightRequirement = flightRequirement;
     modalModel.days = days;
-    modalModel.allowedAircraftIdentities = convertePreplanAircraftIdentityToAircraftIdentity(flightRequirement.scope.aircraftSelection.allowedIdentities!, aircraftIdentities);
-    modalModel.forbiddenAircraftIdentities = convertePreplanAircraftIdentityToAircraftIdentity(flightRequirement.scope.aircraftSelection.forbiddenIdentities!, aircraftIdentities);
+    modalModel.allowedAircraftIdentities = convertePreplanAircraftIdentityToAircraftIdentity(allowedIdentities, aircraftIdentities);
+    modalModel.forbiddenAircraftIdentities = convertePreplanAircraftIdentityToAircraftIdentity(forbiddenIdentities, aircraftIdentities);
     modalModel.arrivalAirport = mode !== 'return' ? flightRequirement.definition.arrivalAirport.name : flightRequirement.definition.departureAirport.name;
     modalModel.departureAirport = mode !== 'return' ? flightRequirement.definition.departureAirport.name : flightRequirement.definition.arrivalAirport.name;
-    modalModel.blockTime = parseMinute(flightRequirement.scope.blockTime);
+    modalModel.blockTime = weekdayFlightRequirement ? parseMinute(weekdayFlightRequirement.scope.blockTime) : parseMinute(flightRequirement.scope.blockTime);
     modalModel.category = flightRequirement.definition.category;
-    modalModel.destinationPermission = flightRequirement.scope.destinationPermission;
+    modalModel.destinationPermission = weekdayFlightRequirement ? weekdayFlightRequirement.scope.destinationPermission : flightRequirement.scope.destinationPermission;
     modalModel.flightNumber = flightRequirement.definition.flightNumber;
     modalModel.label = flightRequirement.definition.label;
     modalModel.notes = weekdayFlightRequirement && weekdayFlightRequirement.notes;
     modalModel.weekly = !weekdayFlightRequirement;
-    modalModel.originPermission = flightRequirement.scope.originPermission;
-    modalModel.required = flightRequirement.scope.required;
-    modalModel.rsx = flightRequirement.scope.rsx;
+    modalModel.originPermission = weekdayFlightRequirement ? weekdayFlightRequirement.scope.originPermission : flightRequirement.scope.originPermission;
+    modalModel.required = weekdayFlightRequirement ? weekdayFlightRequirement.scope.required : flightRequirement.scope.required;
+    modalModel.rsx = weekdayFlightRequirement ? weekdayFlightRequirement.scope.rsx : flightRequirement.scope.rsx;
     modalModel.stc = flightRequirement.definition.stc;
-    modalModel.times = flightRequirement.scope.times.map(t => ({
+    modalModel.times = (weekdayFlightRequirement ? weekdayFlightRequirement.scope.times : flightRequirement.scope.times).map(t => ({
       stdLowerBound: parseMinute(t.stdLowerBound.minutes + (mode === 'return' ? 120 : 0)),
       stdUpperBound: parseMinute(t.stdUpperBound.minutes + (mode === 'return' ? 120 : 0))
     }));
+    modalModel.day = weekdayFlightRequirement && weekdayFlightRequirement.day;
     //modalModel.unavailableDays =
     return modalModel;
   }
@@ -279,10 +286,16 @@ const PreplanPage: FC = () => {
                 <ResourceSchedulerPage
                   preplan={preplan}
                   onEditFlight={f => alert('edit flight ' + f.derivedId)}
-                  onEditFlightRequirement={f => setFlightRequirementModalModel({ ...flightRequirementModalModel, open: true, flightRequirement: f, weekly: true /*TODO*/ })}
-                  onEditWeekdayFlightRequirement={f =>
-                    setFlightRequirementModalModel({ ...flightRequirementModalModel, open: true, flightRequirement: f.requirement, weekly: false /*TODO*/ })
-                  }
+                  onEditFlightRequirement={f => {
+                    const modalModel = initializeFlightRequirementModalModel('edit', f);
+                    modalModel.open = true;
+                    setFlightRequirementModalModel(modalModel);
+                  }}
+                  onEditWeekdayFlightRequirement={(f, weekdayFlightRequirement) => {
+                    const modalModel = initializeFlightRequirementModalModel('edit', f, weekdayFlightRequirement);
+                    modalModel.open = true;
+                    setFlightRequirementModalModel(modalModel);
+                  }}
                 />
               )}
             />
@@ -317,27 +330,11 @@ const PreplanPage: FC = () => {
                     onRemoveWeekdayFlightRequirement={(weekday, fr) => {
                       const modalModel = initializeFlightRequirementModalModel('remove', fr, weekday);
                       modalModel.open = true;
-                      modalModel.day = weekday.day;
                       setFlightRequirementModalModel(modalModel);
                     }}
                     onEditWeekdayFlightRequirement={(weekday, fr) => {
                       const modalModel = initializeFlightRequirementModalModel('edit', fr, weekday);
                       modalModel.open = true;
-                      modalModel.day = weekday.day;
-                      modalModel.blockTime = parseMinute(weekday.scope.blockTime);
-                      modalModel.rsx = weekday.scope.rsx;
-                      modalModel.times = weekday.scope.times.map(n => ({
-                        stdLowerBound: parseMinute(n.stdLowerBound.minutes),
-                        stdUpperBound: parseMinute(n.stdUpperBound.minutes)
-                      }));
-                      modalModel.originPermission = weekday.scope.originPermission;
-                      modalModel.destinationPermission = weekday.scope.destinationPermission;
-                      modalModel.required = weekday.scope.required;
-                      modalModel.allowedAircraftIdentities =
-                        convertePreplanAircraftIdentityToAircraftIdentity(weekday.scope.aircraftSelection.allowedIdentities, aircraftIdentities) || [];
-                      modalModel.forbiddenAircraftIdentities =
-                        convertePreplanAircraftIdentityToAircraftIdentity(weekday.scope.aircraftSelection.forbiddenIdentities, aircraftIdentities) || [];
-
                       setFlightRequirementModalModel(modalModel);
                     }}
                   />

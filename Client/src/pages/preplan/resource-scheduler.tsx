@@ -1,4 +1,4 @@
-import React, { FC, Fragment, useState, useContext, useCallback } from 'react';
+import React, { FC, Fragment, useState, useContext, useCallback, useEffect } from 'react';
 import { Theme, IconButton, Badge, Drawer, Portal, CircularProgress, Typography, Grid, TextField, Checkbox, FormControlLabel } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import { DoneAll as FinilizedIcon, LockOutlined as LockIcon, LockOpenOutlined as LockOpenIcon, Search as SearchIcon, SettingsOutlined as SettingsIcon } from '@material-ui/icons';
@@ -25,6 +25,8 @@ import { red, blue, green, cyan, indigo, orange, purple } from '@material-ui/cor
 import { parseMinute, parseHHMM } from 'src/utils/model-parsers';
 import MasterData from '@core/master-data';
 import { async } from 'q';
+import DeepWritablePartial from '@core/types/DeepWritablePartial';
+import { FlightScopeModel } from '@core/models/flights/FlightScopeModel';
 
 const useStyles = makeStyles((theme: Theme) => ({
   sideBarBackdrop: {
@@ -128,7 +130,7 @@ export interface ResourceSchedulerPageProps {
   preplan: Preplan;
   onEditFlight(flight: Flight): void;
   onEditFlightRequirement(flightRequirement: FlightRequirement): void;
-  onEditWeekdayFlightRequirement(weekdayFlightRequirement: WeekdayFlightRequirement): void;
+  onEditWeekdayFlightRequirement(flightRequirement: FlightRequirement, weekdayFlightRequirement: WeekdayFlightRequirement): void;
 }
 
 interface SidebarState {
@@ -139,7 +141,7 @@ interface SidebarState {
   initialSearch?: string;
 }
 
-const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
+const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEditFlightRequirement, onEditWeekdayFlightRequirement }) => {
   const [sidebarState, setSidebarState] = useState<SidebarState>({ open: false, loading: false, errorMessage: undefined });
   const [autoArrangerRunning, setAutoArrangerRunning] = useState(() => false); //TODO: Initialize by data from server.
   const [allFlightsFreezed, setAllFlightsFreezed] = useState(() => false); //TODO: Initialize from preplan flights.
@@ -338,7 +340,7 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
           }}
           onIgnoreFlightPack={async flightPack => {
             //setResourceSchedulerViewModel({ ...resourceSchedulerViewModel, selectedFlightPack: flightPack, ignoreFlightPack: true, errorMessage: undefined });
-            setConfirmIgnoreFlightPackModalModel({ ...confirmIgnoreFlightPackModalModel, open: true });
+            setConfirmIgnoreFlightPackModalModel({ ...confirmIgnoreFlightPackModalModel, selectedFlightPack: flightPack, open: true });
           }}
           onOpenFlightModal={flight => {
             setEditFlightModalModel({
@@ -346,7 +348,7 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
               open: true,
               flight: flight,
               std: parseMinute(flight.std.minutes),
-              aircraftRegister: flight.aircraftRegister!.name,
+              aircraftRegister: flight.aircraftRegister && flight.aircraftRegister.name,
               blockTime: parseMinute(flight.blockTime),
               required: flight.required,
               freezed: flight.freezed,
@@ -411,6 +413,7 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
         open={confirmIgnoreFlightPackModalModel.open}
         loading={confirmIgnoreFlightPackModalModel.loading}
         errorMessage={confirmIgnoreFlightPackModalModel.errorMessage}
+        cancelable={true}
         actions={[
           { title: 'No' },
           {
@@ -418,7 +421,7 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
             action: async () => {
               setConfirmIgnoreFlightPackModalModel({ ...confirmIgnoreFlightPackModalModel, loading: true, errorMessage: undefined });
 
-              const newFlightRequirementsModel = resourceSchedulerViewModel!.selectedFlightPack!.flights.map(f => {
+              const newFlightRequirementsModel = confirmIgnoreFlightPackModalModel!.selectedFlightPack!.flights.map(f => {
                 return f.requirement.extractModel({
                   ignored: true
                 });
@@ -454,6 +457,7 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
         open={editFlightPackModalModel.open}
         loading={editFlightPackModalModel.loading}
         errorMessage={editFlightPackModalModel.errorMessage}
+        cancelable={true}
         actions={[
           { title: 'Close' },
           {
@@ -466,15 +470,19 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
               const sortedFlights = editFlightPackModalModel.selectedFlightPack!.flights.orderBy(f => f.std.minutes);
               const firstFlight = sortedFlights[0];
               const delta = firstFlightStd - firstFlight.std.minutes;
-              const models = sortedFlights.map(n => {
-                return n.requirement.extractModel({
+              const models = sortedFlights.map(n =>
+                n.requirement.extractModel({
                   days: {
                     [n.requirement.days.findIndex(d => d.day === n.day)]: {
-                      scope: {
-                        required: editFlightPackModalModel.required,
-                        destinationPermission: editFlightPackModalModel.destinationPermission,
-                        originPermission: editFlightPackModalModel.originPermission
-                      },
+                      scope: (function() {
+                        const scopeOverrides: DeepWritablePartial<FlightScopeModel> = {};
+
+                        editFlightPackModalModel.required !== undefined && (scopeOverrides.required = editFlightPackModalModel.required);
+                        editFlightPackModalModel.destinationPermission !== undefined && (scopeOverrides.destinationPermission = editFlightPackModalModel.destinationPermission);
+                        editFlightPackModalModel.originPermission !== undefined && (scopeOverrides.originPermission = editFlightPackModalModel.originPermission);
+
+                        return scopeOverrides;
+                      })(),
                       flight: {
                         std: n.std.minutes + delta,
                         aircraftRegisterId: register && register.id
@@ -483,16 +491,16 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
                       notes: editFlightPackModalModel.notes
                     }
                   }
-                });
-              });
+                })
+              );
 
               const result = await PreplanService.editFlightRequirements(models);
 
               if (result.message) {
                 setEditFlightPackModalModel(openFlightPackModalModel => ({ ...openFlightPackModalModel, loading: false, errorMessage: result.message }));
               } else {
-                setEditFlightPackModalModel(openFlightPackModalModel => ({ ...openFlightPackModalModel, loading: false, open: false, errorMessage: undefined }));
                 preplan.mergeFlightRequirements(...result.value!.map(n => new FlightRequirement(n, preplan.aircraftRegisters)));
+                setEditFlightPackModalModel(openFlightPackModalModel => ({ ...openFlightPackModalModel, loading: false, open: false, errorMessage: undefined }));
               }
             }
           }
@@ -528,7 +536,8 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
               control={
                 <Checkbox
                   color="primary"
-                  checked={editFlightPackModalModel.required}
+                  indeterminate={editFlightPackModalModel.required === undefined}
+                  checked={editFlightPackModalModel.required === undefined ? true : editFlightPackModalModel.required}
                   onChange={e => setEditFlightPackModalModel({ ...editFlightPackModalModel, required: e.target.checked })}
                 />
               }
@@ -541,7 +550,8 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
               control={
                 <Checkbox
                   color="primary"
-                  checked={editFlightPackModalModel.freezed}
+                  indeterminate={editFlightPackModalModel.freezed === undefined}
+                  checked={editFlightPackModalModel.freezed === undefined ? true : editFlightPackModalModel.freezed}
                   onChange={e => setEditFlightPackModalModel({ ...editFlightPackModalModel, freezed: e.target.checked })}
                 />
               }
@@ -554,7 +564,8 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
               control={
                 <Checkbox
                   color="primary"
-                  checked={editFlightPackModalModel.destinationPermission}
+                  indeterminate={editFlightPackModalModel.destinationPermission === undefined}
+                  checked={editFlightPackModalModel.destinationPermission === undefined ? true : editFlightPackModalModel.destinationPermission}
                   onChange={e => setEditFlightPackModalModel({ ...editFlightPackModalModel, destinationPermission: e.target.checked })}
                 />
               }
@@ -567,13 +578,14 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
               control={
                 <Checkbox
                   color="primary"
-                  checked={editFlightPackModalModel.originPermission}
+                  indeterminate={editFlightPackModalModel.originPermission === undefined}
+                  checked={editFlightPackModalModel.originPermission === undefined ? true : editFlightPackModalModel.originPermission}
                   onChange={e => setEditFlightPackModalModel({ ...editFlightPackModalModel, originPermission: e.target.checked })}
                 />
               }
             />
           </Grid>
-          <Grid xs={12}>
+          <Grid item xs={12}>
             <TextField
               fullWidth
               label="Notes"
@@ -606,11 +618,24 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
         loading={editFlightModalModel.loading}
         errorMessage={editFlightModalModel.errorMessage}
         open={editFlightModalModel.open}
+        cancelable={true}
         actions={[
           { title: 'Close' },
           { title: 'Objections' },
-          { title: 'Flight Requirment' },
-          { title: 'Weekday Flight Requirment' },
+          {
+            title: 'Weekday F.R',
+            action: () => {
+              onEditWeekdayFlightRequirement(editFlightModalModel.flight!.requirement, editFlightModalModel.flight!.weekdayRequirement);
+              setEditFlightModalModel({ ...editFlightModalModel, open: false });
+            }
+          },
+          {
+            title: 'Flight Requirment',
+            action: () => {
+              onEditFlightRequirement(editFlightModalModel.flight!.requirement);
+              setEditFlightModalModel({ ...editFlightModalModel, open: false });
+            }
+          },
           {
             title: 'Apply',
             action: async () => {
@@ -640,8 +665,8 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
               if (result.message) {
                 setEditFlightModalModel(openFlightModalModel => ({ ...openFlightModalModel, loading: false, errorMessage: result.message }));
               } else {
-                setEditFlightModalModel(openFlightModalModel => ({ ...openFlightModalModel, loading: false, open: false, errorMessage: undefined }));
                 preplan.mergeFlightRequirements(new FlightRequirement(result.value![0], preplan.aircraftRegisters));
+                setEditFlightModalModel(openFlightModalModel => ({ ...openFlightModalModel, loading: false, open: false, errorMessage: undefined }));
               }
             }
           }
@@ -727,7 +752,7 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
               }
             />
           </Grid>
-          <Grid xs={12}>
+          <Grid item xs={12}>
             <TextField fullWidth label="Notes" value={editFlightModalModel.notes} onChange={s => setEditFlightModalModel({ ...editFlightModalModel, notes: s.target.value })} />
           </Grid>
         </Grid>

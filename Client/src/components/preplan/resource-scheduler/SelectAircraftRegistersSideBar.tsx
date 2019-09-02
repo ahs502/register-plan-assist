@@ -239,10 +239,11 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
                 size="small"
                 onClick={() => {
                   const type = MasterData.all.aircraftTypes.items.find(t => t.name.toUpperCase() === addDummyRegisterFormModel.aircraftType!.toUpperCase())!;
+                  dummyAircraftRegisterIdCounter = dummyAircraftRegisterIdCounter + 1;
                   list
                     .find(t => t.type === type)!
                     .dummyRegisters.push({
-                      id: `dummy-${dummyAircraftRegisterIdCounter++}`,
+                      id: `dummy-${dummyAircraftRegisterIdCounter}`,
                       name: addDummyRegisterFormModel.name!.toUpperCase(),
                       baseAirport: addDummyRegisterFormModel.baseAirport!,
                       status: addDummyRegisterFormModel.status!

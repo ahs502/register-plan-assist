@@ -16,6 +16,7 @@ import Rsx from '@core/types/flight-requirement/Rsx';
 import AircraftIdentityType from '@core/types/aircraft-identity/AircraftIdentityType';
 import { WorkbookSheetRow } from '@progress/kendo-ooxml';
 import { parseMinute } from 'src/utils/model-parsers';
+import PreplanService from 'src/services/PreplanService';
 
 const makeColor = () => ({
   changeStatus: { background: '#FFFFCC' },
@@ -289,9 +290,15 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
   } as FliterModel);
 
   if (!preplanHeaders.length) {
-    const preplanHeader = [] as PreplanHeader[];
-    preplanHeader.unshift({} as PreplanHeader);
-    setPreplanHeaders(preplanHeader); //TODO: Remove this line later.
+    PreplanService.getAllHeaders().then(result => {
+      if (result.message) {
+        //TODO: handle error
+      } else {
+        const preplanHeader = result.value!.map(p => new PreplanHeader(p));
+        preplanHeader.unshift({} as PreplanHeader);
+        setPreplanHeaders(preplanHeader); //TODO: Remove this line later.
+      }
+    });
   }
 
   let proposalExporter: ExcelExport | null;
@@ -662,7 +669,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
                 Base Airport
               </InputLabel>
               <AutoComplete
-                id="compare-preplan"
+                id="compare-preplan-base-airport"
                 value={filterModel.baseAirport}
                 options={allBaseAirport}
                 getOptionLabel={l => l.name}
@@ -678,7 +685,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
               </InputLabel>
 
               <AutoComplete
-                id="compare-preplan"
+                id="compare-preplan-flightType"
                 options={flightType}
                 value={filterModel.flightType === FlightType.International ? flightType.find(f => f.value === 'International') : flightType.find(f => f.value === 'Domestic')}
                 onSelect={s => {

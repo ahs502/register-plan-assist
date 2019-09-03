@@ -84,34 +84,6 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = React.memo
     onRemoveWeekdayFlightRequirement,
     onEditWeekdayFlightRequirement
   }) => {
-    // useEffect(() => {
-    //   console.log('flightRequirements', flightRequirements);
-    // }, [flightRequirements]);
-
-    // useEffect(() => {
-    //   console.log('onAddFlightRequirement', onAddFlightRequirement);
-    // }, [onAddFlightRequirement]);
-
-    // useEffect(() => {
-    //   console.log('onRemoveFlightRequirement', onRemoveFlightRequirement);
-    // }, [onRemoveFlightRequirement]);
-
-    // useEffect(() => {
-    //   console.log('onEditFlightRequirement', onEditFlightRequirement);
-    // }, [onEditFlightRequirement]);
-
-    // useEffect(() => {
-    //   console.log('onAddReturnFlightRequirement', onAddReturnFlightRequirement);
-    // }, [onAddReturnFlightRequirement]);
-
-    // useEffect(() => {
-    //   console.log('onRemoveWeekdayFlightRequirement', onRemoveWeekdayFlightRequirement);
-    // }, [onRemoveWeekdayFlightRequirement]);
-
-    // useEffect(() => {
-    //   console.log('onEditWeekdayFlightRequirement', onEditWeekdayFlightRequirement);
-    // }, [onEditWeekdayFlightRequirement]);
-
     console.log(flightRequirements);
 
     const navBarToolsContainer = useContext(NavBarToolsContainerContext);
@@ -157,9 +129,9 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = React.memo
       setNumberOfIgnoreFr(filterItem.filter(fr => fr.ignored === true).length);
       setPageNumber(0);
 
-      if (t === 'ALL') return setFilterFlightRequirment(filterItem);
-      if (t === 'INCLUDE') return setFilterFlightRequirment(filterItem.filter(fr => fr.ignored === false));
-      if (t === 'IGNORE') return setFilterFlightRequirment(filterItem.filter(fr => fr.ignored === true));
+      if (t === 'ALL') return setFilterFlightRequirment(filterItem.orderBy(n => n.definition.label));
+      if (t === 'INCLUDE') return setFilterFlightRequirment(filterItem.filter(fr => fr.ignored === false).orderBy(n => n.definition.label));
+      if (t === 'IGNORE') return setFilterFlightRequirment(filterItem.filter(fr => fr.ignored === true).orderBy(n => n.definition.label));
     };
 
     return (

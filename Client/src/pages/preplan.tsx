@@ -275,7 +275,6 @@ const PreplanPage: FC = () => {
               component={() => (
                 <ResourceSchedulerPage
                   preplan={preplan}
-                  onEditFlight={f => alert('edit flight ' + f.derivedId)}
                   onEditFlightRequirement={f => setFlightRequirementModalModel({ ...flightRequirementModalModel, open: true, flightRequirement: f, weekly: true /*TODO*/ })}
                   onEditWeekdayFlightRequirement={f =>
                     setFlightRequirementModalModel({ ...flightRequirementModalModel, open: true, flightRequirement: f.requirement, weekly: false /*TODO*/ })

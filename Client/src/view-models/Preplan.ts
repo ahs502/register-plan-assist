@@ -105,11 +105,11 @@ export default class Preplan extends PreplanHeader {
           if (getAirportBaseLevel(flight.departureAirport) <= getAirportBaseLevel(flight.arrivalAirport)) continue;
           while (flightGroup.length) {
             const nextFlight = flightGroup.pop()!;
-            const lastDayDiff = (nextFlight.day - lastFlight.day) * 24 * 60;
             // Where next flight can NOT be appended to the bar:
             if (
-              lastDayDiff + nextFlight.std.minutes <= lastFlight.std.minutes + lastFlight.blockTime ||
-              lastDayDiff + nextFlight.std.minutes > lastFlight.std.minutes + lastFlight.blockTime + 20 * 60 ||
+              nextFlight.day !== flightPack.day ||
+              nextFlight.std.minutes <= lastFlight.std.minutes + lastFlight.blockTime ||
+              // nextFlight.std.minutes > lastFlight.std.minutes + lastFlight.blockTime + 20 * 60 ||
               nextFlight.departureAirport.id !== lastFlight.arrivalAirport.id ||
               nextFlight.departureAirport.id === flight.departureAirport.id
             ) {

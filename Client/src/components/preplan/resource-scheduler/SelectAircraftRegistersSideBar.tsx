@@ -78,9 +78,9 @@ export interface SelectAircraftRegistersSideBarProps {
   errorMessage?: string;
 }
 
-const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = ({ initialSearch, aircraftRegisters, onApply, loading, errorMessage }) => {
-  let dummyAircraftRegisterIdCounter: number = 1;
+let dummyAircraftRegisterIdCounter: number = 1;
 
+const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = ({ initialSearch, aircraftRegisters, onApply, loading, errorMessage }) => {
   const [query, setQuery] = useState<readonly string[]>([]);
   const [list, setList] = useState<AircraftRegisters>(() => {
     dummyAircraftRegisterIdCounter =
@@ -239,11 +239,11 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
                 size="small"
                 onClick={() => {
                   const type = MasterData.all.aircraftTypes.items.find(t => t.name.toUpperCase() === addDummyRegisterFormModel.aircraftType!.toUpperCase())!;
-                  dummyAircraftRegisterIdCounter = dummyAircraftRegisterIdCounter + 1;
+
                   list
                     .find(t => t.type === type)!
                     .dummyRegisters.push({
-                      id: `dummy-${dummyAircraftRegisterIdCounter}`,
+                      id: `dummy-${dummyAircraftRegisterIdCounter++}`,
                       name: addDummyRegisterFormModel.name!.toUpperCase(),
                       baseAirport: addDummyRegisterFormModel.baseAirport!,
                       status: addDummyRegisterFormModel.status!

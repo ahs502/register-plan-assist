@@ -12,11 +12,6 @@ import TablePaginationActions from 'src/components/PaginationAction';
 import FlightRequirement from 'src/view-models/flights/FlightRequirement';
 import WeekdayFlightRequirement from 'src/view-models/flights/WeekdayFlightRequirement';
 import Preplan from 'src/view-models/Preplan';
-import { FlightScopeModel } from '@core/models/flights/FlightScopeModel';
-import FlightTimeModel from '@core/models/flights/FlightTimeModel';
-import AircraftIdentityModel from '@core/models/AircraftIdentityModel';
-import FlightRequirementModel from '@core/models/flights/FlightRequirementModel';
-import WeekdayFlightRequirementModel from '@core/models/flights/WeekdayFlightRequirementModel';
 import PreplanService from 'src/services/PreplanService';
 
 const useStyles = makeStyles((theme: Theme) => ({
@@ -187,81 +182,14 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = React.memo
                       <Switch
                         checked={!d.ignored}
                         onChange={async e => {
-                          //TODO remove
-                          const newValue = handleChange(filterFlightRequirment, d, 'ignored', !e.target.checked, setFilterFlightRequirment);
+                          const newFrModel = d.extractModel({ ignored: !e.target.checked });
 
-                          const flightRequirement = newValue as FlightRequirement;
+                          const result = await PreplanService.editFlightRequirements([newFrModel]);
 
-                          const newFrModel = [flightRequirement].map(fi => {
-                            const fr = fi;
-
-                            const frScope: FlightScopeModel = {
-                              blockTime: fr.scope.blockTime,
-                              times: fr.scope.times!.map(t => {
-                                return { stdLowerBound: t.stdLowerBound.minutes, stdUpperBound: t.stdUpperBound.minutes } as FlightTimeModel;
-                              }),
-                              destinationPermission: !!fr.scope.destinationPermission,
-                              originPermission: !!fr.scope.originPermission,
-                              required: !!fr.scope.required,
-                              rsx: fr.scope.rsx!,
-                              aircraftSelection: {
-                                allowedIdentities: fr.scope.aircraftSelection.allowedIdentities
-                                  ? fr.scope.aircraftSelection.allowedIdentities.map(a => ({ entityId: a.entity.id, type: a.type } as AircraftIdentityModel))
-                                  : [],
-                                forbiddenIdentities: fr.scope.aircraftSelection.forbiddenIdentities
-                                  ? fr.scope.aircraftSelection.forbiddenIdentities.map(a => ({ entityId: a.entity.id, type: a.type } as AircraftIdentityModel))
-                                  : []
-                              }
-                            };
-
-                            const model: FlightRequirementModel = {
-                              id: fr.id,
-                              definition: {
-                                label: fr.definition.label || '',
-                                category: fr.definition.category || '',
-                                stcId: fr.definition.stc ? fr.definition.stc.id : '',
-                                flightNumber: (fr.definition.flightNumber || '').toUpperCase(),
-                                departureAirportId: fr.definition.departureAirport.id,
-                                arrivalAirportId: fr.definition.arrivalAirport.id
-                              },
-                              scope: frScope,
-                              days: fr.days.map(d => {
-                                const dayScope: FlightScopeModel = {
-                                  blockTime: d.scope.blockTime,
-                                  times: d.scope.times!.map(t => {
-                                    return { stdLowerBound: t.stdLowerBound.minutes, stdUpperBound: t.stdUpperBound.minutes } as FlightTimeModel;
-                                  }),
-                                  destinationPermission: !!d.scope.destinationPermission,
-                                  originPermission: !!d.scope.originPermission,
-                                  required: d.scope.required,
-                                  rsx: d.scope.rsx!,
-                                  aircraftSelection: {
-                                    allowedIdentities: d.scope.aircraftSelection.allowedIdentities
-                                      ? d.scope.aircraftSelection.allowedIdentities.map(a => ({ entityId: a.entity.id, type: a.type } as AircraftIdentityModel))
-                                      : [],
-                                    forbiddenIdentities: d.scope.aircraftSelection.forbiddenIdentities
-                                      ? d.scope.aircraftSelection.forbiddenIdentities.map(a => ({ entityId: a.entity.id, type: a.type } as AircraftIdentityModel))
-                                      : []
-                                  }
-                                };
-
-                                return {
-                                  day: d.day,
-                                  notes: d.notes,
-                                  scope: dayScope,
-                                  freezed: d.freezed,
-                                  flight: {
-                                    std: d.flight.std.minutes,
-                                    aircraftRegisterId: d.flight.aircraftRegister && d.flight.aircraftRegister.id
-                                  }
-                                } as WeekdayFlightRequirementModel;
-                              }),
-                              ignored: !e.target.checked
-                            };
-                            return model;
-                          });
-
-                          await PreplanService.editFlightRequirements(newFrModel);
+                          if (result.message) {
+                          } else {
+                            preplan.mergeFlightRequirements(...result.value!);
+                          }
 
                           filterFlightRequiermentBySelectedTab(filterOnProperties(searchValue), tab);
                         }}

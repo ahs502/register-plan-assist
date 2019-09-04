@@ -125,7 +125,7 @@ const PreplanPage: FC = () => {
   const [preplan, setPreplan] = useState<Preplan | null>(null);
   const [showContents, setShowContents] = useState(false);
   const [flightRequirementModalModel, setFlightRequirementModalModel] = useState<FlightRequirementModalModel>({ open: false, loading: false });
-  const [flightRequirements, setFlightRequirements] = useState<readonly FlightRequirement[]>();
+  //const [flightRequirements, setFlightRequirements] = useState<readonly FlightRequirement[]>();
   const navBarToolsRef = useRef<HTMLDivElement>(null);
 
   const classes = useStyles();
@@ -172,7 +172,7 @@ const PreplanPage: FC = () => {
         if (p.message) {
         } else {
           const preplan = new Preplan(p.value!);
-          setFlightRequirements(preplan.flightRequirements);
+          // setFlightRequirements(preplan.flightRequirements);
           setPreplan(preplan);
         }
       });
@@ -285,7 +285,6 @@ const PreplanPage: FC = () => {
               component={() => (
                 <ResourceSchedulerPage
                   preplan={preplan}
-                  onEditFlight={f => alert('edit flight ' + f.derivedId)}
                   onEditFlightRequirement={f => {
                     const modalModel = initializeFlightRequirementModalModel('edit', f);
                     modalModel.open = true;
@@ -305,7 +304,7 @@ const PreplanPage: FC = () => {
               render={() => {
                 return (
                   <FlightRequirementListPage
-                    flightRequirements={flightRequirements!}
+                    flightRequirements={preplan!.flightRequirements}
                     preplan={preplan}
                     onAddFlightRequirement={() => {
                       const modalModel = initializeFlightRequirementModalModel('add');
@@ -365,8 +364,13 @@ const PreplanPage: FC = () => {
           {
             title: flightRequirementModalModel.actionTitle!,
             action: async () => {
-              if (flightRequirementModalModel.mode === 'add' || flightRequirementModalModel.mode === 'return') await addOrEditWeeklyFlightRequirment(flightRequirementModalModel);
-              if (flightRequirementModalModel.mode === 'edit' && flightRequirementModalModel.weekly) await addOrEditWeeklyFlightRequirment(flightRequirementModalModel);
+              if (
+                flightRequirementModalModel.mode === 'add' ||
+                flightRequirementModalModel.mode === 'return' ||
+                (flightRequirementModalModel.mode === 'edit' && flightRequirementModalModel.weekly)
+              )
+                await addOrEditWeeklyFlightRequirment(flightRequirementModalModel);
+
               if (flightRequirementModalModel.mode === 'edit' && !flightRequirementModalModel.weekly) await editDailyFlightRequirment(flightRequirementModalModel);
 
               async function addOrEditWeeklyFlightRequirment(fr: FlightRequirementModalModel) {
@@ -408,6 +412,7 @@ const PreplanPage: FC = () => {
                     .days!.map((e, i) => (e ? i : ''))
                     .filter(String)
                     .map(d => {
+                      //TODO: update flight only in add move
                       let flight: FlightModel;
                       if (flightRequirementModalModel.mode === 'add') {
                         flight = {
@@ -434,7 +439,7 @@ const PreplanPage: FC = () => {
 
                 const validation = new FlightRequirementValidation(model, preplan!.aircraftRegisters.items.map(a => a.id));
                 if (!validation.ok) {
-                  setFlightRequirementModalModel({ ...fr, loading: false });
+                  setFlightRequirementModalModel(flightRequirementModalModel => ({ ...flightRequirementModalModel, loading: false }));
                   return;
                 }
 
@@ -451,11 +456,11 @@ const PreplanPage: FC = () => {
                 }
 
                 if (resultMessage) {
-                  setFlightRequirementModalModel({ ...fr, loading: false, errorMessage: resultMessage });
+                  setFlightRequirementModalModel(flightRequirementModalModel => ({ ...flightRequirementModalModel, loading: false, errorMessage: resultMessage }));
                 } else {
-                  setFlightRequirementModalModel({ ...fr, loading: false, open: false });
                   preplan!.mergeFlightRequirements(result!);
-                  setFlightRequirements([...preplan!.flightRequirements]);
+                  //setFlightRequirementModalModel(flightRequirementModalModel => ({ ...flightRequirementModalModel, loading: false, open: false }));
+                  setFlightRequirementModalModel({ ...fr, loading: false, open: false, errorMessage: undefined });
                 }
               }
 
@@ -561,18 +566,18 @@ const PreplanPage: FC = () => {
 
                 const validation = new FlightRequirementValidation(model, preplan!.aircraftRegisters.items.map(a => a.id));
                 if (!validation.ok) {
-                  setFlightRequirementModalModel({ ...weekfr, loading: false });
+                  setFlightRequirementModalModel(flightRequirementModalModel => ({ ...flightRequirementModalModel, loading: false }));
                   return;
                 }
 
                 const result = await PreplanService.editFlightRequirements([model]);
 
                 if (result.message) {
-                  setFlightRequirementModalModel({ ...weekfr, loading: false, errorMessage: result.message });
+                  setFlightRequirementModalModel(flightRequirementModalModel => ({ ...flightRequirementModalModel, loading: false, errorMessage: result.message }));
                 } else {
-                  setFlightRequirementModalModel({ ...weekfr, loading: false, open: false });
                   preplan!.mergeFlightRequirements(result.value![0]);
-                  setFlightRequirements([...preplan!.flightRequirements]);
+                  setFlightRequirementModalModel(flightRequirementModalModel => ({ ...flightRequirementModalModel, loading: false, open: false }));
+                  //setFlightRequirements([...preplan!.flightRequirements]);
                 }
               }
             }
@@ -585,10 +590,6 @@ const PreplanPage: FC = () => {
             aria-label="add"
             className={classes.fab}
             onClick={() => {
-              // var temp = { ...flightRequirement };
-              // temp.times = temp.times && [...temp.times];
-              // temp.times && temp.times.push({} as FlightTime);
-              // setFlightRequirement(temp);
               flightRequirementModalModel.times!.push({} as { stdLowerBound: string; stdUpperBound: string });
               setFlightRequirementModalModel({ ...flightRequirementModalModel });
             }}
@@ -947,9 +948,9 @@ const PreplanPage: FC = () => {
               }
 
               if (resultMessage) {
-                setFlightRequirementModalModel({ ...weekfr, loading: false, errorMessage: resultMessage });
+                setFlightRequirementModalModel(flightRequirementModalModel => ({ ...flightRequirementModalModel, loading: false, errorMessage: resultMessage }));
               } else {
-                setFlightRequirementModalModel({ ...weekfr, loading: false, open: false });
+                setFlightRequirementModalModel(flightRequirementModalModel => ({ ...flightRequirementModalModel, loading: false, open: false }));
 
                 if (flightRequirementModalModel.weekly || flightRequirment.days.length === 1) {
                   preplan!.removeFlightRequirement(flightRequirementModalModel.flightRequirement!.id);
@@ -957,7 +958,7 @@ const PreplanPage: FC = () => {
                   result && result[0] ? preplan!.mergeFlightRequirements(result[0]) : preplan!.mergeFlightRequirements();
                 }
 
-                setFlightRequirements([...preplan!.flightRequirements]);
+                //setFlightRequirements([...preplan!.flightRequirements]);
               }
             }
           }

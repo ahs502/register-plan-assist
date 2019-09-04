@@ -92,20 +92,6 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = React.memo
 
     const classes = useStyles();
 
-    const handleChange = <T extends {}>(
-      list: ReadonlyArray<T>,
-      item: T,
-      propertyName: keyof T,
-      newValue: any,
-      settter: (value: React.SetStateAction<ReadonlyArray<T>>) => void
-    ) => {
-      const tempList = [...list];
-      const index = list.indexOf(item);
-      tempList[index][propertyName] = newValue;
-      settter(tempList);
-      return tempList[index];
-    };
-
     const filterOnProperties = (query: readonly string[]): ReadonlyArray<FlightRequirement> => {
       if (!query || query.length <= 0) return flightRequirements;
 
@@ -128,6 +114,8 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = React.memo
       if (t === 'INCLUDE') return setFilterFlightRequirment(filterItem.filter(fr => fr.ignored === false).orderBy(n => n.definition.label));
       if (t === 'IGNORE') return setFilterFlightRequirment(filterItem.filter(fr => fr.ignored === true).orderBy(n => n.definition.label));
     };
+
+    // filterFlightRequiermentBySelectedTab(filterOnProperties(searchValue), tab);
 
     return (
       <div className={classes.contentPage}>

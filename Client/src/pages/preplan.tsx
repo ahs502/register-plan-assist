@@ -413,15 +413,15 @@ const PreplanPage: FC = () => {
                     .filter(String)
                     .map(d => {
                       //TODO: update flight only in add move
-                      let flight: FlightModel;
-                      if (flightRequirementModalModel.mode === 'add') {
-                        flight = {
-                          std: scope.times[0].stdLowerBound,
-                          aircraftRegisterId: aircraftRegister && aircraftRegister.id
-                        };
-                      } else {
-                        const flight = flightRequirementModalModel.flightRequirement!.days.find(m => m.day === d)!.flight;
-                      }
+                      // let flight: FlightModel;
+                      // if (flightRequirementModalModel.mode === 'add') {
+                      //   flight = {
+                      //     std: scope.times[0].stdLowerBound,
+                      //     aircraftRegisterId: aircraftRegister && aircraftRegister.id
+                      //   };
+                      // } else {
+                      //   const flight = flightRequirementModalModel.flightRequirement!.days.find(m => m.day === d)!.flight;
+                      // }
 
                       return {
                         day: d,
@@ -759,6 +759,7 @@ const PreplanPage: FC = () => {
                       getOptionLabel={l => l.name}
                       getOptionValue={l => l.id}
                       value={flightRequirementModalModel.allowedAircraftIdentities}
+                      isDisabled={flightRequirementModalModel.mode === 'return' || flightRequirementModalModel.disable}
                       onSelect={l => setFlightRequirementModalModel({ ...flightRequirementModalModel, allowedAircraftIdentities: l ? [...l] : [] })}
                     ></MultiSelect>
                   </Grid>
@@ -768,6 +769,7 @@ const PreplanPage: FC = () => {
                       getOptionLabel={l => l.name}
                       getOptionValue={l => l.id}
                       value={flightRequirementModalModel.forbiddenAircraftIdentities}
+                      isDisabled={flightRequirementModalModel.mode === 'return' || flightRequirementModalModel.disable}
                       onSelect={l => setFlightRequirementModalModel({ ...flightRequirementModalModel, forbiddenAircraftIdentities: l ? [...l] : [] })}
                     ></MultiSelect>
                   </Grid>
@@ -950,15 +952,13 @@ const PreplanPage: FC = () => {
               if (resultMessage) {
                 setFlightRequirementModalModel(flightRequirementModalModel => ({ ...flightRequirementModalModel, loading: false, errorMessage: resultMessage }));
               } else {
-                setFlightRequirementModalModel(flightRequirementModalModel => ({ ...flightRequirementModalModel, loading: false, open: false }));
-
                 if (flightRequirementModalModel.weekly || flightRequirment.days.length === 1) {
                   preplan!.removeFlightRequirement(flightRequirementModalModel.flightRequirement!.id);
                 } else {
                   result && result[0] ? preplan!.mergeFlightRequirements(result[0]) : preplan!.mergeFlightRequirements();
                 }
 
-                //setFlightRequirements([...preplan!.flightRequirements]);
+                setFlightRequirementModalModel(flightRequirementModalModel => ({ ...flightRequirementModalModel, loading: false, open: false }));
               }
             }
           }

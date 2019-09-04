@@ -13,6 +13,8 @@ import FlightRequirement from 'src/view-models/flights/FlightRequirement';
 import WeekdayFlightRequirement from 'src/view-models/flights/WeekdayFlightRequirement';
 import Preplan from 'src/view-models/Preplan';
 import PreplanService from 'src/services/PreplanService';
+import ProgressSwitch from 'src/components/ProgressSwitch';
+import { useSnackbar, VariantType } from 'notistack';
 
 const useStyles = makeStyles((theme: Theme) => ({
   contentPage: {
@@ -55,6 +57,11 @@ const useStyles = makeStyles((theme: Theme) => ({
   }
 }));
 
+interface IncludeLoadingStatus {
+  [id: string]: boolean;
+  value: boolean;
+}
+
 export interface FlightRequirementListPageProps {
   flightRequirements: ReadonlyArray<FlightRequirement>;
   preplan: Preplan;
@@ -87,8 +94,20 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = React.memo
     const [numberOfAllFR, setNumberOfAllFr] = useState(0);
     const [numberOfIgnoreFR, setNumberOfIgnoreFr] = useState(0);
     const [filterFlightRequirment, setFilterFlightRequirment] = useState<ReadonlyArray<FlightRequirement>>(flightRequirements);
+    const [includeLoadingStatus, setIncludeLoadingStatus] = useState<IncludeLoadingStatus>({} as IncludeLoadingStatus);
     const [pageNumber, setPageNumber] = useState(0);
     const [rowPerPage, setRowPerPage] = useState(10);
+
+    const { enqueueSnackbar } = useSnackbar();
+
+    function snackbar(message: string, variant: VariantType) {
+      // variant could be success, error, warning, info, or default
+      enqueueSnackbar(message, { variant });
+    }
+    useEffect(() => {
+      console.log('use effect', flightRequirements, tab, searchValue);
+      filterFlightRequiermentBySelectedTab(filterOnProperties(searchValue), tab);
+    }, [flightRequirements, tab, searchValue, preplan.flights, preplan.flightPacks]);
 
     const classes = useStyles();
 
@@ -115,8 +134,6 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = React.memo
       if (t === 'IGNORE') return setFilterFlightRequirment(filterItem.filter(fr => fr.ignored === true).orderBy(n => n.definition.label));
     };
 
-    // filterFlightRequiermentBySelectedTab(filterOnProperties(searchValue), tab);
-
     return (
       <div className={classes.contentPage}>
         <Tabs
@@ -126,7 +143,6 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = React.memo
           textColor="primary"
           onChange={(event, t) => {
             setTab(t);
-            filterFlightRequiermentBySelectedTab(filterOnProperties(searchValue), t);
           }}
         >
           <Tab value="ALL" label={'ALL (' + numberOfAllFR + ')'} />
@@ -136,7 +152,6 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = React.memo
             outlined
             onQueryChange={query => {
               setSearchValue(query);
-              filterFlightRequiermentBySelectedTab(filterOnProperties(query), tab);
             }}
           />
           <IconButton color="primary" title="Add Preplan" onClick={() => onAddFlightRequirement()}>
@@ -167,19 +182,24 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = React.memo
                   <Grid container direction="row" justify="center" alignItems="center" spacing={3}>
                     <Grid item>Include</Grid>
                     <Grid item>
-                      <Switch
+                      <ProgressSwitch
                         checked={!d.ignored}
+                        loading={includeLoadingStatus[d.id]}
                         onChange={async e => {
-                          const newFrModel = d.extractModel({ ignored: !e.target.checked });
+                          if (includeLoadingStatus[d.id]) return;
 
+                          setIncludeLoadingStatus(state => ({ ...state, [d.id]: true }));
+
+                          const newFrModel = d.extractModel({ ignored: !e.target.checked });
                           const result = await PreplanService.editFlightRequirements([newFrModel]);
 
                           if (result.message) {
+                            snackbar(result.message, 'warning');
                           } else {
                             preplan.mergeFlightRequirements(...result.value!);
                           }
 
-                          filterFlightRequiermentBySelectedTab(filterOnProperties(searchValue), tab);
+                          setIncludeLoadingStatus(state => ({ ...state, [d.id]: false }));
                         }}
                         color="primary"
                         inputProps={{ 'aria-label': 'primary checkbox' }}

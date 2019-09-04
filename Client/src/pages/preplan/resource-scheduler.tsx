@@ -24,6 +24,7 @@ import Weekday from '@core/types/Weekday';
 import { red, blue, green, cyan, indigo, orange, purple } from '@material-ui/core/colors';
 import { parseMinute, parseHHMM } from 'src/utils/model-parsers';
 import MasterData from '@core/master-data';
+import StatusBar, { StatusBarProps } from 'src/components/preplan/resource-scheduler/StatusBar';
 
 const useStyles = makeStyles((theme: Theme) => ({
   sideBarBackdrop: {
@@ -82,6 +83,14 @@ const useStyles = makeStyles((theme: Theme) => ({
 
 type SideBar = 'SETTINGS' | 'SELECT_AIRCRAFT_REGISTERS' | 'SEARCH_FLIGHTS' | 'AUTO_ARRANGER_CHANGE_LOG' | 'OBJECTIONS';
 
+interface SideBarState {
+  open: boolean;
+  loading?: boolean;
+  errorMessage?: string | undefined;
+  sideBar?: SideBar;
+  initialSearch?: string;
+}
+
 interface ResourceSchedulerViewModel {
   selectedFlightPack?: FlightPack;
   loading?: boolean;
@@ -129,21 +138,13 @@ export interface ResourceSchedulerPageProps {
   onEditWeekdayFlightRequirement(weekdayFlightRequirement: WeekdayFlightRequirement): void;
 }
 
-interface SideBarState {
-  open: boolean;
-  loading?: boolean;
-  errorMessage?: string | undefined;
-  sideBar?: SideBar;
-  initialSearch?: string;
-}
-
 const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
   const [allFlightsFreezed, setAllFlightsFreezed] = useState(() => false); //TODO: Initialize from preplan flights.
   const [autoArrangerRunning, setAutoArrangerRunning] = useState(() => false); //TODO: Initialize by data from server.
   const [sideBarState, setSideBarState] = useState<SideBarState>({ open: false, loading: false, errorMessage: undefined });
 
   const [resourceSchedulerViewModel, setResourceSchedulerViewModel] = useState<ResourceSchedulerViewModel>({ loading: false });
-  const [statusBarText, setStatusBarText] = useState('');
+  const [statusBarProps, setStatusBarProps] = useState<StatusBarProps>({});
 
   const [ignoreFlightPackModalModel, setIgnoreFlightPackModalModel] = useState<IgnoreFlightPackModalModel>({ open: false });
   const [openFlightModalModel, setOpenFlightModalModel] = useState<OpenFlightModalModel>({ open: false });
@@ -230,13 +231,13 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
     result.message ? snackbar(result.message, 'error') : preplan.mergeFlightRequirements(...result.value!.map(f => new FlightRequirement(f, preplan.aircraftRegisters)));
     setResourceSchedulerViewModel(resourceSchedulerViewModel => ({ ...resourceSchedulerViewModel, loading: false }));
   }, []);
-  const onFlightPackMouseHoverMemoized = useCallback((flightPack: FlightPack) => setStatusBarText(flightPack.label), []);
+  const onFlightPackMouseHoverMemoized = useCallback((flightPack: FlightPack) => setStatusBarProps({ mode: 'FLIGHT_PACK', flightPack }), []);
   const onFreeSpaceMouseHoverMemoized = useCallback(
-    (aircraftRegister: PreplanAircraftRegister | null, previousFlightPack: FlightPack | null, nextFlightPack: FlightPack | null) =>
-      setStatusBarText(aircraftRegister ? aircraftRegister.name : '???'),
+    (aircraftRegister: PreplanAircraftRegister, previousFlightPack?: FlightPack, nextFlightPack?: FlightPack) =>
+      setStatusBarProps({ mode: 'FREE_SPACE', aircraftRegister, previousFlightPack, nextFlightPack }),
     []
   );
-  const onNowhereMouseHoverMemoized = useCallback(() => setStatusBarText(''), []);
+  const onNowhereMouseHoverMemoized = useCallback(() => setStatusBarProps({}), []);
 
   const numberOfObjections: number = 12; //TODO: Not implemented.
 
@@ -393,7 +394,9 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
           onFreeSpaceMouseHover={onFreeSpaceMouseHoverMemoized}
           onNowhereMouseHover={onNowhereMouseHoverMemoized}
         />
-        <div className={classes.statusBar}>{statusBarText}</div>
+        <div className={classes.statusBar}>
+          <StatusBar {...statusBarProps} />
+        </div>
       </div>
 
       <SimpleModal
@@ -430,12 +433,12 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan }) => {
         ]}
         onClose={() => setIgnoreFlightPackModalModel(ignoreFlightPackModalModel => ({ ...ignoreFlightPackModalModel, open: false }))}
       >
-        Are you sure you want to ignore{' '}
+        [//TODO] Are you sure you want to ignore{' '}
         {resourceSchedulerViewModel.selectedFlightPack &&
           resourceSchedulerViewModel.selectedFlightPack.flights
             .map(n => n.label)
             .distinct()
-            .join(',')}
+            .join(', ')}
         ?
       </SimpleModal>
 

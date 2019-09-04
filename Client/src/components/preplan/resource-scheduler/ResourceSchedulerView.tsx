@@ -193,7 +193,7 @@ export interface ResourceSchedulerViewProps {
   onOpenFlightPackModal(flightPack: FlightPack): void;
   onFlightPackDragAndDrop(flightPack: FlightPack, deltaStd: number, newAircraftRegister?: PreplanAircraftRegister): void;
   onFlightPackMouseHover(flightPack: FlightPack): void;
-  onFreeSpaceMouseHover(aircraftRegister: PreplanAircraftRegister | null, previousFlightPack: FlightPack | null, nextFlightPack: FlightPack | null): void;
+  onFreeSpaceMouseHover(aircraftRegister: PreplanAircraftRegister, previousFlightPack?: FlightPack, nextFlightPack?: FlightPack): void;
   onNowhereMouseHover(): void;
 }
 
@@ -351,10 +351,10 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = memo(
         if (!group) return '';
         if ((group.id as string).startsWith('T'))
           return `
-          <div>
-            <small>${group.content}</small>
-          </div>
-        `;
+            <div>
+              <small>${group.content}</small>
+            </div>
+          `;
         return `<div>${group.content}</div>`;
       }
 
@@ -363,77 +363,77 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = memo(
 
         const flightPack: FlightPack = item.data;
         return `
-        <div class="rpa-item-header">
-          <div class="rpa-item-time rpa-item-std">
-            ${flightPack.start.toString(true)}
-            ${flightPack.required === false ? '&nbsp;' : ''}
+          <div class="rpa-item-header">
+            <div class="rpa-item-time rpa-item-std">
+              ${flightPack.start.toString(true)}
+              ${flightPack.required === false ? '&nbsp;' : ''}
+            </div>
+            ${
+              flightPack.required === true
+                ? `<div class="rpa-required-asterisk rpa-required-asterisk-full">&#10045;</div>`
+                : flightPack.required === undefined
+                ? `<div class="rpa-required-asterisk rpa-required-asterisk-semi">&#10045;</div>`
+                : ''
+            }
+            <div class="rpa-item-time rpa-item-sta">
+              ${flightPack.required === false ? '&nbsp;' : ''}
+              ${flightPack.end.toString(true)}
+            </div>
           </div>
+          <div class="rpa-item-body
+          ${flightPack.knownAircraftRegister ? ' rpa-known-aircraft-register' : ' rpa-unknown-aircraft-register'}
           ${
-            flightPack.required === true
-              ? `<div class="rpa-required-asterisk rpa-required-asterisk-full">&#10045;</div>`
-              : flightPack.required === undefined
-              ? `<div class="rpa-required-asterisk rpa-required-asterisk-semi">&#10045;</div>`
+            flightPack.originPermission === true
+              ? ' rpa-origin-permission rpa-origin-permission-full'
+              : flightPack.originPermission === undefined
+              ? ' rpa-origin-permission rpa-origin-permission-semi'
               : ''
           }
-          <div class="rpa-item-time rpa-item-sta">
-            ${flightPack.required === false ? '&nbsp;' : ''}
-            ${flightPack.end.toString(true)}
-          </div>
-        </div>
-        <div class="rpa-item-body
-        ${flightPack.knownAircraftRegister ? ' rpa-known-aircraft-register' : ' rpa-unknown-aircraft-register'}
-        ${
-          flightPack.originPermission === true
-            ? ' rpa-origin-permission rpa-origin-permission-full'
-            : flightPack.originPermission === undefined
-            ? ' rpa-origin-permission rpa-origin-permission-semi'
-            : ''
-        }
-        ${
-          flightPack.destinationPermission === true
-            ? ' rpa-destination-permission rpa-destination-permission-full'
-            : flightPack.destinationPermission === undefined
-            ? ' rpa-destination-permission rpa-destination-permission-semi'
-            : ''
-        }
-        ${flightPack.changed === true ? ' rpa-changed rpa-changed-full' : flightPack.changed === undefined ? ' rpa-changed rpa-changed-semi' : ''}
-        ">
-          ${flightPack.sections.map(s => `<div class="rpa-item-section" style="left: ${s.start * 100}%; right: ${(1 - s.end) * 100}%;"></div>`).join(' ')}
-          <div class="rpa-item-label">
-            ${flightPack.label}
-          </div>
           ${
-            flightPack.freezed === true
-              ? `
-                <span class="rpa-dot rpa-dot-full rpa-dot-top rpa-dot-left"></span>
-                <span class="rpa-dot rpa-dot-full rpa-dot-top rpa-dot-right"></span>
-                <span class="rpa-dot rpa-dot-full rpa-dot-bottom rpa-dot-left"></span>
-                <span class="rpa-dot rpa-dot-full rpa-dot-bottom rpa-dot-right"></span>
-              `
-              : flightPack.freezed === undefined
-              ? `
-                <span class="rpa-dot rpa-dot-semi rpa-dot-top rpa-dot-left"></span>
-                <span class="rpa-dot rpa-dot-semi rpa-dot-top rpa-dot-right"></span>
-                <span class="rpa-dot rpa-dot-semi rpa-dot-bottom rpa-dot-left"></span>
-                <span class="rpa-dot rpa-dot-semi rpa-dot-bottom rpa-dot-right"></span>
-              `
+            flightPack.destinationPermission === true
+              ? ' rpa-destination-permission rpa-destination-permission-full'
+              : flightPack.destinationPermission === undefined
+              ? ' rpa-destination-permission rpa-destination-permission-semi'
               : ''
           }
-        </div>
-        ${
-          flightPack.icons.length === 0 && !flightPack.notes
-            ? ''
-            : `
-                <div class="rpa-item-footer">
-                  ${flightPack.icons.map(i => `<span class="rpa-item-icon">${i}</span>`).join(' ')}
-                  ${flightPack.notes
-                    .split('')
-                    .map(c => `<div>${c === ' ' ? '&nbsp;' : c}</div>`)
-                    .join('')}
-                </div>
-              `
-        }
-      `;
+          ${flightPack.changed === true ? ' rpa-changed rpa-changed-full' : flightPack.changed === undefined ? ' rpa-changed rpa-changed-semi' : ''}
+          ">
+            ${flightPack.sections.map(s => `<div class="rpa-item-section" style="left: ${s.start * 100}%; right: ${(1 - s.end) * 100}%;"></div>`).join(' ')}
+            <div class="rpa-item-label">
+              ${flightPack.label}
+            </div>
+            ${
+              flightPack.freezed === true
+                ? `
+                  <span class="rpa-dot rpa-dot-full rpa-dot-top rpa-dot-left"></span>
+                  <span class="rpa-dot rpa-dot-full rpa-dot-top rpa-dot-right"></span>
+                  <span class="rpa-dot rpa-dot-full rpa-dot-bottom rpa-dot-left"></span>
+                  <span class="rpa-dot rpa-dot-full rpa-dot-bottom rpa-dot-right"></span>
+                `
+                : flightPack.freezed === undefined
+                ? `
+                  <span class="rpa-dot rpa-dot-semi rpa-dot-top rpa-dot-left"></span>
+                  <span class="rpa-dot rpa-dot-semi rpa-dot-top rpa-dot-right"></span>
+                  <span class="rpa-dot rpa-dot-semi rpa-dot-bottom rpa-dot-left"></span>
+                  <span class="rpa-dot rpa-dot-semi rpa-dot-bottom rpa-dot-right"></span>
+                `
+                : ''
+            }
+          </div>
+          ${
+            flightPack.icons.length === 0 && !flightPack.notes
+              ? ''
+              : `
+                  <div class="rpa-item-footer">
+                    ${flightPack.icons.map(i => `<span class="rpa-item-icon">${i}</span>`).join(' ')}
+                    ${flightPack.notes
+                      .split('')
+                      .map(c => `<div>${c === ' ' ? '&nbsp;' : c}</div>`)
+                      .join('')}
+                  </div>
+                `
+          }
+        `;
       }
     }, [startDate.getTime()]);
     const timelineGroups = useMemo<DataGroup[]>(() => {
@@ -538,48 +538,49 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = memo(
 
       function itemTooltipTemplate(flightPack: FlightPack): string {
         return `
-    <div>
-      <div>
-        <em><small>Label:</small></em>
-        <strong>${flightPack.label}</strong>
-      </div>
-      <div>
-        <em><small>Flights:</small></em>
-        ${flightPack.flights
-          .map(
-            f => `
-              <div>
-                &nbsp;&nbsp;&nbsp;&nbsp;
-                ${f.flightNumber}:
-                ${f.departureAirport.name} (${f.std.toString()}) &dash;
-                ${f.arrivalAirport.name} (${new Daytime(f.std.minutes + f.blockTime).toString()})
-              </div>
-            `
-          )
-          .join('')}
-      </div>
-      ${
-        flightPack.icons.length === 0
-          ? ''
-          : `
-              <div>
-                <em><small>Flags:</small></em>
-                ${flightPack.icons.map(i => `<strong>${i}</strong>`).join(' | ')}
-              </div>
-            `
-      }
-      ${
-        !flightPack.notes
-          ? ''
-          : `
-              <div>
-                <em><small>Notes:</small></em>
-                ${flightPack.notes}
-              </div>
-            `
-      }
-    </div>
-  `;
+          <div>
+            <div>
+              <em><small>Flight:</small></em>
+              <strong>${flightPack.label}</strong>
+              ${Weekday[flightPack.day]}s
+            </div>
+            <div>
+              <em><small>Flights:</small></em>
+              ${flightPack.flights
+                .map(
+                  f => `
+                    <div>
+                      &nbsp;&nbsp;&nbsp;&nbsp;
+                      ${f.flightNumber}:
+                      ${f.departureAirport.name} (${f.std.toString()}) &dash;
+                      ${f.arrivalAirport.name} (${new Daytime(f.std.minutes + f.blockTime).toString()})
+                    </div>
+                  `
+                )
+                .join('')}
+            </div>
+            ${
+              flightPack.icons.length === 0
+                ? ''
+                : `
+                    <div>
+                      <em><small>Flags:</small></em>
+                      ${flightPack.icons.map(i => `<strong>${i}</strong>`).join(' | ')}
+                    </div>
+                  `
+            }
+            ${
+              !flightPack.notes
+                ? ''
+                : `
+                    <div>
+                      <em><small>Notes:</small></em>
+                      ${flightPack.notes}
+                    </div>
+                  `
+            }
+          </div>
+        `;
       }
     }, [startDate.getTime(), flightPacks, timelineOptions, timelineGroups]);
 
@@ -626,21 +627,25 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = memo(
                 break;
 
               case 'background':
-                if (properties.group === '???') return onFreeSpaceMouseHover(null, null, null);
+                if (properties.group === '???') return onNowhereMouseHover();
                 const register = aircraftRegisters.id[properties.group as any];
                 if (!register) return onNowhereMouseHover();
                 const registerFlightPacks = flightPacks.filter(f => !!f.aircraftRegister && f.aircraftRegister.id === register.id);
-                if (registerFlightPacks.length === 0) return onFreeSpaceMouseHover(register, null, null);
-                let previousFlightPack: FlightPack | null = null,
-                  nextFlightPack: FlightPack | null = registerFlightPacks.shift() || null;
+                if (registerFlightPacks.length === 0) return onFreeSpaceMouseHover(register);
+                if (registerFlightPacks.length === 1) return onFreeSpaceMouseHover(register, registerFlightPacks[0], registerFlightPacks[0]);
+                const firstFlightPack = registerFlightPacks[0],
+                  lastFlightPack = registerFlightPacks[registerFlightPacks.length - 1];
+                let previousFlightPack: FlightPack | undefined = undefined,
+                  nextFlightPack: FlightPack | undefined = registerFlightPacks.shift();
                 do {
                   const start = previousFlightPack ? startDate.getTime() + previousFlightPack.day * 24 * 60 * 60 * 1000 + previousFlightPack.end.minutes * 60 * 1000 : -Infinity,
                     end = nextFlightPack ? startDate.getTime() + nextFlightPack.day * 24 * 60 * 60 * 1000 + nextFlightPack.start.minutes * 60 * 1000 : Infinity;
-                  if (start <= properties.time.getTime() && properties.time.getTime() <= end) return onFreeSpaceMouseHover(register, previousFlightPack, nextFlightPack);
+                  if (start <= properties.time.getTime() && properties.time.getTime() <= end)
+                    return onFreeSpaceMouseHover(register, previousFlightPack || lastFlightPack, nextFlightPack || firstFlightPack);
                   previousFlightPack = nextFlightPack;
-                  nextFlightPack = registerFlightPacks.shift() || null;
+                  nextFlightPack = registerFlightPacks.shift();
                 } while (previousFlightPack || nextFlightPack);
-                onFreeSpaceMouseHover(register, null, null);
+                onFreeSpaceMouseHover(register);
                 break;
 
               default:

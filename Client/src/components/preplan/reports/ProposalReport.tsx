@@ -176,8 +176,8 @@ interface FlattenFlightRequirment {
   extraFrequency: number;
   destinationNoPermissionsWeekDay: number[];
   destinationNoPermissions: string;
-  domesticNoPermissionsWeekDay: number[];
-  domesticNoPermissions: string;
+  originNoPermissionsWeekDay: number[];
+  originNoPermissions: string;
   category: string;
   nextFlights: FlattenFlightRequirment[];
   previousFlights: FlattenFlightRequirment[];
@@ -381,27 +381,6 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
     calculateFrequency(result);
 
     return result;
-
-    function randomize(df: DailyFlightRequirment[]) {
-      //TODO: remove
-
-      df.forEach(d => {
-        d.destinationPermission = Math.random() > 0.25 ? true : false; //TODO: remove
-        d.originPermission = Math.random() > 0.25 ? true : false; //TODO: remove
-
-        if (d.departureAirport.id === '7092901520000005420' || d.arrivalAirport.id === '7092901520000005420') {
-          if ([1, 4].indexOf(d.day) !== -1) d.rsx = 'STB2';
-          if ([6].indexOf(d.day) !== -1) d.rsx = 'EXT';
-          if ([2].indexOf(d.day) !== -1) d.rsx = 'STB1';
-        }
-
-        if (d.departureAirport.id === '7092901520000001628' || d.arrivalAirport.id === '7092901520000001628') {
-          if ([5].indexOf(d.day) !== -1) d.rsx = 'STB2';
-          if ([3].indexOf(d.day) !== -1) d.rsx = 'EXT';
-          if ([1].indexOf(d.day) !== -1) d.rsx = 'STB1';
-        }
-      });
-    }
   };
 
   useEffect(() => {
@@ -474,7 +453,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
       if (row.type === 'data') {
         const id = r.cells![idColumnNumber].value;
         const model = flattenFlightRequirments.find(f => f.id === id)!;
-        const weekdayWithoutPermission = model.domesticNoPermissionsWeekDay.concat(model.destinationNoPermissionsWeekDay).distinct();
+        const weekdayWithoutPermission = model.originNoPermissionsWeekDay.concat(model.destinationNoPermissionsWeekDay).distinct();
 
         weekdayWithoutPermission.forEach(c => {
           r!.cells![weekDaySaturdayCellNumber + c].color = color.noPermission.color;
@@ -1084,7 +1063,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
             {filterModel.showSlot && (
               <ExcelExportColumn
                 title={['ORIGIN', 'SLOT (UTC)'].join('\r\n')}
-                field="domesticNoPermissions"
+                field="originNoPermissions"
                 width={85}
                 cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 }, borderLeft: { color: '#000000', size: 3 } }}
                 headerCellOptions={{
@@ -1375,7 +1354,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
                         </TableCell>
 
                         <TableCell className={classes.border} align="center">
-                          {f.domesticNoPermissions}
+                          {f.originNoPermissions}
                         </TableCell>
                       </Fragment>
                     )}
@@ -1648,19 +1627,19 @@ function calculateFrequency(result: FlattenFlightRequirment[]) {
 function geratePermissionMassage(sortedFlattenFlightRequirments: FlattenFlightRequirment[], parentRoute: string, result: FlattenFlightRequirment[]) {
   sortedFlattenFlightRequirments.forEach(n => {
     n.parentRoute = parentRoute;
-    n.note = n.notes.join(',');
+    n.note = n.notes.filter(Boolean).join(',');
     n.destinationNoPermissions =
       n.destinationNoPermissionsWeekDay.length === 0
         ? 'OK'
         : n.destinationNoPermissionsWeekDay.length === n.days.length
         ? 'NOT OK'
         : 'NOT OK for: ' + n.destinationNoPermissionsWeekDay.map(w => Weekday[w].substring(0, 3)).join(',');
-    n.domesticNoPermissions =
-      n.domesticNoPermissionsWeekDay.length === 0
+    n.originNoPermissions =
+      n.originNoPermissionsWeekDay.length === 0
         ? 'OK'
-        : n.domesticNoPermissionsWeekDay.length === n.days.length
+        : n.originNoPermissionsWeekDay.length === n.days.length
         ? 'NOT OK'
-        : 'NOT OK for: ' + n.domesticNoPermissionsWeekDay.map(w => Weekday[w].substring(0, 3)).join(',');
+        : 'NOT OK for: ' + n.originNoPermissionsWeekDay.map(w => Weekday[w].substring(0, 3)).join(',');
     result.push(n);
   });
 }
@@ -1856,7 +1835,7 @@ function createFlattenFlightRequirment(dailyFlightRequirment: DailyFlightRequirm
     diffLocalStdandUtcSta: diffLocalStdandUtcSta,
     route: dailyFlightRequirment.departureAirport.name + '–' + dailyFlightRequirment.arrivalAirport.name,
     aircraftType: dailyFlightRequirment.aircraftType,
-    domesticNoPermissionsWeekDay: [] as number[],
+    originNoPermissionsWeekDay: [] as number[],
     destinationNoPermissionsWeekDay: [] as number[],
     label: label,
     category: dailyFlightRequirment.category,
@@ -1872,21 +1851,16 @@ function createFlattenFlightRequirment(dailyFlightRequirment: DailyFlightRequirm
 function updateFlattenFlightRequirment(flattenFlight: FlattenFlightRequirment, dialyFlightRequirment: DailyFlightRequirment, baseAirport: Airport) {
   const weekDay = (dialyFlightRequirment.day + flattenFlight.diffLocalStdandUtcStd + 7) % 7;
 
-  let domesticToDestination = dialyFlightRequirment.departureAirport.id === baseAirport.id;
-  if (!domesticToDestination) {
-    domesticToDestination = !dialyFlightRequirment.departureAirport.international;
-  }
-
   if (flattenFlight.days.indexOf(weekDay) === -1) {
     flattenFlight.days.push(weekDay);
 
     if (!dialyFlightRequirment.originPermission) {
-      domesticToDestination ? flattenFlight.domesticNoPermissionsWeekDay.push(weekDay) : flattenFlight.destinationNoPermissionsWeekDay.push(weekDay);
+      flattenFlight.originNoPermissionsWeekDay.push(weekDay);
     }
 
     if (!dialyFlightRequirment.destinationPermission) {
       const arrivalWeekDay = flattenFlight.diffLocalStdandLocalSta > 0 ? (weekDay + 1) % 7 : weekDay;
-      domesticToDestination ? flattenFlight.destinationNoPermissionsWeekDay.push(arrivalWeekDay) : flattenFlight.domesticNoPermissionsWeekDay.push(arrivalWeekDay);
+      flattenFlight.destinationNoPermissionsWeekDay.push(arrivalWeekDay);
     }
   }
 
@@ -1913,8 +1887,8 @@ function updateFlattenFlightRequirment(flattenFlight: FlattenFlightRequirment, d
     if (dialyFlightRequirment.rsx === 'REAL') {
       if (dialyFlightRequirment.originPermission && dialyFlightRequirment.destinationPermission) return character.circle;
       if (!dialyFlightRequirment.originPermission && !dialyFlightRequirment.destinationPermission) return character.emptyCircle;
-      if (!dialyFlightRequirment.originPermission) return domesticToDestination ? character.leftHalfBlackCircle : character.rightHalfBlackCircle;
-      return domesticToDestination ? character.rightHalfBlackCircle : character.leftHalfBlackCircle;
+      if (!dialyFlightRequirment.originPermission) return character.leftHalfBlackCircle;
+      return character.rightHalfBlackCircle;
     } else {
       return dialyFlightRequirment.rsx.toString();
     }
@@ -1959,13 +1933,13 @@ function compareFunction(a: number, b: number) {
 
 function hasPermission(flattenFlightRequirment: FlattenFlightRequirment, day: number) {
   const destinationPermission = flattenFlightRequirment.destinationNoPermissionsWeekDay.includes(day);
-  const domesticPermission = flattenFlightRequirment.domesticNoPermissionsWeekDay.includes(day);
+  const domesticPermission = flattenFlightRequirment.originNoPermissionsWeekDay.includes(day);
   return !(destinationPermission || domesticPermission);
 }
 
 function halfPermission(flattenFlightRequirment: FlattenFlightRequirment, day: number) {
   const destinationPermission = flattenFlightRequirment.destinationNoPermissionsWeekDay.includes(day);
-  const domesticPermission = flattenFlightRequirment.domesticNoPermissionsWeekDay.includes(day);
+  const domesticPermission = flattenFlightRequirment.originNoPermissionsWeekDay.includes(day);
   return (destinationPermission && !domesticPermission) || (!destinationPermission && domesticPermission);
 }
 

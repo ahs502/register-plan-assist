@@ -154,7 +154,7 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = React.memo
               setSearchValue(query);
             }}
           />
-          <IconButton color="primary" title="Add Preplan" onClick={() => onAddFlightRequirement()}>
+          <IconButton color="primary" title="Add Flight Requirment" onClick={() => onAddFlightRequirement()}>
             <AddIcon fontSize="large" />
           </IconButton>
         </Tabs>

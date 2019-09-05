@@ -10,6 +10,7 @@ import { AircraftRegisterOptionsDictionaryModel } from '@core/models/AircraftReg
 import MasterData, { Airport, AircraftType } from '@core/master-data';
 import { PreplanAircraftRegisters } from 'src/view-models/PreplanAircraftRegister';
 import Search, { filterOnProperties } from 'src/components/Search';
+import useProperty from 'src/utils/useProperty';
 
 const useStyles = makeStyles((theme: Theme) => ({
   searchWrapper: {
@@ -79,16 +80,17 @@ export interface SelectAircraftRegistersSideBarProps {
 }
 
 const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = ({ initialSearch, aircraftRegisters, onApply, loading, errorMessage }) => {
-  let dummyAircraftRegisterIdCounter: number = 1;
-
   const [query, setQuery] = useState<readonly string[]>([]);
+
+  const dummyAircraftRegisterIdCounter = useProperty(0);
   const [list, setList] = useState<AircraftRegisters>(() => {
-    dummyAircraftRegisterIdCounter =
-      (aircraftRegisters.items
+    dummyAircraftRegisterIdCounter(
+      aircraftRegisters.items
         .filter(r => r.dummy)
         .map(r => Number(r.id.replace('dummy-', '')))
         .sort()
-        .reverse()[0] || 0) + 1;
+        .reverse()[0] || 0
+    );
 
     return MasterData.all.aircraftTypes.items.orderBy('displayOrder').map(t => {
       const registers = aircraftRegisters.items
@@ -242,7 +244,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
                   list
                     .find(t => t.type === type)!
                     .dummyRegisters.push({
-                      id: `dummy-${dummyAircraftRegisterIdCounter++}`,
+                      id: `dummy-${dummyAircraftRegisterIdCounter(x => x + 1)}`,
                       name: addDummyRegisterFormModel.name!.toUpperCase(),
                       baseAirport: addDummyRegisterFormModel.baseAirport!,
                       status: addDummyRegisterFormModel.status!

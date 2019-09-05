@@ -15,6 +15,7 @@ import EditPreplanModel, { EditPreplanModelValidation } from '@core/models/EditP
 import useRouter from 'src/utils/useRouter';
 import { VariantType, useSnackbar } from 'notistack';
 import ProgressSwitch from 'src/components/ProgressSwitch';
+import classNames from 'classnames';
 
 const waitingPaperSize = 250;
 const useStyles = makeStyles((theme: Theme) => ({
@@ -62,6 +63,12 @@ const useStyles = makeStyles((theme: Theme) => ({
   error: {},
   switchProgressBar: {
     position: 'relative'
+  },
+  linkTableCell: {
+    cursor: 'pointer'
+  },
+  publicHeader: {
+    paddingLeft: 12
   }
 }));
 
@@ -156,18 +163,14 @@ const PreplanListPage: FC = () => {
             <Table>
               <TableHead>
                 <TableRow>
-                  {tab === 'PUBLIC' && <TableCell className={classes.preplanTableCell}>User</TableCell>}
                   <TableCell className={classes.preplanTableCell}>Name</TableCell>
+                  {tab === 'PUBLIC' && <TableCell className={classes.preplanTableCell}>User</TableCell>}
                   <TableCell className={classes.preplanTableCell}>Last Modified</TableCell>
                   <TableCell className={classes.preplanTableCell}>Created at</TableCell>
                   <TableCell className={classes.preplanTableCell}>Copy Source</TableCell>
                   <TableCell className={classes.preplanTableCell}>Finalized</TableCell>
                   <TableCell className={classes.preplanTableCell}>Simulation Name</TableCell>
-                  {tab === 'USER' && (
-                    <TableCell className={classes.preplanTableCell} align="center">
-                      Public
-                    </TableCell>
-                  )}
+                  {tab === 'USER' && <TableCell className={classNames(classes.preplanTableCell, classes.publicHeader)}>Public</TableCell>}
 
                   <TableCell className={classes.preplanTableCell} align="center">
                     Actions
@@ -179,10 +182,17 @@ const PreplanListPage: FC = () => {
                   .filter(p => (tab === 'USER' ? p.userId === persistant.authentication!.user.id : p.userId !== persistant.authentication!.user.id))
                   .map(preplanHeader => (
                     <TableRow key={preplanHeader.id}>
-                      {tab === 'PUBLIC' && <TableCell>{preplanHeader.userDisplayName}</TableCell>}
-                      <TableCell className={classes.preplanTableCell} component="th" scope="row">
-                        <LinkTypography to={'preplan/' + preplanHeader.id}>{preplanHeader.name}</LinkTypography>
+                      <TableCell
+                        onClick={() => history.push('preplan/' + preplanHeader.id)}
+                        className={classNames(classes.preplanTableCell, classes.linkTableCell)}
+                        component="th"
+                        scope="row"
+                      >
+                        {/* <LinkTypography to={'preplan/' + preplanHeader.id}>{preplanHeader.name}</LinkTypography> */}
+                        {preplanHeader.name}
                       </TableCell>
+
+                      {tab === 'PUBLIC' && <TableCell className={classes.preplanTableCell}>{preplanHeader.userDisplayName}</TableCell>}
                       <TableCell className={classes.preplanTableCell}>{preplanHeader.lastEditDateTime.format('d')}</TableCell>
                       <TableCell className={classes.preplanTableCell}>{preplanHeader.creationDateTime.format('d')}</TableCell>
                       <TableCell className={classes.preplanTableCell}>{preplanHeader.parentPreplanName}</TableCell>
@@ -190,8 +200,9 @@ const PreplanListPage: FC = () => {
                         {preplanHeader.finalized ? <FinilizedIcon /> : ''}
                       </TableCell>
                       <TableCell className={classes.preplanTableCell}>{preplanHeader.simulationName}</TableCell>
-                      <TableCell className={classes.preplanTableCell} align="center">
-                        {tab === 'USER' && (
+
+                      {tab === 'USER' && (
+                        <TableCell className={classes.preplanTableCell} align="center">
                           <ProgressSwitch
                             checked={preplanHeader.published}
                             loading={publishLoadingStatus[preplanHeader.id]}
@@ -213,8 +224,9 @@ const PreplanListPage: FC = () => {
                               });
                             }}
                           />
-                        )}
-                      </TableCell>
+                        </TableCell>
+                      )}
+
                       <TableCell className={classes.preplanTableCell} align="center">
                         <IconButton
                           title="Copy Preplan"

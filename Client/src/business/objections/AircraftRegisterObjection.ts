@@ -1,6 +1,6 @@
 import Objection, { ObjectionType } from './Objection';
-import Constraint from 'src/view-models/constraints/Constraint';
-import PreplanAircraftRegister from 'src/view-models/PreplanAircraftRegister';
+import Constraint from 'src/business/constraints/Constraint';
+import PreplanAircraftRegister from 'src/business/PreplanAircraftRegister';
 
 export default class AircraftRegisterObjection extends Objection {
   readonly aircraftRegister: PreplanAircraftRegister;

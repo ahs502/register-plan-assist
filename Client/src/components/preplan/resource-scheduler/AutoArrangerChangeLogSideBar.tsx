@@ -5,9 +5,9 @@ import { makeStyles } from '@material-ui/styles';
 import SideBarContainer from './SideBarContainer';
 import Search from 'src/components/Search';
 import Weekday from '@core/types/Weekday';
-import { ChangeLog } from 'src/view-models/AutoArrangerState';
+import { ChangeLog } from 'src/business/AutoArrangerState';
 import TablePaginationActions from 'src/components/PaginationAction';
-import Flight from 'src/view-models/flights/Flight';
+import Flight from 'src/business/flights/Flight';
 
 const useStyles = makeStyles((theme: Theme) => ({
   searchWrapper: {

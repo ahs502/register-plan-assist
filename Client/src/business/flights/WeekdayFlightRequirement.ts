@@ -2,7 +2,7 @@ import FlightRequirement from './FlightRequirement';
 import FlightScope from './FlightScope';
 import Flight from './Flight';
 import WeekdayFlightRequirementModel from '@core/models/flights/WeekdayFlightRequirementModel';
-import { PreplanAircraftRegisters } from 'src/view-models/PreplanAircraftRegister';
+import { PreplanAircraftRegisters } from 'src/business/PreplanAircraftRegister';
 import FlightDefinition from './FlightDefinition';
 import ModelConvertable, { getOverrided, getOverridedObject } from 'src/utils/ModelConvertable';
 import DeepWritablePartial from '@core/types/DeepWritablePartial';

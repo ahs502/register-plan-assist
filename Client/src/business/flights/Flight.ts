@@ -2,7 +2,7 @@ import FlightRequirement from './FlightRequirement';
 import WeekdayFlightRequirement from './WeekdayFlightRequirement';
 import { Stc, Airport } from '@core/master-data';
 import Daytime from '@core/types/Daytime';
-import PreplanAircraftRegister, { PreplanAircraftRegisters } from 'src/view-models/PreplanAircraftRegister';
+import PreplanAircraftRegister, { PreplanAircraftRegisters } from 'src/business/PreplanAircraftRegister';
 import FlightModel from '@core/models/flights/FlightModel';
 import Rsx from '@core/types/flight-requirement/Rsx';
 import FlightPack from './FlightPack';

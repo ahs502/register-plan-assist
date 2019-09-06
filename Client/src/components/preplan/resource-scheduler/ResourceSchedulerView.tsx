@@ -2,16 +2,16 @@ import React, { FC, useState, Fragment, useRef, useMemo, memo } from 'react';
 import { Theme, Menu, MenuItem, MenuList, ClickAwayListener, Paper, ListItemIcon, Typography, Divider } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import { Check as CheckIcon } from '@material-ui/icons';
-import Flight from 'src/view-models/flights/Flight';
+import Flight from 'src/business/flights/Flight';
 import Daytime from '@core/types/Daytime';
-import PreplanAircraftRegister, { PreplanAircraftRegisters } from 'src/view-models/PreplanAircraftRegister';
-import { ChangeLog } from 'src/view-models/AutoArrangerState';
+import PreplanAircraftRegister, { PreplanAircraftRegisters } from 'src/business/PreplanAircraftRegister';
+import { ChangeLog } from 'src/business/AutoArrangerState';
 import { DataGroup, DataItem, TimelineOptions, Id, Timeline } from 'vis-timeline';
 import Weekday from '@core/types/Weekday';
 import VisTimeline from 'src/components/VisTimeline';
 import moment from 'moment';
 import useProperty from 'src/utils/useProperty';
-import FlightPack from 'src/view-models/flights/FlightPack';
+import FlightPack from 'src/business/flights/FlightPack';
 import { AircraftType, AircraftRegister } from '@core/master-data';
 
 const useStyles = makeStyles((theme: Theme) => ({

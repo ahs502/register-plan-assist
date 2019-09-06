@@ -22,10 +22,10 @@ import DaysPicker from 'src/components/DaysPicker';
 import classNames from 'classnames';
 import Weekday from '@core/types/Weekday';
 import MasterData, { Stc } from '@core/master-data';
-import FlightTime from 'src/view-models/flights/FlightTime';
+import FlightTime from 'src/business/flights/FlightTime';
 import Rsx, { Rsxes } from '@core/types/flight-requirement/Rsx';
 import AutoComplete from 'src/components/AutoComplete';
-import FlightRequirement from 'src/view-models/flights/FlightRequirement';
+import FlightRequirement from 'src/business/flights/FlightRequirement';
 import AircraftIdentityType from '@core/types/aircraft-identity/AircraftIdentityType';
 
 const useStyles = makeStyles((theme: Theme) => ({

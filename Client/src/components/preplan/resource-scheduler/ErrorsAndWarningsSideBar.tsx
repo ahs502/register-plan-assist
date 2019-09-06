@@ -4,7 +4,7 @@ import { makeStyles } from '@material-ui/styles';
 import Search, { filterOnProperties } from 'src/components/Search';
 import SideBarContainer from './SideBarContainer';
 import ErrorsAndWarningsList from './ErrorsAndWarningsList';
-import Objection from 'src/view-models/objections/Objection';
+import Objection from 'src/business/objections/Objection';
 
 const useStyles = makeStyles((theme: Theme) => ({
   error: {
@@ -41,7 +41,10 @@ const ErrorsAndWarningsSideBar: FC<ErrorsAndWarningsSideBarProps> = ({ objection
 
   return (
     <SideBarContainer label="Errors and Warnings">
-      <Search initialSearch={initialSearch} onQueryChange={query => setFilteredObjections(filterOnProperties(objections, query, ['message']))} />
+      <Search
+        initialSearch={initialSearch}
+        onQueryChange={query => setFilteredObjections(filterOnProperties(objections as readonly { message: string }[], query, ['message']) as any)}
+      />
       <div>
         <span>
           <span className={classes.error}>ErrorIcon</span>

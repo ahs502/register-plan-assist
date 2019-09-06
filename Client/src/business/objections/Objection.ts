@@ -1,4 +1,4 @@
-import Constraint from 'src/view-models/constraints/Constraint';
+import Constraint from 'src/business/constraints/Constraint';
 
 export type ObjectionType = 'ERROR' | 'WARNING';
 

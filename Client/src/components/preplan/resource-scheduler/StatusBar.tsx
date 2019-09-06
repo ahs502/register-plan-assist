@@ -1,8 +1,8 @@
 import React, { FC, Fragment } from 'react';
 import { Theme, Typography } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
-import FlightPack from 'src/view-models/flights/FlightPack';
-import PreplanAircraftRegister from 'src/view-models/PreplanAircraftRegister';
+import FlightPack from 'src/business/flights/FlightPack';
+import PreplanAircraftRegister from 'src/business/PreplanAircraftRegister';
 import Weekday from '@core/types/Weekday';
 import Daytime from '@core/types/Daytime';
 

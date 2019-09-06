@@ -1,5 +1,5 @@
 import Constraint from './Constraint';
-import ConstraintTemplate from 'src/view-models/constraints/ConstraintTemplate';
+import ConstraintTemplate from 'src/business/constraints/ConstraintTemplate';
 
 export default class AirportSequenceRestrictionOnFlightsConstraint extends Constraint {
   constructor() {

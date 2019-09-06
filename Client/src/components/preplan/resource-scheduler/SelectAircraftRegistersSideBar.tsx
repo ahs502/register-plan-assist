@@ -8,7 +8,7 @@ import AircraftRegisterStatus from '@core/types/aircraft-register-options/Aircra
 import DummyAircraftRegisterModel from '@core/models/DummyAircraftRegisterModel';
 import { AircraftRegisterOptionsDictionaryModel } from '@core/models/AircraftRegisterOptionsModel';
 import MasterData, { Airport, AircraftType } from '@core/master-data';
-import { PreplanAircraftRegisters } from 'src/view-models/PreplanAircraftRegister';
+import { PreplanAircraftRegisters } from 'src/business/PreplanAircraftRegister';
 import Search, { filterOnProperties } from 'src/components/Search';
 import useProperty from 'src/utils/useProperty';
 

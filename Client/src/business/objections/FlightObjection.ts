@@ -1,6 +1,6 @@
 import Objection, { ObjectionType } from './Objection';
-import Constraint from 'src/view-models/constraints/Constraint';
-import Flight from 'src/view-models/flights/Flight';
+import Constraint from 'src/business/constraints/Constraint';
+import Flight from 'src/business/flights/Flight';
 import Weekday from '@core/types/Weekday';
 
 export default class FlightObjection extends Objection {

@@ -6,7 +6,7 @@ import MahanIcon, { MahanIconType } from 'src/components/MahanIcon';
 import Search, { filterOnProperties } from 'src/components/Search';
 import LinkTypography from 'src/components/LinkTypography';
 import NavBar from 'src/components/NavBar';
-import { PreplanHeader } from 'src/view-models/Preplan';
+import { PreplanHeader } from 'src/business/Preplan';
 import SimpleModal from 'src/components/SimpleModal';
 import persistant from 'src/utils/persistant';
 import PreplanService from 'src/services/PreplanService';

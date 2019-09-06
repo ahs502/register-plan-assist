@@ -1,6 +1,6 @@
 import Objection, { ObjectionType } from './Objection';
-import Constraint from 'src/view-models/constraints/Constraint';
-import FlightRequirement from 'src/view-models/flights/FlightRequirement';
+import Constraint from 'src/business/constraints/Constraint';
+import FlightRequirement from 'src/business/flights/FlightRequirement';
 
 export default class FlightRequirementObjection extends Objection {
   readonly flightRequirement: FlightRequirement;

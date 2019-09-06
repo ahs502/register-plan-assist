@@ -3,14 +3,14 @@ import { Theme, InputLabel, TextField, TableHead, TableCell, Table, TableRow, Ta
 import { red, grey } from '@material-ui/core/colors';
 import { makeStyles } from '@material-ui/styles';
 import MasterData, { Airport } from '@core/master-data';
-import FlightRequirement from 'src/view-models/flights/FlightRequirement';
+import FlightRequirement from 'src/business/flights/FlightRequirement';
 import Daytime from '@core/types/Daytime';
 import { Publish as ExportToExcelIcon } from '@material-ui/icons';
 import { ExcelExport, ExcelExportColumn, ExcelExportColumnGroup } from '@progress/kendo-react-excel-export';
 import { CellOptions } from '@progress/kendo-react-excel-export/dist/npm/ooxml/CellOptionsInterface';
 import classNames from 'classnames';
 import AutoComplete from 'src/components/AutoComplete';
-import Preplan, { PreplanHeader } from 'src/view-models/Preplan';
+import Preplan, { PreplanHeader } from 'src/business/Preplan';
 import Weekday from '@core/types/Weekday';
 import Rsx from '@core/types/flight-requirement/Rsx';
 import AircraftIdentityType from '@core/types/aircraft-identity/AircraftIdentityType';

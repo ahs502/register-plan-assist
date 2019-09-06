@@ -1,4 +1,4 @@
-import PreplanAircraftRegister from 'src/view-models/PreplanAircraftRegister';
+import PreplanAircraftRegister from 'src/business/PreplanAircraftRegister';
 import Daytime from '@core/types/Daytime';
 import Flight from './Flight';
 

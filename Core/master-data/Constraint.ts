@@ -1,12 +1,12 @@
 import ConstraintModel, {
   AircraftRestrictionOnAirportsConstraintDataModel,
-  BlickTimeRestrictionOnAircraftsConstraintDataModel,
+  BlockTimeRestrictionOnAircraftsConstraintDataModel,
   RouteSequenceRestrictionOnAirportsConstraintDataModel,
   AirportRestrictionOnAircraftsConstraintDataModel,
   AirportAllocationPriorityForAircraftsConstraintDataModel
 } from '@core/models/master-data/ConstraintModel';
 import MasterDataItem, { MasterDataItems } from './MasterDataItem';
-import ConstraintTemplateType from '@core/types/ConstraintTemplateType';
+import ConstraintTemplate, { ConstraintTemplates } from './ConstraintTemplate';
 import AircraftRegister, { AircraftRegisters } from './AircraftRegister';
 import Airport, { Airports } from './Airport';
 import AircraftSelection from './AircraftSelection';
@@ -17,22 +17,25 @@ import SeasonType, { SeasonTypes } from './SeasonType';
 import Weekday from '@core/types/Weekday';
 
 export default class Constraint extends MasterDataItem {
+  readonly template: ConstraintTemplate;
   readonly description: string;
-  readonly type: ConstraintTemplateType;
+  readonly details: string;
+  readonly scope: {
+    readonly fromDate?: Date;
+    readonly toDate?: Date;
+    readonly seasonType?: SeasonType;
+    readonly days: readonly boolean[];
+  };
   readonly data:
     | AircraftRestrictionOnAirportsConstraintData
-    | BlickTimeRestrictionOnAircraftsConstraintData
-    | RouteSequenceRestrictionOnAirportsConstraintData
     | AirportRestrictionOnAircraftsConstraintData
+    | BlockTimeRestrictionOnAircraftsConstraintData
+    | RouteSequenceRestrictionOnAirportsConstraintData
     | AirportAllocationPriorityForAircraftsConstraintData;
-  readonly details: string;
-  readonly fromDate?: Date;
-  readonly toDate?: Date;
-  readonly seasonType?: SeasonType;
-  readonly days: readonly boolean[];
 
   constructor(
     raw: ConstraintModel,
+    constraintTemplates: ConstraintTemplates,
     airports: Airports,
     aircraftRegisters: AircraftRegisters,
     aircraftTypes: AircraftTypes,
@@ -40,12 +43,14 @@ export default class Constraint extends MasterDataItem {
     seasonTypes: SeasonTypes
   ) {
     super(raw);
-    this.type = raw.type;
+    this.template = constraintTemplates.items.find(t => t.type === raw.type)!;
     this.details = raw.details;
-    this.fromDate = raw.fromDate ? new Date(raw.fromDate) : undefined;
-    this.toDate = raw.toDate ? new Date(raw.toDate) : undefined;
-    this.seasonType = raw.seasonTypeId ? seasonTypes.id[raw.seasonTypeId] : undefined;
-    this.days = raw.days;
+    this.scope = {
+      fromDate: raw.scope.fromDate ? new Date(raw.scope.fromDate) : undefined,
+      toDate: raw.scope.toDate ? new Date(raw.scope.toDate) : undefined,
+      seasonType: raw.scope.seasonTypeId ? seasonTypes.id[raw.scope.seasonTypeId] : undefined,
+      days: raw.scope.days
+    };
 
     switch (raw.type) {
       case 'AIRCRAFT_RESTRICTION_ON_AIRPORTS':
@@ -62,28 +67,7 @@ export default class Constraint extends MasterDataItem {
           } use ${convertAircraftIdentityArrayToString(data.aircraftSelection.allowedIdentities)}${convertAircraftIdentityArrayToString(
             data.aircraftSelection.forbiddenIdentities,
             ' except for '
-          )}.${extractDateFilter()}`;
-        }
-        break;
-
-      case 'BLOCK_TIME_RESTRICTION_ON_AIRCRAFTS':
-        {
-          const data = (this.data = convertBlickTimeRestrictionOnAircraftsConstraintDataFromModel(
-            raw.data as BlickTimeRestrictionOnAircraftsConstraintDataModel,
-            aircraftRegisters,
-            aircraftTypes,
-            aircraftGroups
-          ));
-          this.description = `When planning flights longer than ${data.maximumBlockTime} minutes, never use ${convertAircraftIdentityArrayToString(
-            data.aircraftSelection.allowedIdentities
-          )}${convertAircraftIdentityArrayToString(data.aircraftSelection.forbiddenIdentities, ' except for ')}.${extractDateFilter()}`;
-        }
-        break;
-
-      case 'ROUTE_SEQUENCE_RESTRICTION_ON_AIRPORTS':
-        {
-          const data = (this.data = convertRouteSequenceRestrictionOnAirportsConstraintDataFromModel(raw.data as RouteSequenceRestrictionOnAirportsConstraintDataModel, airports));
-          this.description = `Never plan the flights of airport ${data.airport.name} right after the flights of airport ${data.nextAirport.name}.${extractDateFilter()}`;
+          )}.${extractScope()}`;
         }
         break;
 
@@ -94,9 +78,28 @@ export default class Constraint extends MasterDataItem {
             airports,
             aircraftRegisters
           ));
-          this.description = `Never assign the aircraft register ${data.aircraftRegister.name} to the flights of any airport, except for ${
-            data.airport.name
-          }.${extractDateFilter()}`;
+          this.description = `Never assign the aircraft register ${data.aircraftRegister.name} to the flights of any airport, except for ${data.airport.name}.${extractScope()}`;
+        }
+        break;
+
+      case 'BLOCK_TIME_RESTRICTION_ON_AIRCRAFTS':
+        {
+          const data = (this.data = convertBlockTimeRestrictionOnAircraftsConstraintDataFromModel(
+            raw.data as BlockTimeRestrictionOnAircraftsConstraintDataModel,
+            aircraftRegisters,
+            aircraftTypes,
+            aircraftGroups
+          ));
+          this.description = `When planning flights longer than ${data.maximumBlockTime} minutes, never use ${convertAircraftIdentityArrayToString(
+            data.aircraftSelection.allowedIdentities
+          )}${convertAircraftIdentityArrayToString(data.aircraftSelection.forbiddenIdentities, ' except for ')}.${extractScope()}`;
+        }
+        break;
+
+      case 'ROUTE_SEQUENCE_RESTRICTION_ON_AIRPORTS':
+        {
+          const data = (this.data = convertRouteSequenceRestrictionOnAirportsConstraintDataFromModel(raw.data as RouteSequenceRestrictionOnAirportsConstraintDataModel, airports));
+          this.description = `Never plan the flights of airport ${data.airport.name} right after the flights of airport ${data.nextAirport.name}.${extractScope()}`;
         }
         break;
 
@@ -111,7 +114,7 @@ export default class Constraint extends MasterDataItem {
             data.aircraftRegisters.map(r => r.name)
           )} to the flights of airport${getPluralS(data.airports)} ${convertNameArrayToString(
             data.airports.map(a => a.name)
-          )}, prioritized by order, as much as possible.${extractDateFilter()}`;
+          )}, prioritized by order, as much as possible.${extractScope()}`;
         }
         break;
 
@@ -133,20 +136,12 @@ export default class Constraint extends MasterDataItem {
       if (aircraftIdentities.length === 1) return `${prefix || ''}aircraft ${aircraftIdentities[0].entity.name}`;
       return `${prefix || ''}aircrafts ${convertNameArrayToString(aircraftIdentities.map(i => i.entity.name))}`;
     }
-    function extractDateFilter(): string {
+    function extractScope(): string {
       let result = '';
-      if (raw.fromDate) {
-        result += ' from ' + new Date(raw.fromDate).format('d');
-      }
-      if (raw.toDate) {
-        result += ' to ' + new Date(raw.toDate).format('d');
-      }
-      if (raw.seasonTypeId) {
-        result += ' in ' + seasonTypes.id[raw.seasonTypeId].name + ' seasons';
-      }
-      if (!raw.days.every(Boolean)) {
-        result += ' on ' + convertNameArrayToString(raw.days.map((d, i) => (d ? Weekday[i] + 's' : '')).filter(Boolean));
-      }
+      raw.scope.fromDate && (result += ' from ' + new Date(raw.scope.fromDate).format('d'));
+      raw.scope.toDate && (result += ' to ' + new Date(raw.scope.toDate).format('d'));
+      raw.scope.seasonTypeId && (result += ' in ' + seasonTypes.id[raw.scope.seasonTypeId].name + ' seasons');
+      raw.scope.days.every(Boolean) || (result += ' on ' + convertNameArrayToString(raw.scope.days.map((d, i) => (d ? Weekday[i] + 's' : '')).filter(Boolean)));
       if (!result) return '';
       return ' (' + result.trim() + ')';
     }
@@ -168,22 +163,37 @@ function convertAircraftRestrictionOnAirportsConstraintDataFromModel(
 ): AircraftRestrictionOnAirportsConstraintData {
   return {
     airports: data.airportIds.map(id => airports.id[id]),
-    never: data.never,
+    never: data.adverb === 'NEVER',
     aircraftSelection: new AircraftSelection(data.aircraftSelection, aircraftRegisters, aircraftTypes, aircraftGroups),
     required: data.required
   };
 }
 
-export interface BlickTimeRestrictionOnAircraftsConstraintData {
+export interface AirportRestrictionOnAircraftsConstraintData {
+  readonly aircraftRegister: AircraftRegister;
+  readonly airport: Airport;
+}
+function convertAirportRestrictionOnAircraftsConstraintDataFromModel(
+  data: AirportRestrictionOnAircraftsConstraintDataModel,
+  airports: Airports,
+  aircraftRegisters: AircraftRegisters
+): AirportRestrictionOnAircraftsConstraintData {
+  return {
+    aircraftRegister: aircraftRegisters.id[data.aircraftRegisterId],
+    airport: airports.id[data.airportId]
+  };
+}
+
+export interface BlockTimeRestrictionOnAircraftsConstraintData {
   readonly maximumBlockTime: number;
   readonly aircraftSelection: AircraftSelection;
 }
-function convertBlickTimeRestrictionOnAircraftsConstraintDataFromModel(
-  data: BlickTimeRestrictionOnAircraftsConstraintDataModel,
+function convertBlockTimeRestrictionOnAircraftsConstraintDataFromModel(
+  data: BlockTimeRestrictionOnAircraftsConstraintDataModel,
   aircraftRegisters: AircraftRegisters,
   aircraftTypes: AircraftTypes,
   aircraftGroups: AircraftGroups
-): BlickTimeRestrictionOnAircraftsConstraintData {
+): BlockTimeRestrictionOnAircraftsConstraintData {
   return {
     maximumBlockTime: data.maximumBlockTime,
     aircraftSelection: new AircraftSelection(data.aircraftSelection, aircraftRegisters, aircraftTypes, aircraftGroups)
@@ -204,21 +214,6 @@ function convertRouteSequenceRestrictionOnAirportsConstraintDataFromModel(
   };
 }
 
-export interface AirportRestrictionOnAircraftsConstraintData {
-  readonly aircraftRegister: AircraftRegister;
-  readonly airport: Airport;
-}
-function convertAirportRestrictionOnAircraftsConstraintDataFromModel(
-  data: AirportRestrictionOnAircraftsConstraintDataModel,
-  airports: Airports,
-  aircraftRegisters: AircraftRegisters
-): AirportRestrictionOnAircraftsConstraintData {
-  return {
-    aircraftRegister: aircraftRegisters.id[data.aircraftRegisterId],
-    airport: airports.id[data.airportId]
-  };
-}
-
 export interface AirportAllocationPriorityForAircraftsConstraintData {
   readonly aircraftRegisters: readonly AircraftRegister[];
   readonly airports: readonly Airport[];
@@ -236,6 +231,7 @@ function convertAirportAllocationPriorityForAircraftsConstraintDataFromModel(
 
 export class Constraints extends MasterDataItems<Constraint> {
   static parse(
+    constraintTemplates: ConstraintTemplates,
     airports: Airports,
     aircraftRegisters: AircraftRegisters,
     aircraftTypes: AircraftTypes,
@@ -244,6 +240,6 @@ export class Constraints extends MasterDataItems<Constraint> {
     raw?: readonly ConstraintModel[]
   ): Constraints | undefined {
     if (!raw) return undefined;
-    return new Constraints(raw.map(x => new Constraint(x, airports, aircraftRegisters, aircraftTypes, aircraftGroups, seasonTypes)));
+    return new Constraints(raw.map(x => new Constraint(x, constraintTemplates, airports, aircraftRegisters, aircraftTypes, aircraftGroups, seasonTypes)));
   }
 }

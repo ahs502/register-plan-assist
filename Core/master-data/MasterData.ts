@@ -8,6 +8,7 @@ import { SeasonTypes } from './SeasonType';
 import { Seasons } from './Season';
 import { Stcs } from './Stc';
 import { AircraftGroups } from './AircraftGroup';
+import { ConstraintTemplates } from './ConstraintTemplate';
 import { Constraints } from './Constraint';
 
 /**
@@ -22,6 +23,7 @@ export default class MasterData {
   readonly seasons: Seasons;
   readonly stcs: Stcs;
   readonly aircraftGroups: AircraftGroups;
+  readonly constraintTemplates: ConstraintTemplates;
   readonly constraints: Constraints;
 
   // /**
@@ -40,6 +42,7 @@ export default class MasterData {
     seasons: Seasons,
     stcs: Stcs,
     aircraftGroups: AircraftGroups,
+    constraintTemplates: ConstraintTemplates,
     constraints: Constraints
   ) {
     this.aircraftTypes = aircraftTypes;
@@ -49,6 +52,7 @@ export default class MasterData {
     this.seasons = seasons;
     this.stcs = stcs;
     this.aircraftGroups = aircraftGroups;
+    this.constraintTemplates = constraintTemplates;
     this.constraints = constraints;
 
     // this.aircraftIdentities = ([] as AircraftIdentity[])
@@ -71,24 +75,27 @@ export default class MasterData {
     const seasons = Seasons.parse(seasonTypes, raw.seasons) || MasterData.all.seasons;
     const stcs = Stcs.parse(raw.stcs) || MasterData.all.stcs;
     const aircraftGroups = AircraftGroups.parse(aircraftRegisters, raw.aircraftGroups) || MasterData.all.aircraftGroups;
-    const constraints = Constraints.parse(airports, aircraftRegisters, aircraftTypes, aircraftGroups, seasonTypes, raw.constraints) || MasterData.all.constraints;
+    const constraintTemplates = ConstraintTemplates.parse(raw.constraintTemplates) || MasterData.all.constraintTemplates;
+    const constraints =
+      Constraints.parse(constraintTemplates, airports, aircraftRegisters, aircraftTypes, aircraftGroups, seasonTypes, raw.constraints) || MasterData.all.constraints;
 
-    MasterData.all = new MasterData(aircraftTypes, aircraftRegisters, airports, seasonTypes, seasons, stcs, aircraftGroups, constraints);
+    MasterData.all = new MasterData(aircraftTypes, aircraftRegisters, airports, seasonTypes, seasons, stcs, aircraftGroups, constraintTemplates, constraints);
   }
 
   /**
    * The singleton object containing all master data collections data.
    */
   static all: MasterData = (() => {
-    const aircraftTypes = AircraftTypes.parse([]);
-    const aircraftRegisters = AircraftRegisters.parse(aircraftTypes, []);
-    const airports = Airports.parse([]);
-    const seasonTypes = SeasonTypes.parse([]);
-    const seasons = Seasons.parse(seasonTypes, []);
-    const stcs = Stcs.parse([]);
-    const aircraftGroups = AircraftGroups.parse(aircraftRegisters, []);
-    const constraints = Constraints.parse(airports, aircraftRegisters, aircraftTypes, aircraftGroups, seasonTypes, []);
+    const aircraftTypes = AircraftTypes.parse([])!;
+    const aircraftRegisters = AircraftRegisters.parse(aircraftTypes, [])!;
+    const airports = Airports.parse([])!;
+    const seasonTypes = SeasonTypes.parse([])!;
+    const seasons = Seasons.parse(seasonTypes, [])!;
+    const stcs = Stcs.parse([])!;
+    const aircraftGroups = AircraftGroups.parse(aircraftRegisters, [])!;
+    const constraintTemplates = ConstraintTemplates.parse([])!;
+    const constraints = Constraints.parse(constraintTemplates, airports, aircraftRegisters, aircraftTypes, aircraftGroups, seasonTypes, [])!;
 
-    return new MasterData(aircraftTypes, aircraftRegisters, airports, seasonTypes, seasons, stcs, aircraftGroups, constraints);
+    return new MasterData(aircraftTypes, aircraftRegisters, airports, seasonTypes, seasons, stcs, aircraftGroups, constraintTemplates, constraints);
   })();
 }

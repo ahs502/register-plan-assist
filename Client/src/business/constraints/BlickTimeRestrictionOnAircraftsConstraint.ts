@@ -1,9 +1,9 @@
-import { default as MasterDataConstraint, BlickTimeRestrictionOnAircraftsConstraintData } from '@core/master-data/Constraint';
+import { default as MasterDataConstraint, BlockTimeRestrictionOnAircraftsConstraintData } from '@core/master-data/Constraint';
 import Constraint from './Constraint';
 import ConstraintTemplate from 'src/business/constraints/ConstraintTemplate';
 import { AircraftSelection } from '@core/master-data';
 
-export default class BlickTimeRestrictionOnAircraftsConstraint extends Constraint implements BlickTimeRestrictionOnAircraftsConstraintData {
+export default class BlickTimeRestrictionOnAircraftsConstraint extends Constraint implements BlockTimeRestrictionOnAircraftsConstraintData {
   readonly maximumBlockTime: number;
   readonly aircraftSelection: AircraftSelection;
 
@@ -13,12 +13,12 @@ export default class BlickTimeRestrictionOnAircraftsConstraint extends Constrain
       masterDataConstraint.name,
       masterDataConstraint.description,
       masterDataConstraint.details,
-      masterDataConstraint.fromDate,
-      masterDataConstraint.toDate,
-      masterDataConstraint.seasonType,
-      ...masterDataConstraint.days
+      masterDataConstraint.scope.fromDate,
+      masterDataConstraint.scope.toDate,
+      masterDataConstraint.scope.seasonType,
+      ...masterDataConstraint.scope.days
     );
-    const data = masterDataConstraint.data as BlickTimeRestrictionOnAircraftsConstraintData;
+    const data = masterDataConstraint.data as BlockTimeRestrictionOnAircraftsConstraintData;
     this.maximumBlockTime = data.maximumBlockTime;
     this.aircraftSelection = data.aircraftSelection;
   }

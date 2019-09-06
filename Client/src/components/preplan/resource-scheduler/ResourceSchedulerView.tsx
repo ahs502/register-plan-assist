@@ -8,7 +8,7 @@ import PreplanAircraftRegister, { PreplanAircraftRegisters } from 'src/business/
 import { ChangeLog } from 'src/business/AutoArrangerState';
 import { DataGroup, DataItem, TimelineOptions, Id, Timeline } from 'vis-timeline';
 import Weekday from '@core/types/Weekday';
-import VisTimeline from 'src/components/VisTimeline';
+import VisTimeline from 'src/components/preplan/resource-scheduler/VisTimeline';
 import moment from 'moment';
 import useProperty from 'src/utils/useProperty';
 import FlightPack from 'src/business/flights/FlightPack';
@@ -218,8 +218,6 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = memo(
     onNowhereMouseHover
   }) => {
     const timeline = useProperty<Timeline>(null as any);
-    const timelineStart = useProperty<Date | undefined>(undefined);
-    const timelineEnd = useProperty<Date | undefined>(undefined);
     const timelineScrollTop = useProperty<number | undefined>(undefined);
     const timelineOptions = useMemo<TimelineOptions>(() => {
       return {
@@ -235,7 +233,7 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = memo(
           updateTime: true,
           overrideItems: false
         },
-        end: timelineEnd() || startDate.clone().addDays(7),
+        end: startDate.clone().addDays(7),
         format: {
           majorLabels(date, scale, step) {
             return Weekday[((new Date(date).setUTCHours(0, 0, 0, 0) - startDate.getTime()) / (24 * 60 * 60 * 1000) + 7) % 7].slice(0, 3);
@@ -330,7 +328,7 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = memo(
             rounded = Math.round(fraction / timeStep) * timeStep;
           return new Date(ticks - fraction + rounded);
         },
-        start: timelineStart() || startDate,
+        start: startDate,
         template: itemTemplate,
         // timeAxis: {},
         //type: 'range',
@@ -600,11 +598,7 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = memo(
           onScrollY={scrollTop => timelineScrollTop(scrollTop)}
           retrieveTimeline={t => timeline(t)}
           // onChanged={() => console.log('Timeline is rendered.')}
-          onRangeChanged={({ start, end, byUser, event }) => {
-            timelineStart(start);
-            timelineEnd(end);
-            timeline().redraw();
-          }}
+          onRangeChanged={properties => timeline().redraw()}
           onSelect={({ items, event }) => {
             const item = timelineItems.find(item => item.id === items[0]);
             onSelectFlightPack(item ? item.data : undefined);

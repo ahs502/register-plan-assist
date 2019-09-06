@@ -7,6 +7,7 @@ import AutoArrangerOptions from './AutoArrangerOptions';
 import FlightPack from './flights/FlightPack';
 import { Airport } from '@core/master-data';
 import FlightRequirementModel from '@core/models/flights/FlightRequirementModel';
+import ConstraintSystem from './constraints/ConstraintSystem';
 
 export class PreplanHeader {
   readonly id: string;
@@ -66,12 +67,15 @@ export default class Preplan extends PreplanHeader {
 
   readonly flightRequirements: readonly FlightRequirement[];
 
+  readonly constraintSystem: ConstraintSystem;
+
   constructor(raw: PreplanModel) {
     super(raw);
     this.autoArrangerOptions = raw.autoArrangerOptions ? new AutoArrangerOptions(raw.autoArrangerOptions) : AutoArrangerOptions.default;
     this.aircraftRegisters = new PreplanAircraftRegisters(raw.dummyAircraftRegisters, raw.aircraftRegisterOptionsDictionary);
     this.flightRequirements = raw.flightRequirements.map(f => new FlightRequirement(f, this.aircraftRegisters));
     this.autoArrangerState = raw.autoArrangerState && new AutoArrangerState(raw.autoArrangerState, this.aircraftRegisters, this.flights);
+    this.constraintSystem = new ConstraintSystem(this);
   }
 
   /**

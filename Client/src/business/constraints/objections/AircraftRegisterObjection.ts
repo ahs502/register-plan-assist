@@ -1,20 +1,17 @@
-import Objection, { ObjectionType } from './Objection';
-import Constraint from 'src/business/constraints/Constraint';
+import Objection, { ObjectionType } from 'src/business/constraints/Objection';
+import Checker from 'src/business/constraints/Checker';
 import PreplanAircraftRegister from 'src/business/PreplanAircraftRegister';
 
 export default class AircraftRegisterObjection extends Objection {
-  readonly aircraftRegister: PreplanAircraftRegister;
-
   constructor(
     type: ObjectionType,
     priority: number,
-    constraint: Constraint,
-    aircraftRegister: PreplanAircraftRegister,
+    checker: Checker,
+    readonly aircraftRegister: PreplanAircraftRegister,
     messageProvider: (constraintMarker: string, aircraftRegisterMarker: string) => string
   ) {
-    super(type, priority + 100, constraint, constraintMarker =>
+    super(type, priority + 100, checker, constraintMarker =>
       messageProvider(constraintMarker, `aircraft register ${aircraftRegister.name} of type ${aircraftRegister.aircraftType.name}`)
     );
-    this.aircraftRegister = aircraftRegister;
   }
 }

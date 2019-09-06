@@ -2,7 +2,7 @@ import React, { FC, Fragment } from 'react';
 import { Theme } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import classNames from 'classnames';
-import Objection from 'src/business/objections/Objection';
+import Objection from 'src/business/constraints/Objection';
 
 const useStyles = makeStyles((theme: Theme) => ({
   card: {

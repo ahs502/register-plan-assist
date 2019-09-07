@@ -6,7 +6,6 @@ import Flight from './flights/Flight';
 import AutoArrangerOptions from './AutoArrangerOptions';
 import FlightPack from './flights/FlightPack';
 import { Airport } from '@core/master-data';
-import { FlightRequirementModalModel } from 'src/pages/preplan';
 import FlightRequirementModel from '@core/models/flights/FlightRequirementModel';
 
 export class PreplanHeader {

@@ -24,7 +24,7 @@ import Weekday from '@core/types/Weekday';
 import { red, blue, green, cyan, indigo, orange, purple } from '@material-ui/core/colors';
 import { parseMinute, parseHHMM } from 'src/utils/model-parsers';
 import MasterData from '@core/master-data';
-import { async } from 'q';
+import StatusBar, { StatusBarProps } from 'src/components/preplan/resource-scheduler/StatusBar';
 import DeepWritablePartial from '@core/types/DeepWritablePartial';
 import { FlightScopeModel } from '@core/models/flights/FlightScopeModel';
 import WeekdayFlightRequirementModel from '@core/models/flights/WeekdayFlightRequirementModel';
@@ -37,7 +37,7 @@ const useStyles = makeStyles((theme: Theme) => ({
     top: 105,
     height: 'calc(100% - 105px)'
   },
-  statusBar: {
+  statusBarWrapper: {
     height: 54,
     margin: 0,
     padding: theme.spacing(2),
@@ -86,6 +86,14 @@ const useStyles = makeStyles((theme: Theme) => ({
 
 type SideBar = 'SETTINGS' | 'SELECT_AIRCRAFT_REGISTERS' | 'SEARCH_FLIGHTS' | 'AUTO_ARRANGER_CHANGE_LOG' | 'OBJECTIONS';
 
+interface SideBarState {
+  open: boolean;
+  loading?: boolean;
+  errorMessage?: string | undefined;
+  sideBar?: SideBar;
+  initialSearch?: string;
+}
+
 interface ResourceSchedulerViewModel {
   selectedFlightPack?: FlightPack;
   loading?: boolean;
@@ -133,25 +141,19 @@ export interface ResourceSchedulerPageProps {
   onEditWeekdayFlightRequirement(flightRequirement: FlightRequirement, weekdayFlightRequirement: WeekdayFlightRequirement): void;
 }
 
-interface SideBarState {
-  open: boolean;
-  loading?: boolean;
-  errorMessage?: string | undefined;
-  sideBar?: SideBar;
-  initialSearch?: string;
-}
-
 const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEditFlightRequirement, onEditWeekdayFlightRequirement }) => {
-  const [sideBarState, setSideBarState] = useState<SideBarState>({ open: false, loading: false, errorMessage: undefined });
   const [autoArrangerRunning, setAutoArrangerRunning] = useState(() => false); //TODO: Initialize by data from server.
   const [allFlightsFreezed, setAllFlightsFreezed] = useState(() => false); //TODO: Initialize from preplan flights.
+  const [sideBarState, setSideBarState] = useState<SideBarState>({ open: false, loading: false, errorMessage: undefined });
+
   const [resourceSchedulerViewModel, setResourceSchedulerViewModel] = useState<ResourceSchedulerViewModel>({ loading: false });
-  const [statusBarText, setStatusBarText] = useState('');
+  const [statusBarProps, setStatusBarProps] = useState<StatusBarProps>({});
+
   const [confirmIgnoreFlightPackModalModel, setConfirmIgnoreFlightPackModalModel] = useState<ConfirmIgnoreFlightPackModalModel>({ open: false });
   const [editFlightModalModel, setEditFlightModalModel] = useState<EditFlightModalModel>({ open: false });
   const [editFlightPackModalModel, setEditFlightPackModalModel] = useState<EditFlightPackModalModel>({ open: false });
 
-  const navBarToolsContainer = useContext(NavBarToolsContainerContext);
+  const snackbar = useSnackbar();
 
   const onSelectFlightPackMemoized = useCallback(
     (flightPack: FlightPack) => setResourceSchedulerViewModel(resourceSchedulerViewModel => ({ ...resourceSchedulerViewModel, selectedFlightPack: flightPack })),
@@ -166,7 +168,7 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
         })
       )
     );
-    result.message ? snackbar(result.message, 'error') : preplan.mergeFlightRequirements(...result.value!);
+    result.message ? snackbar.enqueueSnackbar(result.message, { variant: 'error' }) : preplan.mergeFlightRequirements(...result.value!);
     setResourceSchedulerViewModel(resourceSchedulerViewModel => ({ ...resourceSchedulerViewModel, loading: false }));
   }, []);
   const onRequireFlightPackMemoized = useCallback(async (flightPack: FlightPack, required: boolean) => {
@@ -178,7 +180,7 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
         })
       )
     );
-    result.message ? snackbar(result.message, 'error') : preplan.mergeFlightRequirements(...result.value!);
+    result.message ? snackbar.enqueueSnackbar(result.message, { variant: 'error' }) : preplan.mergeFlightRequirements(...result.value!);
     setResourceSchedulerViewModel(resourceSchedulerViewModel => ({ ...resourceSchedulerViewModel, loading: false }));
   }, []);
   const onIgnoreFlightPackMemoized = useCallback(async (flightPack: FlightPack) => {
@@ -216,8 +218,8 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
   const onFlightPackDragAndDropMemoized = useCallback(async (flightPack: FlightPack, deltaStd: number, newAircraftRegister?: PreplanAircraftRegister) => {
     setResourceSchedulerViewModel(resourceSchedulerViewModel => ({ ...resourceSchedulerViewModel, loading: true }));
     const result = await PreplanService.editFlightRequirements(
-      flightPack.flights.map(f => {
-        return f.requirement.extractModel({
+      flightPack.flights.map(f =>
+        f.requirement.extractModel({
           days: {
             [f.requirement.days.findIndex(d => d.day === f.day)]: {
               flight: {
@@ -226,29 +228,25 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
               }
             }
           }
-        });
-      })
+        })
+      )
     );
-    result.message ? snackbar(result.message, 'error') : preplan.mergeFlightRequirements(...result.value!);
+    result.message ? snackbar.enqueueSnackbar(result.message, { variant: 'error' }) : preplan.mergeFlightRequirements(...result.value!);
     setResourceSchedulerViewModel(resourceSchedulerViewModel => ({ ...resourceSchedulerViewModel, loading: false }));
   }, []);
-  const onFlightPackMouseHoverMemoized = useCallback((flightPack: FlightPack) => setStatusBarText(flightPack.label), []);
+  const onFlightPackMouseHoverMemoized = useCallback((flightPack: FlightPack) => setStatusBarProps({ mode: 'FLIGHT_PACK', flightPack }), []);
   const onFreeSpaceMouseHoverMemoized = useCallback(
-    (aircraftRegister: PreplanAircraftRegister | null, previousFlightPack: FlightPack | null, nextFlightPack: FlightPack | null) =>
-      setStatusBarText(aircraftRegister ? aircraftRegister.name : '???'),
+    (aircraftRegister: PreplanAircraftRegister, previousFlightPack?: FlightPack, nextFlightPack?: FlightPack) =>
+      setStatusBarProps({ mode: 'FREE_SPACE', aircraftRegister, previousFlightPack, nextFlightPack }),
     []
   );
-  const onNowhereMouseHoverMemoized = useCallback(() => setStatusBarText(''), []);
+  const onNowhereMouseHoverMemoized = useCallback(() => setStatusBarProps({}), []);
 
   const numberOfObjections: number = 12; //TODO: Not implemented.
 
-  const { enqueueSnackbar } = useSnackbar();
-  const classes = useStyles();
+  const navBarToolsContainer = useContext(NavBarToolsContainerContext);
 
-  function snackbar(message: string, variant: VariantType) {
-    // variant could be success, error, warning, info, or default
-    enqueueSnackbar(message, { variant });
-  }
+  const classes = useStyles();
 
   return (
     <Fragment>
@@ -276,23 +274,6 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
           <LinkIconButton disabled={resourceSchedulerViewModel.loading} color="inherit" title="Reports" to={`/preplan/${preplan.id}/reports`}>
             <MahanIcon type={MahanIconType.Chart} />
           </LinkIconButton>
-          {/*
-            <Select
-            classes={{ select: classes.formDaysSelect }}
-            native
-            value={this.state.numberOfDays}
-            onChange={this.handleChangeDays}
-            id="outlined-age-native-simple"
-            input={<OutlinedInput labelWidth={0} />}
-            title="Zoom Level"
-          >
-            <option value={1}>One Day</option>
-            <option value={2}>Two Days</option>
-            <option value={3}>Three Days</option>
-            <option value={7}>Seven Days</option>
-            <option value={8}>Eight Days</option>
-          </Select>
-          */}
           <IconButton
             disabled={resourceSchedulerViewModel.loading}
             color="inherit"
@@ -357,12 +338,9 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
             onApply={async (dummyAircraftRegisters, aircraftRegisterOptionsDictionary) => {
               setSideBarState(sideBarState => ({ ...sideBarState, loading: true, errorMessage: '' }));
               const result = await PreplanService.setAircraftRegisters(preplan.id, dummyAircraftRegisters, aircraftRegisterOptionsDictionary);
-
-              if (result.message) {
-                setSideBarState(sideBarState => ({ ...sideBarState, loading: false, errorMessage: result.message }));
-              } else {
-                setSideBarState(sideBarState => ({ ...sideBarState, loading: false, open: false }));
-              }
+              result.message
+                ? setSideBarState(sideBarState => ({ ...sideBarState, loading: false, errorMessage: result.message }))
+                : setSideBarState(sideBarState => ({ ...sideBarState, loading: false, open: false }));
             }}
           />
         )}
@@ -384,10 +362,6 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
           aircraftRegisters={preplan.aircraftRegisters}
           changeLogs={preplan.autoArrangerState.changeLogs}
           selectedFlightPack={resourceSchedulerViewModel.selectedFlightPack}
-          // onFlightPackMouseHover={flightPack => setStatusBarText(flightPack.label)}
-          // onFreeSpaceMouseHover={(aircraftRegister, previousFlightPack, nextFlightPack) => setStatusBarText(aircraftRegister ? aircraftRegister.name : '???')}
-          // onNowhereMouseHover={() => setStatusBarText('')}
-
           onSelectFlightPack={onSelectFlightPackMemoized}
           onFreezeFlightPack={onFreezeFlightPackMemoized}
           onRequireFlightPack={onRequireFlightPackMemoized}
@@ -399,7 +373,9 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
           onFreeSpaceMouseHover={onFreeSpaceMouseHoverMemoized}
           onNowhereMouseHover={onNowhereMouseHoverMemoized}
         />
-        <div className={classes.statusBar}>{statusBarText}</div>
+        <div className={classes.statusBarWrapper}>
+          <StatusBar {...statusBarProps} />
+        </div>
       </div>
 
       <SimpleModal
@@ -426,7 +402,7 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
               const result = await PreplanService.editFlightRequirements(newFlightRequirementsModel);
 
               if (result.message) {
-                snackbar(result.message, 'error');
+                snackbar.enqueueSnackbar(result.message, { variant: 'error' });
                 setConfirmIgnoreFlightPackModalModel(ignoreFlightPackModalModel => ({ ...ignoreFlightPackModalModel, errorMessage: result.message, loading: false }));
               } else {
                 preplan.mergeFlightRequirements(...result.value!);
@@ -437,12 +413,12 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
         ]}
         onClose={() => setConfirmIgnoreFlightPackModalModel(ignoreFlightPackModalModel => ({ ...ignoreFlightPackModalModel, open: false }))}
       >
-        Are you sure you want to ignore{' '}
+        [//TODO] Are you sure you want to ignore{' '}
         {resourceSchedulerViewModel.selectedFlightPack &&
           resourceSchedulerViewModel.selectedFlightPack.flights
             .map(n => n.label)
             .distinct()
-            .join(',')}
+            .join(', ')}
         ?
       </SimpleModal>
 

@@ -37,6 +37,7 @@ router.post('/get-authentication', async (req, res, next) => {
     const authenticationResult: AuthenticationResultModel = { encodedAuthenticationHeader, authentication };
     res.send(authenticationResult).end();
   } catch (error) {
+    console.error('GetAuthentication Error:', error);
     const authenticationResult: AuthenticationResultModel = { error };
     res.send(authenticationResult).end();
   }
@@ -65,6 +66,7 @@ router.post('/get-authentication', async (req, res, next) => {
         })
       });
     } catch (error) {
+      console.error('GetRawToken Error:', error);
       throw AuthenticationError.OAuthServerNotAvailable;
     }
     if (!response.ok) throw AuthenticationError.InvalidCode;
@@ -93,6 +95,7 @@ router.post('/get-authentication', async (req, res, next) => {
         )
       );
     } catch (error) {
+      console.error('GetUser Error:', error);
       throw AuthenticationError.DatabaseNotAvailable;
     }
     if (users.length === 0) throw AuthenticationError.UserNotFound;

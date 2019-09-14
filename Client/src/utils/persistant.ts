@@ -1,9 +1,12 @@
-import AuthenticationModel from '@core/models/authentication/AuthenticationModel';
+import UserModel from '@core/models/authentication/UserModel';
+import UserSettingsModel from '@core/models/authentication/UserSettingsModel';
 
 export interface Persistant {
-  authentication?: AuthenticationModel;
-  encodedAuthenticationHeader?: string;
   oauthCode?: string;
+  refreshToken?: string;
+  user?: UserModel;
+  userSettings?: UserSettingsModel;
+  encodedAuthenticationHeader?: string;
 }
 type PersistantStatus = { [key in keyof Persistant]?: boolean };
 

@@ -101,7 +101,7 @@ export default class Preplan extends PreplanHeader {
     for (const label in flightsByLabel) {
       const flightsByRegister = flightsByLabel[label].groupBy(f => (f.aircraftRegister ? f.aircraftRegister.id : '???'));
       for (const register in flightsByRegister) {
-        const flightGroup = flightsByRegister[register].sortBy(f => f.day * 24 * 60 + f.std.minutes, true);
+        const flightGroup = flightsByRegister[register].sortByDescending(f => f.day * 24 * 60 + f.std.minutes);
         while (flightGroup.length) {
           const flight = flightGroup.pop()!;
           let lastFlight = flight;

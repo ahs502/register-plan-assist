@@ -11,6 +11,7 @@ import AuthenticationHeaderModel from '@core/models/authentication/Authenticatio
 import AuthenticationResultModel from '@core/models/authentication/AuthenticationResultModel';
 import AuthenticationError from '@core/types/AuthenticationError';
 import GetAuthenticationModel from '@core/models/authentication/GetAuthenticationModel';
+import UserSettingsModel from '@core/models/authentication/UserSettingsModel';
 
 const router = Router();
 export default router;
@@ -23,6 +24,7 @@ router.post('/get-authentication', async (req, res, next) => {
     const rawToken = await getRawToken(oauthCode, refreshToken);
     const token = jwtDecodeRawToken(rawToken);
     const user = await getUser(token.userName);
+    const userSettings = await getUserSettings(token.userName); //TODO: Improve efficiency by doing all queries in one connection.
     const authenticationHeader: AuthenticationHeaderModel = {
       ip: req.ip,
       userAgent: req.headers['user-agent'],
@@ -32,7 +34,8 @@ router.post('/get-authentication', async (req, res, next) => {
     const encodedAuthenticationHeader = cryptr.encrypt(JSON.stringify(authenticationHeader));
     const authentication: AuthenticationModel = {
       refreshToken: token.refreshToken,
-      user
+      user,
+      userSettings
     };
     const authenticationResult: AuthenticationResultModel = { encodedAuthenticationHeader, authentication };
     res.send(authenticationResult).end();
@@ -77,8 +80,8 @@ router.post('/get-authentication', async (req, res, next) => {
   async function getUser(userName: string): Promise<UserModel> {
     let users: readonly UserModel[];
     try {
-      users = await withDbAccess(access =>
-        access.runQuery(
+      users = await withDbAccess(({ runQuery }) =>
+        runQuery(
           `
           select top 1
             u.[Id]                        as [id],
@@ -91,7 +94,7 @@ router.post('/get-authentication', async (req, res, next) => {
             and
               u.[IsActive] = 1
         `,
-          access.runQuery.nVarCharParam('username', userName, 200)
+          runQuery.nVarCharParam('username', userName, 200)
         )
       );
     } catch (error) {
@@ -101,5 +104,21 @@ router.post('/get-authentication', async (req, res, next) => {
     if (users.length === 0) throw AuthenticationError.UserNotFound;
     const user = users[0];
     return user;
+  }
+
+  async function getUserSettings(userName: string): Promise<UserSettingsModel> {
+    let rawUserSettings: { Key: string; Value: string }[];
+    try {
+      rawUserSettings = await withDbAccess(({ runSp }) => runSp('[System].[SP_GetUserSettings]', runSp.nVarCharParam('username', userName, 200)));
+    } catch (error) {
+      throw AuthenticationError.DatabaseNotAvailable;
+    }
+    const stcColorsPrefix = 'fp:stcColors:STC ';
+    const userSettings: UserSettingsModel = {
+      stcColors: rawUserSettings
+        .filter(({ Key, Value }) => Key.startsWith(stcColorsPrefix) && Value)
+        .toDictionary(({ Key }) => Key.slice(stcColorsPrefix.length), ({ Value }) => Value)
+    };
+    return userSettings;
   }
 });

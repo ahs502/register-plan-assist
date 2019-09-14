@@ -4,7 +4,7 @@ import { makeStyles } from '@material-ui/styles';
 import Search, { filterOnProperties } from 'src/components/Search';
 import SideBarContainer from './SideBarContainer';
 import ErrorsAndWarningsList from './ErrorsAndWarningsList';
-import Objection from 'src/business/objections/Objection';
+// import Objection from 'src/business/objections/Objection';
 
 const useStyles = makeStyles((theme: Theme) => ({
   error: {
@@ -16,7 +16,7 @@ const useStyles = makeStyles((theme: Theme) => ({
 }));
 
 export interface ErrorsAndWarningsSideBarProps {
-  objections: ReadonlyArray<Readonly<Objection>>;
+  objections: ReadonlyArray<any>;
   initialSearch?: string;
 }
 

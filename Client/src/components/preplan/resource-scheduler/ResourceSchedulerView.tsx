@@ -13,6 +13,7 @@ import moment from 'moment';
 import useProperty from 'src/utils/useProperty';
 import FlightPack from 'src/business/flights/FlightPack';
 import { AircraftType, AircraftRegister } from '@core/master-data';
+import persistant from 'src/utils/persistant';
 
 const useStyles = makeStyles((theme: Theme) => ({
   '@global': {
@@ -360,6 +361,7 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = memo(
         if (item.className && item.className.startsWith('rpa-group-item-')) return '';
 
         const flightPack: FlightPack = item.data;
+        const stcColor = persistant.userSettings!.stcColors[flightPack.flights[0].stc.name];
         return `
           <div class="rpa-item-header">
             <div class="rpa-item-time rpa-item-std">
@@ -395,8 +397,10 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = memo(
               : ''
           }
           ${flightPack.changed === true ? ' rpa-changed rpa-changed-full' : flightPack.changed === undefined ? ' rpa-changed rpa-changed-semi' : ''}
-          ">
-            ${flightPack.sections.map(s => `<div class="rpa-item-section" style="left: ${s.start * 100}%; right: ${(1 - s.end) * 100}%;"></div>`).join(' ')}
+          " style="border-color: ${stcColor}80; background-color: ${stcColor}23;">
+            ${flightPack.sections
+              .map(s => `<div class="rpa-item-section" style="left: ${s.start * 100}%; right: ${(1 - s.end) * 100}%; background-color: ${stcColor}23;"></div>`)
+              .join(' ')}
             <div class="rpa-item-label">
               ${flightPack.label}
             </div>

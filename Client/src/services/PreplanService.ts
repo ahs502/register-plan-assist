@@ -3,6 +3,8 @@ import PreplanModel, { PreplanHeaderModel } from '@core/models/PreplanModel';
 import AutoArrangerOptions from '@core/models/AutoArrangerOptionsModel';
 import FlightRequirementModel from '@core/models/flights/FlightRequirementModel';
 import ServerResult from '@core/types/ServerResult';
+import NewPreplanModel from '@core/models/NewPreplanModel';
+import EditPreplanModel from '@core/models/EditPreplanModel';
 
 const request = RequestManager.makeRequester('preplan');
 
@@ -17,52 +19,59 @@ export default class PreplanService {
   /**
    * Creates a new empty preplan and provides its id.
    */
-  static async createEmpty(name: string, startDate: Date, endDate: Date) {
-    return await request<string>('create-empty', { name, startDate, endDate });
+  static async createEmpty(newPreplan: NewPreplanModel) {
+    return await request<string>('create-empty', newPreplan);
   }
 
   /**
    * Creates a clone of the specified parent preplan and provides the id of the cloned preplan.
    */
-  static async clone(id: string, name: string, startDate: Date, endDate: Date): Promise<ServerResult<string>> {
-    return await request('clone', { id, name, startDate, endDate });
-  }
-
-  /**
-   * Provides the complete model of a preplan by its id.
-   */
-  static async get(id: string): Promise<ServerResult<Readonly<PreplanModel>>> {
-    return await request('get', { id });
+  static async clone(id: string, newPreplan: NewPreplanModel) {
+    return await request<string>('clone', { id, newPreplan });
   }
 
   /**
    * Updates the header of a specific preplan and
    * provides the list of all user related or public preplan headers.
    */
-  static async editHeader(id: string, name: string, published: boolean, startDate: Date, endDate: Date): Promise<ServerResult<ReadonlyArray<Readonly<PreplanHeaderModel>>>> {
-    return await request('edit-header', { id, name, published, startDate, endDate });
+  static async editHeader(editPreplan: EditPreplanModel) {
+    return await request<PreplanHeaderModel[]>('edit-header', editPreplan);
   }
 
   /**
-   * Finalizes some specific preplan and provides its complete model.
+   * Publishes/unpublshes a preplan and provides the list of all user related or public preplan headers.
    */
-  static async finalize(id: string): Promise<ServerResult<Readonly<PreplanModel>>> {
-    return await request('finalize', { id });
+  static async setPublished(id: string, published: boolean) {
+    return await request<PreplanHeaderModel[]>('set-published', { id, published });
   }
 
   /**
    * Removes a preplan completely and provides the list of all user related or public preplan headers.
    */
-  static async remove(id: string): Promise<ServerResult<ReadonlyArray<Readonly<PreplanHeaderModel>>>> {
-    return await request('remove', { id });
+  static async remove(id: string) {
+    return await request<PreplanHeaderModel[]>('remove', { id });
   }
 
   /**
-   * Updates the auto-arranger options for some specified preplan and provides the same auto-arranger options.
+   * Provides the complete model of a preplan by its id.
    */
-  static async updateAutoArrangerOptions(id: string, autoArrangerOptions: Readonly<AutoArrangerOptions>): Promise<ServerResult<Readonly<AutoArrangerOptions>>> {
-    return await request('update-auto-arranger-options', { id, autoArrangerOptions });
+  static async get(id: string) {
+    return await request<PreplanModel>('get', { id });
   }
+
+  /**
+   * Finalizes some specific preplan and provides its complete model.
+   */
+  static async finalize(id: string) {
+    return await request<PreplanModel>('finalize', { id });
+  }
+
+  // /**
+  //  * Updates the auto-arranger options for some specified preplan and provides the same auto-arranger options.
+  //  */
+  // static async updateAutoArrangerOptions(id: string, autoArrangerOptions: Readonly<AutoArrangerOptions>): Promise<ServerResult<Readonly<AutoArrangerOptions>>> {
+  //   return await request('update-auto-arranger-options', { id, autoArrangerOptions });
+  // }
 
   // /**
   //  * Adds/edits (according to the given id in model) some dummy aircraft register for

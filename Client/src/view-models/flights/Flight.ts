@@ -41,8 +41,8 @@ export default class Flight {
     this.freezed = weekdayRequiremnet.freezed;
     this.day = weekdayRequiremnet.day;
     this.blockTime = weekdayRequiremnet.scope.blockTime;
-    this.departurePermission = weekdayRequiremnet.scope.departurePermission;
-    this.arrivalPermission = weekdayRequiremnet.scope.arrivalPermission;
+    this.departurePermission = weekdayRequiremnet.scope.originPermission;
+    this.arrivalPermission = weekdayRequiremnet.scope.destinationPermission;
     this.rsx = weekdayRequiremnet.scope.rsx;
     this.required = weekdayRequiremnet.scope.required;
     this.std = new Daytime(raw.std);

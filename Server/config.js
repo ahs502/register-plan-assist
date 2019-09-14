@@ -3,7 +3,7 @@ var config = {
   oauth: {
     serverUrl: 'https://login.mahan.aero/adfs/oauth2/token',
     serverIssuer: 'https://login.mahan.aero/adfs/oauth2/authorize',
-    clientUrl: 'http://localhost:4200/',
+    clientUrl: 'http://localhost:4000/',
     clientId: 'b3ca0b10-f75f-4a3b-b7f8-278b1bd6fc2a',
     resourceName: 'dev-rpa',
     lang: 'En'
@@ -16,7 +16,5 @@ var config = {
   },
   secretKey: 'fsdjkla glsdfa kjglkjasfd ghasfdghasl;k ;lskg kjlahgfuiow rhtfurhgha g jkfangwreh gn89498 y353087 59w8 3570987Y*& ^%)&^#&^T&)*$@&Y)(*&@#Y $(@Y%()$YRURHfguisyreg ehrj'
 };
-
-/* ENVIRONMENT SPECIFIC CONFIGURATION PLACEHOLDER */
 
 module.exports = { default: config };

@@ -17,6 +17,7 @@ const App: FC = () => {
 
   RequestManager.onProcessingChanged = processing => setLoading(processing);
 
+  //TODO: Do not render application during master data fetch.
   MasterDataService.get('aircraftTypes', 'aircraftRegisters', 'airports', 'seasonTypes', 'seasons', 'stcs', 'aircraftGroups', 'constraints').then(result => {
     if (result.message) throw result.message;
     MasterData.recieve(result.value!);

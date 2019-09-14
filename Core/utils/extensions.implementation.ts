@@ -37,8 +37,8 @@
 
   Array.prototype.sortBy = function Array_prototype_sortBy<T>(...propertySelectors: (keyof T | ((item: T) => any))[]): T[] {
     return this.sort((a, b) => {
-      while (propertySelectors.length) {
-        const propertySelector = propertySelectors.shift()!;
+      for (let index = 0; index < propertySelectors.length; ++index) {
+        const propertySelector = propertySelectors[index];
         const generalPropertySelector = typeof propertySelector === 'function' ? propertySelector : (item: T) => item[propertySelector];
         const aValue = generalPropertySelector(a);
         const bValue = generalPropertySelector(b);
@@ -51,8 +51,8 @@
 
   Array.prototype.sortByDescending = function Array_prototype_sortByDescending<T>(...propertySelectors: (keyof T | ((item: T) => any))[]): T[] {
     return this.sort((a, b) => {
-      while (propertySelectors.length) {
-        const propertySelector = propertySelectors.shift()!;
+      for (let index = 0; index < propertySelectors.length; ++index) {
+        const propertySelector = propertySelectors[index];
         const generalPropertySelector = typeof propertySelector === 'function' ? propertySelector : (item: T) => item[propertySelector];
         const aValue = generalPropertySelector(a);
         const bValue = generalPropertySelector(b);

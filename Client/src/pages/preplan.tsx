@@ -302,7 +302,7 @@ const PreplanPage: FC = () => {
                   scope: scope,
                   days: flightRequirementModalModel
                     .days!.map((e, i) => (e ? i : -1))
-                    .filter(d => d > 0)
+                    .filter(d => d >= 0)
                     .map(d => {
                       //TODO: update flight only in add move
                       // let flight: FlightModel;

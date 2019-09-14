@@ -6,7 +6,7 @@ import SectionList, { SectionItem } from 'src/components/SectionList';
 import { NavBarToolsContainerContext } from 'src/pages/preplan';
 import ProposalReport from 'src/components/preplan/reports/ProposalReport';
 import ConnectionsReport from 'src/components/preplan/reports/ConnectionsReport';
-import Preplan from 'src/view-models/Preplan';
+import Preplan from 'src/business/Preplan';
 
 const useStyles = makeStyles((theme: Theme) => ({}));
 

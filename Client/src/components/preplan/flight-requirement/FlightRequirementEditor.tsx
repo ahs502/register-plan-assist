@@ -12,170 +12,280 @@ import {
   Switch,
   FormControlLabel,
   Checkbox,
-  FormControl,
   InputLabel,
-  Select
+  Fab,
+  CircularProgress
 } from '@material-ui/core';
 import { Clear as ClearIcon, Add as AddIcon } from '@material-ui/icons';
 import { makeStyles } from '@material-ui/styles';
-import { FlightRequirementModal } from 'src/pages/preplan';
 import DaysPicker from 'src/components/DaysPicker';
 import classNames from 'classnames';
 import Weekday from '@core/types/Weekday';
-import MasterData from '@core/master-data';
-import FlightTime from 'src/view-models/flights/FlightTime';
+import MasterData, { Stc } from '@core/master-data';
+import FlightTime from 'src/business/flights/FlightTime';
+import Rsx, { Rsxes } from '@core/types/flight-requirement/Rsx';
+import AutoComplete from 'src/components/AutoComplete';
+import FlightRequirement from 'src/business/flights/FlightRequirement';
+import AircraftIdentityType from '@core/types/aircraft-identity/AircraftIdentityType';
 
 const useStyles = makeStyles((theme: Theme) => ({
-  allowTimeStyle: {
-    border: '1px solid',
-    borderColor: theme.palette.grey[300],
-    borderRadius: 4
+  root: {
+    position: 'relative'
+  },
+  timesFieldSet: {
+    borderColor: theme.palette.grey[50],
+    borderRadius: 6
+  },
+  times: {
+    overflow: 'auto',
+    maxHeight: 168
   },
   gridStyle: {
     matgin: theme.spacing(0, 0, 2, 0)
   },
   captionTextColor: {
     color: theme.palette.grey[500]
+  },
+  fab: {
+    margin: theme.spacing(1),
+    position: 'absolute',
+    left: 496,
+    top: 283
+  },
+  progress: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    marginTop: -12,
+    marginLeft: -12
+  },
+  disable: {
+    opacity: 0.5
   }
 }));
 
-// Public definitions:
-// export interface SomeExtraDefinitions {}
+//type modeType = 'add' | 'edit' | 'readOnly' | 'return';
 
-// // Internal definitions:
-// interface SomeOtherExtraDefinitions {}
+// const titleMessage = {
+//   add: 'What is the new flight requierment?',
+//   edit: 'Edit flight requierment',
+//   readOnly: 'Flight requierment',
+//   return: 'What is the return flight requierment?'
+// };
 
-type modeType = 'add' | 'edit' | 'readOnly' | 'return';
+const rsxes = Rsxes.map((r, index) => {
+  return { name: r };
+});
 
-const titleMessage = {
-  add: 'What is the new flight requierment?',
-  edit: 'Edit flight requierment',
-  readOnly: 'Flight requierment',
-  return: 'What is the return flight requierment?'
-};
+export type FlightRequirementModalMode = 'ADD' | 'EDIT' | 'READ_ONLY' | 'RETURN' | 'REMOVE';
+
+export interface FlightRequirementModalAircraftIdentity {
+  id: string;
+  entityId: string;
+  name: string;
+  type: AircraftIdentityType;
+}
+
+export interface FlightRequirementModalModel {
+  open: boolean;
+  loading: boolean;
+  errorMessage?: string;
+  flightRequirement?: FlightRequirement;
+  weekly?: boolean;
+  day?: number;
+  days?: boolean[];
+  unavailableDays?: boolean[];
+  label?: string;
+  flightNumber?: string;
+  departureAirport?: string;
+  arrivalAirport?: string;
+  blockTime?: string;
+  times?: { stdLowerBound: string; stdUpperBound: string }[];
+  allowedAircraftIdentities?: FlightRequirementModalAircraftIdentity[];
+  forbiddenAircraftIdentities?: FlightRequirementModalAircraftIdentity[];
+  originPermission?: boolean;
+  destinationPermission?: boolean;
+  notes?: string;
+  required?: boolean;
+  rsx?: Rsx;
+  stc?: Stc;
+  category?: string;
+  mode?: FlightRequirementModalMode;
+  actionTitle?: string;
+  disable?: boolean;
+}
 
 // Component props type:
 export interface FlightRequirementEditorProps {
-  model: FlightRequirementModal;
-  mode: modeType;
-  onSave?: (model?: FlightRequirementModal) => void;
+  model: FlightRequirementModalModel;
   selectedDay?: Weekday;
 }
 
 // Component body:
-const FlightRequirementEditor: FC<FlightRequirementEditorProps> = ({ model, mode, onSave, selectedDay }) => {
-  if (mode === 'add') {
-    model = {} as FlightRequirementModal;
+const FlightRequirementEditor: FC<FlightRequirementEditorProps> = ({ model, selectedDay }) => {
+  if (model.mode === 'ADD') {
+    model = {} as FlightRequirementModalModel;
+    model.flightRequirement = {} as FlightRequirement;
   }
 
   const stc = MasterData.all.stcs.items;
-  model.times = model.times || ([] as FlightTime[]);
-  model.times.push({} as FlightTime);
+  const airports = MasterData.all.airports.items;
 
-  const [flightRequirement, setFlightRequirement] = useState<FlightRequirementModal>(model);
+  model.times = model.times || [];
+  if (model.times.length === 0) model.times.push({} as { stdLowerBound: string; stdUpperBound: string });
+
+  const [flightRequirementModalModel, setFlightRequirementModalModel] = useState<FlightRequirementModalModel>(model!);
 
   const classes = useStyles();
 
   return (
-    <Fragment>
-      <DialogTitle id="form-dialog-title">{titleMessage[mode]}</DialogTitle>
-      <DialogContent>
-        <Grid container spacing={3}>
+    <div className={classes.root}>
+      <Fab
+        size="small"
+        aria-label="add"
+        className={classes.fab}
+        onClick={() => {
+          // var temp = { ...flightRequirement };
+          // temp.times = temp.times && [...temp.times];
+          // temp.times && temp.times.push({} as FlightTime);
+          // setFlightRequirement(temp);
+          flightRequirementModalModel.times!.push({} as { stdLowerBound: string; stdUpperBound: string });
+          setFlightRequirementModalModel({ ...flightRequirementModalModel });
+        }}
+      >
+        <AddIcon />
+      </Fab>
+
+      <div>
+        <Grid container spacing={1}>
           <Grid item xs={12}>
-            <Grid container spacing={2}>
+            <Grid container spacing={1}>
               <Grid item xs={12}>
                 <Typography variant="caption" className={classes.captionTextColor}>
                   Flight Information
                 </Typography>
               </Grid>
               <Grid item xs={4}>
-                <TextField fullWidth label="Label" />
+                <TextField fullWidth label="Label" value={model.label} onChange={l => setFlightRequirementModalModel({ ...flightRequirementModalModel, label: l.target.value })} />
               </Grid>
               <Grid item xs={4}>
-                <FormControl>
-                  <InputLabel htmlFor="age-native-simple">RSX</InputLabel>
-                  {/* <Select
-                    native
-                    value={state.age}
-                    onChange={handleChange('age')}
-                    inputProps={{
-                      name: 'age',
-                      id: 'age-native-simple'
-                    }}
-                  >
-                    <option value="" />
-                    <option value={10}>Ten</option>
-                    <option value={20}>Twenty</option>
-                    <option value={30}>Thirty</option>
-                  </Select> */}
-                </FormControl>
+                {/* <InputLabel htmlFor="rsx">RSX</InputLabel> */}
+                <AutoComplete
+                  label="RSX"
+                  options={rsxes}
+                  getOptionLabel={l => l.name}
+                  getOptionValue={v => v.name}
+                  value={{ name: flightRequirementModalModel.rsx! }}
+                  onSelect={s => setFlightRequirementModalModel({ ...flightRequirementModalModel, rsx: s.name })}
+                />
               </Grid>
               <Grid item xs={4}>
-                <TextField fullWidth label="Category" />
+                <TextField
+                  fullWidth
+                  label="Category"
+                  value={model.category}
+                  onChange={l => setFlightRequirementModalModel({ ...flightRequirementModalModel, category: l.target.value })}
+                />
               </Grid>
               <Grid item xs={4}>
-                <TextField label="Departure" />
+                <TextField
+                  label="Departure"
+                  value={flightRequirementModalModel.departureAirport}
+                  onChange={a => setFlightRequirementModalModel({ ...flightRequirementModalModel, departureAirport: a.target.value })}
+                />
               </Grid>
               <Grid item xs={4}>
-                <TextField label="Arrival" />
+                <TextField
+                  label="Arrival"
+                  value={flightRequirementModalModel.arrivalAirport}
+                  onChange={a => setFlightRequirementModalModel({ ...flightRequirementModalModel, arrivalAirport: a.target.value })}
+                />
               </Grid>
               <Grid item xs={4}>
-                <TextField label="Flight Number" />
+                <TextField
+                  label="Flight Number"
+                  value={model.flightNumber}
+                  onChange={l => setFlightRequirementModalModel({ ...flightRequirementModalModel, flightNumber: l.target.value })}
+                />
               </Grid>
               <Grid item xs={6}>
-                <TextField fullWidth label="BlockTime" />
+                <TextField
+                  fullWidth
+                  label="BlockTime"
+                  value={model.blockTime}
+                  onChange={l => setFlightRequirementModalModel({ ...flightRequirementModalModel, blockTime: l.target.value })}
+                />
               </Grid>
               <Grid item xs={6}>
-                <TextField fullWidth label="STC" />
+                <AutoComplete
+                  options={stc}
+                  label="Stc"
+                  getOptionLabel={l => l.name}
+                  getOptionValue={l => l.id}
+                  value={flightRequirementModalModel.stc}
+                  onSelect={s => {
+                    setFlightRequirementModalModel({ ...flightRequirementModalModel, stc: s });
+                  }}
+                />
               </Grid>
             </Grid>
           </Grid>
           <Grid item xs={12}>
-            <Grid container className={classNames(classes.allowTimeStyle)} spacing={2}>
-              <IconButton
-                onClick={() => {
-                  var temp = { ...flightRequirement };
-                  temp.times = temp.times && [...temp.times];
-                  temp.times && temp.times.push({} as FlightTime);
-                  setFlightRequirement(temp);
-                }}
-              >
-                <AddIcon />
-              </IconButton>
-              {flightRequirement &&
-                flightRequirement.times &&
-                flightRequirement.times.map((t, index) => {
-                  return (
-                    <Fragment key={index}>
-                      <Grid item xs={4}>
-                        <TextField fullWidth label="STD Lower Bound">
-                          {t.stdLowerBound}
-                        </TextField>
-                      </Grid>
-                      <Grid item xs={4}>
-                        <TextField fullWidth label="STD Upper Bound">
-                          {t.stdUpperBound}
-                        </TextField>
-                      </Grid>
-                      <Grid item xs={2}>
-                        <IconButton
-                          onClick={() => {
-                            var temp = { ...flightRequirement };
-                            temp.times = temp.times && temp.times.filter(r => r != t);
-
-                            setFlightRequirement(temp);
-                          }}
-                        >
-                          <ClearIcon />
-                        </IconButton>
-                      </Grid>
-                    </Fragment>
-                  );
-                })}
-            </Grid>
+            <div>
+              <fieldset className={classes.timesFieldSet}>
+                <legend>Time(s):</legend>
+                <Grid container spacing={1} className={classes.times}>
+                  {flightRequirementModalModel &&
+                    flightRequirementModalModel.times &&
+                    flightRequirementModalModel.times.map((t, index) => {
+                      return (
+                        <Fragment key={index}>
+                          <Grid item xs={4}>
+                            <TextField
+                              fullWidth
+                              label="STD Lower Bound"
+                              value={t.stdLowerBound}
+                              onChange={s => {
+                                const time = flightRequirementModalModel.times!.find(s => s === t)!;
+                                time.stdLowerBound = s.target.value;
+                                setFlightRequirementModalModel({ ...flightRequirementModalModel, times: [...flightRequirementModalModel.times!] });
+                              }}
+                            />
+                          </Grid>
+                          <Grid item xs={4}>
+                            <TextField
+                              fullWidth
+                              label="STD Upper Bound"
+                              value={t.stdUpperBound}
+                              onChange={s => {
+                                const time = flightRequirementModalModel.times!.find(s => s === t)!;
+                                time.stdUpperBound = s.target.value;
+                                setFlightRequirementModalModel({ ...flightRequirementModalModel, times: [...flightRequirementModalModel.times!] });
+                              }}
+                            />
+                          </Grid>
+                          <Grid item xs={4}>
+                            {index > 0 && (
+                              <IconButton
+                                onClick={() => {
+                                  var temp = { ...flightRequirementModalModel };
+                                  temp.times = temp.times && temp.times.filter(r => r != t);
+                                  setFlightRequirementModalModel(temp);
+                                }}
+                              >
+                                <ClearIcon />
+                              </IconButton>
+                            )}
+                          </Grid>
+                        </Fragment>
+                      );
+                    })}
+                </Grid>
+              </fieldset>
+            </div>
           </Grid>
           <Grid item xs={12}>
-            <Grid container spacing={2}>
+            <Grid container spacing={1}>
               <Grid item xs={12}>
                 <Typography variant="caption" className={classes.captionTextColor}>
                   Allowed Aircrafts
@@ -199,52 +309,67 @@ const FlightRequirementEditor: FC<FlightRequirementEditorProps> = ({ model, mode
               </Grid>
               <Grid item xs={6}>
                 <Grid item>
-                  <DaysPicker />
+                  <DaysPicker selectedDays={model.days} onItemClick={w => setFlightRequirementModalModel({ ...flightRequirementModalModel, days: w })} />
                 </Grid>
               </Grid>
-              <Grid item container xs={6}>
-                <Grid item xs={6}>
-                  <Typography variant="body2">Requierd</Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Switch color="primary" />
+              <Grid item xs={6}>
+                <Grid container>
+                  <Grid item xs={12}>
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          color="primary"
+                          checked={model.required}
+                          onChange={e => setFlightRequirementModalModel({ ...flightRequirementModalModel, required: e.target.checked })}
+                        />
+                      }
+                      label="Required"
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <FormControlLabel
+                      label="Destination Permmision"
+                      control={
+                        <Checkbox
+                          color="primary"
+                          checked={flightRequirementModalModel.destinationPermission}
+                          onChange={e => setFlightRequirementModalModel({ ...flightRequirementModalModel, destinationPermission: e.target.checked })}
+                        />
+                      }
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <FormControlLabel
+                      label="Origin Permission"
+                      control={
+                        <Checkbox
+                          color="primary"
+                          checked={flightRequirementModalModel.originPermission}
+                          onChange={e => setFlightRequirementModalModel({ ...flightRequirementModalModel, originPermission: e.target.checked })}
+                        />
+                      }
+                    />
+                  </Grid>
                 </Grid>
               </Grid>
             </Grid>
           </Grid>
           <Grid item xs={12}>
-            <Grid container spacing={2}>
+            <Grid container spacing={1}>
               <Grid item xs={12}>
-                <Typography variant="caption" className={classes.captionTextColor}>
-                  Extra Information
-                </Typography>
-              </Grid>
-              <Grid item xs={6}>
-                <FormControlLabel control={<Checkbox color="primary" />} label="Departure Permision" />
-              </Grid>
-              <Grid item xs={6}>
-                <FormControlLabel control={<Checkbox color="primary" />} label="Arrival Permision" />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField fullWidth label="Comment" />
+                <TextField
+                  fullWidth
+                  label="Notes"
+                  value={flightRequirementModalModel.notes}
+                  onChange={s => setFlightRequirementModalModel({ ...flightRequirementModalModel, notes: s.target.value })}
+                />
               </Grid>
             </Grid>
           </Grid>
         </Grid>
-      </DialogContent>
-      <DialogActions>
-        <Button color="primary">Cancel</Button>
-        <Button onClick={() => onSave && onSave(flightRequirement)} color="primary">
-          add
-        </Button>
-      </DialogActions>
-    </Fragment>
+      </div>
+    </div>
   );
 };
 
-// Default values of props when not provided by the user (only for optional props):
-
-// Export the component as the default export:
 export default FlightRequirementEditor;
-
-// Any other extra helpers:

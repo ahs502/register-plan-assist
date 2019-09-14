@@ -8,8 +8,9 @@ import AircraftRegisterStatus from '@core/types/aircraft-register-options/Aircra
 import DummyAircraftRegisterModel from '@core/models/DummyAircraftRegisterModel';
 import { AircraftRegisterOptionsDictionaryModel } from '@core/models/AircraftRegisterOptionsModel';
 import MasterData, { Airport, AircraftType } from '@core/master-data';
-import { PreplanAircraftRegisters } from 'src/view-models/PreplanAircraftRegister';
+import { PreplanAircraftRegisters } from 'src/business/PreplanAircraftRegister';
 import Search, { filterOnProperties } from 'src/components/Search';
+import useProperty from 'src/utils/useProperty';
 
 const useStyles = makeStyles((theme: Theme) => ({
   searchWrapper: {
@@ -74,19 +75,22 @@ export interface SelectAircraftRegistersSideBarProps {
   initialSearch?: string;
   aircraftRegisters: PreplanAircraftRegisters;
   onApply(dummyAircraftRegisters: readonly DummyAircraftRegisterModel[], aircraftRegisterOptionsDictionary: AircraftRegisterOptionsDictionaryModel): void;
+  loading?: boolean;
+  errorMessage?: string;
 }
 
-const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = ({ initialSearch, aircraftRegisters, onApply }) => {
-  let dummyAircraftRegisterIdCounter: number = 1;
-
+const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = ({ initialSearch, aircraftRegisters, onApply, loading, errorMessage }) => {
   const [query, setQuery] = useState<readonly string[]>([]);
+
+  const dummyAircraftRegisterIdCounter = useProperty(0);
   const [list, setList] = useState<AircraftRegisters>(() => {
-    dummyAircraftRegisterIdCounter =
-      (aircraftRegisters.items
+    dummyAircraftRegisterIdCounter(
+      aircraftRegisters.items
         .filter(r => r.dummy)
         .map(r => Number(r.id.replace('dummy-', '')))
         .sort()
-        .reverse()[0] || 0) + 1;
+        .reverse()[0] || 0
+    );
 
     return MasterData.all.aircraftTypes.items.orderBy('displayOrder').map(t => {
       const registers = aircraftRegisters.items
@@ -135,20 +139,20 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
       .reduce((a, l) => a.concat(l), [] as DummyAircraftRegisterModel[]);
     const aircraftRegisterOptionsDictionary: AircraftRegisterOptionsDictionaryModel = {};
     list.forEach(t => {
-      t.registers.forEach(
-        r =>
-          ((aircraftRegisterOptionsDictionary[r.id] as any) = {
-            status: r.status,
-            startingAirportId: MasterData.all.airports.items.find(a => a.name.toUpperCase() === r.baseAirport.toUpperCase())!.id
-          })
-      );
-      t.dummyRegisters.forEach(
-        r =>
-          ((aircraftRegisterOptionsDictionary[r.id] as any) = {
-            status: r.status,
-            startingAirportId: MasterData.all.airports.items.find(a => a.name.toUpperCase() === r.baseAirport.toUpperCase())!.id
-          })
-      );
+      t.registers.forEach(r => {
+        const airport = r.baseAirport && MasterData.all.airports.items.find(a => a.name.toUpperCase() === r.baseAirport.toUpperCase());
+        return ((aircraftRegisterOptionsDictionary[r.id] as any) = {
+          status: r.status,
+          startingAirportId: airport && airport.id
+        });
+      });
+      t.dummyRegisters.forEach(r => {
+        const airport = r.baseAirport && MasterData.all.airports.items.find(a => a.name.toUpperCase() === r.baseAirport.toUpperCase());
+        return ((aircraftRegisterOptionsDictionary[r.id] as any) = {
+          status: r.status,
+          startingAirportId: airport && airport.id
+        });
+      });
     });
     //TODO: Validate those models...
     onApply(dummyAircraftRegisters, aircraftRegisterOptionsDictionary);
@@ -240,7 +244,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
                   list
                     .find(t => t.type === type)!
                     .dummyRegisters.push({
-                      id: `dummy-${dummyAircraftRegisterIdCounter++}`,
+                      id: `dummy-${dummyAircraftRegisterIdCounter(x => x + 1)}`,
                       name: addDummyRegisterFormModel.name!.toUpperCase(),
                       baseAirport: addDummyRegisterFormModel.baseAirport!,
                       status: addDummyRegisterFormModel.status!
@@ -284,6 +288,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
       </TableCell>
       <TableCell className={classes.baseAirportCell}>
         <TextField
+          disabled={loading}
           value={r.baseAirport}
           onChange={e => {
             r.baseAirport = e.target.value;
@@ -297,6 +302,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
             classes={{ select: classes.select }}
             native
             variant="outlined"
+            disabled={loading}
             value={r.status}
             onChange={e => {
               r.status = e.target.value as AircraftRegisterStatus;
@@ -321,6 +327,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
       <TableCell className={classes.nameCell}>
         <TextField
           value={r.name}
+          disabled={loading}
           onChange={e => {
             r.name = e.target.value;
             setList([...list]);
@@ -330,6 +337,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
       <TableCell className={classes.baseAirportCell}>
         <TextField
           value={r.baseAirport}
+          disabled={loading}
           onChange={e => {
             r.baseAirport = e.target.value;
             setList([...list]);
@@ -339,6 +347,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
       <TableCell className={classes.stateCell}>
         <FormControl fullWidth>
           <Select
+            disabled={loading}
             classes={{ select: classes.select }}
             native
             variant="outlined"
@@ -376,9 +385,11 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
       onApply={applyHandler}
       onAdd={() => setAddDummyRegisterFormModel({ show: true, name: '', aircraftType: '', baseAirport: '', status: 'INCLUDED' })}
       label="Select Aircraft Registers"
+      loading={loading}
+      errorMessage={errorMessage}
     >
       <div className={classes.searchWrapper}>
-        <Search onQueryChange={query => setQuery(query)} />
+        <Search disabled={loading} onQueryChange={query => setQuery(query)} />
       </div>
 
       {addDummyRegisterForm}

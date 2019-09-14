@@ -11,7 +11,7 @@ export default class Daytime {
    * @param baseDate When provided and the value parameter is a Date object, it will be calculated from that base date not its own date.
    */
   constructor(value: any, baseDate?: Date) {
-    if (typeof value === 'number' && !isNaN(value) && value >= 0) {
+    if (typeof value === 'number' && !isNaN(value) /* && value >= 0 */) {
       this.minutes = value;
     } else if (typeof value === 'string' && /^\d+:\d+$/.test(value)) {
       const stringValue: string = value,

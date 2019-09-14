@@ -1,6 +1,6 @@
 {
   "name": "register-plan-assist",
-  "version": "1.0.0",
+  "version": "0.0.2",
   "private": true,
   "description": "Intelligent Flight Scheduler",
   "scripts": {
@@ -11,6 +11,11 @@
     "test": "npm --prefix Client test && npm --prefix Server test",
     "check-updates": "npm run ncu && npm run ncu --prefix Core && npm run ncu --prefix Server && npm run ncu --prefix Client",
     "install-updates": "npm run ncu -- -u && npm run ncu --prefix Core -- -u && npm run ncu --prefix Server -- -u && npm run ncu --prefix Client -- -u && npm install",
+    "preversion": "node ./version.js pre",
+    "version-major": "npm version --no-git-tag-version major",
+    "version-minor": "npm version --no-git-tag-version minor",
+    "version-patch": "npm version --no-git-tag-version patch",
+    "postversion": "node ./version.js post",
     "gulp": "gulp",
     "ncu": "ncu"
   },

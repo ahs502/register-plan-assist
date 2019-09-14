@@ -39,7 +39,7 @@ function getJsonResult(rows: { value: any; metadata: { colName: string } }[][]):
   });
 }
 
-function runQuery<T extends any = any>(connection: Connection, query: string, ...parameters: SqlParameter[]): Promise<readonly T[]> {
+function runQuery<T extends any = any>(connection: Connection, query: string, ...parameters: SqlParameter[]): Promise<T[]> {
   return new Promise((resolve, reject) => {
     const request = new TediousRequest(query, (error, rowCount, rows) => {
       if (error) return reject(error);
@@ -49,7 +49,7 @@ function runQuery<T extends any = any>(connection: Connection, query: string, ..
     connection.execSql(request);
   });
 }
-function runSp<T extends any = any>(connection: Connection, sp: string, ...parameters: SqlParameter[]): Promise<readonly T[]> {
+function runSp<T extends any = any>(connection: Connection, sp: string, ...parameters: SqlParameter[]): Promise<T[]> {
   return new Promise((resolve, reject) => {
     const request = new TediousRequest(sp, (error, rowCount, rows) => {
       if (error) return reject(error);
@@ -135,37 +135,40 @@ export enum IsolationLevel {
 
 interface DbAccessQueryParams {
   param(name: string, type: TediousType, value: any, options?: ParameterOptions): SqlParameter;
+  bitParam(name: string, value: boolean | null, options?: ParameterOptions): SqlParameter;
   intParam(name: string, value: string | number | null, options?: ParameterOptions): SqlParameter;
   bigIntParam(name: string, value: bigint | string | null, options?: ParameterOptions): SqlParameter;
   varCharParam(name: string, value: string | null, length?: number, options?: ParameterOptions): SqlParameter;
   nVarCharParam(name: string, value: string | null, length: number, options?: ParameterOptions): SqlParameter;
   dateTimeParam(name: string, value: string | null, options?: ParameterOptions): SqlParameter;
-  bitParam(name: string, value: string | null, options?: ParameterOptions): SqlParameter;
-  tableparam(name: string, columns: readonly TableColumn[], rows: readonly any[][], options?: ParameterOptions): SqlParameter;
+  tableParam(name: string, columns: readonly TableColumn[], rows: readonly any[][], options?: ParameterOptions): SqlParameter;
 }
 export interface DbAccess {
   types: TediousTypes;
   runQuery: {
-    (query: string, ...parameters: SqlParameter[]): Promise<readonly any[]>;
+    (query: string, ...parameters: SqlParameter[]): Promise<any[]>;
   } & DbAccessQueryParams;
   runSp: {
-    (sp: string, ...parameters: SqlParameter[]): Promise<readonly any[]>;
+    (sp: string, ...parameters: SqlParameter[]): Promise<any[]>;
   } & DbAccessQueryParams;
 }
 
 function attachHelperFunctions(f: any): any {
   f.param = param;
-  f.bigIntParam = bigIntParam;
+  f.bitParam = bitParam;
   f.intParam = intParam;
+  f.bigIntParam = bigIntParam;
   f.varCharParam = varCharParam;
   f.nVarCharParam = nVarCharParam;
   f.dateTimeParam = dateTimeParam;
   f.tableParam = tableParam;
-  f.bitParam = bitParam;
   return f;
 
   function param(name: string, type: TediousType, value: any, options?: ParameterOptions): SqlParameter {
     return { name, type, value, options };
+  }
+  function bitParam(name: string, value: boolean | null, options?: ParameterOptions): SqlParameter {
+    return { name, type: TYPES.Bit, value, options };
   }
   function intParam(name: string, value: string | number | null, options?: ParameterOptions): SqlParameter {
     return { name, type: TYPES.Int, value, options };
@@ -181,9 +184,6 @@ function attachHelperFunctions(f: any): any {
   }
   function dateTimeParam(name: string, value: Date | string | null, options?: ParameterOptions): SqlParameter {
     return { name, type: TYPES.VarChar, value: typeof value === 'string' ? value : value.toJSON(), options: { ...options, length: 15 } };
-  }
-  function bitParam(name: string, value: boolean | null, options?: ParameterOptions): SqlParameter {
-    return { name, type: TYPES.Bit, value, options };
   }
   function tableParam(name: string, columns: readonly TableColumn[], rows: readonly any[][], options?: ParameterOptions): SqlParameter {
     return { name, type: TYPES.TVP, value: { columns, rows }, options };

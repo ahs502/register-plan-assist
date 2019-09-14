@@ -3,18 +3,20 @@ import { Theme, InputLabel, TextField, TableHead, TableCell, Table, TableRow, Ta
 import { red, grey } from '@material-ui/core/colors';
 import { makeStyles } from '@material-ui/styles';
 import MasterData, { Airport } from '@core/master-data';
-import FlightRequirement from 'src/view-models/flights/FlightRequirement';
+import FlightRequirement from 'src/business/flights/FlightRequirement';
 import Daytime from '@core/types/Daytime';
 import { Publish as ExportToExcelIcon } from '@material-ui/icons';
 import { ExcelExport, ExcelExportColumn, ExcelExportColumnGroup } from '@progress/kendo-react-excel-export';
 import { CellOptions } from '@progress/kendo-react-excel-export/dist/npm/ooxml/CellOptionsInterface';
 import classNames from 'classnames';
 import AutoComplete from 'src/components/AutoComplete';
-import Preplan, { PreplanHeader } from 'src/view-models/Preplan';
+import Preplan, { PreplanHeader } from 'src/business/Preplan';
 import Weekday from '@core/types/Weekday';
 import Rsx from '@core/types/flight-requirement/Rsx';
 import AircraftIdentityType from '@core/types/aircraft-identity/AircraftIdentityType';
 import { WorkbookSheetRow } from '@progress/kendo-ooxml';
+import { parseMinute } from 'src/utils/model-parsers';
+import PreplanService from 'src/services/PreplanService';
 
 const makeColor = () => ({
   changeStatus: { background: '#FFFFCC' },
@@ -101,7 +103,7 @@ const useStyles = makeStyles((theme: Theme) => {
       backgroundColor: color.realBoarder.backgroundColor
     },
     datePosition: {
-      marginTop: 12
+      marginTop: theme.spacing(1)
     }
   };
 });
@@ -174,8 +176,8 @@ interface FlattenFlightRequirment {
   extraFrequency: number;
   destinationNoPermissionsWeekDay: number[];
   destinationNoPermissions: string;
-  domesticNoPermissionsWeekDay: number[];
-  domesticNoPermissions: string;
+  originNoPermissionsWeekDay: number[];
+  originNoPermissions: string;
   category: string;
   nextFlights: FlattenFlightRequirment[];
   previousFlights: FlattenFlightRequirment[];
@@ -288,9 +290,15 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
   } as FliterModel);
 
   if (!preplanHeaders.length) {
-    const preplanHeader = getDummyPreplanHeaders();
-    preplanHeader.unshift({} as PreplanHeader);
-    setPreplanHeaders(preplanHeader); //TODO: Remove this line later.
+    PreplanService.getAllHeaders().then(result => {
+      if (result.message) {
+        //TODO: handle error
+      } else {
+        const preplanHeader = result.value!.map(p => new PreplanHeader(p));
+        preplanHeader.unshift({} as PreplanHeader);
+        setPreplanHeaders(preplanHeader); //TODO: Remove this line later.
+      }
+    });
   }
 
   let proposalExporter: ExcelExport | null;
@@ -373,27 +381,6 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
     calculateFrequency(result);
 
     return result;
-
-    function randomize(df: DailyFlightRequirment[]) {
-      //TODO: remove
-
-      df.forEach(d => {
-        d.destinationPermission = Math.random() > 0.25 ? true : false; //TODO: remove
-        d.originPermission = Math.random() > 0.25 ? true : false; //TODO: remove
-
-        if (d.departureAirport.id === '7092901520000005420' || d.arrivalAirport.id === '7092901520000005420') {
-          if ([1, 4].indexOf(d.day) !== -1) d.rsx = 'STB2';
-          if ([6].indexOf(d.day) !== -1) d.rsx = 'EXT';
-          if ([2].indexOf(d.day) !== -1) d.rsx = 'STB1';
-        }
-
-        if (d.departureAirport.id === '7092901520000001628' || d.arrivalAirport.id === '7092901520000001628') {
-          if ([5].indexOf(d.day) !== -1) d.rsx = 'STB2';
-          if ([3].indexOf(d.day) !== -1) d.rsx = 'EXT';
-          if ([1].indexOf(d.day) !== -1) d.rsx = 'STB1';
-        }
-      });
-    }
   };
 
   useEffect(() => {
@@ -466,7 +453,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
       if (row.type === 'data') {
         const id = r.cells![idColumnNumber].value;
         const model = flattenFlightRequirments.find(f => f.id === id)!;
-        const weekdayWithoutPermission = model.domesticNoPermissionsWeekDay.concat(model.destinationNoPermissionsWeekDay).distinct();
+        const weekdayWithoutPermission = model.originNoPermissionsWeekDay.concat(model.destinationNoPermissionsWeekDay).distinct();
 
         weekdayWithoutPermission.forEach(c => {
           r!.cells![weekDaySaturdayCellNumber + c].color = color.noPermission.color;
@@ -661,7 +648,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
                 Base Airport
               </InputLabel>
               <AutoComplete
-                id="compare-preplan"
+                id="compare-preplan-base-airport"
                 value={filterModel.baseAirport}
                 options={allBaseAirport}
                 getOptionLabel={l => l.name}
@@ -677,7 +664,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
               </InputLabel>
 
               <AutoComplete
-                id="compare-preplan"
+                id="compare-preplan-flightType"
                 options={flightType}
                 value={filterModel.flightType === FlightType.International ? flightType.find(f => f.value === 'International') : flightType.find(f => f.value === 'Domestic')}
                 onSelect={s => {
@@ -838,7 +825,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
         }}
       >
         <ExcelExportColumnGroup
-          title={'Propoal Schedule from ' + formatDateddMMMyy(filterModel.startDate) + ' till ' + formatDateddMMMyy(filterModel.endDate)}
+          title={'Propoal Schedule from ' + filterModel.startDate.format('d') + ' till ' + filterModel.endDate.format('d')}
           headerCellOptions={{ ...headerCellOptions, background: '#FFFFFF' }}
         >
           <ExcelExportColumnGroup title={'Base ' + filterModel.baseAirport.name} headerCellOptions={{ ...headerCellOptions, background: color.excelHeader.backgroundColor }}>
@@ -1076,7 +1063,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
             {filterModel.showSlot && (
               <ExcelExportColumn
                 title={['ORIGIN', 'SLOT (UTC)'].join('\r\n')}
-                field="domesticNoPermissions"
+                field="originNoPermissions"
                 width={85}
                 cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 }, borderLeft: { color: '#000000', size: 3 } }}
                 headerCellOptions={{
@@ -1352,7 +1339,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
                       <div className={isRealFlight(f, 6) && f.status.weekDay6.hasHalfPermission ? classes.halfPermission : ''}>{f.weekDay6}</div>
                     </TableCell>
                     <TableCell align="center" className={classes.border}>
-                      {formatMinuteToString(f.blocktime)}
+                      {parseMinute(f.blocktime)}
                     </TableCell>
                     {filterModel.showNote && (
                       <TableCell align="center" className={classes.border}>
@@ -1367,7 +1354,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
                         </TableCell>
 
                         <TableCell className={classes.border} align="center">
-                          {f.domesticNoPermissions}
+                          {f.originNoPermissions}
                         </TableCell>
                       </Fragment>
                     )}
@@ -1640,19 +1627,19 @@ function calculateFrequency(result: FlattenFlightRequirment[]) {
 function geratePermissionMassage(sortedFlattenFlightRequirments: FlattenFlightRequirment[], parentRoute: string, result: FlattenFlightRequirment[]) {
   sortedFlattenFlightRequirments.forEach(n => {
     n.parentRoute = parentRoute;
-    n.note = n.notes.join(',');
+    n.note = n.notes.filter(Boolean).join(',');
     n.destinationNoPermissions =
       n.destinationNoPermissionsWeekDay.length === 0
         ? 'OK'
         : n.destinationNoPermissionsWeekDay.length === n.days.length
         ? 'NOT OK'
         : 'NOT OK for: ' + n.destinationNoPermissionsWeekDay.map(w => Weekday[w].substring(0, 3)).join(',');
-    n.domesticNoPermissions =
-      n.domesticNoPermissionsWeekDay.length === 0
+    n.originNoPermissions =
+      n.originNoPermissionsWeekDay.length === 0
         ? 'OK'
-        : n.domesticNoPermissionsWeekDay.length === n.days.length
+        : n.originNoPermissionsWeekDay.length === n.days.length
         ? 'NOT OK'
-        : 'NOT OK for: ' + n.domesticNoPermissionsWeekDay.map(w => Weekday[w].substring(0, 3)).join(',');
+        : 'NOT OK for: ' + n.originNoPermissionsWeekDay.map(w => Weekday[w].substring(0, 3)).join(',');
     result.push(n);
   });
 }
@@ -1833,7 +1820,7 @@ function createFlattenFlightRequirment(dailyFlightRequirment: DailyFlightRequirm
     arrivalAirport: dailyFlightRequirment.arrivalAirport,
     departureAirport: dailyFlightRequirment.departureAirport,
     blocktime: dailyFlightRequirment.blocktime,
-    formatedBlockTime: formatMinuteToString(dailyFlightRequirment.blocktime),
+    formatedBlockTime: parseMinute(dailyFlightRequirment.blocktime),
     days: [] as number[],
     utcDays: [] as number[],
     std: dailyFlightRequirment.std,
@@ -1848,7 +1835,7 @@ function createFlattenFlightRequirment(dailyFlightRequirment: DailyFlightRequirm
     diffLocalStdandUtcSta: diffLocalStdandUtcSta,
     route: dailyFlightRequirment.departureAirport.name + '–' + dailyFlightRequirment.arrivalAirport.name,
     aircraftType: dailyFlightRequirment.aircraftType,
-    domesticNoPermissionsWeekDay: [] as number[],
+    originNoPermissionsWeekDay: [] as number[],
     destinationNoPermissionsWeekDay: [] as number[],
     label: label,
     category: dailyFlightRequirment.category,
@@ -1864,21 +1851,16 @@ function createFlattenFlightRequirment(dailyFlightRequirment: DailyFlightRequirm
 function updateFlattenFlightRequirment(flattenFlight: FlattenFlightRequirment, dialyFlightRequirment: DailyFlightRequirment, baseAirport: Airport) {
   const weekDay = (dialyFlightRequirment.day + flattenFlight.diffLocalStdandUtcStd + 7) % 7;
 
-  let domesticToDestination = dialyFlightRequirment.departureAirport.id === baseAirport.id;
-  if (!domesticToDestination) {
-    domesticToDestination = !dialyFlightRequirment.departureAirport.international;
-  }
-
   if (flattenFlight.days.indexOf(weekDay) === -1) {
     flattenFlight.days.push(weekDay);
 
     if (!dialyFlightRequirment.originPermission) {
-      domesticToDestination ? flattenFlight.domesticNoPermissionsWeekDay.push(weekDay) : flattenFlight.destinationNoPermissionsWeekDay.push(weekDay);
+      flattenFlight.originNoPermissionsWeekDay.push(weekDay);
     }
 
     if (!dialyFlightRequirment.destinationPermission) {
       const arrivalWeekDay = flattenFlight.diffLocalStdandLocalSta > 0 ? (weekDay + 1) % 7 : weekDay;
-      domesticToDestination ? flattenFlight.destinationNoPermissionsWeekDay.push(arrivalWeekDay) : flattenFlight.domesticNoPermissionsWeekDay.push(arrivalWeekDay);
+      flattenFlight.destinationNoPermissionsWeekDay.push(arrivalWeekDay);
     }
   }
 
@@ -1905,8 +1887,8 @@ function updateFlattenFlightRequirment(flattenFlight: FlattenFlightRequirment, d
     if (dialyFlightRequirment.rsx === 'REAL') {
       if (dialyFlightRequirment.originPermission && dialyFlightRequirment.destinationPermission) return character.circle;
       if (!dialyFlightRequirment.originPermission && !dialyFlightRequirment.destinationPermission) return character.emptyCircle;
-      if (!dialyFlightRequirment.originPermission) return domesticToDestination ? character.leftHalfBlackCircle : character.rightHalfBlackCircle;
-      return domesticToDestination ? character.rightHalfBlackCircle : character.leftHalfBlackCircle;
+      if (!dialyFlightRequirment.originPermission) return character.leftHalfBlackCircle;
+      return character.rightHalfBlackCircle;
     } else {
       return dialyFlightRequirment.rsx.toString();
     }
@@ -1927,17 +1909,6 @@ function normalizeFlightNumber(flightNumber: string) {
   }
 
   return flightNumber;
-}
-
-function formatMinuteToString(minutes: number) {
-  if (!minutes) return '';
-  return (
-    Math.floor(minutes / 60)
-      .toString()
-      .padStart(2, '0') +
-    ':' +
-    (minutes % 60).toString().padStart(2, '0')
-  );
 }
 
 function formatDateToHHMM(date: Date) {
@@ -1962,13 +1933,13 @@ function compareFunction(a: number, b: number) {
 
 function hasPermission(flattenFlightRequirment: FlattenFlightRequirment, day: number) {
   const destinationPermission = flattenFlightRequirment.destinationNoPermissionsWeekDay.includes(day);
-  const domesticPermission = flattenFlightRequirment.domesticNoPermissionsWeekDay.includes(day);
+  const domesticPermission = flattenFlightRequirment.originNoPermissionsWeekDay.includes(day);
   return !(destinationPermission || domesticPermission);
 }
 
 function halfPermission(flattenFlightRequirment: FlattenFlightRequirment, day: number) {
   const destinationPermission = flattenFlightRequirment.destinationNoPermissionsWeekDay.includes(day);
-  const domesticPermission = flattenFlightRequirment.domesticNoPermissionsWeekDay.includes(day);
+  const domesticPermission = flattenFlightRequirment.originNoPermissionsWeekDay.includes(day);
   return (destinationPermission && !domesticPermission) || (!destinationPermission && domesticPermission);
 }
 
@@ -1976,1056 +1947,7 @@ function isRealFlight(flattenFlightRequirment: FlattenFlightRequirment, day: num
   return (flattenFlightRequirment as any)['rswWeekDay' + day.toString()] === 'REAL';
 }
 
-function formatDateddMMMyyyy(date: Date) {
-  let day = '' + date.getUTCDate(),
-    year = date.getUTCFullYear();
-  const month = date.toLocaleString('default', { month: 'short' }).toUpperCase();
-
-  day = day.padStart(2, '0');
-
-  return [day, month, year].join('/');
-}
-
-function formatDateddMMMyy(date: Date) {
-  let day = '' + date.getUTCDate(),
-    year = date
-      .getUTCFullYear()
-      .toString()
-      .substr(2, 2);
-  const month = date.toLocaleString('default', { month: 'short' }).toUpperCase();
-
-  day = day.padStart(2, '0');
-
-  return [day, month, year].join('');
-}
-
 function getPreplanFlightRequirments(preplanId: string) {
   //TODO get correct
-  return getDummyPreplan().flightRequirements;
-}
-
-function getDummyPreplanHeaders(): PreplanHeader[] {
-  return [
-    {
-      id: '123',
-      name: 'S20 International Final',
-      published: true,
-      finalized: false,
-      userId: '1001',
-      userName: 'MAHANAIR961234',
-      userDisplayName: 'Moradi',
-      parentPreplanId: '122',
-      parentPreplanName: 'S19 International Default',
-      creationDateTime: new Date(),
-      lastEditDateTime: new Date(),
-      startDate: new Date(2019, 1, 1),
-      endDate: new Date(2019, 7, 1),
-      simulationId: '32847321984',
-      simulationName: 'S19 International Simulation'
-    },
-    {
-      id: '124',
-      name: 'W20 International Final',
-      published: false,
-      finalized: true,
-      userId: '1001',
-      userName: 'MAHANAIR961234',
-      userDisplayName: 'Moradi',
-      parentPreplanId: '122',
-      parentPreplanName: 'S19 International Default',
-      creationDateTime: new Date(),
-      lastEditDateTime: new Date(),
-      startDate: new Date(2019, 1, 1),
-      endDate: new Date(2019, 7, 1),
-      simulationId: '32847321984',
-      simulationName: 'S19 International Simulation'
-    },
-    {
-      id: '125',
-      name: 'S19 International Final',
-      published: true,
-      finalized: false,
-      userId: '1002',
-      userName: 'MAHANAIR961234',
-      userDisplayName: 'Moradi',
-      parentPreplanId: '122',
-      parentPreplanName: 'S19 International Default',
-      creationDateTime: new Date(),
-      lastEditDateTime: new Date(),
-      startDate: new Date(2019, 1, 1),
-      endDate: new Date(2019, 7, 1),
-      simulationId: '32847321984',
-      simulationName: 'S19 International Simulation'
-    },
-    {
-      id: '126',
-      name: 'W19 International Final',
-      published: true,
-      finalized: true,
-      userId: '1002',
-      userName: 'MAHANAIR961234',
-      userDisplayName: 'Moradi',
-      parentPreplanId: '122',
-      parentPreplanName: 'S19 International Default',
-      creationDateTime: new Date(),
-      lastEditDateTime: new Date(),
-      startDate: new Date(2019, 1, 1),
-      endDate: new Date(2019, 7, 1),
-      simulationId: '32847321984',
-      simulationName: 'S19 International Simulation'
-    },
-    {
-      id: '127',
-      name: 'S18 International Final',
-      published: true,
-      finalized: true,
-      userId: '1003',
-      userName: 'MAHANAIR961234',
-      userDisplayName: 'Moradi',
-      parentPreplanId: '122',
-      parentPreplanName: 'S19 International Default',
-      creationDateTime: new Date(),
-      lastEditDateTime: new Date(),
-      startDate: new Date(2019, 1, 1),
-      endDate: new Date(2019, 7, 1),
-      simulationId: '32847321984',
-      simulationName: 'S19 International Simulation'
-    },
-    {
-      id: '128',
-      name: 'W18 International Final',
-      published: true,
-      finalized: true,
-      userId: '1003',
-      userName: 'MAHANAIR961234',
-      userDisplayName: 'Moradi',
-      parentPreplanId: '122',
-      parentPreplanName: 'S19 International Default',
-      creationDateTime: new Date(),
-      lastEditDateTime: new Date(),
-      startDate: new Date(2019, 1, 1),
-      endDate: new Date(2019, 7, 1),
-      simulationId: '32847321984',
-      simulationName: 'S19 International Simulation'
-    }
-  ];
-}
-
-function getDummyPreplan(): Preplan {
-  return new Preplan({
-    id: '123',
-    name: 'First Preplan',
-    published: false,
-    finalized: false,
-    userId: '1010',
-    userName: 'Moradi',
-    userDisplayName: 'Moradi',
-    parentPreplanId: '2020',
-    parentPreplanName: 'Before First Preplan',
-    creationDateTime: new Date().addDays(-10).toJSON(),
-    lastEditDateTime: new Date().addDays(-1).toJSON(),
-    startDate: new Date().toJSON(),
-    endDate: new Date().addDays(20).toJSON(),
-
-    autoArrangerOptions: { minimumGroundTimeMode: 'AVERAGE', minimumGroundTimeOffset: 50 },
-    autoArrangerState: {
-      solving: true,
-      solvingStartDateTime: new Date().toString(),
-      solvingDuration: 185,
-      message: {
-        type: 'ERROR',
-        text: 'Message Text .... '
-      },
-      messageViewed: false,
-      changeLogs: [
-        {
-          flightDerievedId: '000#4',
-          oldStd: 156,
-          oldAircraftRegisterId: MasterData.all.aircraftRegisters.items[0].id,
-          newStd: 485,
-          newAircraftRegisterId: MasterData.all.aircraftRegisters.items[1].id
-        },
-        {
-          flightDerievedId: '000#5',
-          oldStd: 300,
-          oldAircraftRegisterId: MasterData.all.aircraftRegisters.items[2].id,
-          newStd: 720,
-          newAircraftRegisterId: MasterData.all.aircraftRegisters.items[3].id
-        }
-      ],
-      changeLogsViewed: true
-    },
-    flightRequirements: [
-      {
-        id: '7092902000000155566',
-        definition: { category: '', label: 'BEY', stcId: '3', flightNumber: 'W5 1152', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000004781' },
-        scope: {
-          rsx: 'REAL',
-          originPermission: true,
-          destinationPermission: true,
-          blockTime: 140,
-          times: [{ stdLowerBound: 120, stdUpperBound: 240 }],
-          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000282' }], forbiddenIdentities: [] },
-          required: true
-        },
-        days: [
-          {
-            freezed: false,
-            scope: {
-              rsx: 'REAL',
-              originPermission: true,
-              destinationPermission: true,
-              blockTime: 140,
-              times: [{ stdLowerBound: 120, stdUpperBound: 240 }],
-              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000282' }], forbiddenIdentities: [] },
-              required: true
-            },
-            notes: 'somenotes...',
-            day: 4,
-            flight: { std: 180, aircraftRegisterId: '7092902880000000282' }
-          }
-        ],
-        ignored: false
-      },
-      {
-        id: '7092902000000155637',
-        definition: { category: '', label: 'BEY', stcId: '3', flightNumber: 'W5 1156', departureAirportId: '7092901520000002340', arrivalAirportId: '7092901520000004781' },
-        scope: {
-          rsx: 'REAL',
-          originPermission: true,
-          destinationPermission: true,
-          blockTime: 200,
-          times: [{ stdLowerBound: 620, stdUpperBound: 740 }],
-          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000282' }], forbiddenIdentities: [] },
-          required: true
-        },
-        days: [
-          {
-            freezed: false,
-            scope: {
-              rsx: 'REAL',
-              originPermission: true,
-              destinationPermission: true,
-              blockTime: 200,
-              times: [{ stdLowerBound: 620, stdUpperBound: 740 }],
-              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000282' }], forbiddenIdentities: [] },
-              required: true
-            },
-            notes: 'somenotes...',
-            day: 4,
-            flight: { std: 680, aircraftRegisterId: '7092902880000000282' }
-          }
-        ],
-        ignored: false
-      },
-      {
-        id: '7092902000000155659',
-        definition: { category: '', label: 'BEY', stcId: '3', flightNumber: 'W5 1153', departureAirportId: '7092901520000004781', arrivalAirportId: '7092901520000001588' },
-        scope: {
-          rsx: 'REAL',
-          originPermission: true,
-          destinationPermission: true,
-          blockTime: 130,
-          times: [{ stdLowerBound: 910, stdUpperBound: 1030 }],
-          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000282' }], forbiddenIdentities: [] },
-          required: true
-        },
-        days: [
-          {
-            freezed: false,
-            scope: {
-              rsx: 'REAL',
-              originPermission: true,
-              destinationPermission: true,
-              blockTime: 130,
-              times: [{ stdLowerBound: 910, stdUpperBound: 1030 }],
-              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000282' }], forbiddenIdentities: [] },
-              required: true
-            },
-            notes: 'somenotes...',
-            day: 4,
-            flight: { std: 970, aircraftRegisterId: '7092902880000000282' }
-          }
-        ],
-        ignored: false
-      },
-      {
-        id: '7092902000000155599',
-        definition: { category: '', label: 'BEY', stcId: '3', flightNumber: 'W5 1157', departureAirportId: '7092901520000004781', arrivalAirportId: '7092901520000002340' },
-        scope: {
-          rsx: 'REAL',
-          originPermission: true,
-          destinationPermission: true,
-          blockTime: 180,
-          times: [{ stdLowerBound: 350, stdUpperBound: 470 }],
-          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000282' }], forbiddenIdentities: [] },
-          required: true
-        },
-        days: [
-          {
-            freezed: false,
-            scope: {
-              rsx: 'REAL',
-              originPermission: true,
-              destinationPermission: true,
-              blockTime: 180,
-              times: [{ stdLowerBound: 350, stdUpperBound: 470 }],
-              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000282' }], forbiddenIdentities: [] },
-              required: true
-            },
-            notes: 'somenotes...',
-            day: 4,
-            flight: { std: 410, aircraftRegisterId: '7092902880000000282' }
-          }
-        ],
-        ignored: false
-      },
-      {
-        id: '7092902000000155828',
-        definition: { category: '', label: 'BEY', stcId: '3', flightNumber: 'W5 1152', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000004781' },
-        scope: {
-          rsx: 'REAL',
-          originPermission: true,
-          destinationPermission: true,
-          blockTime: 140,
-          times: [{ stdLowerBound: 120, stdUpperBound: 240 }],
-          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001060' }], forbiddenIdentities: [] },
-          required: true
-        },
-        days: [
-          {
-            freezed: false,
-            scope: {
-              rsx: 'REAL',
-              originPermission: true,
-              destinationPermission: true,
-              blockTime: 140,
-              times: [{ stdLowerBound: 120, stdUpperBound: 240 }],
-              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001060' }], forbiddenIdentities: [] },
-              required: true
-            },
-            notes: 'somenotes...',
-            day: 1,
-            flight: { std: 180, aircraftRegisterId: '7092902880000001060' }
-          }
-        ],
-        ignored: false
-      },
-      {
-        id: '7092902000000155894',
-        definition: { category: '', label: 'BEY', stcId: '3', flightNumber: 'W5 1156', departureAirportId: '7092901520000002340', arrivalAirportId: '7092901520000004781' },
-        scope: {
-          rsx: 'REAL',
-          originPermission: true,
-          destinationPermission: true,
-          blockTime: 200,
-          times: [{ stdLowerBound: 620, stdUpperBound: 740 }],
-          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001060' }], forbiddenIdentities: [] },
-          required: true
-        },
-        days: [
-          {
-            freezed: false,
-            scope: {
-              rsx: 'REAL',
-              originPermission: true,
-              destinationPermission: true,
-              blockTime: 200,
-              times: [{ stdLowerBound: 620, stdUpperBound: 740 }],
-              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001060' }], forbiddenIdentities: [] },
-              required: true
-            },
-            notes: 'somenotes...',
-            day: 1,
-            flight: { std: 680, aircraftRegisterId: '7092902880000001060' }
-          }
-        ],
-        ignored: false
-      },
-      {
-        id: '7092902000000155914',
-        definition: { category: '', label: 'BEY', stcId: '3', flightNumber: 'W5 1153', departureAirportId: '7092901520000004781', arrivalAirportId: '7092901520000001588' },
-        scope: {
-          rsx: 'REAL',
-          originPermission: true,
-          destinationPermission: true,
-          blockTime: 130,
-          times: [{ stdLowerBound: 910, stdUpperBound: 1030 }],
-          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001060' }], forbiddenIdentities: [] },
-          required: true
-        },
-        days: [
-          {
-            freezed: false,
-            scope: {
-              rsx: 'REAL',
-              originPermission: true,
-              destinationPermission: true,
-              blockTime: 130,
-              times: [{ stdLowerBound: 910, stdUpperBound: 1030 }],
-              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001060' }], forbiddenIdentities: [] },
-              required: true
-            },
-            notes: 'somenotes...',
-            day: 1,
-            flight: { std: 970, aircraftRegisterId: '7092902880000001060' }
-          }
-        ],
-        ignored: false
-      },
-      {
-        id: '7092902000000155864',
-        definition: { category: '', label: 'BEY', stcId: '3', flightNumber: 'W5 1157', departureAirportId: '7092901520000004781', arrivalAirportId: '7092901520000002340' },
-        scope: {
-          rsx: 'REAL',
-          originPermission: true,
-          destinationPermission: true,
-          blockTime: 180,
-          times: [{ stdLowerBound: 350, stdUpperBound: 470 }],
-          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001060' }], forbiddenIdentities: [] },
-          required: true
-        },
-        days: [
-          {
-            freezed: false,
-            scope: {
-              rsx: 'REAL',
-              originPermission: true,
-              destinationPermission: true,
-              blockTime: 180,
-              times: [{ stdLowerBound: 350, stdUpperBound: 470 }],
-              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001060' }], forbiddenIdentities: [] },
-              required: true
-            },
-            notes: 'somenotes...',
-            day: 1,
-            flight: { std: 410, aircraftRegisterId: '7092902880000001060' }
-          }
-        ],
-        ignored: false
-      },
-      {
-        id: '7092902000000155325',
-        definition: { category: '', label: 'BCN', stcId: '10', flightNumber: 'W5 0136', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000004755' },
-        scope: {
-          rsx: 'REAL',
-          originPermission: true,
-          destinationPermission: true,
-          blockTime: 345,
-          times: [{ stdLowerBound: 70, stdUpperBound: 190 }],
-          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000970' }], forbiddenIdentities: [] },
-          required: true
-        },
-        days: [
-          {
-            freezed: false,
-            scope: {
-              rsx: 'REAL',
-              originPermission: true,
-              destinationPermission: true,
-              blockTime: 345,
-              times: [{ stdLowerBound: 70, stdUpperBound: 190 }],
-              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000970' }], forbiddenIdentities: [] },
-              required: true
-            },
-            notes: '1...',
-            day: 1,
-            flight: { std: 135, aircraftRegisterId: '7092902880000000970' }
-          }
-        ],
-        ignored: false
-      },
-      {
-        id: '7092902000000155374',
-        definition: { category: '', label: 'BCN', stcId: '10', flightNumber: 'W5 0137', departureAirportId: '7092901520000004755', arrivalAirportId: '7092901520000001588' },
-        scope: {
-          rsx: 'REAL',
-          originPermission: true,
-          destinationPermission: true,
-          blockTime: 325,
-          times: [{ stdLowerBound: 505, stdUpperBound: 625 }],
-          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000970' }], forbiddenIdentities: [] },
-          required: true
-        },
-        days: [
-          {
-            freezed: false,
-            scope: {
-              rsx: 'REAL',
-              originPermission: true,
-              destinationPermission: true,
-              blockTime: 330,
-              times: [{ stdLowerBound: 505, stdUpperBound: 625 }],
-              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000970' }], forbiddenIdentities: [] },
-              required: true
-            },
-            notes: '2...',
-            day: 1,
-            flight: { std: 565, aircraftRegisterId: '7092902880000000970' }
-          }
-        ],
-        ignored: false
-      },
-      {
-        id: '7092902000000155855',
-        definition: { category: '', label: 'BCN', stcId: '10', flightNumber: 'W5 0136', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000004755' },
-        scope: {
-          rsx: 'REAL',
-          originPermission: true,
-          destinationPermission: true,
-          blockTime: 345,
-          times: [{ stdLowerBound: 70, stdUpperBound: 190 }],
-          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000970' }], forbiddenIdentities: [] },
-          required: true
-        },
-        days: [
-          {
-            freezed: false,
-            scope: {
-              rsx: 'REAL',
-              originPermission: true,
-              destinationPermission: true,
-              blockTime: 340,
-              times: [{ stdLowerBound: 70, stdUpperBound: 190 }],
-              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000970' }], forbiddenIdentities: [] },
-              required: true
-            },
-            notes: '3...',
-            day: 5,
-            flight: { std: 130, aircraftRegisterId: '7092902880000000970' }
-          }
-        ],
-        ignored: false
-      },
-      {
-        id: '7092902000000155898',
-        definition: { category: '', label: 'BCN', stcId: '10', flightNumber: 'W5 0137', departureAirportId: '7092901520000004755', arrivalAirportId: '7092901520000001588' },
-        scope: {
-          rsx: 'REAL',
-          originPermission: true,
-          destinationPermission: true,
-          blockTime: 325,
-          times: [{ stdLowerBound: 515, stdUpperBound: 635 }],
-          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000970' }], forbiddenIdentities: [] },
-          required: true
-        },
-        days: [
-          {
-            freezed: false,
-            scope: {
-              rsx: 'REAL',
-              originPermission: true,
-              destinationPermission: true,
-              blockTime: 325,
-              times: [{ stdLowerBound: 515, stdUpperBound: 635 }],
-              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000970' }], forbiddenIdentities: [] },
-              required: true
-            },
-            notes: '4',
-            day: 5,
-            flight: { std: 600, aircraftRegisterId: '7092902880000000970' }
-          }
-        ],
-        ignored: false
-      },
-      {
-        id: '7092902000000132137',
-        definition: { category: '', label: 'CDG', stcId: '10', flightNumber: 'W5 0106', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000005045' },
-        scope: {
-          rsx: 'REAL',
-          originPermission: true,
-          destinationPermission: true,
-          blockTime: 360,
-          times: [{ stdLowerBound: 140, stdUpperBound: 260 }],
-          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001060' }], forbiddenIdentities: [] },
-          required: true
-        },
-        days: [
-          {
-            freezed: false,
-            scope: {
-              rsx: 'REAL',
-              originPermission: true,
-              destinationPermission: true,
-              blockTime: 360,
-              times: [{ stdLowerBound: 140, stdUpperBound: 260 }],
-              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001060' }], forbiddenIdentities: [] },
-              required: true
-            },
-            notes: 'somenotes...',
-            day: 0,
-            flight: { std: 200, aircraftRegisterId: '7092902880000001060' }
-          }
-        ],
-        ignored: false
-      },
-      {
-        id: '7092902000000132166',
-        definition: { category: '', label: 'CDG', stcId: '10', flightNumber: 'W5 0107', departureAirportId: '7092901520000005045', arrivalAirportId: '7092901520000001588' },
-        scope: {
-          rsx: 'REAL',
-          originPermission: true,
-          destinationPermission: true,
-          blockTime: 315,
-          times: [{ stdLowerBound: 595, stdUpperBound: 715 }],
-          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001060' }], forbiddenIdentities: [] },
-          required: true
-        },
-        days: [
-          {
-            freezed: false,
-            scope: {
-              rsx: 'REAL',
-              originPermission: true,
-              destinationPermission: true,
-              blockTime: 315,
-              times: [{ stdLowerBound: 595, stdUpperBound: 715 }],
-              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001060' }], forbiddenIdentities: [] },
-              required: true
-            },
-            notes: 'somenotes...',
-            day: 0,
-            flight: { std: 655, aircraftRegisterId: '7092902880000001060' }
-          }
-        ],
-        ignored: false
-      },
-      {
-        id: '7092902000000131838',
-        definition: { category: '', label: 'CDG', stcId: '10', flightNumber: 'W5 0106', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000005045' },
-        scope: {
-          rsx: 'REAL',
-          originPermission: true,
-          destinationPermission: true,
-          blockTime: 360,
-          times: [{ stdLowerBound: 140, stdUpperBound: 260 }],
-          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001088' }], forbiddenIdentities: [] },
-          required: true
-        },
-        days: [
-          {
-            freezed: false,
-            scope: {
-              rsx: 'REAL',
-              originPermission: true,
-              destinationPermission: true,
-              blockTime: 360,
-              times: [{ stdLowerBound: 140, stdUpperBound: 260 }],
-              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001088' }], forbiddenIdentities: [] },
-              required: true
-            },
-            notes: 'somenotes...',
-            day: 4,
-            flight: { std: 200, aircraftRegisterId: '7092902880000001088' }
-          }
-        ],
-        ignored: false
-      },
-      {
-        id: '7092902000000131872',
-        definition: { category: '', label: 'CDG', stcId: '10', flightNumber: 'W5 0107', departureAirportId: '7092901520000005045', arrivalAirportId: '7092901520000001588' },
-        scope: {
-          rsx: 'REAL',
-          originPermission: true,
-          destinationPermission: true,
-          blockTime: 315,
-          times: [{ stdLowerBound: 595, stdUpperBound: 715 }],
-          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001088' }], forbiddenIdentities: [] },
-          required: true
-        },
-        days: [
-          {
-            freezed: false,
-            scope: {
-              rsx: 'REAL',
-              originPermission: true,
-              destinationPermission: true,
-              blockTime: 315,
-              times: [{ stdLowerBound: 595, stdUpperBound: 715 }],
-              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001088' }], forbiddenIdentities: [] },
-              required: true
-            },
-            notes: 'somenotes...',
-            day: 4,
-            flight: { std: 655, aircraftRegisterId: '7092902880000001088' }
-          }
-        ],
-        ignored: false
-      },
-      {
-        id: '7092902000000131949',
-        definition: { category: '', label: 'CDG', stcId: '10', flightNumber: 'W5 0106', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000005045' },
-        scope: {
-          rsx: 'REAL',
-          originPermission: true,
-          destinationPermission: true,
-          blockTime: 360,
-          times: [{ stdLowerBound: 140, stdUpperBound: 260 }],
-          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001088' }], forbiddenIdentities: [] },
-          required: true
-        },
-        days: [
-          {
-            freezed: false,
-            scope: {
-              rsx: 'REAL',
-              originPermission: true,
-              destinationPermission: true,
-              blockTime: 360,
-              times: [{ stdLowerBound: 140, stdUpperBound: 260 }],
-              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001088' }], forbiddenIdentities: [] },
-              required: true
-            },
-            notes: 'somenotes...',
-            day: 5,
-            flight: { std: 200, aircraftRegisterId: '7092902880000001088' }
-          }
-        ],
-        ignored: false
-      },
-      {
-        id: '7092902000000131978',
-        definition: { category: '', label: 'CDG', stcId: '10', flightNumber: 'W5 0107', departureAirportId: '7092901520000005045', arrivalAirportId: '7092901520000001588' },
-        scope: {
-          rsx: 'REAL',
-          originPermission: true,
-          destinationPermission: true,
-          blockTime: 315,
-          times: [{ stdLowerBound: 595, stdUpperBound: 715 }],
-          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001088' }], forbiddenIdentities: [] },
-          required: true
-        },
-        days: [
-          {
-            freezed: false,
-            scope: {
-              rsx: 'REAL',
-              originPermission: true,
-              destinationPermission: true,
-              blockTime: 315,
-              times: [{ stdLowerBound: 595, stdUpperBound: 715 }],
-              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000001088' }], forbiddenIdentities: [] },
-              required: true
-            },
-            notes: 'somenotes...',
-            day: 5,
-            flight: { std: 655, aircraftRegisterId: '7092902880000001088' }
-          }
-        ],
-        ignored: false
-      },
-      {
-        id: '7092902000000155470',
-        definition: { category: '', label: 'ALA', stcId: '10', flightNumber: 'W5 0072', departureAirportId: '7092901520000004577', arrivalAirportId: '7092901520000001588' },
-        scope: {
-          rsx: 'REAL',
-          originPermission: true,
-          destinationPermission: true,
-          blockTime: 225,
-          times: [{ stdLowerBound: 345, stdUpperBound: 465 }],
-          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000292' }], forbiddenIdentities: [] },
-          required: true
-        },
-        days: [
-          {
-            freezed: false,
-            scope: {
-              rsx: 'REAL',
-              originPermission: true,
-              destinationPermission: true,
-              blockTime: 225,
-              times: [{ stdLowerBound: 345, stdUpperBound: 465 }],
-              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000292' }], forbiddenIdentities: [] },
-              required: true
-            },
-            notes: 'somenotes...',
-            day: 2,
-            flight: { std: 405, aircraftRegisterId: '7092902880000000292' }
-          }
-        ],
-        ignored: false
-      },
-      {
-        id: '7092902000000155440',
-        definition: { category: '', label: 'ALA', stcId: '10', flightNumber: 'W5 0073', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000004577' },
-        scope: {
-          rsx: 'REAL',
-          originPermission: true,
-          destinationPermission: true,
-          blockTime: 210,
-          times: [{ stdLowerBound: 55, stdUpperBound: 175 }],
-          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000292' }], forbiddenIdentities: [] },
-          required: true
-        },
-        days: [
-          {
-            freezed: false,
-            scope: {
-              rsx: 'REAL',
-              originPermission: true,
-              destinationPermission: true,
-              blockTime: 210,
-              times: [{ stdLowerBound: 55, stdUpperBound: 175 }],
-              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000292' }], forbiddenIdentities: [] },
-              required: true
-            },
-            notes: 'somenotes...',
-            day: 2,
-            flight: { std: 115, aircraftRegisterId: '7092902880000000292' }
-          }
-        ],
-        ignored: false
-      },
-      {
-        id: '7092902000000155224',
-        definition: { category: '', label: 'DUS', stcId: '10', flightNumber: 'W5 0050', departureAirportId: '7092901520000000978', arrivalAirportId: '7092901520000001588' },
-        scope: {
-          rsx: 'REAL',
-          originPermission: true,
-          destinationPermission: true,
-          blockTime: 445,
-          times: [{ stdLowerBound: 875, stdUpperBound: 995 }],
-          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000348' }], forbiddenIdentities: [] },
-          required: true
-        },
-        days: [
-          {
-            freezed: false,
-            scope: {
-              rsx: 'REAL',
-              originPermission: true,
-              destinationPermission: true,
-              blockTime: 445,
-              times: [{ stdLowerBound: 875, stdUpperBound: 995 }],
-              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000348' }], forbiddenIdentities: [] },
-              required: true
-            },
-            notes: 'somenotes...',
-            day: 0,
-            flight: { std: 935, aircraftRegisterId: '7092902880000000348' }
-          }
-        ],
-        ignored: false
-      },
-      {
-        id: '7092902000000155413',
-        definition: { category: '', label: 'DUS', stcId: '10', flightNumber: 'W5 0051', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000000978' },
-        scope: {
-          rsx: 'REAL',
-          originPermission: true,
-          destinationPermission: true,
-          blockTime: 405,
-          times: [{ stdLowerBound: 1000, stdUpperBound: 1120 }],
-          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000298' }], forbiddenIdentities: [] },
-          required: true
-        },
-        days: [
-          {
-            freezed: false,
-            scope: {
-              rsx: 'REAL',
-              originPermission: true,
-              destinationPermission: true,
-              blockTime: 405,
-              times: [{ stdLowerBound: 1000, stdUpperBound: 1120 }],
-              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000298' }], forbiddenIdentities: [] },
-              required: true
-            },
-            notes: 'somenotes...',
-            day: 1,
-            flight: { std: 1060, aircraftRegisterId: '7092902880000000298' }
-          }
-        ],
-        ignored: false
-      },
-      {
-        id: '7092902000000155536',
-        definition: { category: '', label: 'DUS', stcId: '10', flightNumber: 'W5 0050', departureAirportId: '7092901520000000978', arrivalAirportId: '7092901520000001588' },
-        scope: {
-          rsx: 'REAL',
-          originPermission: true,
-          destinationPermission: true,
-          blockTime: 445,
-          times: [{ stdLowerBound: 875, stdUpperBound: 995 }],
-          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000298' }], forbiddenIdentities: [] },
-          required: true
-        },
-        days: [
-          {
-            freezed: false,
-            scope: {
-              rsx: 'REAL',
-              originPermission: true,
-              destinationPermission: true,
-              blockTime: 445,
-              times: [{ stdLowerBound: 875, stdUpperBound: 995 }],
-              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000298' }], forbiddenIdentities: [] },
-              required: true
-            },
-            notes: 'somenotes...',
-            day: 2,
-            flight: { std: 935, aircraftRegisterId: '7092902880000000298' }
-          }
-        ],
-        ignored: false
-      },
-      {
-        id: '7092902000000155807',
-        definition: { category: '', label: 'DUS', stcId: '10', flightNumber: 'W5 0051', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000000978' },
-        scope: {
-          rsx: 'REAL',
-          originPermission: true,
-          destinationPermission: true,
-          blockTime: 405,
-          times: [{ stdLowerBound: 1000, stdUpperBound: 1120 }],
-          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000292' }], forbiddenIdentities: [] },
-          required: true
-        },
-        days: [
-          {
-            freezed: false,
-            scope: {
-              rsx: 'REAL',
-              originPermission: true,
-              destinationPermission: true,
-              blockTime: 405,
-              times: [{ stdLowerBound: 1000, stdUpperBound: 1120 }],
-              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000292' }], forbiddenIdentities: [] },
-              required: true
-            },
-            notes: 'somenotes...',
-            day: 4,
-            flight: { std: 1060, aircraftRegisterId: '7092902880000000292' }
-          }
-        ],
-        ignored: false
-      },
-      {
-        id: '7092902000000155933',
-        definition: { category: '', label: 'DUS', stcId: '10', flightNumber: 'W5 0051', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000000978' },
-        scope: {
-          rsx: 'REAL',
-          originPermission: true,
-          destinationPermission: true,
-          blockTime: 405,
-          times: [{ stdLowerBound: 1000, stdUpperBound: 1120 }],
-          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000282' }], forbiddenIdentities: [] },
-          required: true
-        },
-        days: [
-          {
-            freezed: false,
-            scope: {
-              rsx: 'REAL',
-              originPermission: true,
-              destinationPermission: true,
-              blockTime: 405,
-              times: [{ stdLowerBound: 1000, stdUpperBound: 1120 }],
-              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000282' }], forbiddenIdentities: [] },
-              required: true
-            },
-            notes: 'somenotes...',
-            day: 5,
-            flight: { std: 1060, aircraftRegisterId: '7092902880000000282' }
-          }
-        ],
-        ignored: false
-      },
-      {
-        id: '7092902000000155928',
-        definition: { category: '', label: 'DUS', stcId: '10', flightNumber: 'W5 0050', departureAirportId: '7092901520000000978', arrivalAirportId: '7092901520000001588' },
-        scope: {
-          rsx: 'REAL',
-          originPermission: true,
-          destinationPermission: true,
-          blockTime: 445,
-          times: [{ stdLowerBound: 875, stdUpperBound: 995 }],
-          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000292' }], forbiddenIdentities: [] },
-          required: true
-        },
-        days: [
-          {
-            freezed: false,
-            scope: {
-              rsx: 'REAL',
-              originPermission: true,
-              destinationPermission: true,
-              blockTime: 445,
-              times: [{ stdLowerBound: 875, stdUpperBound: 995 }],
-              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000292' }], forbiddenIdentities: [] },
-              required: true
-            },
-            notes: 'somenotes...',
-            day: 5,
-            flight: { std: 935, aircraftRegisterId: '7092902880000000292' }
-          }
-        ],
-        ignored: false
-      },
-      {
-        id: '7092902000000156048',
-        definition: { category: '', label: 'DUS', stcId: '10', flightNumber: 'W5 0050', departureAirportId: '7092901520000000978', arrivalAirportId: '7092901520000001588' },
-        scope: {
-          rsx: 'REAL',
-          originPermission: true,
-          destinationPermission: true,
-          blockTime: 445,
-          times: [{ stdLowerBound: 875, stdUpperBound: 995 }],
-          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000282' }], forbiddenIdentities: [] },
-          required: true
-        },
-        days: [
-          {
-            freezed: false,
-            scope: {
-              rsx: 'REAL',
-              originPermission: true,
-              destinationPermission: true,
-              blockTime: 445,
-              times: [{ stdLowerBound: 875, stdUpperBound: 995 }],
-              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000282' }], forbiddenIdentities: [] },
-              required: true
-            },
-            notes: 'somenotes...',
-            day: 6,
-            flight: { std: 935, aircraftRegisterId: '7092902880000000282' }
-          }
-        ],
-        ignored: false
-      },
-      {
-        id: '7092902000000156051',
-        definition: { category: '', label: 'DUS', stcId: '10', flightNumber: 'W5 0051', departureAirportId: '7092901520000001588', arrivalAirportId: '7092901520000000978' },
-        scope: {
-          rsx: 'REAL',
-          originPermission: true,
-          destinationPermission: true,
-          blockTime: 405,
-          times: [{ stdLowerBound: 1000, stdUpperBound: 1120 }],
-          aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000348' }], forbiddenIdentities: [] },
-          required: true
-        },
-        days: [
-          {
-            freezed: false,
-            scope: {
-              rsx: 'REAL',
-              originPermission: true,
-              destinationPermission: true,
-              blockTime: 405,
-              times: [{ stdLowerBound: 1000, stdUpperBound: 1120 }],
-              aircraftSelection: { allowedIdentities: [{ type: 'REGISTER' as AircraftIdentityType, entityId: '7092902880000000348' }], forbiddenIdentities: [] },
-              required: true
-            },
-            notes: 'somenotes...',
-            day: 6,
-            flight: { std: 1060, aircraftRegisterId: '7092902880000000348' }
-          }
-        ],
-        ignored: false
-      }
-    ],
-    dummyAircraftRegisters: [],
-    aircraftRegisterOptionsDictionary: {}
-  });
+  return [];
 }

@@ -11,7 +11,7 @@ export default class WeekdayFlightRequirementObjection extends Objection {
     readonly weekdayFlightRequirement: WeekdayFlightRequirement,
     messageProvider: (constraintMarker: string, weekdayFlightRequirementMarker: string) => string
   ) {
-    super(type, priority + 200, checker, constraintMarker =>
+    super(type, 'WEEKDAY_FLIGHT_REQUIREMENT', priority, checker, constraintMarker =>
       messageProvider(
         constraintMarker,
         `flight requirement ${weekdayFlightRequirement.definition.label} number ${weekdayFlightRequirement.definition.flightNumber} from ${
@@ -19,5 +19,9 @@ export default class WeekdayFlightRequirementObjection extends Objection {
         } to ${weekdayFlightRequirement.definition.arrivalAirport.name} on ${Weekday[weekdayFlightRequirement.day]}s`
       )
     );
+  }
+
+  get targetId(): string {
+    return this.weekdayFlightRequirement.derivedId;
   }
 }

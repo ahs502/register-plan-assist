@@ -7,7 +7,10 @@ import AutoArrangerOptions from './AutoArrangerOptions';
 import FlightPack from './flights/FlightPack';
 import { Airport } from '@core/master-data';
 import FlightRequirementModel from '@core/models/flights/FlightRequirementModel';
-import ConstraintSystem from './constraints/ConstraintSystem';
+import ConstraintSystem, { ObjectionDiff } from './constraints/ConstraintSystem';
+import DummyAircraftRegisterModel from '@core/models/DummyAircraftRegisterModel';
+import { AircraftRegisterOptionsDictionaryModel } from '@core/models/AircraftRegisterOptionsModel';
+import Objection from './constraints/Objection';
 
 export class PreplanHeader {
   readonly id: string;
@@ -52,9 +55,6 @@ export class PreplanHeader {
 }
 
 export default class Preplan extends PreplanHeader {
-  private allFlights?: readonly Flight[];
-  private allFlightPacks?: readonly FlightPack[];
-
   autoArrangerOptions: AutoArrangerOptions;
   autoArrangerState: AutoArrangerState;
 
@@ -64,38 +64,42 @@ export default class Preplan extends PreplanHeader {
    * @see MasterData.aircraftRegisters as the general (not preplan specific) collection.
    */
   readonly aircraftRegisters: PreplanAircraftRegisters;
-
   readonly flightRequirements: readonly FlightRequirement[];
+
+  stagedAircraftRegisters: PreplanAircraftRegisters;
+  stagedFlightRequirements: readonly FlightRequirement[];
 
   readonly constraintSystem: ConstraintSystem;
 
   constructor(raw: PreplanModel) {
     super(raw);
     this.autoArrangerOptions = raw.autoArrangerOptions ? new AutoArrangerOptions(raw.autoArrangerOptions) : AutoArrangerOptions.default;
-    this.aircraftRegisters = new PreplanAircraftRegisters(raw.dummyAircraftRegisters, raw.aircraftRegisterOptionsDictionary);
-    this.flightRequirements = raw.flightRequirements.map(f => new FlightRequirement(f, this.aircraftRegisters));
+    this.aircraftRegisters = this.stagedAircraftRegisters = new PreplanAircraftRegisters(raw.dummyAircraftRegisters, raw.aircraftRegisterOptionsDictionary);
+    this.flightRequirements = this.stagedFlightRequirements = raw.flightRequirements.map(f => new FlightRequirement(f, this.aircraftRegisters));
     this.autoArrangerState = raw.autoArrangerState && new AutoArrangerState(raw.autoArrangerState, this.aircraftRegisters, this.flights);
     this.constraintSystem = new ConstraintSystem(this);
   }
 
+  private _flights?: readonly Flight[];
   /**
    * Gets the flattened list of this preplan's flights.
    * It won't be changed by reference until something is changed within.
    */
   get flights(): readonly Flight[] {
-    if (this.allFlights) return this.allFlights;
-    return (this.allFlights = this.flightRequirements
+    if (this._flights) return this._flights;
+    return (this._flights = this.flightRequirements
       .filter(f => !f.ignored)
       .map(w => w.days.map(d => d.flight))
       .flatten());
   }
 
+  private _flightPacks?: readonly FlightPack[];
   /**
    * Gets the packed format of this preplan's flights.
    * It won't be changed by reference until something is changed within.
    */
   get flightPacks(): readonly FlightPack[] {
-    if (this.allFlightPacks) return this.allFlightPacks;
+    if (this._flightPacks) return this._flightPacks;
     const flightPacks: FlightPack[] = [];
     const flightsByLabel = this.flights.groupBy('label');
     for (const label in flightsByLabel) {
@@ -128,7 +132,7 @@ export default class Preplan extends PreplanHeader {
         }
       }
     }
-    return (this.allFlightPacks = flightPacks);
+    return (this._flightPacks = flightPacks);
 
     function getAirportBaseLevel(airport: Airport): number {
       switch (airport.name) {
@@ -146,10 +150,10 @@ export default class Preplan extends PreplanHeader {
     }
   }
 
-  mergeFlightRequirements(...flightRequirementsModel: FlightRequirementModel[]): void {
-    delete this.allFlights;
-    delete this.allFlightPacks;
-    const flightRequirements = flightRequirementsModel.map(f => new FlightRequirement(f, this.aircraftRegisters));
+  mergeFlightRequirements(...flightRequirementModels: readonly FlightRequirementModel[]): void {
+    delete this._flights;
+    delete this._flightPacks;
+    const flightRequirements = flightRequirementModels.map(f => new FlightRequirement(f, this.aircraftRegisters));
     const allFlightRequirements = this.flightRequirements as FlightRequirement[];
     allFlightRequirements.forEach((f, i) => {
       if (flightRequirements.length === 0) return;
@@ -159,11 +163,37 @@ export default class Preplan extends PreplanHeader {
     });
     flightRequirements.forEach(h => allFlightRequirements.push(h));
   }
-
   removeFlightRequirement(flightRequirementId: string): void {
-    delete this.allFlights;
-    delete this.allFlightPacks;
+    delete this._flights;
+    delete this._flightPacks;
     const allFlightRequirements = this.flightRequirements as FlightRequirement[];
     allFlightRequirements.splice(allFlightRequirements.findIndex(f => f.id === flightRequirementId), 1);
+  }
+
+  stage(changes: {
+    updatingAircraftRegisters?: {
+      dummyAircraftRegisters: readonly DummyAircraftRegisterModel[];
+      aircraftRegisterOptionsDictionary: AircraftRegisterOptionsDictionaryModel;
+    };
+    mergingFlightRequirementModels?: readonly FlightRequirementModel[];
+    removingFlightRequirementId?: string;
+  }): ObjectionDiff {
+    this.stagedAircraftRegisters = changes.updatingAircraftRegisters
+      ? new PreplanAircraftRegisters(changes.updatingAircraftRegisters.dummyAircraftRegisters, changes.updatingAircraftRegisters.aircraftRegisterOptionsDictionary)
+      : this.aircraftRegisters;
+
+    this.stagedFlightRequirements = changes.mergingFlightRequirementModels
+      ? this.flightRequirements
+          .filter(f => changes.mergingFlightRequirementModels!.every(g => g.id != f.id))
+          .concat(changes.mergingFlightRequirementModels.map(f => new FlightRequirement(f, this.stagedAircraftRegisters)))
+      : changes.removingFlightRequirementId
+      ? this.flightRequirements.filter(f => f.id != changes.removingFlightRequirementId)
+      : this.flightRequirements;
+
+    return this.constraintSystem.stage();
+  }
+
+  commit(): void {
+    this.constraintSystem.commit();
   }
 }

@@ -15,11 +15,11 @@ switch (process.argv[2]) {
 
   case 'post':
     exec(
-      `npm version --prefix Core ${package.version} &&` +
-        `npm version --prefix Server ${package.version} &&` +
-        `npm version --prefix Client ${package.version} &&` +
-        `git commit -am"${package.version}" &&` +
-        `git tag v${package.version}`,
+      `npm version --prefix Core ${package.version} && ` +
+        `npm version --prefix Server ${package.version} && ` +
+        `npm version --prefix Client ${package.version} && ` +
+        `git commit -am"${package.version}"`,
+      // + ` && git tag ${package.version}`, // It will be done with TFS automatically after build.
       (error, stdout, stderr) => {
         if (error) throw stderr;
         console.log(stdout);

@@ -361,7 +361,7 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = memo(
         if (item.className && item.className.startsWith('rpa-group-item-')) return '';
 
         const flightPack: FlightPack = item.data;
-        const stcColor = persistant.userSettings!.stcColors[flightPack.flights[0].stc.name];
+        const stcColor = persistant.userSettings!.stcColors[flightPack.flights[0].stc.name] || '#000000';
         return `
           <div class="rpa-item-header">
             <div class="rpa-item-time rpa-item-std">

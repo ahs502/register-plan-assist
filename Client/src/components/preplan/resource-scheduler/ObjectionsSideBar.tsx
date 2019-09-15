@@ -3,8 +3,8 @@ import { Theme } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import Search, { filterOnProperties } from 'src/components/Search';
 import SideBarContainer from './SideBarContainer';
-import ErrorsAndWarningsList from './ErrorsAndWarningsList';
-// import Objection from 'src/business/objections/Objection';
+import ObjectionList from './ObjectionList';
+import Objection from 'src/business/constraints/Objection';
 
 const useStyles = makeStyles((theme: Theme) => ({
   error: {
@@ -15,12 +15,12 @@ const useStyles = makeStyles((theme: Theme) => ({
   }
 }));
 
-export interface ErrorsAndWarningsSideBarProps {
-  objections: ReadonlyArray<any>;
+export interface ObjectionsSideBarProps {
+  objections: readonly Objection[];
   initialSearch?: string;
 }
 
-const ErrorsAndWarningsSideBar: FC<ErrorsAndWarningsSideBarProps> = ({ objections, initialSearch }) => {
+const ObjectionsSideBar: FC<ObjectionsSideBarProps> = ({ objections, initialSearch }) => {
   const [filteredObjections, setFilteredObjections] = useState(objections);
 
   const classes = useStyles();
@@ -57,9 +57,9 @@ const ErrorsAndWarningsSideBar: FC<ErrorsAndWarningsSideBarProps> = ({ objection
           {totalErrorCount} Warnings
         </span>
       </div>
-      <ErrorsAndWarningsList objections={filteredObjections} />
+      <ObjectionList objections={filteredObjections} />
     </SideBarContainer>
   );
 };
 
-export default ErrorsAndWarningsSideBar;
+export default ObjectionsSideBar;

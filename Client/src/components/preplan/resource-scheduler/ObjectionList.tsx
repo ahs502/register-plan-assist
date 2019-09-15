@@ -26,11 +26,11 @@ const useStyles = makeStyles((theme: Theme) => ({
   }
 }));
 
-export interface ErrorAndWarningListProps {
-  objections: ReadonlyArray<Readonly<Objection>>;
+export interface ObjectionListProps {
+  objections: readonly Objection[];
 }
 
-const ErrorAndWarningList: FC<ErrorAndWarningListProps> = ({ objections }) => {
+const ObjectionList: FC<ObjectionListProps> = ({ objections }) => {
   const classes = useStyles();
 
   return (
@@ -52,4 +52,4 @@ const ErrorAndWarningList: FC<ErrorAndWarningListProps> = ({ objections }) => {
   );
 };
 
-export default ErrorAndWarningList;
+export default ObjectionList;

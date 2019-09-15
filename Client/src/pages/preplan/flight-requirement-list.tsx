@@ -7,22 +7,14 @@ import Search from 'src/components/Search';
 import { DoneAll as FinilizedIcon, Add as AddIcon, Edit as EditIcon, Clear as ClearIcon, Done as DoneIcon } from '@material-ui/icons';
 import classNames from 'classnames';
 import Weekday from '@core/types/Weekday';
-
 import TablePagination from '@material-ui/core/TablePagination';
 import TablePaginationActions from 'src/components/PaginationAction';
-
-import FlightRequirement from 'src/view-models/flights/FlightRequirement';
-import WeekdayFlightRequirement from 'src/view-models/flights/WeekdayFlightRequirement';
-import AircraftIdentityType from '@core/types/aircraft-identity/AircraftIdentityType';
-import Preplan from 'src/view-models/Preplan';
-import MasterData from '@core/master-data';
-import { FlightScopeModel } from '@core/models/flights/FlightScopeModel';
-import FlightTimeModel from '@core/models/flights/FlightTimeModel';
-import AircraftIdentityModel from '@core/models/AircraftIdentityModel';
-import FlightRequirementModel from '@core/models/flights/FlightRequirementModel';
-import { required } from 'yargs';
-import WeekdayFlightRequirementModel from '@core/models/flights/WeekdayFlightRequirementModel';
+import FlightRequirement from 'src/business/flights/FlightRequirement';
+import WeekdayFlightRequirement from 'src/business/flights/WeekdayFlightRequirement';
+import Preplan from 'src/business/Preplan';
 import PreplanService from 'src/services/PreplanService';
+import ProgressSwitch from 'src/components/ProgressSwitch';
+import { useSnackbar, VariantType } from 'notistack';
 
 const useStyles = makeStyles((theme: Theme) => ({
   contentPage: {
@@ -65,6 +57,11 @@ const useStyles = makeStyles((theme: Theme) => ({
   }
 }));
 
+interface IncludeLoadingStatus {
+  [id: string]: boolean;
+  value: boolean;
+}
+
 export interface FlightRequirementListPageProps {
   flightRequirements: ReadonlyArray<FlightRequirement>;
   preplan: Preplan;
@@ -89,34 +86,6 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = React.memo
     onRemoveWeekdayFlightRequirement,
     onEditWeekdayFlightRequirement
   }) => {
-    // useEffect(() => {
-    //   console.log('flightRequirements', flightRequirements);
-    // }, [flightRequirements]);
-
-    // useEffect(() => {
-    //   console.log('onAddFlightRequirement', onAddFlightRequirement);
-    // }, [onAddFlightRequirement]);
-
-    // useEffect(() => {
-    //   console.log('onRemoveFlightRequirement', onRemoveFlightRequirement);
-    // }, [onRemoveFlightRequirement]);
-
-    // useEffect(() => {
-    //   console.log('onEditFlightRequirement', onEditFlightRequirement);
-    // }, [onEditFlightRequirement]);
-
-    // useEffect(() => {
-    //   console.log('onAddReturnFlightRequirement', onAddReturnFlightRequirement);
-    // }, [onAddReturnFlightRequirement]);
-
-    // useEffect(() => {
-    //   console.log('onRemoveWeekdayFlightRequirement', onRemoveWeekdayFlightRequirement);
-    // }, [onRemoveWeekdayFlightRequirement]);
-
-    // useEffect(() => {
-    //   console.log('onEditWeekdayFlightRequirement', onEditWeekdayFlightRequirement);
-    // }, [onEditWeekdayFlightRequirement]);
-
     console.log(flightRequirements);
 
     const navBarToolsContainer = useContext(NavBarToolsContainerContext);
@@ -125,24 +94,22 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = React.memo
     const [numberOfAllFR, setNumberOfAllFr] = useState(0);
     const [numberOfIgnoreFR, setNumberOfIgnoreFr] = useState(0);
     const [filterFlightRequirment, setFilterFlightRequirment] = useState<ReadonlyArray<FlightRequirement>>(flightRequirements);
+    const [includeLoadingStatus, setIncludeLoadingStatus] = useState<IncludeLoadingStatus>({} as IncludeLoadingStatus);
     const [pageNumber, setPageNumber] = useState(0);
     const [rowPerPage, setRowPerPage] = useState(10);
 
-    const classes = useStyles();
+    const { enqueueSnackbar } = useSnackbar();
 
-    const handleChange = <T extends {}>(
-      list: ReadonlyArray<T>,
-      item: T,
-      propertyName: keyof T,
-      newValue: any,
-      settter: (value: React.SetStateAction<ReadonlyArray<T>>) => void
-    ) => {
-      const tempList = [...list];
-      const index = list.indexOf(item);
-      tempList[index][propertyName] = newValue;
-      settter(tempList);
-      return tempList[index];
-    };
+    function snackbar(message: string, variant: VariantType) {
+      // variant could be success, error, warning, info, or default
+      enqueueSnackbar(message, { variant });
+    }
+    useEffect(() => {
+      console.log('use effect', flightRequirements, tab, searchValue);
+      filterFlightRequiermentBySelectedTab(filterOnProperties(searchValue), tab);
+    }, [flightRequirements, tab, searchValue, preplan.flights, preplan.flightPacks]);
+
+    const classes = useStyles();
 
     const filterOnProperties = (query: readonly string[]): ReadonlyArray<FlightRequirement> => {
       if (!query || query.length <= 0) return flightRequirements;
@@ -162,9 +129,9 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = React.memo
       setNumberOfIgnoreFr(filterItem.filter(fr => fr.ignored === true).length);
       setPageNumber(0);
 
-      if (t === 'ALL') return setFilterFlightRequirment(filterItem);
-      if (t === 'INCLUDE') return setFilterFlightRequirment(filterItem.filter(fr => fr.ignored === false));
-      if (t === 'IGNORE') return setFilterFlightRequirment(filterItem.filter(fr => fr.ignored === true));
+      if (t === 'ALL') return setFilterFlightRequirment(filterItem.orderBy(n => n.definition.label));
+      if (t === 'INCLUDE') return setFilterFlightRequirment(filterItem.filter(fr => fr.ignored === false).orderBy(n => n.definition.label));
+      if (t === 'IGNORE') return setFilterFlightRequirment(filterItem.filter(fr => fr.ignored === true).orderBy(n => n.definition.label));
     };
 
     return (
@@ -176,7 +143,6 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = React.memo
           textColor="primary"
           onChange={(event, t) => {
             setTab(t);
-            filterFlightRequiermentBySelectedTab(filterOnProperties(searchValue), t);
           }}
         >
           <Tab value="ALL" label={'ALL (' + numberOfAllFR + ')'} />
@@ -186,10 +152,9 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = React.memo
             outlined
             onQueryChange={query => {
               setSearchValue(query);
-              filterFlightRequiermentBySelectedTab(filterOnProperties(query), tab);
             }}
           />
-          <IconButton color="primary" title="Add Preplan" onClick={() => onAddFlightRequirement()}>
+          <IconButton color="primary" title="Add Flight Requirment" onClick={() => onAddFlightRequirement()}>
             <AddIcon fontSize="large" />
           </IconButton>
         </Tabs>
@@ -217,93 +182,38 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = React.memo
                   <Grid container direction="row" justify="center" alignItems="center" spacing={3}>
                     <Grid item>Include</Grid>
                     <Grid item>
-                      <Switch
+                      <ProgressSwitch
                         checked={!d.ignored}
+                        loading={includeLoadingStatus[d.id]}
                         onChange={async e => {
-                          //TODO remove
-                          const newValue = handleChange(filterFlightRequirment, d, 'ignored', !e.target.checked, setFilterFlightRequirment);
+                          if (includeLoadingStatus[d.id]) return;
 
-                          const flightRequirement = newValue as FlightRequirement;
+                          setIncludeLoadingStatus(state => ({ ...state, [d.id]: true }));
 
-                          const newFrModel = [flightRequirement].map(fi => {
-                            const fr = fi;
+                          const newFrModel = d.extractModel({ ignored: !e.target.checked });
+                          const result = await PreplanService.editFlightRequirements([newFrModel]);
 
-                            const frScope: FlightScopeModel = {
-                              blockTime: fr.scope.blockTime,
-                              times: fr.scope.times!.map(t => {
-                                return { stdLowerBound: t.stdLowerBound.minutes, stdUpperBound: t.stdUpperBound.minutes } as FlightTimeModel;
-                              }),
-                              destinationPermission: !!fr.scope.destinationPermission,
-                              originPermission: !!fr.scope.originPermission,
-                              required: !!fr.scope.required,
-                              rsx: fr.scope.rsx!,
-                              aircraftSelection: {
-                                allowedIdentities: fr.scope.aircraftSelection.allowedIdentities
-                                  ? fr.scope.aircraftSelection.allowedIdentities.map(a => ({ entityId: a.entity.id, type: a.type } as AircraftIdentityModel))
-                                  : [],
-                                forbiddenIdentities: fr.scope.aircraftSelection.forbiddenIdentities
-                                  ? fr.scope.aircraftSelection.forbiddenIdentities.map(a => ({ entityId: a.entity.id, type: a.type } as AircraftIdentityModel))
-                                  : []
-                              }
-                            };
+                          if (result.message) {
+                            snackbar(result.message, 'warning');
+                          } else {
+                            preplan.mergeFlightRequirements(...result.value!);
+                          }
 
-                            const model: FlightRequirementModel = {
-                              id: fr.id,
-                              definition: {
-                                label: fr.definition.label || '',
-                                category: fr.definition.category || '',
-                                stcId: fr.definition.stc ? fr.definition.stc.id : '',
-                                flightNumber: (fr.definition.flightNumber || '').toUpperCase(),
-                                departureAirportId: fr.definition.departureAirport.id,
-                                arrivalAirportId: fr.definition.arrivalAirport.id
-                              },
-                              scope: frScope,
-                              days: fr.days.map(d => {
-                                const dayScope: FlightScopeModel = {
-                                  blockTime: d.scope.blockTime,
-                                  times: d.scope.times!.map(t => {
-                                    return { stdLowerBound: t.stdLowerBound.minutes, stdUpperBound: t.stdUpperBound.minutes } as FlightTimeModel;
-                                  }),
-                                  destinationPermission: !!d.scope.destinationPermission,
-                                  originPermission: !!d.scope.originPermission,
-                                  required: d.scope.required,
-                                  rsx: d.scope.rsx!,
-                                  aircraftSelection: {
-                                    allowedIdentities: d.scope.aircraftSelection.allowedIdentities
-                                      ? d.scope.aircraftSelection.allowedIdentities.map(a => ({ entityId: a.entity.id, type: a.type } as AircraftIdentityModel))
-                                      : [],
-                                    forbiddenIdentities: d.scope.aircraftSelection.forbiddenIdentities
-                                      ? d.scope.aircraftSelection.forbiddenIdentities.map(a => ({ entityId: a.entity.id, type: a.type } as AircraftIdentityModel))
-                                      : []
-                                  }
-                                };
-
-                                return {
-                                  day: d.day,
-                                  notes: d.notes,
-                                  scope: dayScope,
-                                  freezed: d.freezed,
-                                  flight: {
-                                    std: d.flight.std.minutes,
-                                    aircraftRegisterId: d.flight.aircraftRegister && d.flight.aircraftRegister.id
-                                  }
-                                } as WeekdayFlightRequirementModel;
-                              }),
-                              ignored: !e.target.checked
-                            };
-                            return model;
-                          });
-
-                          await PreplanService.editFlightRequirements(newFrModel);
-
-                          filterFlightRequiermentBySelectedTab(filterOnProperties(searchValue), tab);
+                          setIncludeLoadingStatus(state => ({ ...state, [d.id]: false }));
                         }}
                         color="primary"
                         inputProps={{ 'aria-label': 'primary checkbox' }}
                       />
                     </Grid>
                     <Grid item className={d.ignored ? classes.disableOpacityStyle : ''}>
-                      <Button color="primary">RETURN</Button>
+                      <Button
+                        color="primary"
+                        onClick={() => {
+                          onAddReturnFlightRequirement(d);
+                        }}
+                      >
+                        RETURN
+                      </Button>
                     </Grid>
                     <Grid item className={classNames(d.ignored && classes.disableOpacityStyle)}>
                       <IconButton size="small" disabled={d.ignored} onClick={() => onEditFlightRequirement(d)}>

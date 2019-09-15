@@ -35,18 +35,40 @@
     return result;
   };
 
-  Array.prototype.sortBy = function Array_prototype_sortBy<T>(propertySelector: keyof T | ((item: T) => any), descending?: boolean): T[] {
-    const generalPropertySelector = typeof propertySelector === 'function' ? propertySelector : (item: T) => item[propertySelector];
-    const direction = descending ? -1 : +1;
+  Array.prototype.sortBy = function Array_prototype_sortBy<T>(...propertySelectors: (keyof T | ((item: T) => any))[]): T[] {
     return this.sort((a, b) => {
-      const aValue = generalPropertySelector(a);
-      const bValue = generalPropertySelector(b);
-      return aValue > bValue ? +direction : aValue < bValue ? -direction : 0;
+      for (let index = 0; index < propertySelectors.length; ++index) {
+        const propertySelector = propertySelectors[index];
+        const generalPropertySelector = typeof propertySelector === 'function' ? propertySelector : (item: T) => item[propertySelector];
+        const aValue = generalPropertySelector(a);
+        const bValue = generalPropertySelector(b);
+        if (aValue > bValue) return +1;
+        if (aValue < bValue) return -1;
+      }
+      return 0;
     });
   };
 
-  Array.prototype.orderBy = function Array_prototype_orderBy<T>(propertySelector: keyof T | ((item: T) => any), descending?: boolean): T[] {
-    return this.slice().sortBy(propertySelector, descending);
+  Array.prototype.sortByDescending = function Array_prototype_sortByDescending<T>(...propertySelectors: (keyof T | ((item: T) => any))[]): T[] {
+    return this.sort((a, b) => {
+      for (let index = 0; index < propertySelectors.length; ++index) {
+        const propertySelector = propertySelectors[index];
+        const generalPropertySelector = typeof propertySelector === 'function' ? propertySelector : (item: T) => item[propertySelector];
+        const aValue = generalPropertySelector(a);
+        const bValue = generalPropertySelector(b);
+        if (aValue > bValue) return -1;
+        if (aValue < bValue) return +1;
+      }
+      return 0;
+    });
+  };
+
+  Array.prototype.orderBy = function Array_prototype_orderBy<T>(...propertySelectors: (keyof T | ((item: T) => any))[]): T[] {
+    return this.slice().sortBy(...propertySelectors);
+  };
+
+  Array.prototype.orderByDescending = function Array_prototype_orderByDescending<T>(...propertySelectors: (keyof T | ((item: T) => any))[]): T[] {
+    return this.slice().sortByDescending(...propertySelectors);
   };
 
   Array.prototype.distinct = function Array_prototype_distinct<T>(areEqual?: (a: T, b: T) => boolean): T[] {
@@ -67,18 +89,19 @@
     return result;
   };
 
-  Array.prototype.groupBy = function Array_prototype_groupBy<T, I = T>(groupName: keyof T | ((item: T) => string), mapper?: (item: T) => I): { [groupName: string]: I[] } {
-    const result: { [groupName: string]: I[] } = {};
+  Array.prototype.groupBy = function Array_prototype_groupBy<T>(groupName: keyof T | ((item: T) => string), mapper?: (group: T[]) => any): { [groupName: string]: any } {
+    const result: { [groupName: string]: any } = {};
     this.forEach(item => {
       const name = typeof groupName === 'function' ? groupName(item) : item[groupName];
       result[name] = result[name] || [];
-      result[name].push(mapper ? mapper(item) : item);
+      result[name].push(item);
     });
+    mapper && Object.keys(result).forEach(groupName => (result[groupName] = mapper(result[groupName])));
     return result;
   };
 
-  Array.prototype.toDictionary = function Array_prototype_toDictionary<T, I = T>(key: keyof T | ((item: T) => string), mapper?: (item: T) => I): { [key: string]: I } {
-    const result: { [key: string]: I } = {};
+  Array.prototype.toDictionary = function Array_prototype_toDictionary<T>(key: keyof T | ((item: T) => string), mapper?: (item: T) => any): { [key: string]: any } {
+    const result: { [key: string]: any } = {};
     this.forEach(item => {
       const name = typeof key === 'function' ? key(item) : item[key];
       result[name] = mapper ? mapper(item) : item;

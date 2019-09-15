@@ -2,12 +2,14 @@ import FlightRequirement from './FlightRequirement';
 import WeekdayFlightRequirement from './WeekdayFlightRequirement';
 import { Stc, Airport } from '@core/master-data';
 import Daytime from '@core/types/Daytime';
-import PreplanAircraftRegister, { PreplanAircraftRegisters } from 'src/view-models/PreplanAircraftRegister';
+import PreplanAircraftRegister, { PreplanAircraftRegisters } from 'src/business/PreplanAircraftRegister';
 import FlightModel from '@core/models/flights/FlightModel';
 import Rsx from '@core/types/flight-requirement/Rsx';
 import FlightPack from './FlightPack';
+import ModelConvertable, { getOverrided } from 'src/utils/ModelConvertable';
+import DeepWritablePartial from '@core/types/DeepWritablePartial';
 
-export default class Flight {
+export default class Flight implements ModelConvertable<FlightModel> {
   readonly requirement: FlightRequirement;
   readonly weekdayRequirement: WeekdayFlightRequirement;
   readonly pack!: FlightPack; // To be set when initiating its flight pack.
@@ -49,5 +51,12 @@ export default class Flight {
     this.required = weekdayRequiremnet.scope.required;
     this.std = new Daytime(raw.std);
     this.aircraftRegister = raw.aircraftRegisterId ? aircraftRegisters.id[raw.aircraftRegisterId] : undefined;
+  }
+
+  extractModel(overrides?: DeepWritablePartial<FlightModel>): FlightModel {
+    return {
+      std: getOverrided(this.std.minutes, overrides, 'std'),
+      aircraftRegisterId: getOverrided(this.aircraftRegister && this.aircraftRegister.id, overrides, 'aircraftRegisterId')
+    };
   }
 }

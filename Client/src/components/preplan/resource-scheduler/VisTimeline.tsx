@@ -14,8 +14,8 @@ interface TimelineEventProps {
   onMouseMove?(properties: TimelineEventProperties): void;
   onGroupDragged?(group: Id): void;
   onChanged?(): void;
-  onRangeChange?(properties: { start: number; end: number; byUser: boolean; event: Event }): void;
-  onRangeChanged?(properties: { start: number; end: number; byUser: boolean; event: Event }): void;
+  onRangeChange?(properties: { start: Date; end: Date; byUser: boolean; event: Event }): void;
+  onRangeChanged?(properties: { start: Date; end: Date; byUser: boolean; event: Event }): void;
   onSelect?(properties: { items: Array<Id>; event: Event }): void;
   onItemOver?(properties: { item: Id; event: Event }): void;
   onItemOut?(properties: { item: Id; event: Event }): void;
@@ -24,16 +24,21 @@ interface TimelineEventProps {
 }
 
 export interface TimelineProps extends TimelineEventProps {
-  items: DataItem[];
-  groups: DataGroup[];
   options: TimelineOptions;
+  groups: DataGroup[];
+  items: DataItem[];
   selection?: Id | Id[];
-
+  scrollTop?: number;
+  onScrollY?(scrollTop: number): void;
   retrieveTimeline?(timeline: Timeline): void;
 }
 
 export default class VisTimeline extends Component<TimelineProps> {
   private timeline!: Timeline;
+  private itemsChange: boolean = true;
+  private groupsChange: boolean = true;
+  private optionsChange: boolean = true;
+  private selectionChange: boolean = true;
 
   private static eventHandlers: { event: TimelineEvents; handler: keyof TimelineEventProps }[] = [
     { event: 'currentTimeTick', handler: 'onCurrentTimeTick' },
@@ -69,6 +74,8 @@ export default class VisTimeline extends Component<TimelineProps> {
       this.props[handler] && this.timeline.on(event as any, this.props[handler] as any);
     });
 
+    this.props.onScrollY && this.timeline.body.dom.leftContainer.addEventListener('scroll', () => this.props.onScrollY!(this.timeline.body.dom.leftContainer.scrollTop));
+
     const { retrieveTimeline } = this.props;
     retrieveTimeline && retrieveTimeline(this.timeline);
 
@@ -93,24 +100,28 @@ export default class VisTimeline extends Component<TimelineProps> {
       this.timeline.on(event as any, newHandler);
     });
 
-    const { items, groups, options, selection } = this.props;
+    const { options, groups, items, selection } = this.props;
 
-    const itemsChange = items !== nextProps.items;
-    const groupsChange = groups !== nextProps.groups;
-    const optionsChange = options !== nextProps.options;
-    const selectionChange = selection !== nextProps.selection;
+    this.optionsChange = options !== nextProps.options;
+    this.groupsChange = groups !== nextProps.groups;
+    this.itemsChange = items !== nextProps.items;
+    this.selectionChange = selection !== nextProps.selection;
 
-    return itemsChange || groupsChange || optionsChange || selectionChange;
+    return this.optionsChange || this.groupsChange || this.itemsChange || this.selectionChange;
   }
 
   init() {
-    const { items, groups, options, selection } = this.props;
+    const { options, groups, items, selection, scrollTop } = this.props;
 
-    this.timeline.setOptions(options);
-    this.timeline.setData({ groups: new DataSet(groups), items: new DataSet(items) });
-    this.timeline.setSelection(selection || []);
+    this.optionsChange && this.timeline.setOptions(options);
+    this.itemsChange
+      ? this.groupsChange
+        ? this.timeline.setData({ groups: new DataSet(groups), items: new DataSet(items) })
+        : this.timeline.setItems(items)
+      : this.groupsChange && this.timeline.setGroups(groups);
+    this.selectionChange && this.timeline.setSelection(selection || []);
 
-    this.timeline.redraw();
+    scrollTop === undefined || setTimeout(() => (this.timeline.body.dom.leftContainer.scrollTop = scrollTop));
   }
 
   render() {

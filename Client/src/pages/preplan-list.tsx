@@ -6,7 +6,7 @@ import MahanIcon, { MahanIconType } from 'src/components/MahanIcon';
 import Search, { filterOnProperties } from 'src/components/Search';
 import LinkTypography from 'src/components/LinkTypography';
 import NavBar from 'src/components/NavBar';
-import { PreplanHeader } from 'src/view-models/Preplan';
+import { PreplanHeader } from 'src/business/Preplan';
 import SimpleModal from 'src/components/SimpleModal';
 import persistant from 'src/utils/persistant';
 import PreplanService from 'src/services/PreplanService';
@@ -15,6 +15,7 @@ import EditPreplanModel, { EditPreplanModelValidation } from '@core/models/EditP
 import useRouter from 'src/utils/useRouter';
 import { VariantType, useSnackbar } from 'notistack';
 import ProgressSwitch from 'src/components/ProgressSwitch';
+import classNames from 'classnames';
 
 const waitingPaperSize = 250;
 const useStyles = makeStyles((theme: Theme) => ({
@@ -62,6 +63,12 @@ const useStyles = makeStyles((theme: Theme) => ({
   error: {},
   switchProgressBar: {
     position: 'relative'
+  },
+  linkTableCell: {
+    cursor: 'pointer'
+  },
+  publicHeader: {
+    paddingLeft: 12
   }
 }));
 
@@ -121,7 +128,7 @@ const PreplanListPage: FC = () => {
     });
   }
 
-  function snakbar(message: string, variant: VariantType) {
+  function snackbar(message: string, variant: VariantType) {
     // variant could be success, error, warning, info, or default
     enqueueSnackbar(message, { variant });
   }
@@ -151,23 +158,19 @@ const PreplanListPage: FC = () => {
         </Tabs>
 
         <Paper>
-          {(tab === 'PUBLIC' && filterPreplanHeaders.some(pn => pn.userId !== persistant.authentication!.user.id)) ||
-          (tab === 'USER' && filterPreplanHeaders.some(pn => pn.userId === persistant.authentication!.user.id)) ? (
+          {(tab === 'PUBLIC' && filterPreplanHeaders.some(pn => pn.userId !== persistant.user!.id)) ||
+          (tab === 'USER' && filterPreplanHeaders.some(pn => pn.userId === persistant.user!.id)) ? (
             <Table>
               <TableHead>
                 <TableRow>
-                  {tab === 'PUBLIC' && <TableCell className={classes.preplanTableCell}>User</TableCell>}
                   <TableCell className={classes.preplanTableCell}>Name</TableCell>
+                  {tab === 'PUBLIC' && <TableCell className={classes.preplanTableCell}>User</TableCell>}
                   <TableCell className={classes.preplanTableCell}>Last Modified</TableCell>
                   <TableCell className={classes.preplanTableCell}>Created at</TableCell>
                   <TableCell className={classes.preplanTableCell}>Copy Source</TableCell>
                   <TableCell className={classes.preplanTableCell}>Finalized</TableCell>
                   <TableCell className={classes.preplanTableCell}>Simulation Name</TableCell>
-                  {tab === 'USER' && (
-                    <TableCell className={classes.preplanTableCell} align="center">
-                      Public
-                    </TableCell>
-                  )}
+                  {tab === 'USER' && <TableCell className={classNames(classes.preplanTableCell, classes.publicHeader)}>Public</TableCell>}
 
                   <TableCell className={classes.preplanTableCell} align="center">
                     Actions
@@ -176,13 +179,20 @@ const PreplanListPage: FC = () => {
               </TableHead>
               <TableBody>
                 {filterPreplanHeaders
-                  .filter(p => (tab === 'USER' ? p.userId === persistant.authentication!.user.id : p.userId !== persistant.authentication!.user.id))
+                  .filter(p => (tab === 'USER' ? p.userId === persistant.user!.id : p.userId !== persistant.user!.id))
                   .map(preplanHeader => (
                     <TableRow key={preplanHeader.id}>
-                      {tab === 'PUBLIC' && <TableCell>{preplanHeader.userDisplayName}</TableCell>}
-                      <TableCell className={classes.preplanTableCell} component="th" scope="row">
-                        <LinkTypography to={'preplan/' + preplanHeader.id}>{preplanHeader.name}</LinkTypography>
+                      <TableCell
+                        onClick={() => history.push('preplan/' + preplanHeader.id)}
+                        className={classNames(classes.preplanTableCell, classes.linkTableCell)}
+                        component="th"
+                        scope="row"
+                      >
+                        {/* <LinkTypography to={'preplan/' + preplanHeader.id}>{preplanHeader.name}</LinkTypography> */}
+                        {preplanHeader.name}
                       </TableCell>
+
+                      {tab === 'PUBLIC' && <TableCell className={classes.preplanTableCell}>{preplanHeader.userDisplayName}</TableCell>}
                       <TableCell className={classes.preplanTableCell}>{preplanHeader.lastEditDateTime.format('d')}</TableCell>
                       <TableCell className={classes.preplanTableCell}>{preplanHeader.creationDateTime.format('d')}</TableCell>
                       <TableCell className={classes.preplanTableCell}>{preplanHeader.parentPreplanName}</TableCell>
@@ -190,8 +200,9 @@ const PreplanListPage: FC = () => {
                         {preplanHeader.finalized ? <FinilizedIcon /> : ''}
                       </TableCell>
                       <TableCell className={classes.preplanTableCell}>{preplanHeader.simulationName}</TableCell>
-                      <TableCell className={classes.preplanTableCell} align="center">
-                        {tab === 'USER' && (
+
+                      {tab === 'USER' && (
+                        <TableCell className={classes.preplanTableCell} align="center">
                           <ProgressSwitch
                             checked={preplanHeader.published}
                             loading={publishLoadingStatus[preplanHeader.id]}
@@ -203,7 +214,7 @@ const PreplanListPage: FC = () => {
                               const result = await PreplanService.setPublished(preplanHeader.id, event.target.checked);
 
                               if (result.message) {
-                                snakbar(result.message, 'warning');
+                                snackbar(result.message, 'warning');
                               } else {
                                 setPreplanHeaders(result.value!.map(p => new PreplanHeader(p)));
                               }
@@ -213,8 +224,9 @@ const PreplanListPage: FC = () => {
                               });
                             }}
                           />
-                        )}
-                      </TableCell>
+                        </TableCell>
+                      )}
+
                       <TableCell className={classes.preplanTableCell} align="center">
                         <IconButton
                           title="Copy Preplan"
@@ -328,7 +340,7 @@ const PreplanListPage: FC = () => {
                 endDate: Date.toJSON(newPreplanModalModel.endDate)
               };
 
-              const validation = new NewPreplanModelValidation(model, preplanHeaders.filter(s => s.userId === persistant.authentication!.user.id).map(p => p.name));
+              const validation = new NewPreplanModelValidation(model, preplanHeaders.filter(s => s.userId === persistant.user!.id).map(p => p.name));
               if (!validation.ok) {
                 //TODO: Show error messages of form fields.
                 setNewPreplanModalModel({ ...newPreplanModalModel, loading: false });
@@ -400,10 +412,7 @@ const PreplanListPage: FC = () => {
                 endDate: Date.toJSON(editPreplanModalModel.endDate)
               };
 
-              const validation = new EditPreplanModelValidation(
-                model,
-                preplanHeaders.filter(s => s.userId === persistant.authentication!.user.id && s.id !== model.id).map(p => p.name)
-              );
+              const validation = new EditPreplanModelValidation(model, preplanHeaders.filter(s => s.userId === persistant.user!.id && s.id !== model.id).map(p => p.name));
 
               if (!validation.ok) {
                 //TODO: Show error messages of form fields.
@@ -478,7 +487,7 @@ const PreplanListPage: FC = () => {
                 endDate: Date.toJSON(copyPreplanModalModel.endDate)
               };
 
-              const validation = new NewPreplanModelValidation(model, preplanHeaders.filter(s => s.userId === persistant.authentication!.user.id).map(p => p.name));
+              const validation = new NewPreplanModelValidation(model, preplanHeaders.filter(s => s.userId === persistant.user!.id).map(p => p.name));
 
               if (!validation.ok) {
                 //TODO: Show error messages of form fields.

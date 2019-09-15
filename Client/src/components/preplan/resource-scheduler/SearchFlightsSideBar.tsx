@@ -7,7 +7,7 @@ import Weekday from '@core/types/Weekday';
 
 import TablePaginationActions from 'src/components/PaginationAction';
 
-import Flight from 'src/view-models/flights/Flight';
+import Flight from 'src/business/flights/Flight';
 
 const useStyles = makeStyles((theme: Theme) => ({
   searchWrapper: {

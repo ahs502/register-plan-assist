@@ -10,7 +10,6 @@ import {
 } from '@material-ui/icons';
 import classNames from 'classnames';
 import persistant from 'src/utils/persistant';
-import LinkIconButton from './LinkIconButton';
 import config from 'src/config';
 
 const useStyles = makeStyles((theme: Theme) => ({
@@ -67,16 +66,18 @@ const AppBar: FC<AppBarProps> = ({ loading }) => {
 
         <ButtonBase>
           <Typography classes={{ root: classes.textMargin }} variant="h6" color="inherit" ref={userDisplayNameRef} onClick={() => setUserDisplayNameMenuModel({ open: true })}>
-            {persistant.authentication!.user.displayName}
+            {persistant.user!.displayName}
           </Typography>
         </ButtonBase>
         <Menu id="user-display-name-menu" anchorEl={userDisplayNameRef.current} open={!!userDisplayNameMenuModel.open} onClose={() => setUserDisplayNameMenuModel({ open: false })}>
           <MenuItem
             onClick={() => {
               setUserDisplayNameMenuModel({ open: false });
-              delete persistant.authentication;
-              delete persistant.encodedAuthenticationHeader;
               delete persistant.oauthCode;
+              delete persistant.refreshToken;
+              delete persistant.user;
+              delete persistant.userSettings;
+              delete persistant.encodedAuthenticationHeader;
               window.location.reload(); //TODO: Call logout API instead.
             }}
           >

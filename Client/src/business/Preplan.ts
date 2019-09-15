@@ -6,6 +6,8 @@ import Flight from './flights/Flight';
 import AutoArrangerOptions from './AutoArrangerOptions';
 import FlightPack from './flights/FlightPack';
 import { Airport } from '@core/master-data';
+import FlightRequirementModel from '@core/models/flights/FlightRequirementModel';
+import ConstraintSystem from './constraints/ConstraintSystem';
 
 export class PreplanHeader {
   readonly id: string;
@@ -65,12 +67,15 @@ export default class Preplan extends PreplanHeader {
 
   readonly flightRequirements: readonly FlightRequirement[];
 
+  readonly constraintSystem: ConstraintSystem;
+
   constructor(raw: PreplanModel) {
     super(raw);
     this.autoArrangerOptions = raw.autoArrangerOptions ? new AutoArrangerOptions(raw.autoArrangerOptions) : AutoArrangerOptions.default;
     this.aircraftRegisters = new PreplanAircraftRegisters(raw.dummyAircraftRegisters, raw.aircraftRegisterOptionsDictionary);
     this.flightRequirements = raw.flightRequirements.map(f => new FlightRequirement(f, this.aircraftRegisters));
     this.autoArrangerState = raw.autoArrangerState && new AutoArrangerState(raw.autoArrangerState, this.aircraftRegisters, this.flights);
+    this.constraintSystem = new ConstraintSystem(this);
   }
 
   /**
@@ -96,7 +101,7 @@ export default class Preplan extends PreplanHeader {
     for (const label in flightsByLabel) {
       const flightsByRegister = flightsByLabel[label].groupBy(f => (f.aircraftRegister ? f.aircraftRegister.id : '???'));
       for (const register in flightsByRegister) {
-        const flightGroup = flightsByRegister[register].sortBy(f => f.day * 24 * 60 + f.std.minutes, true);
+        const flightGroup = flightsByRegister[register].sortByDescending(f => f.day * 24 * 60 + f.std.minutes);
         while (flightGroup.length) {
           const flight = flightGroup.pop()!;
           let lastFlight = flight;
@@ -105,11 +110,11 @@ export default class Preplan extends PreplanHeader {
           if (getAirportBaseLevel(flight.departureAirport) <= getAirportBaseLevel(flight.arrivalAirport)) continue;
           while (flightGroup.length) {
             const nextFlight = flightGroup.pop()!;
-            const lastDayDiff = (nextFlight.day - lastFlight.day) * 24 * 60;
             // Where next flight can NOT be appended to the bar:
             if (
-              lastDayDiff + nextFlight.std.minutes <= lastFlight.std.minutes + lastFlight.blockTime ||
-              lastDayDiff + nextFlight.std.minutes > lastFlight.std.minutes + lastFlight.blockTime + 20 * 60 ||
+              nextFlight.day !== flightPack.day ||
+              nextFlight.std.minutes <= lastFlight.std.minutes + lastFlight.blockTime ||
+              // nextFlight.std.minutes > lastFlight.std.minutes + lastFlight.blockTime + 20 * 60 ||
               nextFlight.departureAirport.id !== lastFlight.arrivalAirport.id ||
               nextFlight.departureAirport.id === flight.departureAirport.id
             ) {
@@ -141,9 +146,10 @@ export default class Preplan extends PreplanHeader {
     }
   }
 
-  mergeFlightRequirements(...flightRequirements: FlightRequirement[]): void {
-    this.allFlights = [];
-    this.allFlightPacks = [];
+  mergeFlightRequirements(...flightRequirementsModel: FlightRequirementModel[]): void {
+    delete this.allFlights;
+    delete this.allFlightPacks;
+    const flightRequirements = flightRequirementsModel.map(f => new FlightRequirement(f, this.aircraftRegisters));
     const allFlightRequirements = this.flightRequirements as FlightRequirement[];
     allFlightRequirements.forEach((f, i) => {
       if (flightRequirements.length === 0) return;
@@ -155,8 +161,8 @@ export default class Preplan extends PreplanHeader {
   }
 
   removeFlightRequirement(flightRequirementId: string): void {
-    this.allFlights = [];
-    this.allFlightPacks = [];
+    delete this.allFlights;
+    delete this.allFlightPacks;
     const allFlightRequirements = this.flightRequirements as FlightRequirement[];
     allFlightRequirements.splice(allFlightRequirements.findIndex(f => f.id === flightRequirementId), 1);
   }

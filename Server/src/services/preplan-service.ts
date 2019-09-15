@@ -56,7 +56,7 @@ router.post(
 
     const result: string[] = await runSp(
       '[RPA].[SP_ClonePreplan]',
-      runSp.varCharParam('userId', userId, 200),
+      runSp.varCharParam('userId', userId, 30),
       runSp.intParam('id', id),
       runSp.nVarCharParam('name', newPreplan.name, 200),
       runSp.dateTimeParam('startDate', newPreplan.startDate),
@@ -76,14 +76,14 @@ router.post(
 
     const preplanHeaderEntity: PreplanHeaderEntity[] = await runSp(
       '[RPA].[Sp_EditPreplanHeader]',
-      runSp.nVarCharParam('userId', userId, 30),
+      runSp.varCharParam('userId', userId, 30),
       runSp.intParam('id', editPreplan.id),
       runSp.nVarCharParam('name', editPreplan.name, 200),
       runSp.dateTimeParam('startDate', editPreplan.startDate),
       runSp.dateTimeParam('endDate', editPreplan.endDate)
     );
 
-    const preplanHeaderEntities: readonly PreplanHeaderEntity[] = await runSp('[RPA].[SP_GetPreplanHeaders]', runSp.nVarCharParam('userId', userId, 30));
+    const preplanHeaderEntities: readonly PreplanHeaderEntity[] = await runSp('[RPA].[SP_GetPreplanHeaders]', runSp.varCharParam('userId', userId, 30));
     const preplanHeaderModels = preplanHeaderEntities.map(convertPreplanHeaderEntityToModel);
     return preplanHeaderModels;
   })
@@ -92,9 +92,9 @@ router.post(
 router.post(
   '/set-published',
   requestMiddlewareWithDbAccess<{ id: string; published: boolean }, PreplanHeaderModel[]>(async (userId, { id, published }, { runSp }) => {
-    await runSp('[RPA].[Sp_SetPublished]', runSp.nVarCharParam('userId', userId, 30), runSp.intParam('id', id), runSp.bitParam('published', published));
+    await runSp('[RPA].[Sp_SetPublished]', runSp.varCharParam('userId', userId, 30), runSp.intParam('id', id), runSp.bitParam('published', published));
 
-    const preplanHeaderEntities: readonly PreplanHeaderEntity[] = await runSp('[RPA].[SP_GetPreplanHeaders]', runSp.nVarCharParam('userId', userId, 30));
+    const preplanHeaderEntities: readonly PreplanHeaderEntity[] = await runSp('[RPA].[SP_GetPreplanHeaders]', runSp.varCharParam('userId', userId, 30));
     const preplanHeaderModels = preplanHeaderEntities.map(convertPreplanHeaderEntityToModel);
     return preplanHeaderModels;
   })
@@ -118,11 +118,7 @@ router.post(
     const preplan: PreplanEntity | undefined = (await runSp('[RPA].[SP_GetPreplan]', runSp.varCharParam('userId', userId, 30), runSp.intParam('id', id)))[0];
     if (!preplan) throw 'Preplan is not found.';
 
-    const flightRequirements: FlightRequirementEntity[] = await runSp(
-      '[RPA].[Sp_GetFlightRequirement]',
-      runSp.varCharParam('userId', userId, 30),
-      runSp.intParam('preplanId', preplan.id)
-    );
+    const flightRequirements: FlightRequirementEntity[] = await runSp('[RPA].[Sp_GetFlightRequirement]', runSp.varCharParam('userId', userId, 30), runSp.intParam('preplanId', id));
 
     const result: PreplanModel = await convertPreplanEntityToModel(preplan, flightRequirements);
     return result;
@@ -144,7 +140,7 @@ router.post(
     const flightRequirements: readonly FlightRequirementEntity[] = await runSp(
       '[RPA].[Sp_GetFlightRequirement]',
       runSp.varCharParam('userId', userId, 30),
-      runSp.intParam('preplanId', preplan.id)
+      runSp.intParam('preplanId', id)
     );
 
     const result: PreplanModel = await convertPreplanEntityToModel(preplan, flightRequirements);
@@ -180,7 +176,7 @@ router.post(
 router.post(
   '/remove-flight-requirement',
   requestMiddlewareWithDbAccess<{ flightRequirementId: string }, void>(async (userId, { flightRequirementId }, { runSp }) => {
-    await runSp('[RPA].[Sp_RemoveFlightRequirement]', runSp.varCharParam('userId', userId, 30), runSp.varCharParam('id', flightRequirementId, 'max'));
+    await runSp('[RPA].[Sp_RemoveFlightRequirement]', runSp.varCharParam('userId', userId, 30), runSp.intParam('id', flightRequirementId));
   })
 );
 
@@ -256,7 +252,7 @@ router.post(
       runSp.varCharParam('userId', userId, 30),
       runSp.intParam('id', id),
       runSp.nVarCharParam('dummyAircraftRegisters', xmlStringify(convertDummyAircraftRegisterListModelToEntity(dummyAircraftRegisters), 'DummyAircraftRegisters'), 'max'),
-      runSp.varCharParam(
+      runSp.nVarCharParam(
         'AircraftRegisterOptions',
         xmlStringify(convertAircraftRegisterOptionsListModelToEntity(aircraftRegisterOptionsDictionary), 'AircraftRegistersOptions'),
         'max'

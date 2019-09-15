@@ -9,14 +9,14 @@ export default interface AircraftIdentityModel {
 }
 
 export class AircraftIdentityValidation extends Validation<'TYPE_EXISTS' | 'TYPE_IS_VALID' | 'ENTITY_ID_EXISTS' | 'ENTITY_ID_IS_VALID'> {
-  constructor(aircraftIdentity: AircraftIdentityModel, dummyAircraftRegisters: readonly DummyAircraftRegisterModel[]) {
+  constructor(aircraftIdentity: AircraftIdentityModel, dummyAircraftRegistersId: readonly string[]) {
     super(validator =>
       validator.object(aircraftIdentity).do(({ type, entityId }) => {
         validator.check('TYPE_EXISTS', !!type).check('TYPE_IS_VALID', () => AircraftIdentityTypes.includes(type));
         validator.check('ENTITY_ID_EXISTS', !!entityId).check('ENTITY_ID_IS_VALID', () => {
           switch (type) {
             case 'REGISTER':
-              return !!MasterData.all.aircraftRegisters.id[entityId] || dummyAircraftRegisters.some(r => r.id === entityId);
+              return !!MasterData.all.aircraftRegisters.id[entityId] || dummyAircraftRegistersId.some(r => r === entityId);
             case 'TYPE':
             case 'TYPE_EXISTING':
             case 'TYPE_DUMMY':

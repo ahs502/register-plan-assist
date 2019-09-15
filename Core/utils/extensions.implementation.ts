@@ -35,18 +35,40 @@
     return result;
   };
 
-  Array.prototype.sortBy = function Array_prototype_sortBy<T>(propertySelector: keyof T | ((item: T) => any), descending?: boolean): T[] {
-    const generalPropertySelector = typeof propertySelector === 'function' ? propertySelector : (item: T) => item[propertySelector];
-    const direction = descending ? -1 : +1;
+  Array.prototype.sortBy = function Array_prototype_sortBy<T>(...propertySelectors: (keyof T | ((item: T) => any))[]): T[] {
     return this.sort((a, b) => {
-      const aValue = generalPropertySelector(a);
-      const bValue = generalPropertySelector(b);
-      return aValue > bValue ? +direction : aValue < bValue ? -direction : 0;
+      for (let index = 0; index < propertySelectors.length; ++index) {
+        const propertySelector = propertySelectors[index];
+        const generalPropertySelector = typeof propertySelector === 'function' ? propertySelector : (item: T) => item[propertySelector];
+        const aValue = generalPropertySelector(a);
+        const bValue = generalPropertySelector(b);
+        if (aValue > bValue) return +1;
+        if (aValue < bValue) return -1;
+      }
+      return 0;
     });
   };
 
-  Array.prototype.orderBy = function Array_prototype_orderBy<T>(propertySelector: keyof T | ((item: T) => any), descending?: boolean): T[] {
-    return this.slice().sortBy(propertySelector, descending);
+  Array.prototype.sortByDescending = function Array_prototype_sortByDescending<T>(...propertySelectors: (keyof T | ((item: T) => any))[]): T[] {
+    return this.sort((a, b) => {
+      for (let index = 0; index < propertySelectors.length; ++index) {
+        const propertySelector = propertySelectors[index];
+        const generalPropertySelector = typeof propertySelector === 'function' ? propertySelector : (item: T) => item[propertySelector];
+        const aValue = generalPropertySelector(a);
+        const bValue = generalPropertySelector(b);
+        if (aValue > bValue) return -1;
+        if (aValue < bValue) return +1;
+      }
+      return 0;
+    });
+  };
+
+  Array.prototype.orderBy = function Array_prototype_orderBy<T>(...propertySelectors: (keyof T | ((item: T) => any))[]): T[] {
+    return this.slice().sortBy(...propertySelectors);
+  };
+
+  Array.prototype.orderByDescending = function Array_prototype_orderByDescending<T>(...propertySelectors: (keyof T | ((item: T) => any))[]): T[] {
+    return this.slice().sortByDescending(...propertySelectors);
   };
 
   Array.prototype.distinct = function Array_prototype_distinct<T>(areEqual?: (a: T, b: T) => boolean): T[] {
@@ -67,20 +89,70 @@
     return result;
   };
 
-  Array.prototype.groupBy = function Array_prototype_groupBy<T>(groupName: keyof T | ((item: T) => string)): { [groupName: string]: T[] } {
-    const groups: { [groupName: string]: T[] } = {};
+  Array.prototype.groupBy = function Array_prototype_groupBy<T>(groupName: keyof T | ((item: T) => string), mapper?: (group: T[]) => any): { [groupName: string]: any } {
+    const result: { [groupName: string]: any } = {};
     this.forEach(item => {
       const name = typeof groupName === 'function' ? groupName(item) : item[groupName];
-      groups[name] = groups[name] || [];
-      groups[name].push(item);
+      result[name] = result[name] || [];
+      result[name].push(item);
     });
-    return groups;
+    mapper && Object.keys(result).forEach(groupName => (result[groupName] = mapper(result[groupName])));
+    return result;
+  };
+
+  Array.prototype.toDictionary = function Array_prototype_toDictionary<T>(key: keyof T | ((item: T) => string), mapper?: (item: T) => any): { [key: string]: any } {
+    const result: { [key: string]: any } = {};
+    this.forEach(item => {
+      const name = typeof key === 'function' ? key(item) : item[key];
+      result[name] = mapper ? mapper(item) : item;
+    });
+    return result;
   };
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   const monthNames = <const>['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   const shortMonthNames = <const>['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  Date.invalidDate = new Date(NaN);
+
+  Date.parseUtc = function Date_parseUtc(date?: string): Date | null {
+    if (!date) return null;
+    const parts = date.match(/^(\d\d)([a-zA-Z]{3})(\d\d)$/);
+    if (parts) {
+      const [date, days, month, years] = parts;
+      const daysNumber = Number(days);
+      if (daysNumber <= 0 || daysNumber > 31) return Date.invalidDate;
+      const monthIndex = shortMonthNames.indexOf((month[0].toUpperCase() + month.slice(1).toLowerCase()) as any);
+      if (monthIndex < 0) return Date.invalidDate;
+      let yearsNumber = Number(years);
+      yearsNumber = yearsNumber < 70 ? 2000 + yearsNumber : 1900 + yearsNumber; //TODO: Fix this before year 2070.
+      return new Date(Date.UTC(yearsNumber, monthIndex, daysNumber, 0, 0, 0, 0));
+    }
+    //TODO: Support more date string formats if needed here.
+    return Date.invalidDate;
+  };
+
+  Date.toJSON = function Date_toJSON(date: Date | string | number | null | undefined): string {
+    const invalidDateString = 'Invalid date.';
+    if (typeof date === 'number') {
+      if (isNaN(date)) return invalidDateString;
+      return new Date(date).toJSON();
+    }
+    if (typeof date === 'string') {
+      const dateObject = Date.parseUtc(date);
+      if (!dateObject) return '';
+      if (!dateObject.isValid()) return invalidDateString;
+      return dateObject.toJSON();
+    }
+    if (!date) return '';
+    if (date.constructor === Date) {
+      if (!date.isValid()) return invalidDateString;
+      return date.toJSON();
+    }
+
+    return '';
+  };
 
   Date.concatDateTime = function Date_concatDateTime(date: Date, time: Date): Date {
     if (!date.isValid()) return date;

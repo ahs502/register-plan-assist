@@ -2,7 +2,7 @@ import React, { FC, useState, Fragment, useEffect } from 'react';
 import { Theme, InputLabel, TextField, TableHead, TableCell, Table, TableRow, TableBody, Button } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import MasterData, { Airport } from '@core/master-data';
-import Flight from 'src/view-models/flights/Flight';
+import Flight from 'src/business/flights/Flight';
 import Weekday from '@core/types/Weekday';
 import MultiSelect from 'src/components/MultiSelect';
 import classNames from 'classnames';

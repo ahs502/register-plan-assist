@@ -1,9 +1,12 @@
-import AuthenticationModel from '@core/models/authentication/AuthenticationModel';
+import UserModel from '@core/models/authentication/UserModel';
+import UserSettingsModel from '@core/models/authentication/UserSettingsModel';
 
 export interface Persistant {
-  authentication?: AuthenticationModel;
-  encodedAuthenticationHeader?: string;
   oauthCode?: string;
+  refreshToken?: string;
+  user?: UserModel;
+  userSettings?: UserSettingsModel;
+  encodedAuthenticationHeader?: string;
 }
 type PersistantStatus = { [key in keyof Persistant]?: boolean };
 
@@ -43,7 +46,7 @@ function get<T extends keyof Persistant>(cache: Persistant, status: PersistantSt
   if (status[key] === true) return cache[key];
   if (status[key] === false) return undefined;
   const stringValue = localStorage.getItem(key);
-  if ((status[key] = stringValue === null)) return undefined;
+  if (!(status[key] = stringValue !== null)) return undefined;
   return (cache[key] = JSON.parse(stringValue!));
 }
 function set<T extends keyof Persistant>(cache: Persistant, status: PersistantStatus, key: T, value: Persistant[T] | undefined): void {

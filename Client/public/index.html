@@ -27,17 +27,17 @@
 
     <script>
       +(async function() {
-        const authentication = localStorage.getItem('authentication');
-        const encodedAuthenticationHeader = localStorage.getItem('encodedAuthenticationHeader');
         const oauthCode = localStorage.getItem('oauthCode');
-        if (authentication && encodedAuthenticationHeader && oauthCode) return;
+        const refreshToken = localStorage.getItem('refreshToken');
+        const user = localStorage.getItem('user');
+        const userSettings = localStorage.getItem('userSettings');
+        const encodedAuthenticationHeader = localStorage.getItem('encodedAuthenticationHeader');
+        if (oauthCode && refreshToken && user && userSettings && encodedAuthenticationHeader) return;
 
         const url = new URL(window.location.href);
         const code = url.searchParams.get('code');
         if (!code) {
-          const loginUrl = `${config.oauth.serverIssuer}?client_id=${config.oauth.clientId}&redirect_uri=${config.oauth.clientUrl}&response_type=code&lang=${
-            config.oauth.lang
-          }&resource=${config.oauth.resourceName}`;
+          const loginUrl = `${config.oauth.serverIssuer}?client_id=${config.oauth.clientId}&redirect_uri=${config.oauth.clientUrl}&response_type=code&lang=${config.oauth.lang}&resource=${config.oauth.resourceName}`;
           window.location.href = loginUrl;
           return;
         }
@@ -55,6 +55,7 @@
               body: JSON.stringify({ oauthCode: code })
             });
           } catch (error) {
+            console.error('GetAuthentication Error:', error);
             throw 'SERVER_NOT_AVAILABLE';
           }
           if (!response.ok) throw 'UNKNOWN';
@@ -63,12 +64,15 @@
           if (authenticationResult.error) throw authenticationResult.error;
 
           const { authentication, encodedAuthenticationHeader } = authenticationResult;
-          localStorage.setItem('authentication', JSON.stringify(authentication));
-          localStorage.setItem('encodedAuthenticationHeader', JSON.stringify(encodedAuthenticationHeader));
           localStorage.setItem('oauthCode', JSON.stringify(code));
+          localStorage.setItem('refreshToken', JSON.stringify(authentication.refreshToken));
+          localStorage.setItem('user', JSON.stringify(authentication.user));
+          localStorage.setItem('userSettings', JSON.stringify(authentication.userSettings));
+          localStorage.setItem('encodedAuthenticationHeader', JSON.stringify(encodedAuthenticationHeader));
 
           removeCodeFromUrl();
         } catch (error) {
+          //TODO: What else could we do here?
           switch (error) {
             case 'SERVER_NOT_AVAILABLE':
               break;
@@ -88,6 +92,7 @@
               break;
             case 'UNKNOWN':
             default:
+              console.error('Authentication Error:', error);
               removeCodeFromUrl();
               break;
           }

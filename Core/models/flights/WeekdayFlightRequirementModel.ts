@@ -19,13 +19,13 @@ export class WeekdayFlightRequirementValidation extends Validation<
     readonly flight: FlightValidation;
   }
 > {
-  constructor(weekdayFlightRequirement: WeekdayFlightRequirementModel, dummyAircraftRegisters: readonly DummyAircraftRegisterModel[]) {
+  constructor(weekdayFlightRequirement: WeekdayFlightRequirementModel, dummyAircraftRegistersId: readonly string[]) {
     super(validator =>
       validator.object(weekdayFlightRequirement).do(({ scope, notes, day, flight }) => {
-        validator.into('scope').set(new FlightScopeValidation(scope, dummyAircraftRegisters));
+        validator.into('scope').set(new FlightScopeValidation(scope, dummyAircraftRegistersId));
         validator.check('NOTES_IS_VALID', typeof notes === 'string');
         validator.check('DAY_IS_VALID', typeof day === 'number' && !isNaN(day) && day >= 0 && day < 7);
-        validator.into('flight').set(new FlightValidation(flight, dummyAircraftRegisters));
+        validator.into('flight').set(new FlightValidation(flight, dummyAircraftRegistersId));
       })
     );
   }

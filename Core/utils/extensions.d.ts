@@ -16,18 +16,28 @@ declare interface Array<T> {
   remove(item: T): number;
 
   /**
-   * Sorts this array and returns the array itself as a result (mutable).
-   * @param propertySelector The name of the property or a mapper function to sort on.
-   * @param descending Determines whether to sort descending or ascending (by default).
+   * Sorts this array by ascending order and returns the array itself as a result (mutable).
+   * @param propertySelectors The list of names of the properties or mapper functions to sort on, prioritized by order.
    */
-  sortBy(propertySelector: keyof T | ((item: T) => any), descending?: boolean): T[];
+  sortBy(...propertySelectors: (keyof T | ((item: T) => any))[]): T[];
 
   /**
-   * Returns a sorted copy of this array (immutable).
-   * @param propertySelector The name of the property or a mapper function to sort on.
-   * @param descending Determines whether to sort descending or ascending (by default).
+   * Sorts this array by descending order and returns the array itself as a result (mutable).
+   * @param propertySelectors The list of names of the properties or mapper functions to sort on, prioritized by order.
    */
-  orderBy(propertySelector: keyof T | ((item: T) => any), descending?: boolean): T[];
+  sortByDescending(...propertySelectors: (keyof T | ((item: T) => any))[]): T[];
+
+  /**
+   * Returns a sorted copy of this array by ascending order (immutable).
+   * @param propertySelectors The list of names of the properties or mapper functions to sort on, prioritized by order.
+   */
+  orderBy(...propertySelectors: (keyof T | ((item: T) => any))[]): T[];
+
+  /**
+   * Returns a sorted copy of this array by descending order (immutable).
+   * @param propertySelectors The list of names of the properties or mapper functions to sort on, prioritized by order.
+   */
+  orderByDescending(...propertySelectors: (keyof T | ((item: T) => any))[]): T[];
 
   /**
    * Returns the distinct items of this array.
@@ -45,15 +55,40 @@ declare interface Array<T> {
    * @param groupName The property of the items or a group name generator to group items with.
    */
   groupBy(groupName: keyof T | ((item: T) => string)): { [groupName: string]: T[] };
+
+  /**
+   * Returns a mapped grouped dictionary of this array.
+   * @param groupName The property of the items or a group name generator to group items with.
+   * @param mapper The mapper function for groups.
+   */
+  groupBy<I>(groupName: keyof T | ((item: T) => string), mapper: (group: T[]) => I): { [groupName: string]: I };
+
+  /**
+   * Returns a dictionary of this array.
+   * @param key The property of the items or a key extractor to point to the items with.
+   */
+  toDictionary(key: keyof T | ((item: T) => string)): { [key: string]: T };
+
+  /**
+   * Returns a mapped dictionary of this array.
+   * @param key The property of the items or a key extractor to point to the items with.
+   * @param mapper Optional, the mapper function for items.
+   */
+  toDictionary<I = T>(key: keyof T | ((item: T) => string), mapper: (item: T) => I): { [key: string]: I };
 }
 
 declare interface ReadonlyArray<T> {
   /**
-   * Returns a sorted copy of this array (immutable).
-   * @param propertySelector The name of the property or a mapper function to sort on.
-   * @param descending Determines whether to sort descending or ascending (by default).
+   * Returns a sorted copy of this array by ascending order (immutable).
+   * @param propertySelectors The list of names of the properties or mapper functions to sort on, prioritized by order.
    */
-  orderBy(propertySelector: keyof T | ((item: T) => any), descending?: boolean): T[];
+  orderBy(...propertySelectors: (keyof T | ((item: T) => any))[]): T[];
+
+  /**
+   * Returns a sorted copy of this array by descending order (immutable).
+   * @param propertySelectors The list of names of the properties or mapper functions to sort on, prioritized by order.
+   */
+  orderByDescending(...propertySelectors: (keyof T | ((item: T) => any))[]): T[];
 
   /**
    * Returns the distinct items of this array.
@@ -71,11 +106,51 @@ declare interface ReadonlyArray<T> {
    * @param groupName The property of the items or a group name generator to group items with.
    */
   groupBy(groupName: keyof T | ((item: T) => string)): { [groupName: string]: T[] };
+
+  /**
+   * Returns a mapped grouped dictionary of this array.
+   * @param groupName The property of the items or a group name generator to group items with.
+   * @param mapper The mapper function for groups.
+   */
+  groupBy<I>(groupName: keyof T | ((item: T) => string), mapper: (group: T[]) => I): { [groupName: string]: I };
+
+  /**
+   * Returns a dictionary of this array.
+   * @param key The property of the items or a key extractor to point to the items with.
+   */
+  toDictionary(key: keyof T | ((item: T) => string)): { [key: string]: T };
+
+  /**
+   * Returns a mapped dictionary of this array.
+   * @param key The property of the items or a key extractor to point to the items with.
+   * @param mapper Optional, the mapper function for items.
+   */
+  toDictionary<I = T>(key: keyof T | ((item: T) => string), mapper: (item: T) => I): { [key: string]: I };
 }
 
 declare type DateFormat = 'D' | 'D#' | 'd' | 'd#' | 'D$' | '~D$' | 'T' | 'T0' | 't' | 'T#' | 't#' | 'DT' | 'DT0';
 
 declare interface DateConstructor {
+  /**
+   * An ivalid date instance.
+   */
+  invalidDate: Date;
+
+  /**
+   * Returns the parsed date object from the given date string as an UTC date.
+   * Returns `null` for empty input.
+   * @param date The string formatted date.
+   */
+  parseUtc(date?: string): Date | null;
+
+  /**
+   * Returns the JSON formatted date string or
+   * empty string for empty inputs or
+   * `'Invalid date'` for invalid inputs.
+   * @param date The date by any supported format.
+   */
+  toJSON(date: Date | string | number | null | undefined): string;
+
   /**
    * Returns a Date object which inherits its date part
    * and its time part from two different arguments.

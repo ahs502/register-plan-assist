@@ -9,7 +9,7 @@ declare module 'vis-timeline' {
     align?: 'auto' | 'center' | 'left' | 'right';
     content: string;
     end?: CustomTime;
-    group?: any;
+    group?: Id;
     id?: Id;
     start: CustomTime;
     style?: string;
@@ -86,34 +86,7 @@ declare module 'vis-timeline' {
           overrideItems?: boolean;
         };
     end?: CustomTime;
-    format?: {
-      minorLabels:
-        | {
-            millisecond?: string;
-            second?: string;
-            minute?: string;
-            hour?: string;
-            weekday?: string;
-            day?: string;
-            week?: string;
-            month?: string;
-            year?: string;
-          }
-        | ((datetime: Date, scale: number, step: number) => string);
-      majorLabels:
-        | {
-            millisecond?: string;
-            second?: string;
-            minute?: string;
-            hour?: string;
-            weekday?: string;
-            day?: string;
-            week?: string;
-            month?: string;
-            year?: string;
-          }
-        | ((datetime: Date, scale: number, step: number) => string);
-    };
+    format?: TimeStepFormat;
     groupEditable?:
       | boolean
       | {
@@ -158,6 +131,7 @@ declare module 'vis-timeline' {
     onAdd?: (item: DataItem, callback: (item: DataItem | null) => void) => void;
     onAddGroup?: (group: DataGroup, callback: (group: DataGroup | null) => void) => void;
     onDragObjectOnItem?: (objectData: any, item: DataItem) => void;
+    onInitialDrawComplete?: () => void;
     onMove?: (item: DataItem, callback: (item: DataItem | null) => void) => void;
     onMoveGroup?: (group: DataGroup, callback: (group: DataGroup | null) => void) => void;
     onMoving?: (item: DataItem, callback: (item: DataItem | null) => void) => void;
@@ -262,6 +236,233 @@ declare module 'vis-timeline' {
     | 'timechange'
     | 'timechanged';
 
+  export interface TimelineDom {
+    background: Element;
+    backgroundHorizontal: Element;
+    backgroundVertical: Element;
+    bottom: Element;
+    center: Element;
+    centerContainer: Element;
+    container: Element;
+    left: Element;
+    leftContainer: Element;
+    loadingScreen: Element;
+    right: Element;
+    rightContainer: Element;
+    rollingModeBtn: Element;
+    root: Element;
+    shadowBottom: Element;
+    shadowBottomLeft: Element;
+    shadowBottomRight: Element;
+    shadowTop: Element;
+    shadowTopLeft: Element;
+    shadowTopRight: Element;
+    top: Element;
+  }
+
+  export interface TimelineDomProps {
+    background: { height: number; width: number };
+    border: { left: number; right: number; top: number; bottom: number };
+    borderRootHeight: number;
+    borderRootWidth: number;
+    bottom: { height: number; width: number };
+    center: { height: number; width: number };
+    centerContainer: { height: number; width: number };
+    lastHeight: number;
+    lastWidth: number;
+    left: { height: number; width: number };
+    leftContainer: { height: number; width: number };
+    right: { height: number; width: number };
+    rightContainer: { height: number; width: number };
+    root: { height: number; width: number };
+    scrollTop: number;
+    scrollTopMin: number;
+    scrollbarWidth: number;
+    top: { height: number; width: number };
+  }
+
+  export interface TimelineBody {
+    dom: TimelineDom;
+    domProps: TimelineDomProps;
+    emitter: any; //TODO
+    hiddenDates: any; //TODO
+    range: Range;
+    util: {
+      getScale(): any; //TODO
+      getStep(): any; //TODO
+      toGlobalScreen(): any; //TODO
+      toGlobalTime(): any; //TODO
+      toScreen(): any; //TODO
+      toTime(): any; //TODO
+    };
+  }
+
+  export interface Range {
+    animationTimer: any; //TODO
+    body: TimelineBody;
+    defaultOptions: TimelineOptions; //TODO: Only a part of it
+    deltaDifference: number;
+    end: number;
+    endToFront: boolean;
+    millisecondsPerPixelCache: any; //TODO
+    options: TimelineOptions; //TODO: Only a part of it
+    props: any; //TODO
+    rolling: any; //TODO
+    scaleOffset: any; //TODO
+    start: number;
+    startToFront: boolean;
+    timeoutID: Id;
+  }
+
+  export interface TimeAxis {
+    body: TimelineBody;
+    defaultOptions: TimelineOptions; //TODO: Only a part of it
+    dom: {
+      background: Element;
+      forground: Element;
+      lines: Element[];
+      majorTexts: Element[];
+      measureCharMajor: Element;
+      measureCharMinor: Element;
+      minorTexts: Element[];
+      redundant: any; //TODO
+    };
+    options: TimelineOptions; //TODO: Only a part of it
+    props: {
+      height: number;
+      lintTop: 0;
+      majorCharHeight: number;
+      majorCharWidth: number;
+      majorLabelHeight: number;
+      majorLineHeight: number;
+      majorLineWidth: number;
+      minorCharHeight: number;
+      minorCharWidth: number;
+      minorLabelHeight: number;
+      minorLineHeight: number;
+      minorLineWidth: number;
+      range: { start: number; end: number; minimumStep: number };
+      width: number;
+      _previousHeight: any; //TODO
+      _previousWidth: any; //TODO
+    };
+    step: TimeStep;
+  }
+
+  export interface TimeStepFormat {
+    minorLabels:
+      | {
+          millisecond?: string;
+          second?: string;
+          minute?: string;
+          hour?: string;
+          weekday?: string;
+          day?: string;
+          week?: string;
+          month?: string;
+          year?: string;
+        }
+      | ((datetime: Date, scale: number, step: number) => string);
+    majorLabels:
+      | {
+          millisecond?: string;
+          second?: string;
+          minute?: string;
+          hour?: string;
+          weekday?: string;
+          day?: string;
+          week?: string;
+          month?: string;
+          year?: string;
+        }
+      | ((datetime: Date, scale: number, step: number) => string);
+  }
+
+  export interface TimeStep {
+    autoScale: boolean;
+    current: any; //TODO
+    format: TimeStepFormat;
+    hiddenDates: any; //TODO
+    moment: any; //TODO
+    options: TimelineOptions; //TODO: Only a part of it
+    scale: string; //TODO
+    step: number; //TODO
+    switchedDay: boolean;
+    switchedMonth: boolean;
+    switchedYear: boolean;
+    _end: any; //TODO
+    _start: any; //TODO
+  }
+
+  export interface CurrentTime {
+    //TODO
+  }
+
+  export interface ItemSet {
+    body: TimelineBody;
+    conversion: {
+      toScreen(): any; //TODO
+      toTime: any; //TODO
+    };
+    defaultOptions: TimelineOptions; //TODO: Only a part of it
+    dom: {
+      axis: Element;
+      background: Element;
+      foreground: Element;
+      frame: Element;
+      labelSet: Element;
+    };
+    groupHammer: any; //TODO
+    groupIds: Id[];
+    groupListeners: any; //TODO
+    groupTouchParams: any; //TODO
+    groups: {
+      [id: string]: Group;
+      [id: number]: Group;
+    };
+    groupsData: DataView<DataGroup>;
+    hammer: any; //TODO
+    initialDrawDone: boolean;
+    initialItemSetDrawn: boolean;
+    itemListeners: any; //TODO
+    itemOptions: any; //TODO
+    items: {
+      [id: string]: RangeItem | BackgroundItem; //TODO: Any more item type?
+      [id: number]: RangeItem | BackgroundItem; //TODO: Any more item type?
+    };
+    itemsData: DataSet<DataItem>;
+    itemsSettingTime: Date;
+    lastRangeStart: number;
+    lastStack: boolean;
+    lastStackSubgroups: boolean;
+    lastVisibleInterval: number;
+    options: TimelineOptions; //TODO: Only a part of it
+    popup: any; //TODO
+    popupTimer: any; //TODO
+    props: {
+      height: number;
+      lastWidthleft: number;
+      toGroupwidth: number;
+      _previousHeight: number;
+      _previousWidth: number;
+    };
+    selection: any[]; //TODO
+    touchParams: any; //TODO
+    userContinureNotBail: any; //TODO
+  }
+
+  export interface Group {
+    //TODO
+  }
+
+  export interface RangeItem {
+    //TODO
+  }
+
+  export interface BackgroundItem {
+    //TODO
+  }
+
   export class Timeline {
     constructor(
       container: HTMLElement,
@@ -270,6 +471,51 @@ declare module 'vis-timeline' {
       options?: TimelineOptions
     );
     constructor(container: HTMLElement, items: Array<DataItem> | DataSet<DataItem> | DataView<DataItem>, options?: TimelineOptions);
+
+    body: TimelineBody;
+    components: [Range, TimeAxis, CurrentTime, ItemSet];
+    currentTime: CurrentTime;
+    customTimes: any[]; //TODO
+    defaultOptions: TimelineOptions; //TODO: What part of it?
+    dom: TimelineDom;
+    groupsData: DataView<DataGroup>;
+    hammer: any; //TODO
+    initTime: Date;
+    initialDrawDone: boolean;
+    initialFitDone: boolean;
+    initialRangeChangeDone: boolean;
+    itemSet: ItemSet;
+    itemsData: DataSet<DataItem>;
+    itemsDone: boolean;
+    listeners: any; //TODO
+    options: TimelineOptions; //TODO: What part of it?
+    props: TimelineDomProps;
+    range: Range;
+    redrawCount: number;
+    timeAxis: TimeAxis;
+    timeAxis2: TimeAxis | null;
+    touch: any; //TODO
+    watchTimer: any; //TODO
+    _callbacks: {
+      _change: Function[];
+      changed: Function[];
+      checkRangedItems: Function[];
+      contextmenu: Function[];
+      destroyTimeline: Function[];
+      mouseOver: Function[];
+      mousewheel: Function[];
+      panend: Function[];
+      panmove: Function[];
+      panstart: Function[];
+      pinch: Function[];
+      rangechange: Function[];
+      rangechanged: Function[];
+      select: Function[];
+      touch: Function[];
+    };
+    _onResize: Function;
+    _origRedraw: Function;
+    _redraw: Function;
 
     addCustomTime(time: CustomTime, id?: Id): Id;
     destroy(): void;

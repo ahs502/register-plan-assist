@@ -37,7 +37,7 @@ export default class RequestManager {
       try {
         const body: GetAuthenticationModel = {
           oauthCode: persistant.oauthCode!,
-          refreshToken: persistant.authentication!.refreshToken
+          refreshToken: persistant.refreshToken
         };
         const refreshTokenResponse = await fetch(`/api/oauth/get-authentication`, {
           method: 'POST',
@@ -50,15 +50,19 @@ export default class RequestManager {
         });
         if (!refreshTokenResponse.ok) throw 'Refresh token failed.';
         const authenticationResult: AuthenticationResultModel = await refreshTokenResponse.json();
-        persistant.authentication = authenticationResult.authentication;
+        persistant.refreshToken = authenticationResult.authentication!.refreshToken;
+        persistant.user = authenticationResult.authentication!.user;
+        persistant.userSettings = authenticationResult.authentication!.userSettings;
         persistant.encodedAuthenticationHeader = authenticationResult.encodedAuthenticationHeader;
       } catch (refreshTokenFailureReason) {
         console.error('Refresh token failure error', refreshTokenFailureReason);
 
         // Go to login page:
-        delete persistant.authentication;
-        delete persistant.encodedAuthenticationHeader;
         delete persistant.oauthCode;
+        delete persistant.refreshToken;
+        delete persistant.user;
+        delete persistant.userSettings;
+        delete persistant.encodedAuthenticationHeader;
         window.location.reload();
       }
 

@@ -20,6 +20,10 @@ app.use(express.json());
 import apiService from './api-service';
 app.use('/api', apiService);
 
+app.get('/env', (req, res, next) => {
+  res.json(req.app.get('env'));
+});
+
 app.use('/', express.static(path.join(__dirname, 'public')));
 
 const port = process.env.PORT || 3000;

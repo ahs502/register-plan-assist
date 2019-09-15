@@ -12,9 +12,3 @@ router.use('/master-data', MasterDataService);
 router.use('/preplan', PreplanService);
 router.use('/config', ConfigService);
 router.use('/oauth', OauthService);
-/**
- * Serves the environment name, either one of 'production', 'test' or 'development'.
- */
-router.get('/env', (req, res, next) => {
-  res.json(req.app.get('env'));
-});

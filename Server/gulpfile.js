@@ -5,7 +5,7 @@ const typescript = require('gulp-typescript');
 const modifyFile = require('gulp-modify-file');
 const del = require('del');
 
-function buildSource(destinationFolder, packageJsonModifier) {
+function buildSource(destinationFolder, configured, packageJsonModifier) {
   return gulp.series(
     gulp.parallel(() => del('temp/**'), () => del(destinationFolder + '/**')),
     done => {
@@ -69,19 +69,22 @@ function buildSource(destinationFolder, packageJsonModifier) {
         .pipe(typescriptProject())
         .js.pipe(gulp.dest(destinationFolder));
     },
-    () => gulp.src(['config.js', packageJsonModifier && 'temp/package.json'].filter(Boolean)).pipe(gulp.dest(destinationFolder)),
-    () => del('temp/**')
+    () => gulp.src([configured ? 'config.js' : 'configure.js', packageJsonModifier && 'temp/package.json'].filter(Boolean)).pipe(gulp.dest(destinationFolder)),
+    () => del([!configured && `${destinationFolder}/config.js`, 'temp/**'].filter(Boolean))
   );
 }
 
-gulp.task('build-dev', buildSource('make'));
+gulp.task('build-dev', buildSource('make', true));
 gulp.task(
   'build',
-  buildSource('dist', data => {
+  buildSource('dist', false, data => {
     data.name = 'planassist';
     data.description = 'Intelligent Flight Scheduler';
     data.main = 'index.js';
-    data.scripts = { start: 'node .' };
+    data.scripts = {
+      start: 'node .',
+      config: 'node ./configure.js'
+    };
     delete data.devDependencies;
     return data;
   })

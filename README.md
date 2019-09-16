@@ -66,6 +66,12 @@ The default port is **3000** and the default node environment is **production** 
 
 > The node environment can be either **`production`**, **`user acceptance test`**, **`quality assurance`** or **`development`**.
 
+### Code Status
+
+To view a summary on code files and lines:
+
+    $ npm run status
+
 ## Public files
 
 Place any file you want to serve statically into either `./Server/public` or `./Client/public` folders.

@@ -9,7 +9,8 @@ import AirportModel from '@core/models/master-data/AirportModel';
 import SeasonTypeModel from '@core/models/master-data/SeasonTypeModel';
 import SeasonModel from '@core/models/master-data/SeasonModel';
 import StcModel from '@core/models/master-data/StcModel';
-import AircraftGroupModel from '@core/models/master-data/AircraftGroupModel';
+import AircraftRegisterGroupModel from '@core/models/master-data/AircraftRegisterGroupModel';
+import ConstraintTemplateModel from '@core/models/master-data/ConstraintTemplateModel';
 import ConstraintModel from '@core/models/master-data/ConstraintModel';
 
 const router = Router();
@@ -28,7 +29,8 @@ router.post(
       seasonTypes: collections.includes('seasonTypes') ? await getSeasonTypes() : undefined,
       seasons: collections.includes('seasons') ? await getSeasons() : undefined,
       stcs: collections.includes('seasons') ? await getStcs() : undefined,
-      aircraftGroups: collections.includes('aircraftGroups') ? await getAircraftGroups() : undefined,
+      aircraftRegisterGroups: collections.includes('aircraftRegisterGroups') ? await getAircraftRegisterGroups() : undefined,
+      constraintTemplates: collections.includes('constraintTemplates') ? await getConstraintTemplates() : undefined,
       constraints: collections.includes('constraints') ? await getConstraints() : undefined
     };
 
@@ -65,6 +67,7 @@ router.post(
                 u.[id] = t.[Id_AircraftType]
         `
       );
+
       return Object.values(rawAircraftTypes.groupBy('id')).map(group => {
         const sample = group[0];
         return {
@@ -190,6 +193,7 @@ router.post(
             [MasterData].[Season]            as u
         `
       );
+
       return rawSeasons.map(c => ({
         id: c.id,
         name: c.name,
@@ -212,7 +216,11 @@ router.post(
       );
     }
 
-    async function getAircraftGroups(): Promise<readonly AircraftGroupModel[]> {
+    async function getAircraftRegisterGroups(): Promise<readonly AircraftRegisterGroupModel[]> {
+      return []; // Not implemented.
+    }
+
+    async function getConstraintTemplates(): Promise<readonly ConstraintTemplateModel[]> {
       return []; // Not implemented.
     }
 

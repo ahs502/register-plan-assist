@@ -12,7 +12,7 @@ import Airport, { Airports } from './Airport';
 import AircraftSelection from './AircraftSelection';
 import AircraftIdentity from './AircraftIdentity';
 import { AircraftTypes } from './AircraftType';
-import { AircraftGroups } from './AircraftGroup';
+import { AircraftRegisterGroups } from './AircraftRegisterGroup';
 import SeasonType, { SeasonTypes } from './SeasonType';
 import Weekday from '@core/types/Weekday';
 
@@ -39,7 +39,7 @@ export default class Constraint extends MasterDataItem {
     airports: Airports,
     aircraftRegisters: AircraftRegisters,
     aircraftTypes: AircraftTypes,
-    aircraftGroups: AircraftGroups,
+    aircraftRegisterGroups: AircraftRegisterGroups,
     seasonTypes: SeasonTypes
   ) {
     super(raw);
@@ -60,7 +60,7 @@ export default class Constraint extends MasterDataItem {
             airports,
             aircraftRegisters,
             aircraftTypes,
-            aircraftGroups
+            aircraftRegisterGroups
           ));
           this.description = `When planning the flights of airport${getPluralS(data.airports)} ${convertNameArrayToString(data.airports.map(a => a.name))}, ${
             data.never ? 'never' : 'only'
@@ -88,7 +88,7 @@ export default class Constraint extends MasterDataItem {
             raw.data as BlockTimeRestrictionOnAircraftsConstraintDataModel,
             aircraftRegisters,
             aircraftTypes,
-            aircraftGroups
+            aircraftRegisterGroups
           ));
           this.description = `When planning flights longer than ${data.maximumBlockTime} minutes, never use ${convertAircraftIdentityArrayToString(
             data.aircraftSelection.allowedIdentities
@@ -159,12 +159,12 @@ function convertAircraftRestrictionOnAirportsConstraintDataFromModel(
   airports: Airports,
   aircraftRegisters: AircraftRegisters,
   aircraftTypes: AircraftTypes,
-  aircraftGroups: AircraftGroups
+  aircraftRegisterGroups: AircraftRegisterGroups
 ): AircraftRestrictionOnAirportsConstraintData {
   return {
     airports: data.airportIds.map(id => airports.id[id]),
     never: data.adverb === 'NEVER',
-    aircraftSelection: new AircraftSelection(data.aircraftSelection, aircraftRegisters, aircraftTypes, aircraftGroups),
+    aircraftSelection: new AircraftSelection(data.aircraftSelection, aircraftRegisters, aircraftTypes, aircraftRegisterGroups),
     required: data.required
   };
 }
@@ -192,11 +192,11 @@ function convertBlockTimeRestrictionOnAircraftsConstraintDataFromModel(
   data: BlockTimeRestrictionOnAircraftsConstraintDataModel,
   aircraftRegisters: AircraftRegisters,
   aircraftTypes: AircraftTypes,
-  aircraftGroups: AircraftGroups
+  aircraftRegisterGroups: AircraftRegisterGroups
 ): BlockTimeRestrictionOnAircraftsConstraintData {
   return {
     maximumBlockTime: data.maximumBlockTime,
-    aircraftSelection: new AircraftSelection(data.aircraftSelection, aircraftRegisters, aircraftTypes, aircraftGroups)
+    aircraftSelection: new AircraftSelection(data.aircraftSelection, aircraftRegisters, aircraftTypes, aircraftRegisterGroups)
   };
 }
 
@@ -235,11 +235,11 @@ export class Constraints extends MasterDataItems<Constraint> {
     airports: Airports,
     aircraftRegisters: AircraftRegisters,
     aircraftTypes: AircraftTypes,
-    aircraftGroups: AircraftGroups,
+    aircraftRegisterGroups: AircraftRegisterGroups,
     seasonTypes: SeasonTypes,
     raw?: readonly ConstraintModel[]
   ): Constraints | undefined {
     if (!raw) return undefined;
-    return new Constraints(raw.map(x => new Constraint(x, constraintTemplates, airports, aircraftRegisters, aircraftTypes, aircraftGroups, seasonTypes)));
+    return new Constraints(raw.map(x => new Constraint(x, constraintTemplates, airports, aircraftRegisters, aircraftTypes, aircraftRegisterGroups, seasonTypes)));
   }
 }

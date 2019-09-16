@@ -1,5 +1,5 @@
 import AircraftIdentityType from '@core/types/aircraft-identity/AircraftIdentityType';
-import MasterData, { MasterDataItem, AircraftType, AircraftGroup } from '@core/master-data';
+import MasterData, { MasterDataItem, AircraftRegisterGroup } from '@core/master-data';
 import PreplanAircraftRegister, { PreplanAircraftRegisters } from './PreplanAircraftRegister';
 import AircraftIdentityModel from '@core/models/AircraftIdentityModel';
 import ModelConvertable, { getOverrided } from 'src/utils/ModelConvertable';
@@ -33,7 +33,7 @@ export default abstract class PreplanAircraftIdentity implements ModelConvertabl
       case 'TYPE_DUMMY':
         return new PreplanAircraftTypeDummyIdentity(raw, aircraftRegisters);
       case 'GROUP':
-        return new PreplanAircraftGroupIdentity(raw, aircraftRegisters);
+        return new PreplanAircraftRegisterGroupIdentity(raw, aircraftRegisters);
       default:
         throw 'Invalid aircraft identity type.';
     }
@@ -93,12 +93,12 @@ export class PreplanAircraftTypeDummyIdentity extends PreplanAircraftIdentity {
   }
 }
 
-export class PreplanAircraftGroupIdentity extends PreplanAircraftIdentity {
+export class PreplanAircraftRegisterGroupIdentity extends PreplanAircraftIdentity {
   constructor(raw: AircraftIdentityModel, aircraftRegisters: PreplanAircraftRegisters) {
-    super(raw, MasterData.all.aircraftGroups.id[raw.entityId], aircraftRegisters);
+    super(raw, MasterData.all.aircraftRegisterGroups.id[raw.entityId], aircraftRegisters);
   }
 
   resolve(): Set<PreplanAircraftRegister> {
-    return new Set((this.entity as AircraftGroup).aircraftRegisters.map(r => this.aircraftRegisters.id[r.id]));
+    return new Set((this.entity as AircraftRegisterGroup).aircraftRegisters.map(r => this.aircraftRegisters.id[r.id]));
   }
 }

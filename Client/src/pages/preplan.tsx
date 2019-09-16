@@ -94,9 +94,9 @@ const PreplanPage: FC = () => {
         : [],
     [preplan && preplan.aircraftRegisters]
   );
-  const aircraftGroupIdentities = useMemo<FlightRequirementModalAircraftIdentity[]>(
+  const aircraftRegisterGroupIdentities = useMemo<FlightRequirementModalAircraftIdentity[]>(
     () =>
-      MasterData.all.aircraftGroups.items.map((g, index) => ({
+      MasterData.all.aircraftRegisterGroups.items.map((g, index) => ({
         entityId: g.id,
         name: g.name,
         type: 'GROUP',
@@ -128,11 +128,10 @@ const PreplanPage: FC = () => {
       ]),
     []
   );
-  const aircraftIdentities = useMemo<FlightRequirementModalAircraftIdentity[]>(() => aircraftRegisterIdentities.concat(aircraftGroupIdentities).concat(aircraftTypeIdentities), [
-    aircraftRegisterIdentities,
-    aircraftGroupIdentities,
-    aircraftTypeIdentities
-  ]);
+  const aircraftIdentities = useMemo<FlightRequirementModalAircraftIdentity[]>(
+    () => aircraftRegisterIdentities.concat(aircraftRegisterGroupIdentities).concat(aircraftTypeIdentities),
+    [aircraftRegisterIdentities, aircraftRegisterGroupIdentities, aircraftTypeIdentities]
+  );
 
   useEffect(() => {
     //TODO: Load preplan by match.params.id from server if not loaded yet.

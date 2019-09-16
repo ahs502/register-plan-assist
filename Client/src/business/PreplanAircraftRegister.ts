@@ -1,6 +1,6 @@
 import DummyAircraftRegisterModel from '@core/models/DummyAircraftRegisterModel';
 import { AircraftRegisterOptionsDictionaryModel } from '@core/models/AircraftRegisterOptionsModel';
-import MasterData, { MasterDataItem, MasterDataItems, AircraftType, AircraftGroup } from '@core/master-data';
+import MasterData, { MasterDataItem, MasterDataItems, AircraftType, AircraftRegisterGroup } from '@core/master-data';
 import AircraftRegisterOptions, { AircraftRegisterOptionsDictionary } from './AircraftRegisterOptions';
 import AircraftIdentity from '@core/master-data/AircraftIdentity';
 import AircraftSelection from '@core/master-data/AircraftSelection';
@@ -63,7 +63,7 @@ export class PreplanAircraftRegisters extends MasterDataItems<PreplanAircraftReg
       case 'TYPE_DUMMY':
         return this.items.filter(r => r.aircraftType.id === aircraftIdentity.entity.id && r.dummy);
       case 'GROUP':
-        return (aircraftIdentity.entity as AircraftGroup).aircraftRegisters.map(r => this.id[r.id]);
+        return (aircraftIdentity.entity as AircraftRegisterGroup).aircraftRegisters.map(r => this.id[r.id]);
       default:
         throw 'Invalid aircraft identity type.';
     }

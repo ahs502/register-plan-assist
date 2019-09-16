@@ -98,7 +98,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
         .map(a => ({
           id: a.id,
           name: a.name,
-          groups: MasterData.all.aircraftGroups.items.filter(g => g.aircraftRegisters.filter(r => r.id === a.id)).map(g => g.name),
+          groups: MasterData.all.aircraftRegisterGroups.items.filter(g => g.aircraftRegisters.filter(r => r.id === a.id)).map(g => g.name),
           baseAirport: a.options.startingAirport ? a.options.startingAirport.name : '',
           status: a.options.status
         }));

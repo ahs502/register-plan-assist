@@ -2,7 +2,7 @@ import AircraftSelectionModel from '@core/models/AircraftSelectionModel';
 import AircraftIdentity from './AircraftIdentity';
 import { AircraftRegisters } from './AircraftRegister';
 import { AircraftTypes } from './AircraftType';
-import { AircraftGroups } from './AircraftGroup';
+import { AircraftRegisterGroups } from './AircraftRegisterGroup';
 
 /**
  * A data structure describing a range of aircraft registers.
@@ -14,8 +14,8 @@ export default class AircraftSelection {
   readonly allowedIdentities: readonly AircraftIdentity[];
   readonly forbiddenIdentities: readonly AircraftIdentity[];
 
-  constructor(raw: AircraftSelectionModel, aircraftRegisters: AircraftRegisters, aircraftTypes: AircraftTypes, aircraftGroups: AircraftGroups) {
-    this.allowedIdentities = raw.allowedIdentities.map(i => new AircraftIdentity(i, aircraftRegisters, aircraftTypes, aircraftGroups));
-    this.forbiddenIdentities = raw.forbiddenIdentities.map(i => new AircraftIdentity(i, aircraftRegisters, aircraftTypes, aircraftGroups));
+  constructor(raw: AircraftSelectionModel, aircraftRegisters: AircraftRegisters, aircraftTypes: AircraftTypes, aircraftRegisterGroups: AircraftRegisterGroups) {
+    this.allowedIdentities = raw.allowedIdentities.map(i => new AircraftIdentity(i, aircraftRegisters, aircraftTypes, aircraftRegisterGroups));
+    this.forbiddenIdentities = raw.forbiddenIdentities.map(i => new AircraftIdentity(i, aircraftRegisters, aircraftTypes, aircraftRegisterGroups));
   }
 }

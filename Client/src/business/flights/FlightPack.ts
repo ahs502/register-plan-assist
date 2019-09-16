@@ -78,11 +78,17 @@ export default class FlightPack {
     });
   }
 
-  startDateTime(startDate: Date): Date {
-    return new Date(startDate.getTime() + this.day * 24 * 60 * 60 * 1000 + this.start.minutes * 60 * 1000);
+  get weekStart(): number {
+    return this.day * 24 * 60 + this.start.minutes;
+  }
+  get weekEnd(): number {
+    return this.day * 24 * 60 + this.end.minutes;
   }
 
+  startDateTime(startDate: Date): Date {
+    return new Date(startDate.getTime() + this.weekStart * 60 * 1000);
+  }
   endDateTime(startDate: Date): Date {
-    return new Date(startDate.getTime() + this.day * 24 * 60 * 60 * 1000 + this.end.minutes * 60 * 1000);
+    return new Date(startDate.getTime() + this.weekEnd * 60 * 1000);
   }
 }

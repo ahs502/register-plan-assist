@@ -160,12 +160,12 @@ router.post(
       runSp.nVarCharParam('scope', xmlStringify(convertFlightScopeModelToEntity(flightRequirement.scope), 'Scope'), 'max'),
       runSp.nVarCharParam('days', xmlStringify(convertWeekdayFlightRequirementListModelToEntity(flightRequirement.days), 'WeekdayFlightRequirements'), 'max'),
       runSp.bitParam('ignored', flightRequirement.ignored),
-      runSp.varCharParam('arrivalAirportId', flightRequirement.definition.arrivalAirportId, 30),
-      runSp.varCharParam('departureAirportId', flightRequirement.definition.departureAirportId, 30),
-      runSp.nVarCharParam('category', flightRequirement.definition.category, 200),
-      runSp.nVarCharParam('flightNumber', flightRequirement.definition.flightNumber, 10),
       runSp.nVarCharParam('lable', flightRequirement.definition.label, 200),
-      runSp.intParam('stcId', flightRequirement.definition.stcId)
+      runSp.nVarCharParam('category', flightRequirement.definition.category, 200),
+      runSp.intParam('stcId', flightRequirement.definition.stcId),
+      runSp.nVarCharParam('flightNumber', flightRequirement.definition.flightNumber, 10),
+      runSp.varCharParam('departureAirportId', flightRequirement.definition.departureAirportId, 30),
+      runSp.varCharParam('arrivalAirportId', flightRequirement.definition.arrivalAirportId, 30)
     );
     const newFlightRequirement = newFlightRequirements[0];
     const result: FlightRequirementModel = convertFlightRequirementEntityToModel(newFlightRequirement);

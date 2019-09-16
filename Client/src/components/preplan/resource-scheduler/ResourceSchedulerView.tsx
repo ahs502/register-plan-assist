@@ -291,8 +291,8 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = memo(
         onMoving(item, callback) {
           if ((item.group as string).startsWith('T')) return callback(null);
           const flightPack: FlightPack = item.data;
-          const originalStart = startDate.getTime() + (flightPack.day * 24 * 60 + flightPack.start.minutes) * 60 * 1000;
-          const originalEnd = startDate.getTime() + (flightPack.day * 24 * 60 + flightPack.end.minutes) * 60 * 1000;
+          const originalStart = flightPack.startDateTime(startDate).getTime();
+          const originalEnd = flightPack.endDateTime(startDate).getTime();
           const calclulatedStart = Date.parse(item.start as any);
           const calculatedEnd = Date.parse(item.end as any);
           // console.log('hi', (originalStart / 300000) % 1000, (originalEnd / 300000) % 1000, (calclulatedStart / 300000) % 1000, (calculatedEnd / 300000) % 1000);

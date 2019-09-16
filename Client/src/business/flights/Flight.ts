@@ -59,4 +59,18 @@ export default class Flight implements ModelConvertable<FlightModel> {
       aircraftRegisterId: getOverrided(this.aircraftRegister && this.aircraftRegister.id, overrides, 'aircraftRegisterId')
     };
   }
+
+  get weekStd(): number {
+    return this.day * 24 * 60 + this.std.minutes;
+  }
+  get weekSta(): number {
+    return this.day * 24 * 60 + this.std.minutes + this.blockTime;
+  }
+
+  stdDateTime(startDate: Date): Date {
+    return new Date(startDate.getTime() + this.weekStd * 60 * 1000);
+  }
+  staDateTime(startDate: Date): Date {
+    return new Date(startDate.getTime() + this.weekSta * 60 * 1000);
+  }
 }

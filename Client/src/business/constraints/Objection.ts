@@ -22,7 +22,7 @@ export default abstract class Objection {
     this.message = message[0].toUpperCase() + message.slice(1);
   }
 
-  abstract readonly targetId: string;
+  abstract get targetId(): string;
 
   match(anotherObjection: Objection): boolean {
     return (

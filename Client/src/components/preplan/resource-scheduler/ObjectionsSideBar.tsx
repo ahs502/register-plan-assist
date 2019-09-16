@@ -43,7 +43,7 @@ const ObjectionsSideBar: FC<ObjectionsSideBarProps> = ({ objections, initialSear
     <SideBarContainer label="Errors and Warnings">
       <Search
         initialSearch={initialSearch}
-        onQueryChange={query => setFilteredObjections(filterOnProperties(objections as readonly { message: string }[], query, ['message']) as any)}
+        onQueryChange={query => setFilteredObjections(filterOnProperties(objections as readonly { message: string }[], query, 'message') as any)}
       />
       <div>
         <span>
@@ -54,7 +54,7 @@ const ObjectionsSideBar: FC<ObjectionsSideBarProps> = ({ objections, initialSear
         <span>
           <span className={classes.warning}>WarningIcon</span>
           {filteredWarningCount !== totalWarningCount && <span>{filteredWarningCount} of </span>}
-          {totalErrorCount} Warnings
+          {totalWarningCount} Warnings
         </span>
       </div>
       <ObjectionList objections={filteredObjections} />

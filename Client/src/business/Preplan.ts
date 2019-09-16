@@ -90,7 +90,18 @@ export default class Preplan extends PreplanHeader {
     return (this._flights = this.flightRequirements
       .filter(f => !f.ignored)
       .map(w => w.days.map(d => d.flight))
-      .flatten());
+      .flatten()
+      .sortBy(f => f.weekStd));
+  }
+
+  private _flightsByRegister?: { [aircraftRegisterId: string]: readonly Flight[] };
+  /**
+   * Gets the flattened list of this preplan's flights, grouped by their aircraft register id ('???' for not existing aircraft registers).
+   * It won't be changed by reference until something is changed within.
+   */
+  get flightsByRegister(): { [aircraftRegisterId: string]: readonly Flight[] } {
+    if (this._flightsByRegister) return this._flightsByRegister;
+    return (this._flightsByRegister = this.flights.groupBy(f => (f.aircraftRegister ? f.aircraftRegister.id : '???')));
   }
 
   private _flightPacks?: readonly FlightPack[];
@@ -105,7 +116,7 @@ export default class Preplan extends PreplanHeader {
     for (const label in flightsByLabel) {
       const flightsByRegister = flightsByLabel[label].groupBy(f => (f.aircraftRegister ? f.aircraftRegister.id : '???'));
       for (const register in flightsByRegister) {
-        const flightGroup = flightsByRegister[register].sortByDescending(f => f.day * 24 * 60 + f.std.minutes);
+        const flightGroup = flightsByRegister[register].reverse();
         while (flightGroup.length) {
           const flight = flightGroup.pop()!;
           let lastFlight = flight;

@@ -403,8 +403,8 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
           <Table size="small">
             {tableHead}
             <TableBody>
-              {filterOnProperties(t.registers, query, ['name']).map(r => aircraftRegisterRow(t, r))}
-              {filterOnProperties(t.dummyRegisters, query, ['name']).map(r => dummyAircraftRegisterRow(t, r))}
+              {filterOnProperties(t.registers, query, 'name').map(r => aircraftRegisterRow(t, r))}
+              {filterOnProperties(t.dummyRegisters, query, 'name').map(r => dummyAircraftRegisterRow(t, r))}
             </TableBody>
           </Table>
         </Fragment>

@@ -38,14 +38,14 @@ const ObjectionList: FC<ObjectionListProps> = ({ objections }) => {
       {objections.orderBy('priority').map(objection => (
         <div className={classes.card} key={objection.message}>
           <div className={classes.message}>{objection.message}</div>
-          <div
+          {/* <div
             className={classNames(classes.icon, {
               [classes.error]: objection.type === 'ERROR',
               [classes.warning]: objection.type === 'WARNING'
             })}
           >
             {objection.message}
-          </div>
+          </div> */}
         </div>
       ))}
     </Fragment>

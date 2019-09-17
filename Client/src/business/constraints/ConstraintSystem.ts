@@ -52,12 +52,29 @@ export default class ConstraintSystem {
       new NoConflictionOnFlightsChecker(
         preplan,
         this,
-        new ConstraintTemplate({ id: 'someid', description: ['some thing'], instantiable: false, name: 'constraint 1', type: 'NO_CONFLICTION_IN_FLIGHTS' })
+        new ConstraintTemplate({ id: 'someid', description: ['some thing'], instantiable: false, name: 'NO_CONFLICTION_IN_FLIGHTS', type: 'NO_CONFLICTION_IN_FLIGHTS' })
       ),
       new AirportSequenceRestrictionOnFlightsChecker(
         preplan,
         this,
-        new ConstraintTemplate({ id: 'id2', description: ['some other thing'], instantiable: false, name: 'constraint 2', type: 'AIRPORT_SEQUENCE_RESTRICTION_ON_FLIGHTS' })
+        new ConstraintTemplate({
+          id: 'id2',
+          description: ['some other thing'],
+          instantiable: false,
+          name: 'AIRPORT_SEQUENCE_RESTRICTION_ON_FLIGHTS',
+          type: 'AIRPORT_SEQUENCE_RESTRICTION_ON_FLIGHTS'
+        })
+      ),
+      new MinimumGroundTimeBetweenFlightsChecker(
+        preplan,
+        this,
+        new ConstraintTemplate({
+          id: 'id3',
+          description: ['still, some other thing'],
+          instantiable: false,
+          name: 'MINIMUM_GROUND_TIME_BETWEEN_FLIGHTS',
+          type: 'MINIMUM_GROUND_TIME_BETWEEN_FLIGHTS'
+        })
       )
     ];
     this.objections = this.check();

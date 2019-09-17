@@ -25,6 +25,7 @@ export default class FlightPack {
 
   constructor(flight: Flight, changed: boolean) {
     (flight as { pack: FlightPack }).pack = this;
+    (flight as { transit: boolean }).transit = false;
     this.derivedId = flight.derivedId;
     this.label = flight.label;
     this.aircraftRegister = flight.aircraftRegister;
@@ -45,6 +46,7 @@ export default class FlightPack {
 
   append(flight: Flight, changed: boolean): void {
     (flight as { pack: FlightPack }).pack = this;
+    (flight as { transit: boolean }).transit = true;
     const flightPack = (this as unknown) as {
       flights: Flight[];
       end: Daytime;

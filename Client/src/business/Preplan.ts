@@ -78,6 +78,8 @@ export default class Preplan extends PreplanHeader {
     this.flightRequirements = this.stagedFlightRequirements = raw.flightRequirements.map(f => new FlightRequirement(f, this.aircraftRegisters));
     this.autoArrangerState = raw.autoArrangerState && new AutoArrangerState(raw.autoArrangerState, this.aircraftRegisters, this.flights);
     this.constraintSystem = new ConstraintSystem(this);
+
+    const flightPacks = this.flightPacks; // In order to initiate the property 'pack' of flights.
   }
 
   private _flights?: readonly Flight[];

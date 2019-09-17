@@ -12,7 +12,6 @@ import DeepWritablePartial from '@core/types/DeepWritablePartial';
 export default class Flight implements ModelConvertable<FlightModel> {
   readonly requirement: FlightRequirement;
   readonly weekdayRequirement: WeekdayFlightRequirement;
-  readonly pack!: FlightPack; // To be set when initiating its flight pack.
   readonly derivedId: string;
   readonly label: string;
   readonly category: string;
@@ -30,6 +29,13 @@ export default class Flight implements ModelConvertable<FlightModel> {
   readonly required: boolean;
   readonly std: Daytime;
   readonly aircraftRegister?: PreplanAircraftRegister;
+
+  readonly pack!: FlightPack; // To be set when initiating its flight pack.
+  readonly transit!: boolean; // To be set when initiating its flight pack.
+
+  readonly international: boolean;
+  readonly weekStd: number;
+  readonly weekSta: number;
 
   constructor(raw: FlightModel, weekdayRequiremnet: WeekdayFlightRequirement, aircraftRegisters: PreplanAircraftRegisters) {
     this.requirement = weekdayRequiremnet.requirement;
@@ -51,6 +57,10 @@ export default class Flight implements ModelConvertable<FlightModel> {
     this.required = weekdayRequiremnet.scope.required;
     this.std = new Daytime(raw.std);
     this.aircraftRegister = raw.aircraftRegisterId ? aircraftRegisters.id[raw.aircraftRegisterId] : undefined;
+
+    this.international = this.departureAirport.international || this.arrivalAirport.international;
+    this.weekStd = this.day * 24 * 60 + this.std.minutes;
+    this.weekSta = this.day * 24 * 60 + this.std.minutes + this.blockTime;
   }
 
   extractModel(overrides?: DeepWritablePartial<FlightModel>): FlightModel {
@@ -60,17 +70,15 @@ export default class Flight implements ModelConvertable<FlightModel> {
     };
   }
 
-  get weekStd(): number {
-    return this.day * 24 * 60 + this.std.minutes;
-  }
-  get weekSta(): number {
-    return this.day * 24 * 60 + this.std.minutes + this.blockTime;
-  }
-
   stdDateTime(startDate: Date): Date {
     return new Date(startDate.getTime() + this.weekStd * 60 * 1000);
   }
   staDateTime(startDate: Date): Date {
     return new Date(startDate.getTime() + this.weekSta * 60 * 1000);
+  }
+
+  getRequiredMinimumGroundTime(startDate: Date, endDate?: Date, method: 'MAXIMUM' | 'MINIMUM' = 'MAXIMUM'): number {
+    if (!this.aircraftRegister) return 0;
+    return this.aircraftRegister.getMinimumGroundTime(this.transit, this.international, startDate, endDate, method);
   }
 }

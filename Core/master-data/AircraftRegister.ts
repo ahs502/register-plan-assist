@@ -10,8 +10,8 @@ export default class AircraftRegister extends MasterDataItem {
     this.aircraftType = aircraftTypes.id[raw.aircraftTypeId];
   }
 
-  getMinimumGroundTime(date: Date, transit: boolean, international: boolean): number {
-    return this.aircraftType.getMinimumGroundTime(date, transit, international);
+  getMinimumGroundTime(transit: boolean, international: boolean, startDate: Date, endDate?: Date, method: 'MAXIMUM' | 'MINIMUM' = 'MAXIMUM'): number {
+    return this.aircraftType.getMinimumGroundTime(transit, international, startDate, endDate, method);
   }
 }
 

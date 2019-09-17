@@ -48,4 +48,10 @@ export default class PreplanAircraftSelection implements ModelConvertable<Aircra
     if (all.size) return all.values().next().value;
     return undefined;
   }
+
+  getMinimumGroundTime(transit: boolean, international: boolean, startDate: Date, endDate?: Date, method: 'MAXIMUM' | 'MINIMUM' = 'MAXIMUM'): number {
+    const minimumGroundTimes = this.resolveIncluded().map(a => a.getMinimumGroundTime(transit, international, startDate, endDate, method));
+    if (minimumGroundTimes.length === 0) return 0;
+    return method === 'MAXIMUM' ? Math.max(...minimumGroundTimes) : Math.min(...minimumGroundTimes);
+  }
 }

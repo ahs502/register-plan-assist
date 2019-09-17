@@ -1,11 +1,12 @@
 import Checker from 'src/business/constraints/Checker';
 import Objection from 'src/business/constraints/Objection';
 import Preplan from 'src/business/Preplan';
+import ConstraintSystem from 'src/business/constraints/ConstraintSystem';
 import { Constraint } from '@core/master-data';
 
 export default class RouteSequenceRestrictionOnAirportsChecker extends Checker {
-  constructor(preplan: Preplan, constraint: Constraint) {
-    super(preplan, constraint.template, constraint);
+  constructor(preplan: Preplan, constraintSystem: ConstraintSystem, constraint: Constraint) {
+    super(preplan, constraintSystem, constraint.template, constraint);
   }
 
   check(): Objection[] {

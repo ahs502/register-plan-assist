@@ -91,16 +91,49 @@ router.post(
     }
 
     async function getAircraftRegisters(): Promise<readonly AircraftRegisterModel[]> {
-      return await runQuery(
+      const rawAircraftRegisters: {
+        id: string;
+        name: string;
+        aircraftTypeId: string;
+        periodStartDate: string;
+        periodEndDate: string;
+      }[] = await runQuery(
         `
           select
-            u.[Id]                        as [id],
-            u.[ShortCode]                 as [name],
-            u.[Id_AircraftType]           as [aircraftTypeId]
+            u.[Id]                              as [id],
+            u.[ShortCode]                       as [name],
+            u.[Id_AircraftType]                 as [aircraftTypeId],
+            p.[PeriodStartDate]                 as [periodStartDate],
+            p.[PeriodEndDate]                   as [periodEndDate]
           from
-            [MasterData].[AircraftRegister]      as u
+            [MasterData].[AircraftRegister]                as u
+          join
+            [MasterData].[AircraftRegisterValidPeriod]     as p
+            on
+              p.[Id_AircraftRegister] = u.[Id]
         `
       );
+
+      return Object.values(rawAircraftRegisters.groupBy('id')).map(group => {
+        const sample = group[0];
+        return {
+          id: sample.id,
+          name: sample.name,
+          aircraftTypeId: sample.aircraftTypeId,
+          validPeriods: group.sortBy('periodStartDate').reduce<AircraftRegisterModel['validPeriods'][number][]>((result, r) => {
+            const lastValidPeriod = result[result.length - 1];
+            if (lastValidPeriod && new Date(lastValidPeriod.endDate).getDatePart().addDays(1) === new Date(r.periodStartDate).getDatePart()) {
+              (lastValidPeriod as any).endDate = r.periodEndDate;
+            } else {
+              result.push({
+                startDate: new Date(r.periodStartDate).toJSON(),
+                endDate: new Date(r.periodEndDate).toJSON()
+              });
+            }
+            return result;
+          }, [])
+        };
+      });
     }
 
     async function getAirports(): Promise<readonly AirportModel[]> {

@@ -74,7 +74,7 @@ export default class Preplan extends PreplanHeader {
   constructor(raw: PreplanModel) {
     super(raw);
     this.autoArrangerOptions = raw.autoArrangerOptions ? new AutoArrangerOptions(raw.autoArrangerOptions) : AutoArrangerOptions.default;
-    this.aircraftRegisters = this.stagedAircraftRegisters = new PreplanAircraftRegisters(raw.dummyAircraftRegisters, raw.aircraftRegisterOptionsDictionary);
+    this.aircraftRegisters = this.stagedAircraftRegisters = new PreplanAircraftRegisters(raw.dummyAircraftRegisters, raw.aircraftRegisterOptionsDictionary, this);
     this.flightRequirements = this.stagedFlightRequirements = raw.flightRequirements.map(f => new FlightRequirement(f, this.aircraftRegisters));
     this.autoArrangerState = raw.autoArrangerState && new AutoArrangerState(raw.autoArrangerState, this.aircraftRegisters, this.flights);
     this.constraintSystem = new ConstraintSystem(this);
@@ -192,7 +192,7 @@ export default class Preplan extends PreplanHeader {
     removingFlightRequirementId?: string;
   }): ObjectionDiff {
     this.stagedAircraftRegisters = changes.updatingAircraftRegisters
-      ? new PreplanAircraftRegisters(changes.updatingAircraftRegisters.dummyAircraftRegisters, changes.updatingAircraftRegisters.aircraftRegisterOptionsDictionary)
+      ? new PreplanAircraftRegisters(changes.updatingAircraftRegisters.dummyAircraftRegisters, changes.updatingAircraftRegisters.aircraftRegisterOptionsDictionary, this)
       : this.aircraftRegisters;
 
     this.stagedFlightRequirements = changes.mergingFlightRequirementModels

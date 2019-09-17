@@ -2,8 +2,6 @@ import MasterDataItemModel from './MasterDataItemModel';
 import ConstraintTemplateType from '@core/types/ConstraintTemplateType';
 import ConstraintTemplatePropertyType from '@core/types/ConstraintTemplatePropertyType';
 
-//TODO: Make every property readonly here:
-
 export default interface ConstraintTemplateModel extends MasterDataItemModel {
   readonly type: ConstraintTemplateType;
   readonly instantiable: boolean;

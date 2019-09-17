@@ -4,10 +4,18 @@ import AircraftType, { AircraftTypes } from './AircraftType';
 
 export default class AircraftRegister extends MasterDataItem {
   readonly aircraftType: AircraftType;
+  /** Concatinated as much as possible. */ readonly validPeriods: readonly {
+    readonly startDate: Date;
+    readonly endDate: Date;
+  }[];
 
   constructor(raw: AircraftRegisterModel, aircraftTypes: AircraftTypes) {
     super(raw);
     this.aircraftType = aircraftTypes.id[raw.aircraftTypeId];
+    this.validPeriods = raw.validPeriods.map(p => ({
+      startDate: new Date(p.startDate),
+      endDate: new Date(p.endDate)
+    }));
   }
 
   getMinimumGroundTime(transit: boolean, international: boolean, startDate: Date, endDate?: Date, method: 'MAXIMUM' | 'MINIMUM' = 'MAXIMUM'): number {

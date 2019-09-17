@@ -1,9 +1,10 @@
 import DummyAircraftRegisterModel from '@core/models/DummyAircraftRegisterModel';
 import { AircraftRegisterOptionsDictionaryModel } from '@core/models/AircraftRegisterOptionsModel';
-import MasterData, { MasterDataItem, MasterDataItems, AircraftType, AircraftRegisterGroup } from '@core/master-data';
+import MasterData, { MasterDataItem, MasterDataItems, AircraftType, AircraftRegisterGroup, AircraftRegister } from '@core/master-data';
 import AircraftRegisterOptions, { AircraftRegisterOptionsDictionary } from './AircraftRegisterOptions';
 import AircraftIdentity from '@core/master-data/AircraftIdentity';
 import AircraftSelection from '@core/master-data/AircraftSelection';
+import Preplan from './Preplan';
 
 /**
  * An enhanced aircraft register capable of presenting both master data and dummy aircraft registers.
@@ -18,6 +19,10 @@ export default class PreplanAircraftRegister implements MasterDataItem {
 
   readonly name: string;
   readonly aircraftType: AircraftType;
+  readonly validPeriods: readonly {
+    readonly startDate: Date;
+    readonly endDate: Date;
+  }[];
 
   /**
    * Whether this enhanced aircraft register is a dummy one or not.
@@ -26,10 +31,11 @@ export default class PreplanAircraftRegister implements MasterDataItem {
 
   readonly options: AircraftRegisterOptions;
 
-  constructor(id: string, name: string, aircraftType: AircraftType, dummy: boolean, options?: AircraftRegisterOptions) {
+  constructor(id: string, name: string, aircraftType: AircraftType, validPeriods: AircraftRegister['validPeriods'], dummy: boolean, options?: AircraftRegisterOptions) {
     this.id = id;
     this.name = name;
     this.aircraftType = aircraftType;
+    this.validPeriods = validPeriods;
     this.dummy = dummy;
     this.options = options || AircraftRegisterOptions.default;
   }
@@ -43,13 +49,28 @@ export default class PreplanAircraftRegister implements MasterDataItem {
  * Encapsulates all master data and dummy aircraft registers as a single collection.
  */
 export class PreplanAircraftRegisters extends MasterDataItems<PreplanAircraftRegister> {
-  constructor(dummyAircraftRegisters: readonly DummyAircraftRegisterModel[], aircraftRegisterOptionsDictionary: AircraftRegisterOptionsDictionaryModel) {
+  preplan: Preplan;
+
+  constructor(dummyAircraftRegisters: readonly DummyAircraftRegisterModel[], aircraftRegisterOptionsDictionary: AircraftRegisterOptionsDictionaryModel, preplan: Preplan) {
     const dictionary = new AircraftRegisterOptionsDictionary(aircraftRegisterOptionsDictionary);
-    let masterDataItems = MasterData.all.aircraftRegisters.items.map(a => new PreplanAircraftRegister(a.id, a.name, a.aircraftType, false, dictionary[a.id]));
+    let masterDataItems = MasterData.all.aircraftRegisters.items
+      .filter(a => a.validPeriods.some(p => p.startDate <= preplan.endDate && p.endDate >= preplan.startDate))
+      .map(a => new PreplanAircraftRegister(a.id, a.name, a.aircraftType, a.validPeriods, false, dictionary[a.id]));
     let dummyItems = dummyAircraftRegisters
-      ? dummyAircraftRegisters.map(a => new PreplanAircraftRegister(a.id, a.name, MasterData.all.aircraftTypes.id[a.aircraftTypeId], true, dictionary[a.id]))
+      ? dummyAircraftRegisters.map(
+          a =>
+            new PreplanAircraftRegister(
+              a.id,
+              a.name,
+              MasterData.all.aircraftTypes.id[a.aircraftTypeId],
+              [{ startDate: new Date(1970, 1, 1), endDate: new Date(2070, 1, 1) }],
+              true,
+              dictionary[a.id]
+            )
+        )
       : [];
     super(masterDataItems.concat(dummyItems));
+    this.preplan = preplan;
   }
 
   resolveAircraftIdentity(aircraftIdentity: AircraftIdentity): readonly PreplanAircraftRegister[] {

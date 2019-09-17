@@ -52,7 +52,13 @@ export default class ConstraintSystem {
       new NoConflictionOnFlightsChecker(
         preplan,
         this,
-        new ConstraintTemplate({ id: 'someid', description: ['some thing'], instantiable: false, name: 'NO_CONFLICTION_IN_FLIGHTS', type: 'NO_CONFLICTION_IN_FLIGHTS' })
+        new ConstraintTemplate({
+          id: 'id1',
+          description: ['some very goooooooooooooooood thing'],
+          instantiable: false,
+          name: 'NO_CONFLICTION_IN_FLIGHTS',
+          type: 'NO_CONFLICTION_IN_FLIGHTS'
+        })
       ),
       new AirportSequenceRestrictionOnFlightsChecker(
         preplan,
@@ -74,6 +80,17 @@ export default class ConstraintSystem {
           instantiable: false,
           name: 'MINIMUM_GROUND_TIME_BETWEEN_FLIGHTS',
           type: 'MINIMUM_GROUND_TIME_BETWEEN_FLIGHTS'
+        })
+      ),
+      new ValidPeriodCheckOnAircraftsChecker(
+        preplan,
+        this,
+        new ConstraintTemplate({
+          id: 'id4',
+          description: ['yet, another thing'],
+          instantiable: false,
+          name: 'VALID_PERIOD_CHECK_ON_AIRCRAFTS',
+          type: 'VALID_PERIOD_CHECK_ON_AIRCRAFTS'
         })
       )
     ];

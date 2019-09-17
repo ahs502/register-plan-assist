@@ -1,5 +1,4 @@
 import Checker from 'src/business/constraints/Checker';
-import Objection from 'src/business/constraints/Objection';
 import Preplan from 'src/business/Preplan';
 import { ConstraintTemplate } from '@core/master-data';
 import FlightObjection from '../objections/FlightObjection';
@@ -11,40 +10,58 @@ export default class NoConflictionOnFlightsChecker extends Checker {
   }
 
   check(): FlightObjection[] {
-    interface Event {
-      start: boolean;
-      time: number;
+    interface SuperFlight {
       flight: Flight;
+      nextRound: boolean;
     }
-
+    interface Event {
+      starting: boolean;
+      time: number;
+      superFlight: SuperFlight;
+    }
+    interface Result {
+      superFlights: SuperFlight[];
+      objections: FlightObjection[];
+    }
     return Object.keys(this.preplan.flightsByRegister).flatMap(registerId =>
       registerId === '???'
         ? []
         : this.preplan.flightsByRegister[registerId]
-            .flatMap<Event>(f => [{ start: true, time: f.weekStd, flight: f }, { start: false, time: f.weekSta, flight: f }])
+            .flatMap<Event>(f => {
+              const superFlight = { flight: f, nextRound: false };
+              const nextRoundSuperFlight = { flight: f, nextRound: true };
+              return [
+                { starting: true, time: f.weekStd, superFlight },
+                { starting: false, time: f.weekSta, superFlight },
+                { starting: true, time: f.weekStd + 7 * 24 * 60, superFlight: nextRoundSuperFlight },
+                { starting: false, time: f.weekSta + 7 * 24 * 60, superFlight: nextRoundSuperFlight }
+              ];
+            })
             .sortBy(e => e.time)
-            .reduce<{ flights: Flight[]; objections: FlightObjection[] }>(
+            .reduce<Result>(
               (result, e) => {
-                if (e.start) {
-                  result.flights.forEach(f =>
-                    result.objections.push(
-                      new FlightObjection(
-                        'ERROR',
-                        12345 /*TODO: Define priority */,
-                        this,
-                        e.flight,
-                        (constraintMarker, flightMarker) =>
-                          `${constraintMarker} and ${flightMarker} conflicts with ${f.label}, ${f.departureAirport.name}-${f.arrivalAirport.name}.`
+                if (e.starting) {
+                  result.superFlights.forEach(
+                    s =>
+                      !(e.superFlight.nextRound && s.nextRound) &&
+                      result.objections.push(
+                        new FlightObjection( //TODO: Refine this instantiation.
+                          'ERROR',
+                          12345,
+                          this,
+                          e.superFlight.flight,
+                          (constraintMarker, flightMarker) =>
+                            `${constraintMarker} and ${flightMarker} conflicts with ${s.flight.label}, ${s.flight.departureAirport.name}-${s.flight.arrivalAirport.name}.`
+                        )
                       )
-                    )
                   );
-                  result.flights.push(e.flight);
+                  result.superFlights.push(e.superFlight);
                 } else {
-                  result.flights.remove(e.flight);
+                  result.superFlights.remove(e.superFlight);
                 }
                 return result;
               },
-              { flights: [], objections: [] }
+              { superFlights: [], objections: [] }
             ).objections
     );
   }

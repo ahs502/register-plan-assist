@@ -2,17 +2,18 @@ import React, { FC, useState, Fragment, useRef, useMemo, memo } from 'react';
 import { Theme, Menu, MenuItem, MenuList, ClickAwayListener, Paper, ListItemIcon, Typography, Divider } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import { Check as CheckIcon } from '@material-ui/icons';
-import Flight from 'src/view-models/flights/Flight';
+import Flight from 'src/business/flights/Flight';
 import Daytime from '@core/types/Daytime';
-import PreplanAircraftRegister, { PreplanAircraftRegisters } from 'src/view-models/PreplanAircraftRegister';
-import { ChangeLog } from 'src/view-models/AutoArrangerState';
+import PreplanAircraftRegister, { PreplanAircraftRegisters } from 'src/business/PreplanAircraftRegister';
+import { ChangeLog } from 'src/business/AutoArrangerState';
 import { DataGroup, DataItem, TimelineOptions, Id, Timeline } from 'vis-timeline';
 import Weekday from '@core/types/Weekday';
-import VisTimeline from 'src/components/VisTimeline';
+import VisTimeline from 'src/components/preplan/resource-scheduler/VisTimeline';
 import moment from 'moment';
 import useProperty from 'src/utils/useProperty';
-import FlightPack from 'src/view-models/flights/FlightPack';
+import FlightPack from 'src/business/flights/FlightPack';
 import { AircraftType, AircraftRegister } from '@core/master-data';
+import persistant from 'src/utils/persistant';
 
 const useStyles = makeStyles((theme: Theme) => ({
   '@global': {
@@ -218,8 +219,6 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = memo(
     onNowhereMouseHover
   }) => {
     const timeline = useProperty<Timeline>(null as any);
-    const timelineStart = useProperty<Date | undefined>(undefined);
-    const timelineEnd = useProperty<Date | undefined>(undefined);
     const timelineScrollTop = useProperty<number | undefined>(undefined);
     const timelineOptions = useMemo<TimelineOptions>(() => {
       return {
@@ -235,7 +234,7 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = memo(
           updateTime: true,
           overrideItems: false
         },
-        end: timelineEnd() || startDate.clone().addDays(7),
+        end: startDate.clone().addDays(7),
         format: {
           majorLabels(date, scale, step) {
             return Weekday[((new Date(date).setUTCHours(0, 0, 0, 0) - startDate.getTime()) / (24 * 60 * 60 * 1000) + 7) % 7].slice(0, 3);
@@ -330,7 +329,7 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = memo(
             rounded = Math.round(fraction / timeStep) * timeStep;
           return new Date(ticks - fraction + rounded);
         },
-        start: timelineStart() || startDate,
+        start: startDate,
         template: itemTemplate,
         // timeAxis: {},
         //type: 'range',
@@ -362,6 +361,7 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = memo(
         if (item.className && item.className.startsWith('rpa-group-item-')) return '';
 
         const flightPack: FlightPack = item.data;
+        const stcColor = persistant.userSettings!.stcColors[flightPack.flights[0].stc.name] || '#000000';
         return `
           <div class="rpa-item-header">
             <div class="rpa-item-time rpa-item-std">
@@ -397,8 +397,10 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = memo(
               : ''
           }
           ${flightPack.changed === true ? ' rpa-changed rpa-changed-full' : flightPack.changed === undefined ? ' rpa-changed rpa-changed-semi' : ''}
-          ">
-            ${flightPack.sections.map(s => `<div class="rpa-item-section" style="left: ${s.start * 100}%; right: ${(1 - s.end) * 100}%;"></div>`).join(' ')}
+          " style="border-color: ${stcColor}80; background-color: ${stcColor}23;">
+            ${flightPack.sections
+              .map(s => `<div class="rpa-item-section" style="left: ${s.start * 100}%; right: ${(1 - s.end) * 100}%; background-color: ${stcColor}23;"></div>`)
+              .join(' ')}
             <div class="rpa-item-label">
               ${flightPack.label}
             </div>
@@ -600,11 +602,7 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = memo(
           onScrollY={scrollTop => timelineScrollTop(scrollTop)}
           retrieveTimeline={t => timeline(t)}
           // onChanged={() => console.log('Timeline is rendered.')}
-          onRangeChanged={({ start, end, byUser, event }) => {
-            timelineStart(start);
-            timelineEnd(end);
-            timeline().redraw();
-          }}
+          onRangeChanged={properties => timeline().redraw()}
           onSelect={({ items, event }) => {
             const item = timelineItems.find(item => item.id === items[0]);
             onSelectFlightPack(item ? item.data : undefined);

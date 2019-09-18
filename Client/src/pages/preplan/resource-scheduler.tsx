@@ -7,18 +7,18 @@ import LinkIconButton from 'src/components/LinkIconButton';
 import { NavBarToolsContainerContext } from 'src/pages/preplan';
 import AutoArrangerChangeLogSideBar from 'src/components/preplan/resource-scheduler/AutoArrangerChangeLogSideBar';
 import SearchFlightsSideBar from 'src/components/preplan/resource-scheduler/SearchFlightsSideBar';
-import ErrorsAndWarningsSideBar from 'src/components/preplan/resource-scheduler/ErrorsAndWarningsSideBar';
+import ObjectionsSideBar from 'src/components/preplan/resource-scheduler/ObjectionsSideBar';
 import SelectAircraftRegistersSideBar from 'src/components/preplan/resource-scheduler/SelectAircraftRegistersSideBar';
 import SettingsSideBar from 'src/components/preplan/resource-scheduler/SettingsSideBar';
 import ResourceSchedulerView from 'src/components/preplan/resource-scheduler/ResourceSchedulerView';
-import Preplan from 'src/view-models/Preplan';
-import FlightRequirement from 'src/view-models/flights/FlightRequirement';
-import WeekdayFlightRequirement from 'src/view-models/flights/WeekdayFlightRequirement';
-import Flight from 'src/view-models/flights/Flight';
-import FlightPack from 'src/view-models/flights/FlightPack';
+import Preplan from 'src/business/Preplan';
+import FlightRequirement from 'src/business/flights/FlightRequirement';
+import WeekdayFlightRequirement from 'src/business/flights/WeekdayFlightRequirement';
+import Flight from 'src/business/flights/Flight';
+import FlightPack from 'src/business/flights/FlightPack';
 import PreplanService from 'src/services/PreplanService';
 import { useSnackbar, VariantType } from 'notistack';
-import PreplanAircraftRegister from 'src/view-models/PreplanAircraftRegister';
+import PreplanAircraftRegister from 'src/business/PreplanAircraftRegister';
 import SimpleModal from 'src/components/SimpleModal';
 import Weekday from '@core/types/Weekday';
 import { red, blue, green, cyan, indigo, orange, purple } from '@material-ui/core/colors';
@@ -242,8 +242,6 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
   );
   const onNowhereMouseHoverMemoized = useCallback(() => setStatusBarProps({}), []);
 
-  const numberOfObjections: number = 12; //TODO: Not implemented.
-
   const navBarToolsContainer = useContext(NavBarToolsContainerContext);
 
   const classes = useStyles();
@@ -297,7 +295,7 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
             onClick={() => setSideBarState({ ...sideBarState, sideBar: 'OBJECTIONS', open: true })}
             title="Errors and Warnings"
           >
-            <Badge badgeContent={numberOfObjections} color="secondary" invisible={!numberOfObjections}>
+            <Badge badgeContent={preplan.constraintSystem.objections.length} color="secondary" invisible={preplan.constraintSystem.objections.length === 0}>
               <MahanIcon type={MahanIconType.Alert} fontSize="inherit" />
             </Badge>
           </IconButton>
@@ -350,7 +348,7 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
         {sideBarState.sideBar === 'AUTO_ARRANGER_CHANGE_LOG' && (
           <AutoArrangerChangeLogSideBar initialSearch={sideBarState.initialSearch} changeLogs={preplan.autoArrangerState.changeLogs} onClick={() => alert('not implemented.')} />
         )}
-        {sideBarState.sideBar === 'OBJECTIONS' && <ErrorsAndWarningsSideBar initialSearch={sideBarState.initialSearch} objections={[]} />}
+        {sideBarState.sideBar === 'OBJECTIONS' && <ObjectionsSideBar initialSearch={sideBarState.initialSearch} objections={preplan.constraintSystem.objections} />}
       </Drawer>
 
       <div className={resourceSchedulerViewModel.loading ? classes.disable : ''}>

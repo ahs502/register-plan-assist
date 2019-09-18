@@ -7,10 +7,10 @@ import NavBar from 'src/components/NavBar';
 import ResourceSchedulerPage from 'src/pages/preplan/resource-scheduler';
 import FlightRequirementListPage from 'src/pages/preplan/flight-requirement-list';
 import ReportsPage from 'src/pages/preplan/reports';
-import Preplan from 'src/view-models/Preplan';
-import PreplanAircraftIdentity from 'src/view-models/PreplanAircraftIdentity';
+import Preplan from 'src/business/Preplan';
+import PreplanAircraftIdentity from 'src/business/PreplanAircraftIdentity';
 import MasterData, { Stc } from '@core/master-data';
-import FlightRequirement from 'src/view-models/flights/FlightRequirement';
+import FlightRequirement from 'src/business/flights/FlightRequirement';
 import AircraftIdentityType from '@core/types/aircraft-identity/AircraftIdentityType';
 import PreplanService from 'src/services/PreplanService';
 import FlightRequirementModel, { FlightRequirementValidation } from '@core/models/flights/FlightRequirementModel';
@@ -25,9 +25,9 @@ import { Clear as ClearIcon, Add as AddIcon } from '@material-ui/icons';
 import Rsx, { Rsxes } from '@core/types/flight-requirement/Rsx';
 import AircraftIdentityModel from '@core/models/AircraftIdentityModel';
 import MultiSelect from 'src/components/MultiSelect';
-import PreplanAircraftSelection from 'src/view-models/PreplanAircraftSelection';
-import WeekdayFlightRequirement from 'src/view-models/flights/WeekdayFlightRequirement';
-import PreplanAircraftRegister from 'src/view-models/PreplanAircraftRegister';
+import PreplanAircraftSelection from 'src/business/PreplanAircraftSelection';
+import WeekdayFlightRequirement from 'src/business/flights/WeekdayFlightRequirement';
+import PreplanAircraftRegister from 'src/business/PreplanAircraftRegister';
 import { FlightRequirementModalModel, FlightRequirementModalAircraftIdentity, FlightRequirementModalMode } from 'src/components/preplan/flight-requirement/FlightRequirementEditor';
 
 const useStyles = makeStyles((theme: Theme) => ({
@@ -302,7 +302,7 @@ const PreplanPage: FC = () => {
                   scope: scope,
                   days: flightRequirementModalModel
                     .days!.map((e, i) => (e ? i : -1))
-                    .filter(d => d > 0)
+                    .filter(d => d >= 0)
                     .map(d => {
                       //TODO: update flight only in add move
                       // let flight: FlightModel;

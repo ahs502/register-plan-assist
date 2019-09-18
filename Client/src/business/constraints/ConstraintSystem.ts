@@ -92,6 +92,17 @@ export default class ConstraintSystem {
           name: 'VALID_PERIOD_CHECK_ON_AIRCRAFTS',
           type: 'VALID_PERIOD_CHECK_ON_AIRCRAFTS'
         })
+      ),
+      new FlightRequirementRestrictionOnFlightsChecker(
+        preplan,
+        this,
+        new ConstraintTemplate({
+          id: 'id5',
+          description: ['i can not believe it, yet another thing'],
+          instantiable: false,
+          name: 'FLIGHT_REQUIREMENT_RESTRICTION_ON_FLIGHTS',
+          type: 'FLIGHT_REQUIREMENT_RESTRICTION_ON_FLIGHTS'
+        })
       )
     ];
     this.objections = this.check();

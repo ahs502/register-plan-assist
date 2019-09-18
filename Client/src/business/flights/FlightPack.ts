@@ -10,6 +10,8 @@ export default class FlightPack {
   readonly day: number;
   readonly start: Daytime;
   readonly end: Daytime;
+  readonly weekStart: number;
+  readonly weekEnd: number;
   readonly sections: readonly {
     readonly start: number;
     readonly end: number;
@@ -33,6 +35,8 @@ export default class FlightPack {
     this.day = flight.day;
     this.start = flight.std;
     this.end = new Daytime(flight.std.minutes + flight.blockTime);
+    this.weekStart = this.day * 24 * 60 + this.start.minutes;
+    this.weekEnd = this.day * 24 * 60 + this.end.minutes;
     this.sections = [{ start: 0, end: 1 }];
     this.knownAircraftRegister = !!flight.aircraftRegister && !flight.aircraftRegister.dummy;
     this.required = flight.required;
@@ -50,6 +54,7 @@ export default class FlightPack {
     const flightPack = (this as unknown) as {
       flights: Flight[];
       end: Daytime;
+      weekEnd: number;
       required: boolean | undefined;
       freezed: boolean | undefined;
       originPermission: boolean | undefined;
@@ -58,6 +63,7 @@ export default class FlightPack {
     };
     flightPack.flights.push(flight);
     flightPack.end = new Daytime((flight.day - this.day) * 24 * 60 + flight.std.minutes + flight.blockTime);
+    flightPack.weekEnd = this.day * 24 * 60 + flightPack.end.minutes;
     flightPack.required !== undefined && flightPack.required !== flight.required && delete flightPack.required;
     flightPack.freezed !== undefined && flightPack.freezed !== flight.freezed && delete flightPack.freezed;
     flightPack.originPermission !== undefined && flightPack.originPermission !== flight.originPermission && delete flightPack.originPermission;
@@ -78,13 +84,6 @@ export default class FlightPack {
         end: (dayDiff + f.std.minutes + f.blockTime - this.start.minutes) / (this.end.minutes - this.start.minutes)
       };
     });
-  }
-
-  get weekStart(): number {
-    return this.day * 24 * 60 + this.start.minutes;
-  }
-  get weekEnd(): number {
-    return this.day * 24 * 60 + this.end.minutes;
   }
 
   startDateTime(startDate: Date): Date {

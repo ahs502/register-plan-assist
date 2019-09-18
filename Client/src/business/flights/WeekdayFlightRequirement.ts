@@ -10,6 +10,7 @@ import DeepWritablePartial from '@core/types/DeepWritablePartial';
 export default class WeekdayFlightRequirement implements ModelConvertable<WeekdayFlightRequirementModel> {
   readonly requirement: FlightRequirement;
   readonly derivedId: string;
+  readonly definition: FlightDefinition;
   readonly scope: FlightScope;
   readonly notes: string;
   readonly freezed: boolean;
@@ -19,6 +20,7 @@ export default class WeekdayFlightRequirement implements ModelConvertable<Weekda
   constructor(raw: WeekdayFlightRequirementModel, requirement: FlightRequirement, aircraftRegisters: PreplanAircraftRegisters) {
     this.derivedId = `${requirement.id}#${raw.day}`;
     this.requirement = requirement;
+    this.definition = requirement.definition;
     this.scope = new FlightScope(raw.scope, aircraftRegisters);
     this.notes = raw.notes;
     this.freezed = raw.freezed;
@@ -34,9 +36,5 @@ export default class WeekdayFlightRequirement implements ModelConvertable<Weekda
       freezed: getOverrided(this.freezed, overrides, 'freezed'),
       flight: getOverridedObject(this.flight, overrides, 'flight')
     };
-  }
-
-  get definition(): FlightDefinition {
-    return this.requirement.definition;
   }
 }

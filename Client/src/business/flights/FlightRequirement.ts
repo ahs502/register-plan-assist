@@ -21,14 +21,6 @@ export default class FlightRequirement implements ModelConvertable<FlightRequire
     this.ignored = raw.ignored;
   }
 
-  /**
-   * Gets the day flight requirement of the specified day.
-   * @param day The day of the period.
-   */
-  getDay(day: number): WeekdayFlightRequirement | undefined {
-    return this.days.find(d => d.day === day);
-  }
-
   extractModel(overrides?: DeepWritablePartial<FlightRequirementModel>): FlightRequirementModel {
     return {
       id: getOverrided(this.id, overrides, 'id'),
@@ -37,5 +29,13 @@ export default class FlightRequirement implements ModelConvertable<FlightRequire
       days: getOverridedArray(this.days, overrides, 'days'),
       ignored: getOverrided(this.ignored, overrides, 'ignored')
     };
+  }
+
+  /**
+   * Gets the day flight requirement of the specified day.
+   * @param day The day of the period.
+   */
+  getDay(day: number): WeekdayFlightRequirement | undefined {
+    return this.days.find(d => d.day === day);
   }
 }

@@ -283,10 +283,8 @@ const PreplanPage: FC = () => {
                   }
                 };
 
-                const aircraftRegister: PreplanAircraftRegister | undefined = new PreplanAircraftSelection(
-                  scope.aircraftSelection,
-                  preplan!.aircraftRegisters
-                ).resolveIncluded()[0];
+                const aircraftRegister: PreplanAircraftRegister | undefined = new PreplanAircraftSelection(scope.aircraftSelection, preplan!.aircraftRegisters)
+                  .aircraftRegisters[0];
 
                 const model: FlightRequirementModel = {
                   id: flightRequirementModalModel.mode === 'EDIT' ? flightRequirementModalModel.flightRequirement!.id : undefined,
@@ -423,7 +421,7 @@ const PreplanPage: FC = () => {
                     return result;
                   });
 
-                const aircraftRegister = new PreplanAircraftSelection(weekDayScope.aircraftSelection, preplan!.aircraftRegisters).resolveIncluded()[0];
+                const aircraftRegister = new PreplanAircraftSelection(weekDayScope.aircraftSelection, preplan!.aircraftRegisters).aircraftRegisters[0];
 
                 const day: WeekdayFlightRequirementModel = {
                   day: flightRequirementModalModel.day!,

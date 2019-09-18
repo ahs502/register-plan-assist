@@ -79,7 +79,8 @@ export default class Preplan extends PreplanHeader {
     this.autoArrangerState = raw.autoArrangerState && new AutoArrangerState(raw.autoArrangerState, this.aircraftRegisters, this.flights);
     this.constraintSystem = new ConstraintSystem(this);
 
-    const flightPacks = this.flightPacks; // In order to initiate the property 'pack' of flights.
+    // eslint-disable-next-line no-unused-expressions
+    this.flightPacks; // In order to initiate the property 'pack' of flights.
   }
 
   private _flights?: readonly Flight[];

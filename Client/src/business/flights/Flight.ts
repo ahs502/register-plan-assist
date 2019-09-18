@@ -10,6 +10,11 @@ import ModelConvertable, { getOverrided } from 'src/utils/ModelConvertable';
 import DeepWritablePartial from '@core/types/DeepWritablePartial';
 
 export default class Flight implements ModelConvertable<FlightModel> {
+  // Original:
+  readonly std: Daytime;
+  readonly aircraftRegister?: PreplanAircraftRegister;
+
+  // Inherited:
   readonly requirement: FlightRequirement;
   readonly weekdayRequirement: WeekdayFlightRequirement;
   readonly derivedId: string;
@@ -27,17 +32,20 @@ export default class Flight implements ModelConvertable<FlightModel> {
   readonly destinationPermission: boolean;
   readonly rsx: Rsx;
   readonly required: boolean;
-  readonly std: Daytime;
-  readonly aircraftRegister?: PreplanAircraftRegister;
 
-  readonly pack!: FlightPack; // To be set when initiating its flight pack.
-  readonly transit!: boolean; // To be set when initiating its flight pack.
-
+  // Computational:
   readonly international: boolean;
   readonly weekStd: number;
   readonly weekSta: number;
 
+  // To be set when initiating its flight pack:
+  readonly pack!: FlightPack;
+  readonly transit!: boolean;
+
   constructor(raw: FlightModel, weekdayRequiremnet: WeekdayFlightRequirement, aircraftRegisters: PreplanAircraftRegisters) {
+    this.std = new Daytime(raw.std);
+    this.aircraftRegister = raw.aircraftRegisterId ? aircraftRegisters.id[raw.aircraftRegisterId] : undefined;
+
     this.requirement = weekdayRequiremnet.requirement;
     this.weekdayRequirement = weekdayRequiremnet;
     this.derivedId = weekdayRequiremnet.derivedId;
@@ -55,8 +63,6 @@ export default class Flight implements ModelConvertable<FlightModel> {
     this.destinationPermission = weekdayRequiremnet.scope.destinationPermission;
     this.rsx = weekdayRequiremnet.scope.rsx;
     this.required = weekdayRequiremnet.scope.required;
-    this.std = new Daytime(raw.std);
-    this.aircraftRegister = raw.aircraftRegisterId ? aircraftRegisters.id[raw.aircraftRegisterId] : undefined;
 
     this.international = this.departureAirport.international || this.arrivalAirport.international;
     this.weekStd = this.day * 24 * 60 + this.std.minutes;

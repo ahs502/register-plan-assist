@@ -78,7 +78,9 @@ export default class Constraint extends MasterDataItem {
             airports,
             aircraftRegisters
           ));
-          this.description = `Never assign the aircraft register ${data.aircraftRegister.name} to the flights of any airport, except for ${data.airport.name}.${extractScope()}`;
+          this.description = `Never assign the aircraft register ${data.aircraftRegister.name} to the flights of any airport, except for ${convertNameArrayToString(
+            data.airports.map(a => a.name)
+          )}.${extractScope()}`;
         }
         break;
 
@@ -163,15 +165,15 @@ function convertAircraftRestrictionOnAirportsConstraintDataFromModel(
 ): AircraftRestrictionOnAirportsConstraintData {
   return {
     airports: data.airportIds.map(id => airports.id[id]),
-    never: data.adverb === 'NEVER',
+    never: data.restriction === 'NEGATIVE_PREFERENCE' || data.restriction === 'NEGATIVE_RESTRICTION',
     aircraftSelection: new AircraftSelection(data.aircraftSelection, aircraftRegisters, aircraftTypes, aircraftRegisterGroups),
-    required: data.required
+    required: data.restriction === 'POSITIVE_RESTRICTION' || data.restriction === 'NEGATIVE_RESTRICTION'
   };
 }
 
 export interface AirportRestrictionOnAircraftsConstraintData {
   readonly aircraftRegister: AircraftRegister;
-  readonly airport: Airport;
+  readonly airports: readonly Airport[];
 }
 function convertAirportRestrictionOnAircraftsConstraintDataFromModel(
   data: AirportRestrictionOnAircraftsConstraintDataModel,
@@ -180,7 +182,7 @@ function convertAirportRestrictionOnAircraftsConstraintDataFromModel(
 ): AirportRestrictionOnAircraftsConstraintData {
   return {
     aircraftRegister: aircraftRegisters.id[data.aircraftRegisterId],
-    airport: airports.id[data.airportId]
+    airports: data.airportIds.map(a => airports.id[a])
   };
 }
 

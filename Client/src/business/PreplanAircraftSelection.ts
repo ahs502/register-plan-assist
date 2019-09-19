@@ -3,6 +3,7 @@ import PreplanAircraftRegister, { PreplanAircraftRegisters } from './PreplanAirc
 import AircraftSelectionModel from '@core/models/AircraftSelectionModel';
 import ModelConvertable, { getOverridedArray } from 'src/utils/ModelConvertable';
 import DeepWritablePartial from '@core/types/DeepWritablePartial';
+import { AircraftSelection } from '@core/master-data';
 
 /**
  * A data structure describing a range of aircraft registers.
@@ -18,9 +19,14 @@ export default class PreplanAircraftSelection implements ModelConvertable<Aircra
   /** All allowed and included corresponding preplan aircraft registers. */ readonly aircraftRegisters: readonly PreplanAircraftRegister[];
   /** One weak-corresponding preplan aircraft register as backup if exists. */ readonly backupAircraftRegister?: PreplanAircraftRegister;
 
-  constructor(raw: AircraftSelectionModel, aircraftRegisters: PreplanAircraftRegisters) {
-    this.allowedIdentities = raw.allowedIdentities.map(i => PreplanAircraftIdentity.parse(i, aircraftRegisters));
-    this.forbiddenIdentities = raw.forbiddenIdentities.map(i => PreplanAircraftIdentity.parse(i, aircraftRegisters));
+  constructor(raw: AircraftSelectionModel | AircraftSelection, aircraftRegisters: PreplanAircraftRegisters) {
+    if (raw instanceof AircraftSelection) {
+      this.allowedIdentities = raw.allowedIdentities.map(i => PreplanAircraftIdentity.parse(i, aircraftRegisters));
+      this.forbiddenIdentities = raw.forbiddenIdentities.map(i => PreplanAircraftIdentity.parse(i, aircraftRegisters));
+    } else {
+      this.allowedIdentities = raw.allowedIdentities.map(i => PreplanAircraftIdentity.parse(i, aircraftRegisters));
+      this.forbiddenIdentities = raw.forbiddenIdentities.map(i => PreplanAircraftIdentity.parse(i, aircraftRegisters));
+    }
 
     let allowed = new Set<PreplanAircraftRegister>();
     this.allowedIdentities.forEach(i => i.aircraftRegisters.forEach(r => allowed.add(r)));

@@ -3,8 +3,7 @@ import Preplan from 'src/business/Preplan';
 import ConstraintSystem from 'src/business/constraints/ConstraintSystem';
 import { Constraint } from '@core/master-data';
 import { BlockTimeRestrictionOnAircraftsConstraintData } from '@core/master-data/Constraint';
-import FlightRequirementObjection from 'src/business/constraints/objections/FlightRequirementObjection';
-import WeekdayFlightRequirementObjection from 'src/business/constraints/objections/WeekdayFlightRequirementObjection';
+import Objection from 'src/business/constraints/Objection';
 import PreplanAircraftRegister from 'src/business/PreplanAircraftRegister';
 import PreplanAircraftSelection from 'src/business/PreplanAircraftSelection';
 
@@ -18,46 +17,18 @@ export default class BlockTimeRestrictionOnAircraftsChecker extends Checker {
     this.aircraftRegisters = new PreplanAircraftSelection(this.data.aircraftSelection, preplan.aircraftRegisters).aircraftRegisters;
   }
 
-  check(): (FlightRequirementObjection | WeekdayFlightRequirementObjection)[] {
-    const objections: (FlightRequirementObjection | WeekdayFlightRequirementObjection)[] = [];
+  check(): Objection[] {
+    const objections: Objection[] = [];
     this.preplan.flightRequirements.forEach(r => {
       const commonCount = r.scope.aircraftSelection.aircraftRegisters.filter(a => this.aircraftRegisters.includes(a)).length;
       if (commonCount === r.scope.aircraftSelection.aircraftRegisters.length)
-        return objections.push(
-          new FlightRequirementObjection('ERROR', 12345, this, r, (constraintMarker, flightRequirementMarker) => `${constraintMarker} is violated by ${flightRequirementMarker}.`)
-        ); //TODO: Refine this instantiation.
-      if (commonCount > 0)
-        return objections.push(
-          new FlightRequirementObjection(
-            'WARNING',
-            12345,
-            this,
-            r,
-            (constraintMarker, flightRequirementMarker) => `${constraintMarker} may be violated by ${flightRequirementMarker}.`
-          )
-        ); //TODO: Refine this instantiation.
+        return objections.push(r.issueObjection('ERROR', 12345, this, constraintMarker => `${constraintMarker} is violated by ${r.marker}.`));
+      if (commonCount > 0) return objections.push(r.issueObjection('WARNING', 12345, this, constraintMarker => `${constraintMarker} may be violated by ${r.marker}.`));
       r.days.forEach(d => {
         const commonCount = d.scope.aircraftSelection.aircraftRegisters.filter(a => this.aircraftRegisters.includes(a)).length;
         if (commonCount === d.scope.aircraftSelection.aircraftRegisters.length)
-          return objections.push(
-            new WeekdayFlightRequirementObjection(
-              'ERROR',
-              12345,
-              this,
-              d,
-              (constraintMarker, weekdayFlightRequirementMarker) => `${constraintMarker} is violated by ${weekdayFlightRequirementMarker}.`
-            )
-          ); //TODO: Refine this instantiation.
-        if (commonCount > 0)
-          return objections.push(
-            new WeekdayFlightRequirementObjection(
-              'ERROR',
-              12345,
-              this,
-              d,
-              (constraintMarker, weekdayFlightRequirementMarker) => `${constraintMarker} may be violated by ${weekdayFlightRequirementMarker}.`
-            )
-          ); //TODO: Refine this instantiation.
+          return objections.push(d.issueObjection('ERROR', 12345, this, constraintMarker => `${constraintMarker} is violated by ${d.marker}.`));
+        if (commonCount > 0) return objections.push(d.issueObjection('ERROR', 12345, this, constraintMarker => `${constraintMarker} may be violated by ${d.marker}.`)); //TODO: Refine this instantiation.
       });
     });
     return objections;

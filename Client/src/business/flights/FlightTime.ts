@@ -1,6 +1,6 @@
 import Daytime from '@core/types/Daytime';
 import FlightTimeModel from '@core/models/flights/FlightTimeModel';
-import ModelConvertable, { getOverrided } from 'src/utils/ModelConvertable';
+import ModelConvertable, { getOverrided } from 'src/business/ModelConvertable';
 import DeepWritablePartial from '@core/types/DeepWritablePartial';
 
 export default class FlightTime implements ModelConvertable<FlightTimeModel> {

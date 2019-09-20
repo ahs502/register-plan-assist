@@ -5,11 +5,14 @@ import AircraftRegisterOptions, { AircraftRegisterOptionsDictionary } from './Ai
 import AircraftIdentity from '@core/master-data/AircraftIdentity';
 import AircraftSelection from '@core/master-data/AircraftSelection';
 import Preplan from './Preplan';
+import Objectionable, { ObjectionStatus } from './constraints/Objectionable';
+import Objection, { ObjectionType } from './constraints/Objection';
+import Checker from './constraints/Checker';
 
 /**
  * An enhanced aircraft register capable of presenting both master data and dummy aircraft registers.
  */
-export default class PreplanAircraftRegister implements MasterDataItem {
+export default class PreplanAircraftRegister implements MasterDataItem, Objectionable {
   /**
    * The id of the corresponding aircraft registrer in the master data or
    * a prefix 'dummy-' followed by the id (no.) of the dummy aircraft register
@@ -31,6 +34,8 @@ export default class PreplanAircraftRegister implements MasterDataItem {
 
   readonly options: AircraftRegisterOptions;
 
+  objections?: Objection<PreplanAircraftRegister>[];
+
   constructor(id: string, name: string, aircraftType: AircraftType, validPeriods: AircraftRegister['validPeriods'], dummy: boolean, options?: AircraftRegisterOptions) {
     this.id = id;
     this.name = name;
@@ -38,6 +43,19 @@ export default class PreplanAircraftRegister implements MasterDataItem {
     this.validPeriods = validPeriods;
     this.dummy = dummy;
     this.options = options || AircraftRegisterOptions.default;
+  }
+
+  get marker(): string {
+    return `aircraft register ${this.name} of type ${this.aircraftType.name}`;
+  }
+
+  get objectionStatus(): ObjectionStatus {
+    if (!this.objections || this.objections.length === 0) return 'NONE';
+    if (this.objections.some(o => o.type === 'ERROR')) return 'ERROR';
+    return 'WARNING';
+  }
+  issueObjection(type: ObjectionType, priority: number, checker: Checker, messageProvider: (constraintMarker: string) => string): Objection<PreplanAircraftRegister> {
+    return new Objection<PreplanAircraftRegister>(type, this, this.id, 4, priority, checker, messageProvider);
   }
 
   getMinimumGroundTime(transit: boolean, international: boolean, startDate: Date, endDate?: Date, method: 'MAXIMUM' | 'MINIMUM' = 'MAXIMUM'): number {

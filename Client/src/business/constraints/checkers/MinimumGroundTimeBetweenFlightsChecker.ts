@@ -2,7 +2,7 @@ import Checker from 'src/business/constraints/Checker';
 import Preplan from 'src/business/Preplan';
 import ConstraintSystem from 'src/business/constraints/ConstraintSystem';
 import { ConstraintTemplate } from '@core/master-data';
-import FlightObjection from 'src/business/constraints/objections/FlightObjection';
+import Objection from 'src/business/constraints/Objection';
 import { SuperFlight } from 'src/business/constraints/ConstraintSystem';
 
 export default class MinimumGroundTimeBetweenFlightsChecker extends Checker {
@@ -10,14 +10,14 @@ export default class MinimumGroundTimeBetweenFlightsChecker extends Checker {
     super(preplan, constraintSystem, constraintTemplate);
   }
 
-  check(): FlightObjection[] {
+  check(): Objection[] {
     return Object.keys(this.constraintSystem.flightEventsByRegister).flatMap(
       registerId =>
         this.constraintSystem.flightEventsByRegister[registerId].reduce<{
           superFlights: SuperFlight[];
           lastSuperFlight?: SuperFlight;
           lastTime: number;
-          objections: FlightObjection[];
+          objections: Objection[];
         }>(
           (result, e) => {
             if (e.starting) {
@@ -25,12 +25,11 @@ export default class MinimumGroundTimeBetweenFlightsChecker extends Checker {
                 !(e.superFlight.nextRound && result.lastSuperFlight.nextRound) &&
                   e.time - e.superFlight.flight.getRequiredMinimumGroundTime(this.preplan.startDate, this.preplan.endDate, 'MAXIMUM') < result.lastTime &&
                   result.objections.push(
-                    new FlightObjection( //TODO: Refine this instantiation.
+                    e.superFlight.flight.issueObjection(
                       'ERROR',
                       12345,
                       this,
-                      e.superFlight.flight,
-                      (constraintMarker, flightMarker) => `${constraintMarker}: ${flightMarker} does not meet enough ground time before take off.`
+                      constraintMarker => `${constraintMarker}: ${e.superFlight.flight.marker} does not meet enough ground time before take off.`
                     )
                   );
                 delete result.lastSuperFlight;

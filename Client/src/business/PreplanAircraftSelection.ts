@@ -1,7 +1,7 @@
 import PreplanAircraftIdentity from './PreplanAircraftIdentity';
 import PreplanAircraftRegister, { PreplanAircraftRegisters } from './PreplanAircraftRegister';
 import AircraftSelectionModel from '@core/models/AircraftSelectionModel';
-import ModelConvertable, { getOverridedArray } from 'src/utils/ModelConvertable';
+import ModelConvertable, { getOverridedArray } from 'src/business/ModelConvertable';
 import DeepWritablePartial from '@core/types/DeepWritablePartial';
 import { AircraftSelection } from '@core/master-data';
 

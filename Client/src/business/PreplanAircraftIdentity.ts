@@ -2,7 +2,7 @@ import AircraftIdentityType from '@core/types/aircraft-identity/AircraftIdentity
 import MasterData, { MasterDataItem, AircraftIdentity } from '@core/master-data';
 import PreplanAircraftRegister, { PreplanAircraftRegisters } from './PreplanAircraftRegister';
 import AircraftIdentityModel from '@core/models/AircraftIdentityModel';
-import ModelConvertable, { getOverrided } from 'src/utils/ModelConvertable';
+import ModelConvertable, { getOverrided } from 'src/business/ModelConvertable';
 import DeepWritablePartial from '@core/types/DeepWritablePartial';
 
 /**

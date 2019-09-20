@@ -105,8 +105,8 @@ export default class ConstraintSystem {
         })
       )
     ];
-    this.objections = this.check();
-    this.stagedObjections = [];
+    this.stagedObjections = this.objections = this.check();
+    this.commit();
   }
 
   private createCheckerFromNonInstantiableConstraintTemplate(preplan: Preplan, constraintTemplate: ConstraintTemplate): Checker {
@@ -143,7 +143,7 @@ export default class ConstraintSystem {
   }
 
   private check(): Objection[] {
-    return this.checkers.flatMap(checker => checker.check()).sortBy('priority', 'message');
+    return Objection.sort(this.checkers.flatMap(checker => checker.check()));
   }
 
   stage(): ObjectionDiff {
@@ -161,6 +161,20 @@ export default class ConstraintSystem {
   }
   commit(): void {
     (this as { objections: readonly Objection[] }).objections = this.stagedObjections;
+
+    // Remove already assigned objections
+    this.preplan.flights.forEach(f => delete f.objections);
+    this.preplan.flightRequirements.forEach(r => {
+      delete r.objections;
+      r.days.forEach(d => delete d.objections);
+    });
+    this.preplan.aircraftRegisters.items.forEach(a => delete a.objections);
+
+    // Assign new objections
+    this.objections.forEach(o => {
+      o.target.objections || (o.target.objections = []);
+      o.target.objections.push(o);
+    });
   }
 
   private _flights?: readonly Flight[];

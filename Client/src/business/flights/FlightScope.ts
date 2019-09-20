@@ -3,7 +3,7 @@ import PreplanAircraftSelection from 'src/business/PreplanAircraftSelection';
 import FlightTime from './FlightTime';
 import PreplanAircraftRegister, { PreplanAircraftRegisters } from '../PreplanAircraftRegister';
 import Rsx from '@core/types/flight-requirement/Rsx';
-import ModelConvertable, { getOverrided, getOverridedArray, getOverridedObject } from 'src/utils/ModelConvertable';
+import ModelConvertable, { getOverrided, getOverridedArray, getOverridedObject } from 'src/business/ModelConvertable';
 import DeepWritablePartial from '@core/types/DeepWritablePartial';
 
 export default class FlightScope implements ModelConvertable<FlightScopeModel> {

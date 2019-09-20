@@ -1,6 +1,7 @@
 import PreplanAircraftRegister from 'src/business/PreplanAircraftRegister';
 import Daytime from '@core/types/Daytime';
 import Flight from './Flight';
+import { ObjectionStatus } from 'src/business/constraints/Objectionable';
 
 export default class FlightPack {
   readonly derivedId: string;
@@ -72,12 +73,7 @@ export default class FlightPack {
   }
 
   close(): void {
-    (this as {
-      sections: readonly {
-        readonly start: number;
-        readonly end: number;
-      }[];
-    }).sections = this.flights.map(f => {
+    (this as { sections: FlightPack['sections'] }).sections = this.flights.map(f => {
       const dayDiff = (f.day - this.day) * 24 * 60;
       return {
         start: (dayDiff + f.std.minutes - this.start.minutes) / (this.end.minutes - this.start.minutes),

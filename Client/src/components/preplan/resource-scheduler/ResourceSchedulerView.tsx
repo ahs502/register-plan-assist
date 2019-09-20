@@ -110,7 +110,25 @@ const useStyles = makeStyles((theme: Theme) => ({
         position: 'absolute',
         top: 0,
         bottom: 0,
-        backgroundColor: 'rgba(0, 20, 110, 0.15)' // Will be overridden.
+        backgroundColor: 'rgba(0, 20, 110, 0.15)', // Will be overridden.
+        '&.rpa-item-section-error': {
+          border: `2px solid ${theme.palette.extraColors.erroredFlight}DD`,
+          borderRightWidth: 3,
+          borderLeftWidth: 3,
+          boxShadow: 'inset 0 0 4px 3px white'
+        },
+        '&.rpa-item-section-warning': {
+          border: `2px solid ${theme.palette.extraColors.warnedFlight}`,
+          borderRightWidth: 3,
+          borderLeftWidth: 3,
+          boxShadow: 'inset 0 0 4px 3px white'
+        },
+        '&.rpa-item-section-first': {
+          borderLeftWidth: 2
+        },
+        '&.rpa-item-section-last': {
+          borderRightWidth: 2
+        }
       },
       '& .rpa-item-label': {
         position: 'absolute',
@@ -118,8 +136,9 @@ const useStyles = makeStyles((theme: Theme) => ({
         textAlign: 'center',
         fontSize: '16px',
         lineHeight: '25px',
-        paddingTop: 1,
-        textShadow: '0 0 2px #797979'
+        paddingTop: 0,
+        textShadow:
+          '0 0 1px #777, 1px 0px 1px white, 1px 1px 1px white, 0px 1px 1px white, -1px 1px 1px white, -1px 0px 1px white, -1px -1px 1px white, 0px -1px 1px white, 1px -1px 1px white, 0 3px 4px black'
       },
       '& .rpa-dot': {
         display: 'inline-block',
@@ -401,19 +420,19 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = memo(
               : ''
           }
           ${flightPack.changed === true ? ' rpa-changed rpa-changed-full' : flightPack.changed === undefined ? ' rpa-changed rpa-changed-semi' : ''}
-          " style="border-color: ${stcColor.desaturate(1).darken(1)}; background-color: ${stcColor.brighten(2)};">
+          " style="border-color: ${stcColor}; background-color: ${stcColor.desaturate(1).brighten(3)};">
             ${flightPack.sections
               .map(
-                (s, index) =>
-                  `<div class="rpa-item-section" style="left: ${s.start * 100}%; right: ${(1 - s.end) * 100}%; ${
+                (s, index, sections) =>
+                  `<div class="rpa-item-section${
                     flightPack.flights[index].objectionStatus === 'ERROR'
-                      ? `background: repeating-linear-gradient(-45deg, transparent, transparent 7px, ${stcColor.brighten(1)} 7px, ${stcColor.brighten(
-                          1
-                        )} 14px), linear-gradient(to bottom, ${theme.palette.extraColors.erroredFlight}A0, ${stcColor.brighten(1)}, ${theme.palette.extraColors.erroredFlight}A0);`
+                      ? ' rpa-item-section-error'
                       : flightPack.flights[index].objectionStatus === 'WARNING'
-                      ? `background-color: ${stcColor.brighten(1)};`
-                      : `background-color: ${stcColor.brighten(1)};`
-                  }"></div>`
+                      ? ' rpa-item-section-warning'
+                      : ''
+                  }${index === 0 ? ' rpa-item-section-first' : ''}${index === sections.length - 1 ? ' rpa-item-section-last' : ''}" style="left: ${s.start * 100}%; right: ${(1 -
+                    s.end) *
+                    100}%; background-color: ${stcColor.desaturate(0.5).brighten(2)};"></div>`
               )
               .join(' ')}
             <div class="rpa-item-label">

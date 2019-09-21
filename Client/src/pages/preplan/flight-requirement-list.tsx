@@ -15,6 +15,7 @@ import Preplan from 'src/business/Preplan';
 import PreplanService from 'src/services/PreplanService';
 import ProgressSwitch from 'src/components/ProgressSwitch';
 import { useSnackbar, VariantType } from 'notistack';
+import { parseMinute } from 'src/utils/model-parsers';
 
 const useStyles = makeStyles((theme: Theme) => ({
   contentPage: {
@@ -254,7 +255,7 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = React.memo
                       return (
                         <TableRow key={item.derivedId} hover={true}>
                           <TableCell>{Weekday[item.day]}</TableCell>
-                          <TableCell>{item.scope.blockTime}</TableCell>
+                          <TableCell>{parseMinute(item.scope.blockTime)}</TableCell>
                           <TableCell>{item.scope.aircraftSelection.allowedIdentities.map(a => a.entity.name).join(', ')}</TableCell>
                           <TableCell>{item.scope.aircraftSelection.forbiddenIdentities.map(a => a.entity.name).join(', ')}</TableCell>
                           <TableCell align="center" className={classes.STDpadding}>

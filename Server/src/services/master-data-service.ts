@@ -12,6 +12,8 @@ import StcModel from '@core/models/master-data/StcModel';
 import AircraftRegisterGroupModel from '@core/models/master-data/AircraftRegisterGroupModel';
 import ConstraintTemplateModel from '@core/models/master-data/ConstraintTemplateModel';
 import ConstraintModel from '@core/models/master-data/ConstraintModel';
+import ConstraintTemplateType from '@core/types/ConstraintTemplateType';
+import { xmlParse, xmlArray } from 'src/utils/xml';
 
 const router = Router();
 export default router;
@@ -199,10 +201,10 @@ router.post(
       return await runQuery(
         `
           select
-            u.[Id]                        as [id],
-            u.[Title]                     as [name]
+            [Id]                        as [id],
+            [Title]                     as [name]
           from
-            [MasterData].[SeasonType]        as u
+            [MasterData].[SeasonType]
         `
       );
     }
@@ -217,13 +219,13 @@ router.post(
       }[] = await runQuery(
         `
           select
-            u.[Id]                        as [id],
-            u.[SeasonName]                as [name],
-			      u.[FromDateUtc]               as [startDate],
-			      u.[ToDateUtc]                 as [endDate],
-			      u.[Id_SeasonType]             as [seasonTypeId] 
+            [Id]                        as [id],
+            [SeasonName]                as [name],
+			      [FromDateUtc]               as [startDate],
+			      [ToDateUtc]                 as [endDate],
+			      [Id_SeasonType]             as [seasonTypeId] 
           from
-            [MasterData].[Season]            as u
+            [MasterData].[Season]
         `
       );
 
@@ -240,11 +242,11 @@ router.post(
       return await runQuery(
         `
           select
-            u.[Id]                        as [id],
-            u.[Code]                      as [name],
-			      u.[description]               as [description] 
+            [Id]                        as [id],
+            [Code]                      as [name],
+			      [description]               as [description] 
           from
-            [MasterData].[Stc]                 as u
+            [MasterData].[Stc]
         `
       );
     }
@@ -254,7 +256,47 @@ router.post(
     }
 
     async function getConstraintTemplates(): Promise<readonly ConstraintTemplateModel[]> {
-      return []; // Not implemented.
+      const rawConstraintTemplates: readonly {
+        id: string;
+        name: string;
+        type: ConstraintTemplateType;
+        instantiable: boolean;
+        description: string;
+        dataFieldsXml: string;
+      }[] = await runQuery(
+        `
+          select
+            [Id]                     as [id],
+            [Name]                   as [name],
+            [Code]                   as [type],
+            [IsInstantiable]         as [instantiable],
+            [Description]            as [description],
+            [DataFields]             as [dataFieldsXml]
+          from
+            [MasterData].[ConstraintTemplate]
+        `
+      );
+
+      return rawConstraintTemplates.map(t => ({
+        id: t.id,
+        name: t.name,
+        type: t.type,
+        instantiable: t.instantiable,
+        description: t.description,
+        dataFields: xmlArray(xmlParse(t.dataFieldsXml, 'DataFields')['DataField']).map(d => ({
+          name: d._attributes.Name,
+          type: d._attributes.Type,
+          description: d._attributes.Description,
+          title: d._attributes.Title,
+          selectOptions: d.SelectOptions
+            ? xmlArray(d.SelectOptions.SelectOption).map(o => ({
+                title: o._attributes.Title,
+                value: o._attributes.Value
+              }))
+            : undefined,
+          selectRadio: d.SelectRadio ? d.SelectRadio._attributes.Value === 'true' : undefined
+        }))
+      }));
     }
 
     async function getConstraints(): Promise<readonly ConstraintModel[]> {

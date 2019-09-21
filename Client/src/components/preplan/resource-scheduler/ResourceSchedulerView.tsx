@@ -56,6 +56,38 @@ const useStyles = makeStyles((theme: Theme) => ({
         }
       }
     },
+    '.rpa-group-dummy-mark': {
+      color: 'violet',
+      fontSize: '14px',
+      fontWeight: 800,
+      marginLeft: 4,
+      borderRadius: '6px',
+      padding: '0 1px',
+      cursor: 'pointer',
+      '&:hover': {
+        boxShadow: '0 0 6px 0px violet'
+      }
+    },
+    '.rpa-group-error-mark': {
+      color: theme.palette.extraColors.erroredFlight,
+      margin: 0,
+      borderRadius: '6px',
+      padding: 0,
+      cursor: 'pointer',
+      '&:hover': {
+        boxShadow: `0 0 6px 0px ${theme.palette.extraColors.erroredFlight}`
+      }
+    },
+    '.rpa-group-warning-mark': {
+      color: theme.palette.extraColors.warnedFlight,
+      margin: 0,
+      borderRadius: '6px',
+      padding: 0,
+      cursor: 'pointer',
+      '&:hover': {
+        boxShadow: `0 0 6px 0px ${theme.palette.extraColors.warnedFlight}`
+      }
+    },
     '.rpa-item-header': {
       display: 'flex',
       flexWrap: 'wrap',
@@ -82,7 +114,7 @@ const useStyles = makeStyles((theme: Theme) => ({
     '.rpa-item-body': {
       position: 'relative',
       border: '1px solid rgba(0, 20, 110, 0.5)', // Will be overridden.
-      borderRadius: '3px',
+      borderRadius: '4px',
       backgroundColor: 'rgba(0, 20, 110, 0.15)', // Will be overridden.
       height: 27,
       '&.rpa-unknown-aircraft-register': {
@@ -92,12 +124,20 @@ const useStyles = makeStyles((theme: Theme) => ({
         borderLeftWidth: 4,
         '&.rpa-origin-permission-semi': {
           borderLeftStyle: 'double'
+        },
+        '& .rpa-item-section.rpa-item-section-first': {
+          borderTopLeftRadius: 0,
+          borderBottomLeftRadius: 0
         }
       },
       '&.rpa-destination-permission': {
         borderRightWidth: 4,
         '&.rpa-destination-permission-semi': {
           borderRightStyle: 'double'
+        },
+        '& .rpa-item-section.rpa-item-section-last': {
+          borderTopRightRadius: 0,
+          borderBottomRightRadius: 0
         }
       },
       '&.rpa-changed': {
@@ -124,10 +164,14 @@ const useStyles = makeStyles((theme: Theme) => ({
           boxShadow: 'inset 0 0 4px 3px white'
         },
         '&.rpa-item-section-first': {
-          borderLeftWidth: 2
+          borderLeftWidth: 2,
+          borderTopLeftRadius: '4px',
+          borderBottomLeftRadius: '4px'
         },
         '&.rpa-item-section-last': {
-          borderRightWidth: 2
+          borderRightWidth: 2,
+          borderTopRightRadius: '4px',
+          borderBottomRightRadius: '4px'
         }
       },
       '& .rpa-item-label': {
@@ -376,7 +420,36 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = memo(
               <small>${group.content}</small>
             </div>
           `;
-        return `<div>${group.content}</div>`;
+        if (group.id === '???')
+          return `
+            <div>
+              ${group.content}
+            </div>
+          `;
+        const aircraftRegister: PreplanAircraftRegister = group.data;
+        return `
+          <div>
+            ${group.content}
+            ${aircraftRegister.dummy ? '<span class="rpa-group-dummy-mark" title="Dummy Aircraft Register">D</span>' : ''}
+            ${
+              aircraftRegister.objectionStatus === 'ERROR'
+                ? `
+                    <i class="icon-cancel-button material-icons rpa-group-error-mark" aria-hidden="true" type="1" title="${
+                      aircraftRegister.objections!.length === 1 ? '1 Objection' : `${aircraftRegister.objections!.length} Objections`
+                    }">
+                    </i>
+                  `
+                : aircraftRegister.objectionStatus === 'WARNING'
+                ? `
+                    <i class="icon-alert material-icons rpa-group-warning-mark" aria-hidden="true" type="1" title="${
+                      aircraftRegister.objections!.length === 1 ? '1 Objection' : `${aircraftRegister.objections!.length} Objections`
+                    }">
+                    </i>
+                  `
+                : ''
+            }
+          </div>
+        `;
       }
 
       function itemTemplate(item: DataItem, element: HTMLElement, data: DataItem): string {
@@ -384,7 +457,6 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = memo(
 
         const flightPack: FlightPack = item.data;
         const stcColor = chroma(persistant.userSettings!.stcColors[flightPack.flights[0].stc.name] || '#000000');
-        // debugger;
         return `
           <div class="rpa-item-header">
             <div class="rpa-item-time rpa-item-std">

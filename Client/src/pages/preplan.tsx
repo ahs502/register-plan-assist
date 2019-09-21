@@ -269,7 +269,6 @@ const PreplanPage: FC = () => {
               if (flightRequirementModalModel.mode === 'EDIT' && !flightRequirementModalModel.weekly) return await editWeekdayFlightRequirement();
 
               async function addOrEditFlightRequirement() {
-                setObjectionModalModel({ ...objectionModalModel, open: true, newErrorObjectsCount: 5 });
                 setFlightRequirementModalModel({ ...flightRequirementModalModel, loading: true, errorMessage: undefined });
 
                 const scope: FlightScopeModel = {

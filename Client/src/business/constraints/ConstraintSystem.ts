@@ -40,71 +40,14 @@ export default class ConstraintSystem {
   private stagedObjections: readonly Objection[];
 
   constructor(readonly preplan: Preplan) {
-    // this.checkers = MasterData.all.constraintTemplates.items
-    //   .filter(t => !t.instantiable)
-    //   .map(t => createCheckerFromNonInstantiableConstraintTemplate(preplan, t))
-    //   .concat(
-    //     MasterData.all.constraints.items
-    //       .filter(c => true /*TODO: See if the scope of this constraint overlaps the intended preplan */)
-    //       .map(c => createCheckerFromConstraint(preplan, c))
-    //   );
-    this.checkers = [
-      new NoConflictionOnFlightsChecker(
-        preplan,
-        this,
-        new ConstraintTemplate({
-          id: 'id1',
-          description: ['some very goooooooooooooooood thing'],
-          instantiable: false,
-          name: 'NO_CONFLICTION_IN_FLIGHTS',
-          type: 'NO_CONFLICTION_IN_FLIGHTS'
-        })
-      ),
-      new AirportSequenceRestrictionOnFlightsChecker(
-        preplan,
-        this,
-        new ConstraintTemplate({
-          id: 'id2',
-          description: ['some other thing'],
-          instantiable: false,
-          name: 'AIRPORT_SEQUENCE_RESTRICTION_ON_FLIGHTS',
-          type: 'AIRPORT_SEQUENCE_RESTRICTION_ON_FLIGHTS'
-        })
-      ),
-      new MinimumGroundTimeBetweenFlightsChecker(
-        preplan,
-        this,
-        new ConstraintTemplate({
-          id: 'id3',
-          description: ['still, some other thing'],
-          instantiable: false,
-          name: 'MINIMUM_GROUND_TIME_BETWEEN_FLIGHTS',
-          type: 'MINIMUM_GROUND_TIME_BETWEEN_FLIGHTS'
-        })
-      ),
-      new ValidPeriodCheckOnAircraftsChecker(
-        preplan,
-        this,
-        new ConstraintTemplate({
-          id: 'id4',
-          description: ['yet, another thing'],
-          instantiable: false,
-          name: 'VALID_PERIOD_CHECK_ON_AIRCRAFTS',
-          type: 'VALID_PERIOD_CHECK_ON_AIRCRAFTS'
-        })
-      ),
-      new FlightRequirementRestrictionOnFlightsChecker(
-        preplan,
-        this,
-        new ConstraintTemplate({
-          id: 'id5',
-          description: ['i can not believe it, yet another thing'],
-          instantiable: false,
-          name: 'FLIGHT_REQUIREMENT_RESTRICTION_ON_FLIGHTS',
-          type: 'FLIGHT_REQUIREMENT_RESTRICTION_ON_FLIGHTS'
-        })
-      )
-    ];
+    this.checkers = MasterData.all.constraintTemplates.items
+      .filter(t => !t.instantiable)
+      .map(t => this.createCheckerFromNonInstantiableConstraintTemplate(preplan, t))
+      .concat(
+        MasterData.all.constraints.items
+          .filter(c => true /*TODO: See if the scope of this constraint overlaps the intended preplan */)
+          .map(c => this.createCheckerFromConstraint(preplan, c))
+      );
     this.stagedObjections = this.objections = this.check();
     this.commit();
   }

@@ -436,14 +436,14 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = memo(
                 ? `
                     <i class="icon-cancel-button material-icons rpa-group-error-mark" aria-hidden="true" type="1" title="${
                       aircraftRegister.objections!.length === 1 ? '1 Objection' : `${aircraftRegister.objections!.length} Objections`
-                    }">
+                    }" onclick="alert('Not implemented.');">
                     </i>
                   `
                 : aircraftRegister.objectionStatus === 'WARNING'
                 ? `
                     <i class="icon-alert material-icons rpa-group-warning-mark" aria-hidden="true" type="1" title="${
                       aircraftRegister.objections!.length === 1 ? '1 Objection' : `${aircraftRegister.objections!.length} Objections`
-                    }">
+                    }" onclick="alert('Not implemented.');">
                     </i>
                   `
                 : ''

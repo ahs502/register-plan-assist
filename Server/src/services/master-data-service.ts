@@ -14,6 +14,7 @@ import ConstraintTemplateModel from '@core/models/master-data/ConstraintTemplate
 import ConstraintModel from '@core/models/master-data/ConstraintModel';
 import ConstraintTemplateType from '@core/types/ConstraintTemplateType';
 import { xmlParse, xmlArray } from 'src/utils/xml';
+import ConstraintTemplateDataFieldType from '@core/types/ConstraintTemplateDataFieldType';
 
 const router = Router();
 export default router;
@@ -252,7 +253,26 @@ router.post(
     }
 
     async function getAircraftRegisterGroups(): Promise<readonly AircraftRegisterGroupModel[]> {
-      return []; // Not implemented.
+      const rawAircraftRegisterGroups: readonly {
+        id: string;
+        name: string;
+        aircraftRegistersXml: string;
+      }[] = await runQuery(
+        `
+          select
+            [Id]                         as [id],
+            [Name]                       as [name],
+            [AircraftRegisters]          as [aircraftRegistersXml]
+          from
+            [MasterData].[AircraftRegisterGroup]
+        `
+      );
+
+      return rawAircraftRegisterGroups.map(g => ({
+        id: g.id,
+        name: g.name,
+        aircraftRegisterIds: xmlArray(xmlParse(g.aircraftRegistersXml, 'AircraftRegisters')['AircraftRegister']).map(a => a._attributes.Id)
+      }));
     }
 
     async function getConstraintTemplates(): Promise<readonly ConstraintTemplateModel[]> {
@@ -284,7 +304,6 @@ router.post(
         instantiable: t.instantiable,
         description: t.description,
         dataFields: xmlArray(xmlParse(t.dataFieldsXml, 'DataFields')['DataField']).map(d => ({
-          name: d._attributes.Name,
           type: d._attributes.Type,
           description: d._attributes.Description,
           title: d._attributes.Title,
@@ -300,7 +319,101 @@ router.post(
     }
 
     async function getConstraints(): Promise<readonly ConstraintModel[]> {
-      return []; // Not implemented.
+      const rawConstraints: readonly {
+        id: string;
+        name: string;
+        type: ConstraintTemplateType;
+        details: string;
+        fromDate?: string;
+        toDate?: string;
+        seasonTypeId?: string;
+        daysXml: string;
+        dataXml: string;
+      }[] = await runQuery(
+        `
+          select
+	          [Id]                         as [id],
+	          [Name]                       as [name],
+	          [Type]                       as [type],
+	          [Details]                    as [details],
+	          [FromDate]                   as [fromDate],
+	          [ToDate]                     as [toDate],
+	          [SeasonTypeId]               as [seasonTypeId],
+	          [Days]                       as [daysXml],
+	          [Data]                       as [dataXml]
+          from
+            [MasterData].[Constraint]
+        `
+      );
+
+      return rawConstraints.map(c => {
+        const dataKeys =
+          c.type === 'AIRCRAFT_RESTRICTION_ON_AIRPORTS'
+            ? ['airportId', 'restriction', 'aircraftSelection']
+            : c.type === 'AIRPORT_RESTRICTION_ON_AIRCRAFTS'
+            ? ['aircraftRegisterId', 'airportIds']
+            : c.type === 'BLOCK_TIME_RESTRICTION_ON_AIRCRAFTS'
+            ? ['maximumBlockTime', 'aircraftSelection']
+            : c.type === 'ROUTE_SEQUENCE_RESTRICTION_ON_AIRPORTS'
+            ? ['airportId', 'nextAirportId']
+            : c.type === 'AIRPORT_ALLOCATION_PRIORITY_FOR_AIRCRAFTS'
+            ? ['aircraftRegisterIds', 'airportIds']
+            : [];
+
+        const dataValues = xmlArray(xmlParse(c.dataXml, 'Data')['Property']).map<any>(p => {
+          switch (p._attributes.Type as ConstraintTemplateDataFieldType) {
+            case 'CHECK_BOX':
+              return p._text === 'true';
+
+            case 'SELECT':
+              return p._text;
+
+            case 'TIME_SPAN':
+              return Number(p._text);
+
+            case 'AIRPORT':
+              return p.Airport._attributes.Id;
+
+            case 'AIRPORT_LIST':
+              return xmlArray(p.Airports.Airport).map(a => a._attributes.Id);
+
+            case 'AIRCRAFT_REGISTER':
+              return p.AircraftRegister._attributes.Id;
+
+            case 'AIRCRAFT_REGISTER_LIST':
+              return xmlArray(p.AircraftRegisters.AircraftRegister).map(r => r._attributes.Id);
+
+            case 'AIRCRAFT_SELECTION':
+              return {
+                allowedIdentities: xmlArray(p.AircraftSelection.AllowedIdentities.Identity).map(i => ({
+                  type: i._attributes.Type,
+                  entityId: i._attributes.Id_Entity
+                })),
+                forbiddenIdentities: xmlArray(p.AircraftSelection.ForbiddenIdentities.Identity).map(i => ({
+                  type: i._attributes.Type,
+                  entityId: i._attributes.Id_Entity
+                }))
+              };
+
+            default:
+              throw 'Not supported constraint template data field type.';
+          }
+        });
+
+        return {
+          id: c.id,
+          name: c.name,
+          type: c.type,
+          details: c.details,
+          scope: {
+            fromDate: c.fromDate && new Date(c.fromDate).toJSON(),
+            toDate: c.toDate && new Date(c.toDate).toJSON(),
+            seasonTypeId: c.seasonTypeId,
+            days: xmlArray(xmlParse(c.daysXml, 'Days')['Day']).reduce((days, d) => (days[d._attributes.Index] = true), Array.range(0, 6).map(() => false))
+          },
+          data: dataKeys.reduce<any>((data, k) => ((data[k] = dataValues.shift()), data), {})
+        };
+      });
     }
   })
 );

@@ -492,7 +492,7 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = memo(
               : ''
           }
           ${flightPack.changed === true ? ' rpa-changed rpa-changed-full' : flightPack.changed === undefined ? ' rpa-changed rpa-changed-semi' : ''}
-          " style="border-color: ${stcColor}; background-color: ${stcColor.desaturate(1).brighten(3)};">
+          " style="border-color: ${stcColor}; background-color: ${chroma.mix(stcColor.desaturate(1), '#fff', 0.8)};">
             ${flightPack.sections
               .map(
                 (s, index, sections) =>
@@ -504,7 +504,7 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = memo(
                       : ''
                   }${index === 0 ? ' rpa-item-section-first' : ''}${index === sections.length - 1 ? ' rpa-item-section-last' : ''}" style="left: ${s.start * 100}%; right: ${(1 -
                     s.end) *
-                    100}%; background-color: ${stcColor.desaturate(0.5).brighten(2)};"></div>`
+                    100}%; background-color: ${chroma.mix(stcColor.saturate(0.4).brighten(1.5), '#fff', 0.25)};"></div>`
               )
               .join(' ')}
             <div class="rpa-item-label">

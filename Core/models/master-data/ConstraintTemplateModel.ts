@@ -7,7 +7,6 @@ export default interface ConstraintTemplateModel extends MasterDataItemModel {
   readonly instantiable: boolean;
   readonly description: string;
   readonly dataFields: readonly {
-    readonly name: string;
     readonly type: ConstraintTemplateDataFieldType;
     readonly description: string;
     readonly title?: string;

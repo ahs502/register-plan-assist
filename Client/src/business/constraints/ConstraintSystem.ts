@@ -94,12 +94,12 @@ export default class ConstraintSystem {
     const introduced: Objection[] = [];
     const modified: Objection[] = [];
     this.stagedObjections.forEach(s => {
-      const o = this.objections.find(objection => objection.match(s));
+      const o = this.objections.find(objection => objection.derivedId === s.derivedId);
       if (!o) return introduced.push(s);
       if (o.message === s.message) return;
       modified.push(s);
     });
-    const resolved = this.objections.filter(o => !this.stagedObjections.some(s => o.match(s)));
+    const resolved = this.objections.filter(o => !this.stagedObjections.some(s => o.derivedId === s.derivedId));
     return { introduced, resolved, modified };
   }
   commit(): void {

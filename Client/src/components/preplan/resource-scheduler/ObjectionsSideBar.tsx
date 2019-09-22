@@ -1,16 +1,17 @@
-import React, { FC, useState } from 'react';
-import { Theme } from '@material-ui/core';
+import React, { FC, useState, Fragment } from 'react';
+import { Theme, Typography } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import Search, { filterOnProperties } from 'src/components/Search';
 import SideBarContainer from './SideBarContainer';
 import ObjectionList from './ObjectionList';
 import Objection from 'src/business/constraints/Objection';
+import MahanIcon, { MahanIconType } from 'src/components/MahanIcon';
 
 const useStyles = makeStyles((theme: Theme) => ({
-  error: {
+  errorIcon: {
     color: theme.palette.extraColors.erroredFlight
   },
-  warning: {
+  warningIcon: {
     color: theme.palette.extraColors.warnedFlight
   }
 }));
@@ -41,23 +42,42 @@ const ObjectionsSideBar: FC<ObjectionsSideBarProps> = ({ objections, initialSear
 
   return (
     <SideBarContainer label="Errors and Warnings">
-      <Search
-        initialSearch={initialSearch}
-        onQueryChange={query => setFilteredObjections(filterOnProperties(objections as readonly { message: string }[], query, 'message') as any)}
-      />
-      <div>
-        <span>
-          <span className={classes.error}>ErrorIcon</span>
-          {filteredErrorCount !== totalErrorCount && <span>{filteredErrorCount} of </span>}
-          {totalErrorCount} Errors
-        </span>
-        <span>
-          <span className={classes.warning}>WarningIcon</span>
-          {filteredWarningCount !== totalWarningCount && <span>{filteredWarningCount} of </span>}
-          {totalWarningCount} Warnings
-        </span>
-      </div>
-      <ObjectionList objections={filteredObjections} />
+      {totalErrorCount + totalWarningCount > 0 ? (
+        <Fragment>
+          <Search
+            initialSearch={initialSearch}
+            onQueryChange={query => setFilteredObjections(filterOnProperties(objections as readonly { message: string }[], query, 'message') as any)}
+          />
+
+          <br />
+
+          {!!totalErrorCount && (
+            <Fragment>
+              <Typography variant="body2" display="inline">
+                <MahanIcon type={MahanIconType.CancelButton} className={classes.errorIcon} fontSize="small"></MahanIcon>
+                &nbsp;
+                {filteredErrorCount !== totalErrorCount && <span>{filteredErrorCount} of </span>}
+                {totalErrorCount} Errors
+              </Typography>
+              &nbsp;&nbsp;&nbsp;
+            </Fragment>
+          )}
+          {!!totalWarningCount && (
+            <Typography variant="body2" display="inline">
+              <MahanIcon type={MahanIconType.Alert} className={classes.warningIcon} fontSize="small"></MahanIcon>
+              &nbsp;
+              {filteredWarningCount !== totalWarningCount && <span>{filteredWarningCount} of </span>}
+              {totalWarningCount} Warnings
+            </Typography>
+          )}
+
+          <br />
+
+          <ObjectionList objections={filteredObjections} />
+        </Fragment>
+      ) : (
+        <Typography variant="subtitle1">There are no objections!</Typography>
+      )}
     </SideBarContainer>
   );
 };

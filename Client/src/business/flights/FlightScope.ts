@@ -1,12 +1,9 @@
 import { FlightScopeModel } from '@core/models/flights/FlightScopeModel';
 import PreplanAircraftSelection from 'src/business/PreplanAircraftSelection';
 import FlightTime from './FlightTime';
-import { PreplanAircraftRegisters } from '../PreplanAircraftRegister';
+import PreplanAircraftRegister, { PreplanAircraftRegisters } from '../PreplanAircraftRegister';
 import Rsx from '@core/types/flight-requirement/Rsx';
-import { parseHHMM } from 'src/utils/model-parsers';
-import FlightTimeModel from '@core/models/flights/FlightTimeModel';
-import AircraftIdentityModel from '@core/models/AircraftIdentityModel';
-import ModelConvertable, { getOverrided, getOverridedArray, getOverridedObject } from 'src/utils/ModelConvertable';
+import ModelConvertable, { getOverrided, getOverridedArray, getOverridedObject } from 'src/business/ModelConvertable';
 import DeepWritablePartial from '@core/types/DeepWritablePartial';
 
 export default class FlightScope implements ModelConvertable<FlightScopeModel> {
@@ -18,7 +15,7 @@ export default class FlightScope implements ModelConvertable<FlightScopeModel> {
   readonly rsx: Rsx;
   readonly required: boolean;
 
-  constructor(raw: FlightScopeModel, aircraftRegisters: PreplanAircraftRegisters) {
+  constructor(raw: FlightScopeModel, private aircraftRegisters: PreplanAircraftRegisters) {
     this.blockTime = raw.blockTime;
     this.times = raw.times.map(t => new FlightTime(t));
     this.aircraftSelection = new PreplanAircraftSelection(raw.aircraftSelection, aircraftRegisters);

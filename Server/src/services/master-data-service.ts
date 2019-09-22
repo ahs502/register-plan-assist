@@ -9,8 +9,12 @@ import AirportModel from '@core/models/master-data/AirportModel';
 import SeasonTypeModel from '@core/models/master-data/SeasonTypeModel';
 import SeasonModel from '@core/models/master-data/SeasonModel';
 import StcModel from '@core/models/master-data/StcModel';
-import AircraftGroupModel from '@core/models/master-data/AircraftGroupModel';
+import AircraftRegisterGroupModel from '@core/models/master-data/AircraftRegisterGroupModel';
+import ConstraintTemplateModel from '@core/models/master-data/ConstraintTemplateModel';
 import ConstraintModel from '@core/models/master-data/ConstraintModel';
+import ConstraintTemplateType from '@core/types/ConstraintTemplateType';
+import { xmlParse, xmlArray } from 'src/utils/xml';
+import ConstraintTemplateDataFieldType from '@core/types/ConstraintTemplateDataFieldType';
 
 const router = Router();
 export default router;
@@ -19,7 +23,6 @@ router.post(
   '/get',
   requestMiddlewareWithDbAccess<{ collections: (keyof MasterDataModel)[] }, MasterDataModel>(async (userId, { collections }, { runQuery }) => {
     //TODO: Check user access here...
-    //TODO: Implement aircraftGroups & constraints too.
 
     const MasterDataModel: MasterDataModel = {
       aircraftTypes: collections.includes('aircraftTypes') ? await getAircraftTypes() : undefined,
@@ -28,7 +31,8 @@ router.post(
       seasonTypes: collections.includes('seasonTypes') ? await getSeasonTypes() : undefined,
       seasons: collections.includes('seasons') ? await getSeasons() : undefined,
       stcs: collections.includes('seasons') ? await getStcs() : undefined,
-      aircraftGroups: collections.includes('aircraftGroups') ? await getAircraftGroups() : undefined,
+      aircraftRegisterGroups: collections.includes('aircraftRegisterGroups') ? await getAircraftRegisterGroups() : undefined,
+      constraintTemplates: collections.includes('constraintTemplates') ? await getConstraintTemplates() : undefined,
       constraints: collections.includes('constraints') ? await getConstraints() : undefined
     };
 
@@ -36,7 +40,7 @@ router.post(
 
     async function getAircraftTypes(): Promise<readonly AircraftTypeModel[]> {
       const rawAircraftTypes: readonly {
-        id: string;
+        id: number;
         name: string;
         displayName: string;
         turnroundStartDate: string;
@@ -65,10 +69,11 @@ router.post(
                 u.[id] = t.[Id_AircraftType]
         `
       );
+
       return Object.values(rawAircraftTypes.groupBy('id')).map(group => {
         const sample = group[0];
         return {
-          id: sample.id,
+          id: String(sample.id),
           name: sample.name,
           displayOrder: JSON.parse(sample.displayName),
           turnrounds: group.map(t => {
@@ -88,21 +93,54 @@ router.post(
     }
 
     async function getAircraftRegisters(): Promise<readonly AircraftRegisterModel[]> {
-      return await runQuery(
+      const rawAircraftRegisters: {
+        id: number;
+        name: string;
+        aircraftTypeId: number;
+        periodStartDate: string;
+        periodEndDate: string;
+      }[] = await runQuery(
         `
           select
-            u.[Id]                        as [id],
-            u.[ShortCode]                 as [name],
-            u.[Id_AircraftType]           as [aircraftTypeId]
+            u.[Id]                              as [id],
+            u.[ShortCode]                       as [name],
+            u.[Id_AircraftType]                 as [aircraftTypeId],
+            p.[PeriodStartDate]                 as [periodStartDate],
+            p.[PeriodEndDate]                   as [periodEndDate]
           from
-            [MasterData].[AircraftRegister]      as u
+            [MasterData].[AircraftRegister]                as u
+          join
+            [MasterData].[AircraftRegisterValidPeriod]     as p
+            on
+              p.[Id_AircraftRegister] = u.[Id]
         `
       );
+
+      return Object.values(rawAircraftRegisters.groupBy('id')).map(group => {
+        const sample = group[0];
+        return {
+          id: String(sample.id),
+          name: sample.name,
+          aircraftTypeId: String(sample.aircraftTypeId),
+          validPeriods: group.sortBy('periodStartDate').reduce<AircraftRegisterModel['validPeriods'][number][]>((result, r) => {
+            const lastValidPeriod = result[result.length - 1];
+            if (lastValidPeriod && new Date(lastValidPeriod.endDate).getDatePart().addDays(1) === new Date(r.periodStartDate).getDatePart()) {
+              (lastValidPeriod as any).endDate = r.periodEndDate;
+            } else {
+              result.push({
+                startDate: new Date(r.periodStartDate).toJSON(),
+                endDate: new Date(r.periodEndDate).toJSON()
+              });
+            }
+            return result;
+          }, [])
+        };
+      });
     }
 
     async function getAirports(): Promise<readonly AirportModel[]> {
       const rawAirports: readonly {
-        id: string;
+        id: number;
         name: string;
         fullName: string;
         international: boolean;
@@ -141,7 +179,7 @@ router.post(
       return Object.values(rawAirports.groupBy('id')).map(group => {
         const sample = group[0];
         return {
-          id: sample.id,
+          id: String(sample.id),
           name: sample.name,
           fullName: sample.fullName,
           international: sample.international,
@@ -160,64 +198,239 @@ router.post(
     }
 
     async function getSeasonTypes(): Promise<readonly SeasonTypeModel[]> {
-      return await runQuery(
+      const rawSeasonTypes: readonly {
+        id: number;
+        name: string;
+      }[] = await runQuery(
         `
           select
-            u.[Id]                        as [id],
-            u.[Title]                     as [name]
+            [Id]                        as [id],
+            [Title]                     as [name]
           from
-            [MasterData].[SeasonType]        as u
+            [MasterData].[SeasonType]
         `
       );
+
+      return rawSeasonTypes.map(s => ({
+        id: String(s.id),
+        name: s.name
+      }));
     }
 
     async function getSeasons(): Promise<readonly SeasonModel[]> {
       const rawSeasons: readonly {
-        id: string;
+        id: number;
         name: string;
         startDate: string;
         endDate: string;
-        seasonTypeId: string;
+        seasonTypeId: number;
       }[] = await runQuery(
         `
           select
-            u.[Id]                        as [id],
-            u.[SeasonName]                as [name],
-			      u.[FromDateUtc]               as [startDate],
-			      u.[ToDateUtc]                 as [endDate],
-			      u.[Id_SeasonType]             as [seasonTypeId] 
+            [Id]                        as [id],
+            [SeasonName]                as [name],
+			      [FromDateUtc]               as [startDate],
+			      [ToDateUtc]                 as [endDate],
+			      [Id_SeasonType]             as [seasonTypeId] 
           from
-            [MasterData].[Season]            as u
+            [MasterData].[Season]
         `
       );
+
       return rawSeasons.map(c => ({
-        id: c.id,
+        id: String(c.id),
         name: c.name,
         startDate: new Date(c.startDate).toJSON(),
         endDate: new Date(c.endDate).toJSON(),
-        seasonTypeId: c.endDate
+        seasonTypeId: String(c.endDate)
       }));
     }
 
     async function getStcs(): Promise<readonly StcModel[]> {
-      return await runQuery(
+      const rawStcs: readonly {
+        id: number;
+        name: string;
+        description: string;
+      }[] = await runQuery(
         `
           select
-            u.[Id]                        as [id],
-            u.[Code]                      as [name],
-			      u.[description]               as [description] 
+            [Id]                        as [id],
+            [Code]                      as [name],
+			      [description]               as [description] 
           from
-            [MasterData].[Stc]                 as u
+            [MasterData].[Stc]
         `
       );
+
+      return rawStcs.map(s => ({
+        id: String(s.id),
+        name: s.name,
+        description: s.description
+      }));
     }
 
-    async function getAircraftGroups(): Promise<readonly AircraftGroupModel[]> {
-      return []; // Not implemented.
+    async function getAircraftRegisterGroups(): Promise<readonly AircraftRegisterGroupModel[]> {
+      const rawAircraftRegisterGroups: readonly {
+        id: number;
+        name: string;
+        aircraftRegistersXml: string;
+      }[] = await runQuery(
+        `
+          select
+            [Id]                         as [id],
+            [Name]                       as [name],
+            [AircraftRegisters]          as [aircraftRegistersXml]
+          from
+            [MasterData].[AircraftRegisterGroup]
+        `
+      );
+
+      return rawAircraftRegisterGroups.map(g => ({
+        id: String(g.id),
+        name: g.name,
+        aircraftRegisterIds: xmlArray(xmlParse(g.aircraftRegistersXml, 'AircraftRegisters')['AircraftRegister']).map(a => a._attributes.Id)
+      }));
+    }
+
+    async function getConstraintTemplates(): Promise<readonly ConstraintTemplateModel[]> {
+      const rawConstraintTemplates: readonly {
+        id: number;
+        name: string;
+        type: ConstraintTemplateType;
+        instantiable: boolean;
+        description: string;
+        dataFieldsXml: string;
+      }[] = await runQuery(
+        `
+          select
+            [Id]                     as [id],
+            [Name]                   as [name],
+            [Code]                   as [type],
+            [IsInstantiable]         as [instantiable],
+            [Description]            as [description],
+            [DataFields]             as [dataFieldsXml]
+          from
+            [MasterData].[ConstraintTemplate]
+        `
+      );
+
+      return rawConstraintTemplates.map(t => ({
+        id: String(t.id),
+        name: t.name,
+        type: t.type,
+        instantiable: t.instantiable,
+        description: t.description,
+        dataFields: xmlArray(xmlParse(t.dataFieldsXml, 'DataFields')['DataField']).map(d => ({
+          type: d._attributes.Type,
+          description: d._attributes.Description,
+          title: d._attributes.Title,
+          selectOptions: d.SelectOptions
+            ? xmlArray(d.SelectOptions.SelectOption).map(o => ({
+                title: o._attributes.Title,
+                value: o._attributes.Value
+              }))
+            : undefined,
+          selectRadio: d.SelectRadio ? d.SelectRadio._attributes.Value === 'true' : undefined
+        }))
+      }));
     }
 
     async function getConstraints(): Promise<readonly ConstraintModel[]> {
-      return []; // Not implemented.
+      const rawConstraints: readonly {
+        id: number;
+        name: string;
+        type: ConstraintTemplateType;
+        details: string;
+        fromDate?: string;
+        toDate?: string;
+        seasonTypeId?: number;
+        daysXml: string;
+        dataXml: string;
+      }[] = await runQuery(
+        `
+          select
+	          [Id]                         as [id],
+	          [Name]                       as [name],
+	          [Type]                       as [type],
+	          [Details]                    as [details],
+	          [FromDate]                   as [fromDate],
+	          [ToDate]                     as [toDate],
+	          [SeasonTypeId]               as [seasonTypeId],
+	          [Days]                       as [daysXml],
+	          [Data]                       as [dataXml]
+          from
+            [MasterData].[Constraint]
+        `
+      );
+
+      return rawConstraints.map(c => {
+        const dataKeys =
+          c.type === 'AIRCRAFT_RESTRICTION_ON_AIRPORTS'
+            ? ['airportIds', 'restriction', 'aircraftSelection']
+            : c.type === 'AIRPORT_RESTRICTION_ON_AIRCRAFTS'
+            ? ['aircraftRegisterId', 'airportIds']
+            : c.type === 'BLOCK_TIME_RESTRICTION_ON_AIRCRAFTS'
+            ? ['maximumBlockTime', 'aircraftSelection']
+            : c.type === 'ROUTE_SEQUENCE_RESTRICTION_ON_AIRPORTS'
+            ? ['airportId', 'nextAirportId']
+            : c.type === 'AIRPORT_ALLOCATION_PRIORITY_FOR_AIRCRAFTS'
+            ? ['aircraftRegisterIds', 'airportIds']
+            : [];
+
+        const dataValues = xmlArray(xmlParse(c.dataXml, 'Data')['Property']).map<any>(p => {
+          switch (p._attributes.Type as ConstraintTemplateDataFieldType) {
+            case 'CHECK_BOX':
+              return p._text === 'true';
+
+            case 'SELECT':
+              return p._text;
+
+            case 'TIME_SPAN':
+              return Number(p._text);
+
+            case 'AIRPORT':
+              return p.Airport._attributes.Id;
+
+            case 'AIRPORT_LIST':
+              return xmlArray(p.Airports.Airport).map(a => a._attributes.Id);
+
+            case 'AIRCRAFT_REGISTER':
+              return p.AircraftRegister._attributes.Id;
+
+            case 'AIRCRAFT_REGISTER_LIST':
+              return xmlArray(p.AircraftRegisters.AircraftRegister).map(r => r._attributes.Id);
+
+            case 'AIRCRAFT_SELECTION':
+              return {
+                allowedIdentities: xmlArray(p.AircraftSelection.AllowedIdentities.Identity).map(i => ({
+                  type: i._attributes.Type,
+                  entityId: i._attributes.Id_Entity
+                })),
+                forbiddenIdentities: xmlArray(p.AircraftSelection.ForbiddenIdentities.Identity).map(i => ({
+                  type: i._attributes.Type,
+                  entityId: i._attributes.Id_Entity
+                }))
+              };
+
+            default:
+              throw 'Not supported constraint template data field type.';
+          }
+        });
+
+        return {
+          id: String(c.id),
+          name: c.name,
+          type: c.type,
+          details: c.details,
+          scope: {
+            fromDate: c.fromDate && new Date(c.fromDate).toJSON(),
+            toDate: c.toDate && new Date(c.toDate).toJSON(),
+            seasonTypeId: c.seasonTypeId === undefined ? undefined : String(c.seasonTypeId),
+            days: xmlArray(xmlParse(c.daysXml, 'Days')['Day']).reduce((days, d) => ((days[d._attributes.Index] = true), days), Array.range(0, 6).map(() => false))
+          },
+          data: dataKeys.reduce<any>((data, k) => ((data[k] = dataValues.shift()), data), {})
+        };
+      });
     }
   })
 );

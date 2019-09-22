@@ -11,7 +11,9 @@ export default class ConstraintTemplate extends MasterDataItem {
     super(raw);
     this.type = raw.type;
     this.instantiable = raw.instantiable;
-    this.description = raw.description.map(part => (typeof part === 'string' ? part : `(${part.description || '...'})`)).join('');
+    let description = raw.description;
+    raw.dataFields.forEach((dataField, index) => (description = description.replace(`$${index}`, `(${dataField.description || 'something'})`)));
+    this.description = description;
   }
 }
 

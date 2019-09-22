@@ -7,7 +7,7 @@ import { Airports } from './Airport';
 import { SeasonTypes } from './SeasonType';
 import { Seasons } from './Season';
 import { Stcs } from './Stc';
-import { AircraftGroups } from './AircraftGroup';
+import { AircraftRegisterGroups } from './AircraftRegisterGroup';
 import { ConstraintTemplates } from './ConstraintTemplate';
 import { Constraints } from './Constraint';
 
@@ -22,7 +22,7 @@ export default class MasterData {
   readonly seasonTypes: SeasonTypes;
   readonly seasons: Seasons;
   readonly stcs: Stcs;
-  readonly aircraftGroups: AircraftGroups;
+  readonly aircraftRegisterGroups: AircraftRegisterGroups;
   readonly constraintTemplates: ConstraintTemplates;
   readonly constraints: Constraints;
 
@@ -41,7 +41,7 @@ export default class MasterData {
     seasonTypes: SeasonTypes,
     seasons: Seasons,
     stcs: Stcs,
-    aircraftGroups: AircraftGroups,
+    aircraftRegisterGroups: AircraftRegisterGroups,
     constraintTemplates: ConstraintTemplates,
     constraints: Constraints
   ) {
@@ -51,7 +51,7 @@ export default class MasterData {
     this.seasonTypes = seasonTypes;
     this.seasons = seasons;
     this.stcs = stcs;
-    this.aircraftGroups = aircraftGroups;
+    this.aircraftRegisterGroups = aircraftRegisterGroups;
     this.constraintTemplates = constraintTemplates;
     this.constraints = constraints;
 
@@ -60,7 +60,7 @@ export default class MasterData {
     //   .concat(this.aircraftTypes.items.map(a => ({ type: 'TYPE', name: a.name, entityId: a.id })))
     //   .concat(this.aircraftTypes.items.map(a => ({ type: 'TYPE_EXISTING', name: a.name + '_EXISTING', entityId: a.id })))
     //   .concat(this.aircraftTypes.items.map(a => ({ type: 'TYPE_DUMMY', name: a.name + '_DUMMY', entityId: a.id })))
-    //   .concat(this.aircraftGroups.items.map(a => ({ type: 'GROUP', name: a.name, entityId: a.id })));
+    //   .concat(this.aircraftRegisterGroups.items.map(a => ({ type: 'GROUP', name: a.name, entityId: a.id })));
   }
 
   /**
@@ -74,12 +74,12 @@ export default class MasterData {
     const seasonTypes = SeasonTypes.parse(raw.seasonTypes) || MasterData.all.seasonTypes;
     const seasons = Seasons.parse(seasonTypes, raw.seasons) || MasterData.all.seasons;
     const stcs = Stcs.parse(raw.stcs) || MasterData.all.stcs;
-    const aircraftGroups = AircraftGroups.parse(aircraftRegisters, raw.aircraftGroups) || MasterData.all.aircraftGroups;
+    const aircraftRegisterGroups = AircraftRegisterGroups.parse(aircraftRegisters, raw.aircraftRegisterGroups) || MasterData.all.aircraftRegisterGroups;
     const constraintTemplates = ConstraintTemplates.parse(raw.constraintTemplates) || MasterData.all.constraintTemplates;
     const constraints =
-      Constraints.parse(constraintTemplates, airports, aircraftRegisters, aircraftTypes, aircraftGroups, seasonTypes, raw.constraints) || MasterData.all.constraints;
+      Constraints.parse(constraintTemplates, airports, aircraftRegisters, aircraftTypes, aircraftRegisterGroups, seasonTypes, raw.constraints) || MasterData.all.constraints;
 
-    MasterData.all = new MasterData(aircraftTypes, aircraftRegisters, airports, seasonTypes, seasons, stcs, aircraftGroups, constraintTemplates, constraints);
+    MasterData.all = new MasterData(aircraftTypes, aircraftRegisters, airports, seasonTypes, seasons, stcs, aircraftRegisterGroups, constraintTemplates, constraints);
   }
 
   /**
@@ -92,10 +92,10 @@ export default class MasterData {
     const seasonTypes = SeasonTypes.parse([])!;
     const seasons = Seasons.parse(seasonTypes, [])!;
     const stcs = Stcs.parse([])!;
-    const aircraftGroups = AircraftGroups.parse(aircraftRegisters, [])!;
+    const aircraftRegisterGroups = AircraftRegisterGroups.parse(aircraftRegisters, [])!;
     const constraintTemplates = ConstraintTemplates.parse([])!;
-    const constraints = Constraints.parse(constraintTemplates, airports, aircraftRegisters, aircraftTypes, aircraftGroups, seasonTypes, [])!;
+    const constraints = Constraints.parse(constraintTemplates, airports, aircraftRegisters, aircraftTypes, aircraftRegisterGroups, seasonTypes, [])!;
 
-    return new MasterData(aircraftTypes, aircraftRegisters, airports, seasonTypes, seasons, stcs, aircraftGroups, constraintTemplates, constraints);
+    return new MasterData(aircraftTypes, aircraftRegisters, airports, seasonTypes, seasons, stcs, aircraftRegisterGroups, constraintTemplates, constraints);
   })();
 }

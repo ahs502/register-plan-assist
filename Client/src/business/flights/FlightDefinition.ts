@@ -1,6 +1,6 @@
 import MasterData, { Stc, Airport } from '@core/master-data';
 import FlightDefinitionModel from '@core/models/flights/FlightDefinitionModel';
-import ModelConvertable, { getOverrided } from 'src/utils/ModelConvertable';
+import ModelConvertable, { getOverrided } from 'src/business/ModelConvertable';
 import DeepWritablePartial from '@core/types/DeepWritablePartial';
 
 export default class FlightDefinition implements ModelConvertable<FlightDefinitionModel> {

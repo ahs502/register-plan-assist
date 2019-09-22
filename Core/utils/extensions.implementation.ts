@@ -162,6 +162,14 @@
     return result;
   };
 
+  Date.intervalCovers = function Date_intervalCovers<T extends Date | number | string>(firstStart: T, firstEnd: T, secondStart: T, secondEnd: T): boolean {
+    return firstStart <= secondStart && firstEnd >= secondEnd;
+  };
+
+  Date.intervalOverlaps = function Date_intervalOverlaps<T extends Date | number | string>(firstStart: T, firstEnd: T, secondStart: T, secondEnd: T): boolean {
+    return firstStart <= secondEnd && firstEnd >= secondStart;
+  };
+
   Date.prototype.isValid = function Date_prototype_isValid(): boolean {
     // An invalid date object returns NaN for getTime() and NaN is the only object not strictly equal to itself.
     return this.getTime() === this.getTime();

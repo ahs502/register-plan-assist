@@ -1,14 +1,18 @@
 import DummyAircraftRegisterModel from '@core/models/DummyAircraftRegisterModel';
 import { AircraftRegisterOptionsDictionaryModel } from '@core/models/AircraftRegisterOptionsModel';
-import MasterData, { MasterDataItem, MasterDataItems, AircraftType, AircraftGroup } from '@core/master-data';
+import MasterData, { MasterDataItem, MasterDataItems, AircraftType, AircraftRegisterGroup, AircraftRegister } from '@core/master-data';
 import AircraftRegisterOptions, { AircraftRegisterOptionsDictionary } from './AircraftRegisterOptions';
 import AircraftIdentity from '@core/master-data/AircraftIdentity';
 import AircraftSelection from '@core/master-data/AircraftSelection';
+import Preplan from './Preplan';
+import Objectionable, { ObjectionStatus } from './constraints/Objectionable';
+import Objection, { ObjectionType } from './constraints/Objection';
+import Checker from './constraints/Checker';
 
 /**
  * An enhanced aircraft register capable of presenting both master data and dummy aircraft registers.
  */
-export default class PreplanAircraftRegister implements MasterDataItem {
+export default class PreplanAircraftRegister implements MasterDataItem, Objectionable {
   /**
    * The id of the corresponding aircraft registrer in the master data or
    * a prefix 'dummy-' followed by the id (no.) of the dummy aircraft register
@@ -18,6 +22,10 @@ export default class PreplanAircraftRegister implements MasterDataItem {
 
   readonly name: string;
   readonly aircraftType: AircraftType;
+  readonly validPeriods: readonly {
+    readonly startDate: Date;
+    readonly endDate: Date;
+  }[];
 
   /**
    * Whether this enhanced aircraft register is a dummy one or not.
@@ -26,16 +34,32 @@ export default class PreplanAircraftRegister implements MasterDataItem {
 
   readonly options: AircraftRegisterOptions;
 
-  constructor(id: string, name: string, aircraftType: AircraftType, dummy: boolean, options?: AircraftRegisterOptions) {
+  objections?: Objection<PreplanAircraftRegister>[];
+
+  constructor(id: string, name: string, aircraftType: AircraftType, validPeriods: AircraftRegister['validPeriods'], dummy: boolean, options?: AircraftRegisterOptions) {
     this.id = id;
     this.name = name;
     this.aircraftType = aircraftType;
+    this.validPeriods = validPeriods;
     this.dummy = dummy;
     this.options = options || AircraftRegisterOptions.default;
   }
 
-  getMinimumGroundTime(date: Date, transit: boolean, international: boolean): number {
-    return this.aircraftType.getMinimumGroundTime(date, transit, international);
+  get marker(): string {
+    return `aircraft register ${this.name} of type ${this.aircraftType.name}`;
+  }
+
+  get objectionStatus(): ObjectionStatus {
+    if (!this.objections || this.objections.length === 0) return 'NONE';
+    if (this.objections.some(o => o.type === 'ERROR')) return 'ERROR';
+    return 'WARNING';
+  }
+  issueObjection(type: ObjectionType, priority: number, checker: Checker, messageProvider: (constraintMarker: string) => string): Objection<PreplanAircraftRegister> {
+    return new Objection<PreplanAircraftRegister>(type, this, this.id, 4, priority, checker, messageProvider);
+  }
+
+  getMinimumGroundTime(transit: boolean, international: boolean, startDate: Date, endDate?: Date, method: 'MAXIMUM' | 'MINIMUM' = 'MAXIMUM'): number {
+    return this.aircraftType.getMinimumGroundTime(transit, international, startDate, endDate, method);
   }
 }
 
@@ -43,13 +67,28 @@ export default class PreplanAircraftRegister implements MasterDataItem {
  * Encapsulates all master data and dummy aircraft registers as a single collection.
  */
 export class PreplanAircraftRegisters extends MasterDataItems<PreplanAircraftRegister> {
-  constructor(dummyAircraftRegisters: readonly DummyAircraftRegisterModel[], aircraftRegisterOptionsDictionary: AircraftRegisterOptionsDictionaryModel) {
+  preplan: Preplan;
+
+  constructor(dummyAircraftRegisters: readonly DummyAircraftRegisterModel[], aircraftRegisterOptionsDictionary: AircraftRegisterOptionsDictionaryModel, preplan: Preplan) {
     const dictionary = new AircraftRegisterOptionsDictionary(aircraftRegisterOptionsDictionary);
-    let masterDataItems = MasterData.all.aircraftRegisters.items.map(a => new PreplanAircraftRegister(a.id, a.name, a.aircraftType, false, dictionary[a.id]));
+    let masterDataItems = MasterData.all.aircraftRegisters.items
+      .filter(a => a.validPeriods.some(p => p.startDate <= preplan.endDate && p.endDate >= preplan.startDate))
+      .map(a => new PreplanAircraftRegister(a.id, a.name, a.aircraftType, a.validPeriods, false, dictionary[a.id]));
     let dummyItems = dummyAircraftRegisters
-      ? dummyAircraftRegisters.map(a => new PreplanAircraftRegister(a.id, a.name, MasterData.all.aircraftTypes.id[a.aircraftTypeId], true, dictionary[a.id]))
+      ? dummyAircraftRegisters.map(
+          a =>
+            new PreplanAircraftRegister(
+              a.id,
+              a.name,
+              MasterData.all.aircraftTypes.id[a.aircraftTypeId],
+              [{ startDate: new Date(1970, 1, 1), endDate: new Date(2070, 1, 1) }],
+              true,
+              dictionary[a.id]
+            )
+        )
       : [];
     super(masterDataItems.concat(dummyItems));
+    this.preplan = preplan;
   }
 
   resolveAircraftIdentity(aircraftIdentity: AircraftIdentity): readonly PreplanAircraftRegister[] {
@@ -63,7 +102,7 @@ export class PreplanAircraftRegisters extends MasterDataItems<PreplanAircraftReg
       case 'TYPE_DUMMY':
         return this.items.filter(r => r.aircraftType.id === aircraftIdentity.entity.id && r.dummy);
       case 'GROUP':
-        return (aircraftIdentity.entity as AircraftGroup).aircraftRegisters.map(r => this.id[r.id]);
+        return (aircraftIdentity.entity as AircraftRegisterGroup).aircraftRegisters.map(r => this.id[r.id]);
       default:
         throw 'Invalid aircraft identity type.';
     }

@@ -11,6 +11,7 @@ import PreplanListPage from './pages/preplan-list';
 import PreplanPage from './pages/preplan';
 import AppBar from './components/AppBar';
 import { SnackbarProvider } from 'notistack';
+import MasterDataModel from '@core/models/master-data/MasterDataModel';
 
 const useStyles = makeStyles((theme: Theme) => ({
   progress: {
@@ -27,7 +28,7 @@ const App: FC = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    MasterDataService.get('aircraftTypes', 'aircraftRegisters', 'airports', 'seasonTypes', 'seasons', 'stcs', 'aircraftGroups', 'constraints').then(result => {
+    MasterDataService.get(...(Object.keys(MasterData.all) as (keyof MasterDataModel)[])).then(result => {
       if (result.message) throw result.message;
       MasterData.recieve(result.value!);
       setInitializing(false);

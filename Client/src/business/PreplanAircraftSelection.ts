@@ -1,8 +1,9 @@
 import PreplanAircraftIdentity from './PreplanAircraftIdentity';
 import PreplanAircraftRegister, { PreplanAircraftRegisters } from './PreplanAircraftRegister';
 import AircraftSelectionModel from '@core/models/AircraftSelectionModel';
-import ModelConvertable, { getOverridedArray } from 'src/utils/ModelConvertable';
+import ModelConvertable, { getOverridedArray } from 'src/business/ModelConvertable';
 import DeepWritablePartial from '@core/types/DeepWritablePartial';
+import { AircraftSelection } from '@core/master-data';
 
 /**
  * A data structure describing a range of aircraft registers.
@@ -14,9 +15,29 @@ export default class PreplanAircraftSelection implements ModelConvertable<Aircra
   readonly allowedIdentities: readonly PreplanAircraftIdentity[];
   readonly forbiddenIdentities: readonly PreplanAircraftIdentity[];
 
-  constructor(raw: AircraftSelectionModel, aircraftRegisters: PreplanAircraftRegisters) {
-    this.allowedIdentities = raw.allowedIdentities.map(i => PreplanAircraftIdentity.parse(i, aircraftRegisters));
-    this.forbiddenIdentities = raw.forbiddenIdentities.map(i => PreplanAircraftIdentity.parse(i, aircraftRegisters));
+  // Computational:
+  /** All allowed and included corresponding preplan aircraft registers. */ readonly aircraftRegisters: readonly PreplanAircraftRegister[];
+  /** One weak-corresponding preplan aircraft register as backup if exists. */ readonly backupAircraftRegister?: PreplanAircraftRegister;
+
+  constructor(raw: AircraftSelectionModel | AircraftSelection, aircraftRegisters: PreplanAircraftRegisters) {
+    if (raw instanceof AircraftSelection) {
+      this.allowedIdentities = raw.allowedIdentities.map(i => PreplanAircraftIdentity.parse(i, aircraftRegisters));
+      this.forbiddenIdentities = raw.forbiddenIdentities.map(i => PreplanAircraftIdentity.parse(i, aircraftRegisters));
+    } else {
+      this.allowedIdentities = raw.allowedIdentities.map(i => PreplanAircraftIdentity.parse(i, aircraftRegisters));
+      this.forbiddenIdentities = raw.forbiddenIdentities.map(i => PreplanAircraftIdentity.parse(i, aircraftRegisters));
+    }
+
+    let allowed = new Set<PreplanAircraftRegister>();
+    this.allowedIdentities.forEach(i => i.aircraftRegisters.forEach(r => allowed.add(r)));
+    this.forbiddenIdentities.forEach(i => i.aircraftRegisters.forEach(r => allowed.delete(r)));
+    this.aircraftRegisters = Array.from(allowed).filter(r => r.options.status === 'INCLUDED');
+
+    const all = new Set<PreplanAircraftRegister>();
+    this.allowedIdentities.forEach(i => i.aircraftRegisters.forEach(r => all.add(r)));
+    allowed = new Set(all);
+    this.forbiddenIdentities.forEach(i => i.aircraftRegisters.forEach(r => allowed.delete(r)));
+    this.backupAircraftRegister = allowed.size ? allowed.values().next().value : all.size ? all.values().next().value : undefined;
   }
 
   extractModel(overrides?: DeepWritablePartial<AircraftSelectionModel>): AircraftSelectionModel {
@@ -26,26 +47,9 @@ export default class PreplanAircraftSelection implements ModelConvertable<Aircra
     };
   }
 
-  /**
-   * Returns all allowed and included corresponding preplan aircraft registers.
-   */
-  resolveIncluded(): PreplanAircraftRegister[] {
-    const allowed = new Set<PreplanAircraftRegister>();
-    this.allowedIdentities.forEach(i => i.resolve().forEach(r => allowed.add(r)));
-    this.forbiddenIdentities.forEach(i => i.resolve().forEach(r => allowed.delete(r)));
-    return Array.from(allowed).filter(r => r.options.status === 'INCLUDED');
-  }
-
-  /**
-   * Returns one weak-corresponding preplan aircraft register as backup if possible.
-   */
-  resolveBackup(): PreplanAircraftRegister | undefined {
-    const all = new Set<PreplanAircraftRegister>();
-    this.allowedIdentities.forEach(i => i.resolve().forEach(r => all.add(r)));
-    const allowed = new Set(all);
-    this.forbiddenIdentities.forEach(i => i.resolve().forEach(r => allowed.delete(r)));
-    if (allowed.size) return allowed.values().next().value;
-    if (all.size) return all.values().next().value;
-    return undefined;
+  getMinimumGroundTime(transit: boolean, international: boolean, startDate: Date, endDate?: Date, method: 'MAXIMUM' | 'MINIMUM' = 'MAXIMUM'): number {
+    const minimumGroundTimes = this.aircraftRegisters.map(a => a.getMinimumGroundTime(transit, international, startDate, endDate, method));
+    if (minimumGroundTimes.length === 0) return 0;
+    return method === 'MAXIMUM' ? Math.max(...minimumGroundTimes) : Math.min(...minimumGroundTimes);
   }
 }

@@ -38,7 +38,7 @@ const StatusBar: FC<StatusBarProps> = ({ mode, flightPack, aircraftRegister, pre
           {flightPack.flights[0].departureAirport.name}
         </Typography>
         {flightPack.flights.map(f => (
-          <Fragment>
+          <Fragment key={f.derivedId}>
             &nbsp;
             <Typography display="inline" variant="overline" classes={{ overline: classes.typograghyOverline }}>
               ({f.std.toString(true)})

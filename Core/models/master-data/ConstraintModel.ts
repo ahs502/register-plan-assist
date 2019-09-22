@@ -21,13 +21,12 @@ export default interface ConstraintModel extends MasterDataItemModel {
 
 export interface AircraftRestrictionOnAirportsConstraintDataModel {
   readonly airportIds: readonly string[];
-  readonly adverb: 'ONLY' | 'NEVER';
+  readonly restriction: 'POSITIVE_PREFERENCE' | 'NEGATIVE_PREFERENCE' | 'POSITIVE_RESTRICTION' | 'NEGATIVE_RESTRICTION';
   readonly aircraftSelection: AircraftSelectionModel;
-  readonly required: boolean;
 }
 export interface AirportRestrictionOnAircraftsConstraintDataModel {
   readonly aircraftRegisterId: string;
-  readonly airportId: string;
+  readonly airportIds: readonly string[];
 }
 export interface BlockTimeRestrictionOnAircraftsConstraintDataModel {
   readonly maximumBlockTime: number;

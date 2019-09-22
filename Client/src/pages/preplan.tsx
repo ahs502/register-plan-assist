@@ -94,9 +94,9 @@ const PreplanPage: FC = () => {
         : [],
     [preplan && preplan.aircraftRegisters]
   );
-  const aircraftGroupIdentities = useMemo<FlightRequirementModalAircraftIdentity[]>(
+  const aircraftRegisterGroupIdentities = useMemo<FlightRequirementModalAircraftIdentity[]>(
     () =>
-      MasterData.all.aircraftGroups.items.map((g, index) => ({
+      MasterData.all.aircraftRegisterGroups.items.map((g, index) => ({
         entityId: g.id,
         name: g.name,
         type: 'GROUP',
@@ -128,11 +128,10 @@ const PreplanPage: FC = () => {
       ]),
     []
   );
-  const aircraftIdentities = useMemo<FlightRequirementModalAircraftIdentity[]>(() => aircraftRegisterIdentities.concat(aircraftGroupIdentities).concat(aircraftTypeIdentities), [
-    aircraftRegisterIdentities,
-    aircraftGroupIdentities,
-    aircraftTypeIdentities
-  ]);
+  const aircraftIdentities = useMemo<FlightRequirementModalAircraftIdentity[]>(
+    () => aircraftRegisterIdentities.concat(aircraftRegisterGroupIdentities).concat(aircraftTypeIdentities),
+    [aircraftRegisterIdentities, aircraftRegisterGroupIdentities, aircraftTypeIdentities]
+  );
 
   useEffect(() => {
     //TODO: Load preplan by match.params.id from server if not loaded yet.
@@ -284,10 +283,8 @@ const PreplanPage: FC = () => {
                   }
                 };
 
-                const aircraftRegister: PreplanAircraftRegister | undefined = new PreplanAircraftSelection(
-                  scope.aircraftSelection,
-                  preplan!.aircraftRegisters
-                ).resolveIncluded()[0];
+                const aircraftRegister: PreplanAircraftRegister | undefined = new PreplanAircraftSelection(scope.aircraftSelection, preplan!.aircraftRegisters)
+                  .aircraftRegisters[0];
 
                 const model: FlightRequirementModel = {
                   id: flightRequirementModalModel.mode === 'EDIT' ? flightRequirementModalModel.flightRequirement!.id : undefined,
@@ -337,10 +334,14 @@ const PreplanPage: FC = () => {
                 let result: FlightRequirementModel | undefined;
                 let resultMessage: string | undefined;
                 if (model.id) {
+                  preplan!.stage({ mergingFlightRequirementModels: [model] });
+                  preplan!.commit();
                   const response = await PreplanService.editFlightRequirements([model]);
                   result = response.value && response.value[0];
                   resultMessage = response.message;
                 } else {
+                  preplan!.stage({ mergingFlightRequirementModels: [model] });
+                  preplan!.commit();
                   const response = await PreplanService.addFlightRequirement(preplan!.id, model);
                   result = response.value;
                   resultMessage = response.message;
@@ -424,7 +425,7 @@ const PreplanPage: FC = () => {
                     return result;
                   });
 
-                const aircraftRegister = new PreplanAircraftSelection(weekDayScope.aircraftSelection, preplan!.aircraftRegisters).resolveIncluded()[0];
+                const aircraftRegister = new PreplanAircraftSelection(weekDayScope.aircraftSelection, preplan!.aircraftRegisters).aircraftRegisters[0];
 
                 const day: WeekdayFlightRequirementModel = {
                   day: flightRequirementModalModel.day!,
@@ -459,6 +460,8 @@ const PreplanPage: FC = () => {
                   return;
                 }
 
+                preplan!.stage({ mergingFlightRequirementModels: [model] });
+                preplan!.commit();
                 const result = await PreplanService.editFlightRequirements([model]);
 
                 if (result.message) {
@@ -765,6 +768,8 @@ const PreplanPage: FC = () => {
               let resultMessage: string | undefined;
 
               if (flightRequirementModalModel.weekly || flightRequirment.days.length === 1) {
+                preplan!.stage({ removingFlightRequirementId: flightRequirementModalModel.flightRequirement!.id });
+                preplan!.commit();
                 const response = await PreplanService.removeFlightRequirement(flightRequirementModalModel.flightRequirement!.id);
                 resultMessage = response.message;
               } else if (weekfr.day !== undefined) {
@@ -833,6 +838,8 @@ const PreplanPage: FC = () => {
                   ignored: false
                 };
 
+                preplan!.stage({ mergingFlightRequirementModels: [model] });
+                preplan!.commit();
                 const response = await PreplanService.editFlightRequirements([model]);
                 resultMessage = response.message;
                 result = response.value;

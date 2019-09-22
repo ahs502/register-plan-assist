@@ -16,6 +16,7 @@
     "version-minor": "npm version --no-git-tag-version minor",
     "version-patch": "npm version --no-git-tag-version patch",
     "postversion": "node ./version.js post",
+    "status": "find . \\( -name '*.ts' -o -name '*.tsx' -o -name '*.js' -o -name '*.json' -o -name '*.html' -o -name '*.css' \\) -not \\( -path '*/node_modules/*' -o -name 'package*' -o -path '*/dist/*' -o -path '*/make/*' -o -path '*/build/*' -o -path '*/temp/*' \\) | xargs wc -l",
     "gulp": "gulp",
     "ncu": "ncu"
   },

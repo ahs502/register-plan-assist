@@ -135,7 +135,7 @@ const PreplanListPage: FC = () => {
 
   const { history } = useRouter();
   const classes = useStyles();
-  const filterPreplanHeaders = filterOnProperties(preplanHeaders, [query], ['name', 'simulationName', 'parentPreplanName']);
+  const filterPreplanHeaders = filterOnProperties(preplanHeaders, [query], 'name', 'simulationName', 'parentPreplanName');
   return (
     <Fragment>
       <NavBar

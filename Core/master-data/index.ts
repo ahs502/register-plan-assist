@@ -12,6 +12,6 @@ export { default as Airport, Airports } from './Airport';
 export { default as SeasonType, SeasonTypes } from './SeasonType';
 export { default as Season, Seasons } from './Season';
 export { default as Stc, Stcs } from './Stc';
-export { default as AircraftGroup, AircraftGroups } from './AircraftGroup';
+export { default as AircraftRegisterGroup, AircraftRegisterGroups } from './AircraftRegisterGroup';
 export { default as ConstraintTemplate, ConstraintTemplates } from './ConstraintTemplate';
 export { default as Constraint, Constraints } from './Constraint';

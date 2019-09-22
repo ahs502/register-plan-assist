@@ -74,10 +74,13 @@ export default class Preplan extends PreplanHeader {
   constructor(raw: PreplanModel) {
     super(raw);
     this.autoArrangerOptions = raw.autoArrangerOptions ? new AutoArrangerOptions(raw.autoArrangerOptions) : AutoArrangerOptions.default;
-    this.aircraftRegisters = this.stagedAircraftRegisters = new PreplanAircraftRegisters(raw.dummyAircraftRegisters, raw.aircraftRegisterOptionsDictionary);
+    this.aircraftRegisters = this.stagedAircraftRegisters = new PreplanAircraftRegisters(raw.dummyAircraftRegisters, raw.aircraftRegisterOptionsDictionary, this);
     this.flightRequirements = this.stagedFlightRequirements = raw.flightRequirements.map(f => new FlightRequirement(f, this.aircraftRegisters));
     this.autoArrangerState = raw.autoArrangerState && new AutoArrangerState(raw.autoArrangerState, this.aircraftRegisters, this.flights);
     this.constraintSystem = new ConstraintSystem(this);
+
+    // eslint-disable-next-line no-unused-expressions
+    this.flightPacks; // In order to initiate the property 'pack' of flights.
   }
 
   private _flights?: readonly Flight[];
@@ -90,7 +93,18 @@ export default class Preplan extends PreplanHeader {
     return (this._flights = this.flightRequirements
       .filter(f => !f.ignored)
       .map(w => w.days.map(d => d.flight))
-      .flatten());
+      .flatten()
+      .sortBy(f => f.weekStd));
+  }
+
+  private _flightsByRegister?: { [aircraftRegisterId: string]: readonly Flight[] };
+  /**
+   * Gets the flattened list of this preplan's flights, grouped by their aircraft register id ('???' for not existing aircraft registers).
+   * It won't be changed by reference until something is changed within.
+   */
+  get flightsByRegister(): { [aircraftRegisterId: string]: readonly Flight[] } {
+    if (this._flightsByRegister) return this._flightsByRegister;
+    return (this._flightsByRegister = this.flights.groupBy(f => (f.aircraftRegister ? f.aircraftRegister.id : '???')));
   }
 
   private _flightPacks?: readonly FlightPack[];
@@ -105,7 +119,7 @@ export default class Preplan extends PreplanHeader {
     for (const label in flightsByLabel) {
       const flightsByRegister = flightsByLabel[label].groupBy(f => (f.aircraftRegister ? f.aircraftRegister.id : '???'));
       for (const register in flightsByRegister) {
-        const flightGroup = flightsByRegister[register].sortByDescending(f => f.day * 24 * 60 + f.std.minutes);
+        const flightGroup = flightsByRegister[register].reverse();
         while (flightGroup.length) {
           const flight = flightGroup.pop()!;
           let lastFlight = flight;
@@ -179,7 +193,7 @@ export default class Preplan extends PreplanHeader {
     removingFlightRequirementId?: string;
   }): ObjectionDiff {
     this.stagedAircraftRegisters = changes.updatingAircraftRegisters
-      ? new PreplanAircraftRegisters(changes.updatingAircraftRegisters.dummyAircraftRegisters, changes.updatingAircraftRegisters.aircraftRegisterOptionsDictionary)
+      ? new PreplanAircraftRegisters(changes.updatingAircraftRegisters.dummyAircraftRegisters, changes.updatingAircraftRegisters.aircraftRegisterOptionsDictionary, this)
       : this.aircraftRegisters;
 
     this.stagedFlightRequirements = changes.mergingFlightRequirementModels

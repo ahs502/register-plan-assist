@@ -1,5 +1,4 @@
 import AircraftIdentityModel, { AircraftIdentityValidation } from './AircraftIdentityModel';
-import DummyAircraftRegisterModel from './DummyAircraftRegisterModel';
 import Validation from '@ahs502/validation';
 
 export default interface AircraftSelectionModel {

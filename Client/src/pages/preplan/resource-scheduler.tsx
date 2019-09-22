@@ -161,6 +161,14 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
   );
   const onFreezeFlightPackMemoized = useCallback(async (flightPack: FlightPack, freezed: boolean) => {
     setResourceSchedulerViewModel(resourceSchedulerViewModel => ({ ...resourceSchedulerViewModel, loading: true }));
+    preplan.stage({
+      mergingFlightRequirementModels: flightPack.flights.map(f =>
+        f.requirement.extractModel({
+          days: { [f.requirement.days.findIndex(d => d.day === f.day)]: { freezed } }
+        })
+      )
+    });
+    preplan.commit();
     const result = await PreplanService.editFlightRequirements(
       flightPack.flights.map(f =>
         f.requirement.extractModel({
@@ -173,6 +181,14 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
   }, []);
   const onRequireFlightPackMemoized = useCallback(async (flightPack: FlightPack, required: boolean) => {
     setResourceSchedulerViewModel(resourceSchedulerViewModel => ({ ...resourceSchedulerViewModel, loading: true }));
+    preplan.stage({
+      mergingFlightRequirementModels: flightPack.flights.map(f =>
+        f.requirement.extractModel({
+          days: { [f.requirement.days.findIndex(d => d.day === f.day)]: { scope: { required } } }
+        })
+      )
+    });
+    preplan.commit();
     const result = await PreplanService.editFlightRequirements(
       flightPack.flights.map(f =>
         f.requirement.extractModel({
@@ -217,6 +233,21 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
   }, []);
   const onFlightPackDragAndDropMemoized = useCallback(async (flightPack: FlightPack, deltaStd: number, newAircraftRegister?: PreplanAircraftRegister) => {
     setResourceSchedulerViewModel(resourceSchedulerViewModel => ({ ...resourceSchedulerViewModel, loading: true }));
+    preplan.stage({
+      mergingFlightRequirementModels: flightPack.flights.map(f =>
+        f.requirement.extractModel({
+          days: {
+            [f.requirement.days.findIndex(d => d.day === f.day)]: {
+              flight: {
+                std: f.std.minutes + deltaStd,
+                aircraftRegisterId: newAircraftRegister && newAircraftRegister.id
+              }
+            }
+          }
+        })
+      )
+    });
+    preplan.commit();
     const result = await PreplanService.editFlightRequirements(
       flightPack.flights.map(f =>
         f.requirement.extractModel({
@@ -335,6 +366,8 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
             errorMessage={sideBarState.errorMessage}
             onApply={async (dummyAircraftRegisters, aircraftRegisterOptionsDictionary) => {
               setSideBarState(sideBarState => ({ ...sideBarState, loading: true, errorMessage: '' }));
+              preplan.stage({ updatingAircraftRegisters: { dummyAircraftRegisters, aircraftRegisterOptionsDictionary } });
+              preplan.commit();
               const result = await PreplanService.setAircraftRegisters(preplan.id, dummyAircraftRegisters, aircraftRegisterOptionsDictionary);
               result.message
                 ? setSideBarState(sideBarState => ({ ...sideBarState, loading: false, errorMessage: result.message }))
@@ -397,6 +430,8 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
               });
 
               //TODO: change included sp, get multi flightRequirments id
+              preplan.stage({ mergingFlightRequirementModels: newFlightRequirementsModel });
+              preplan.commit();
               const result = await PreplanService.editFlightRequirements(newFlightRequirementsModel);
 
               if (result.message) {
@@ -467,6 +502,8 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
                 })
               );
 
+              preplan.stage({ mergingFlightRequirementModels: models });
+              preplan.commit();
               const result = await PreplanService.editFlightRequirements(models);
 
               if (result.message) {
@@ -639,6 +676,8 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
                   }
                 }
               });
+              preplan.stage({ mergingFlightRequirementModels: [model] });
+              preplan.commit();
               const result = await PreplanService.editFlightRequirements([model]);
 
               if (result.message) {

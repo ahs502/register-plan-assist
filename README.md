@@ -30,7 +30,7 @@ To check and install available updates for all dependencies:
 
 #### Version
 
-To increment version after committing every staged changes:
+To increment version, after committing every staged changes:
 
     $ npm run version-patch   # or
     $ npm run version-minor   # or

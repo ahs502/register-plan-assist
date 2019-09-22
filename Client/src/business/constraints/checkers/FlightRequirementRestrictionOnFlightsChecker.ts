@@ -11,7 +11,7 @@ export default class FlightRequirementRestrictionOnFlightsChecker extends Checke
 
   check(): Objection[] {
     const objections: Objection[] = [];
-    this.preplan.flights.forEach(f => {
+    this.constraintSystem.flights.forEach(f => {
       const requiredFit = !f.weekdayRequirement.scope.required || (f.aircraftRegister && f.aircraftRegister.options.status === 'INCLUDED');
       if (!requiredFit)
         return objections.push(

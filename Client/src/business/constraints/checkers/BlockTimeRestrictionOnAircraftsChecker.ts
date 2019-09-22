@@ -19,7 +19,7 @@ export default class BlockTimeRestrictionOnAircraftsChecker extends Checker {
 
   check(): Objection[] {
     const objections: Objection[] = [];
-    this.preplan.flightRequirements.forEach(r => {
+    this.preplan.stagedFlightRequirements.forEach(r => {
       const commonCount = r.scope.aircraftSelection.aircraftRegisters.filter(a => this.aircraftRegisters.includes(a)).length;
       if (commonCount === r.scope.aircraftSelection.aircraftRegisters.length)
         return objections.push(r.issueObjection('ERROR', 12345, this, constraintMarker => `${constraintMarker} is violated by ${r.marker}.`));

@@ -86,6 +86,9 @@ export default class ConstraintSystem {
   }
 
   private check(): Objection[] {
+    delete this._flights;
+    delete this._flightsByRegister;
+    delete this._flightEventsByRegister;
     return Objection.sort(this.checkers.flatMap(checker => checker.check()));
   }
 
@@ -100,6 +103,7 @@ export default class ConstraintSystem {
       modified.push(s);
     });
     const resolved = this.objections.filter(o => !this.stagedObjections.some(s => o.derivedId === s.derivedId));
+    console.log({ introduced, resolved, modified });
     return { introduced, resolved, modified };
   }
   commit(): void {
@@ -118,9 +122,33 @@ export default class ConstraintSystem {
       o.target.objections || (o.target.objections = []);
       o.target.objections.push(o);
     });
+    console.log(this.objections);
   }
 
   private _flights?: readonly Flight[];
+  /**
+   * Gets the flattened list of this preplan's flights.
+   * It won't be changed by reference until something is changed within.
+   */
+  get flights(): readonly Flight[] {
+    if (this._flights) return this._flights;
+    return (this._flights = this.preplan.stagedFlightRequirements
+      .filter(f => !f.ignored)
+      .map(w => w.days.map(d => d.flight))
+      .flatten()
+      .sortBy(f => f.weekStd));
+  }
+
+  private _flightsByRegister?: { [aircraftRegisterId: string]: readonly Flight[] };
+  /**
+   * Gets the flattened list of this preplan's flights, grouped by their aircraft register id ('???' for not existing aircraft registers).
+   * It won't be changed by reference until something is changed within.
+   */
+  get flightsByRegister(): { [aircraftRegisterId: string]: readonly Flight[] } {
+    if (this._flightsByRegister) return this._flightsByRegister;
+    return (this._flightsByRegister = this.flights.groupBy(f => (f.aircraftRegister ? f.aircraftRegister.id : '???')));
+  }
+
   private _flightEventsByRegister?: FlightEventDictionary;
   /**
    * A dictionary of ascending time sorted flight events by aircraft register id (except for unknown register '???').
@@ -129,12 +157,10 @@ export default class ConstraintSystem {
    * another two for the same thing for the flight's next week round.
    */
   get flightEventsByRegister(): FlightEventDictionary {
-    if (this.preplan.flights !== this._flights) delete this._flightEventsByRegister;
     if (this._flightEventsByRegister) return this._flightEventsByRegister;
-    this._flights = this.preplan.flights;
-    return (this._flightEventsByRegister = Object.keys(this.preplan.flightsByRegister).reduce<FlightEventDictionary>((dictionary, registerId) => {
+    return (this._flightEventsByRegister = Object.keys(this.flightsByRegister).reduce<FlightEventDictionary>((dictionary, registerId) => {
       if (registerId === '???') return dictionary;
-      dictionary[registerId] = this.preplan.flightsByRegister[registerId]
+      dictionary[registerId] = this.flightsByRegister[registerId]
         .flatMap<FlightEvent>(f => {
           const superFlight = { flight: f, nextRound: false };
           const nextRoundSuperFlight = { flight: f, nextRound: true };

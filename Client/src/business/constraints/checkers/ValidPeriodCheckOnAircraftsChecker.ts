@@ -10,7 +10,7 @@ export default class ValidPeriodCheckOnAircraftsChecker extends Checker {
   }
 
   check(): Objection[] {
-    return this.preplan.aircraftRegisters.items
+    return this.preplan.stagedAircraftRegisters.items
       .filter(a => a.options.status !== 'IGNORED' && !a.validPeriods.some(p => Date.intervalCovers(p.startDate, p.endDate, this.preplan.startDate, this.preplan.endDate)))
       .map(
         a =>

@@ -23,7 +23,6 @@ router.post(
   '/get',
   requestMiddlewareWithDbAccess<{ collections: (keyof MasterDataModel)[] }, MasterDataModel>(async (userId, { collections }, { runQuery }) => {
     //TODO: Check user access here...
-    //TODO: Implement aircraftGroups & constraints too.
 
     const MasterDataModel: MasterDataModel = {
       aircraftTypes: collections.includes('aircraftTypes') ? await getAircraftTypes() : undefined,
@@ -41,7 +40,7 @@ router.post(
 
     async function getAircraftTypes(): Promise<readonly AircraftTypeModel[]> {
       const rawAircraftTypes: readonly {
-        id: string;
+        id: number;
         name: string;
         displayName: string;
         turnroundStartDate: string;
@@ -74,7 +73,7 @@ router.post(
       return Object.values(rawAircraftTypes.groupBy('id')).map(group => {
         const sample = group[0];
         return {
-          id: sample.id,
+          id: String(sample.id),
           name: sample.name,
           displayOrder: JSON.parse(sample.displayName),
           turnrounds: group.map(t => {
@@ -95,9 +94,9 @@ router.post(
 
     async function getAircraftRegisters(): Promise<readonly AircraftRegisterModel[]> {
       const rawAircraftRegisters: {
-        id: string;
+        id: number;
         name: string;
-        aircraftTypeId: string;
+        aircraftTypeId: number;
         periodStartDate: string;
         periodEndDate: string;
       }[] = await runQuery(
@@ -120,9 +119,9 @@ router.post(
       return Object.values(rawAircraftRegisters.groupBy('id')).map(group => {
         const sample = group[0];
         return {
-          id: sample.id,
+          id: String(sample.id),
           name: sample.name,
-          aircraftTypeId: sample.aircraftTypeId,
+          aircraftTypeId: String(sample.aircraftTypeId),
           validPeriods: group.sortBy('periodStartDate').reduce<AircraftRegisterModel['validPeriods'][number][]>((result, r) => {
             const lastValidPeriod = result[result.length - 1];
             if (lastValidPeriod && new Date(lastValidPeriod.endDate).getDatePart().addDays(1) === new Date(r.periodStartDate).getDatePart()) {
@@ -141,7 +140,7 @@ router.post(
 
     async function getAirports(): Promise<readonly AirportModel[]> {
       const rawAirports: readonly {
-        id: string;
+        id: number;
         name: string;
         fullName: string;
         international: boolean;
@@ -180,7 +179,7 @@ router.post(
       return Object.values(rawAirports.groupBy('id')).map(group => {
         const sample = group[0];
         return {
-          id: sample.id,
+          id: String(sample.id),
           name: sample.name,
           fullName: sample.fullName,
           international: sample.international,
@@ -199,7 +198,10 @@ router.post(
     }
 
     async function getSeasonTypes(): Promise<readonly SeasonTypeModel[]> {
-      return await runQuery(
+      const rawSeasonTypes: readonly {
+        id: number;
+        name: string;
+      }[] = await runQuery(
         `
           select
             [Id]                        as [id],
@@ -208,15 +210,20 @@ router.post(
             [MasterData].[SeasonType]
         `
       );
+
+      return rawSeasonTypes.map(s => ({
+        id: String(s.id),
+        name: s.name
+      }));
     }
 
     async function getSeasons(): Promise<readonly SeasonModel[]> {
       const rawSeasons: readonly {
-        id: string;
+        id: number;
         name: string;
         startDate: string;
         endDate: string;
-        seasonTypeId: string;
+        seasonTypeId: number;
       }[] = await runQuery(
         `
           select
@@ -231,16 +238,20 @@ router.post(
       );
 
       return rawSeasons.map(c => ({
-        id: c.id,
+        id: String(c.id),
         name: c.name,
         startDate: new Date(c.startDate).toJSON(),
         endDate: new Date(c.endDate).toJSON(),
-        seasonTypeId: c.endDate
+        seasonTypeId: String(c.endDate)
       }));
     }
 
     async function getStcs(): Promise<readonly StcModel[]> {
-      return await runQuery(
+      const rawStcs: readonly {
+        id: number;
+        name: string;
+        description: string;
+      }[] = await runQuery(
         `
           select
             [Id]                        as [id],
@@ -250,11 +261,17 @@ router.post(
             [MasterData].[Stc]
         `
       );
+
+      return rawStcs.map(s => ({
+        id: String(s.id),
+        name: s.name,
+        description: s.description
+      }));
     }
 
     async function getAircraftRegisterGroups(): Promise<readonly AircraftRegisterGroupModel[]> {
       const rawAircraftRegisterGroups: readonly {
-        id: string;
+        id: number;
         name: string;
         aircraftRegistersXml: string;
       }[] = await runQuery(
@@ -269,7 +286,7 @@ router.post(
       );
 
       return rawAircraftRegisterGroups.map(g => ({
-        id: g.id,
+        id: String(g.id),
         name: g.name,
         aircraftRegisterIds: xmlArray(xmlParse(g.aircraftRegistersXml, 'AircraftRegisters')['AircraftRegister']).map(a => a._attributes.Id)
       }));
@@ -277,7 +294,7 @@ router.post(
 
     async function getConstraintTemplates(): Promise<readonly ConstraintTemplateModel[]> {
       const rawConstraintTemplates: readonly {
-        id: string;
+        id: number;
         name: string;
         type: ConstraintTemplateType;
         instantiable: boolean;
@@ -298,7 +315,7 @@ router.post(
       );
 
       return rawConstraintTemplates.map(t => ({
-        id: t.id,
+        id: String(t.id),
         name: t.name,
         type: t.type,
         instantiable: t.instantiable,
@@ -320,13 +337,13 @@ router.post(
 
     async function getConstraints(): Promise<readonly ConstraintModel[]> {
       const rawConstraints: readonly {
-        id: string;
+        id: number;
         name: string;
         type: ConstraintTemplateType;
         details: string;
         fromDate?: string;
         toDate?: string;
-        seasonTypeId?: string;
+        seasonTypeId?: number;
         daysXml: string;
         dataXml: string;
       }[] = await runQuery(
@@ -349,7 +366,7 @@ router.post(
       return rawConstraints.map(c => {
         const dataKeys =
           c.type === 'AIRCRAFT_RESTRICTION_ON_AIRPORTS'
-            ? ['airportId', 'restriction', 'aircraftSelection']
+            ? ['airportIds', 'restriction', 'aircraftSelection']
             : c.type === 'AIRPORT_RESTRICTION_ON_AIRCRAFTS'
             ? ['aircraftRegisterId', 'airportIds']
             : c.type === 'BLOCK_TIME_RESTRICTION_ON_AIRCRAFTS'
@@ -401,15 +418,15 @@ router.post(
         });
 
         return {
-          id: c.id,
+          id: String(c.id),
           name: c.name,
           type: c.type,
           details: c.details,
           scope: {
             fromDate: c.fromDate && new Date(c.fromDate).toJSON(),
             toDate: c.toDate && new Date(c.toDate).toJSON(),
-            seasonTypeId: c.seasonTypeId,
-            days: xmlArray(xmlParse(c.daysXml, 'Days')['Day']).reduce((days, d) => (days[d._attributes.Index] = true), Array.range(0, 6).map(() => false))
+            seasonTypeId: c.seasonTypeId === undefined ? undefined : String(c.seasonTypeId),
+            days: xmlArray(xmlParse(c.daysXml, 'Days')['Day']).reduce((days, d) => ((days[d._attributes.Index] = true), days), Array.range(0, 6).map(() => false))
           },
           data: dataKeys.reduce<any>((data, k) => ((data[k] = dataValues.shift()), data), {})
         };

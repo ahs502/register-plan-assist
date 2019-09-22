@@ -334,10 +334,14 @@ const PreplanPage: FC = () => {
                 let result: FlightRequirementModel | undefined;
                 let resultMessage: string | undefined;
                 if (model.id) {
+                  preplan!.stage({ mergingFlightRequirementModels: [model] });
+                  preplan!.commit();
                   const response = await PreplanService.editFlightRequirements([model]);
                   result = response.value && response.value[0];
                   resultMessage = response.message;
                 } else {
+                  preplan!.stage({ mergingFlightRequirementModels: [model] });
+                  preplan!.commit();
                   const response = await PreplanService.addFlightRequirement(preplan!.id, model);
                   result = response.value;
                   resultMessage = response.message;
@@ -456,6 +460,8 @@ const PreplanPage: FC = () => {
                   return;
                 }
 
+                preplan!.stage({ mergingFlightRequirementModels: [model] });
+                preplan!.commit();
                 const result = await PreplanService.editFlightRequirements([model]);
 
                 if (result.message) {
@@ -762,6 +768,8 @@ const PreplanPage: FC = () => {
               let resultMessage: string | undefined;
 
               if (flightRequirementModalModel.weekly || flightRequirment.days.length === 1) {
+                preplan!.stage({ removingFlightRequirementId: flightRequirementModalModel.flightRequirement!.id });
+                preplan!.commit();
                 const response = await PreplanService.removeFlightRequirement(flightRequirementModalModel.flightRequirement!.id);
                 resultMessage = response.message;
               } else if (weekfr.day !== undefined) {
@@ -830,6 +838,8 @@ const PreplanPage: FC = () => {
                   ignored: false
                 };
 
+                preplan!.stage({ mergingFlightRequirementModels: [model] });
+                preplan!.commit();
                 const response = await PreplanService.editFlightRequirements([model]);
                 resultMessage = response.message;
                 result = response.value;

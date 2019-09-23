@@ -1,6 +1,6 @@
 {
   "name": "register-plan-assist-server",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Intelligent Flight Scheduler - Server",
   "main": "src/index.ts",

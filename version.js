@@ -18,7 +18,8 @@ switch (process.argv[2]) {
       `npm version --prefix Core ${package.version} && ` +
         `npm version --prefix Server ${package.version} && ` +
         `npm version --prefix Client ${package.version} && ` +
-        `git commit -am"${package.version}"`,
+        `git commit -am"${package.version}" && ` +
+        `git push origin master`,
       // + ` && git tag ${package.version}`, // It will be done with TFS automatically after build.
       (error, stdout, stderr) => {
         if (error) throw stderr;

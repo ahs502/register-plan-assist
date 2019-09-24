@@ -184,7 +184,7 @@ const useStyles = makeStyles((theme: Theme) => ({
         textShadow:
           '0 0 1px #777, 1px 0px 1px white, 1px 1px 1px white, 0px 1px 1px white, -1px 1px 1px white, -1px 0px 1px white, -1px -1px 1px white, 0px -1px 1px white, 1px -1px 1px white, 0 3px 4px black'
       },
-      '& .rpa-dot': {
+      '& .rpa-pin': {
         display: 'inline-block',
         height: 5,
         width: 5,
@@ -192,13 +192,10 @@ const useStyles = makeStyles((theme: Theme) => ({
         backgroundColor: 'white',
         border: '1px solid black',
         position: 'absolute',
-        '&.rpa-dot-semi': {
-          opacity: 0.4
-        },
-        '&.rpa-dot-left': { left: 1 },
-        '&.rpa-dot-right': { right: 1 },
-        '&.rpa-dot-top': { top: 1 },
-        '&.rpa-dot-bottom': { bottom: 1 }
+        '&.rpa-pin-left': { left: 1 },
+        '&.rpa-pin-right': { right: 1 },
+        '&.rpa-pin-top': { top: 1 },
+        '&.rpa-pin-bottom': { bottom: 1 }
       }
     },
     '.rpa-item-footer': {
@@ -513,17 +510,17 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = memo(
             ${
               flightPack.freezed === true
                 ? `
-                  <span class="rpa-dot rpa-dot-full rpa-dot-top rpa-dot-left"></span>
-                  <span class="rpa-dot rpa-dot-full rpa-dot-top rpa-dot-right"></span>
-                  <span class="rpa-dot rpa-dot-full rpa-dot-bottom rpa-dot-left"></span>
-                  <span class="rpa-dot rpa-dot-full rpa-dot-bottom rpa-dot-right"></span>
+                  <span class="rpa-pin rpa-pin-top rpa-pin-left"></span>
+                  <span class="rpa-pin rpa-pin-top rpa-pin-right"></span>
+                  <span class="rpa-pin rpa-pin-bottom rpa-pin-left"></span>
+                  <span class="rpa-pin rpa-pin-bottom rpa-pin-right"></span>
                 `
                 : flightPack.freezed === undefined
                 ? `
-                  <span class="rpa-dot rpa-dot-semi rpa-dot-top rpa-dot-left"></span>
-                  <span class="rpa-dot rpa-dot-semi rpa-dot-top rpa-dot-right"></span>
-                  <span class="rpa-dot rpa-dot-semi rpa-dot-bottom rpa-dot-left"></span>
-                  <span class="rpa-dot rpa-dot-semi rpa-dot-bottom rpa-dot-right"></span>
+                  <span class="rpa-pin rpa-pin-top rpa-pin-left"></span>
+                  <!--<span class="rpa-pin rpa-pin-top rpa-pin-right"></span>-->
+                  <!--<span class="rpa-pin rpa-pin-bottom rpa-pin-left"></span>-->
+                  <span class="rpa-pin rpa-pin-bottom rpa-pin-right"></span>
                 `
                 : ''
             }

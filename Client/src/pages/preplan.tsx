@@ -153,15 +153,23 @@ const PreplanPage: FC = () => {
     });
   }, [match.params.id]);
 
-  const resourceSchedulerPageSelected = window.location.href.startsWith(`${window.location.host}/#${match.url}/resource-scheduler`);
-  const flightRequirementListPageSelected = window.location.href.startsWith(`${window.location.host}/#${match.url}/flight-requirement-list`);
-  const reportsPageSelected = window.location.href.startsWith(`${window.location.host}/#${match.url}/reports`);
+  const resourceSchedulerPageSelected = window.location.href.startsWith(`${window.location.origin}/#${match.url}/resource-scheduler`);
+  const flightRequirementListPageSelected = window.location.href.startsWith(`${window.location.origin}/#${match.url}/flight-requirement-list`);
+  const reportsPageSelected = window.location.href.startsWith(`${window.location.origin}/#${match.url}/reports`);
+  const reportsProposalPageSelected = reportsPageSelected && window.location.hash.endsWith('/proposal');
+  const reportsConnectionsPageSelected = reportsPageSelected && window.location.hash.endsWith('/connections');
 
   return (
     <Fragment>
       <NavBar
-        backLink={resourceSchedulerPageSelected ? '/preplan-list' : match.url}
-        backTitle={resourceSchedulerPageSelected ? 'Back to Pre Plan List' : `Back to Pre Plan ${preplan && preplan.name}`}
+        backLink={resourceSchedulerPageSelected ? '/preplan-list' : reportsProposalPageSelected || reportsConnectionsPageSelected ? `${match.url}/reports` : match.url}
+        backTitle={
+          resourceSchedulerPageSelected
+            ? 'Back to Pre Plan List'
+            : reportsProposalPageSelected || reportsConnectionsPageSelected
+            ? `Back to Pre Plan ${preplan && preplan.name} Reports`
+            : `Back to Pre Plan ${preplan && preplan.name}`
+        }
         navBarLinks={[
           {
             title: 'Pre Plans',
@@ -179,16 +187,14 @@ const PreplanPage: FC = () => {
             title: 'Reports',
             link: `${match.url}/reports`
           },
-          reportsPageSelected &&
-            window.location.hash.endsWith('/proposal') && {
-              title: 'Proposal Report',
-              link: `${match.url}/reports/proposal`
-            },
-          reportsPageSelected &&
-            window.location.hash.endsWith('/connections') && {
-              title: 'Connections Report',
-              link: `${match.url}/reports/connections`
-            }
+          reportsProposalPageSelected && {
+            title: 'Proposal Report',
+            link: `${match.url}/reports/proposal`
+          },
+          reportsConnectionsPageSelected && {
+            title: 'Connections Report',
+            link: `${match.url}/reports/connections`
+          }
         ]}
       >
         <div ref={navBarToolsRef} />

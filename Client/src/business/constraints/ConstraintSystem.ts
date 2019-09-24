@@ -103,7 +103,6 @@ export default class ConstraintSystem {
       modified.push(s);
     });
     const resolved = this.objections.filter(o => !this.stagedObjections.some(s => o.derivedId === s.derivedId));
-    console.log({ introduced, resolved, modified });
     return { introduced, resolved, modified };
   }
   commit(): void {
@@ -122,7 +121,6 @@ export default class ConstraintSystem {
       o.target.objections || (o.target.objections = []);
       o.target.objections.push(o);
     });
-    console.log(this.objections);
   }
 
   private _flights?: readonly Flight[];

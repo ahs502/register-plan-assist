@@ -1,4 +1,4 @@
-import React, { FC, useState, useEffect } from 'react';
+import React, { FC, useState, useEffect, useCallback } from 'react';
 
 import { CircularProgress, Theme } from '@material-ui/core';
 import { ThemeProvider, makeStyles } from '@material-ui/styles';
@@ -35,7 +35,7 @@ const App: FC = () => {
     });
   }, []);
 
-  RequestManager.onProcessingChanged = processing => setLoading(processing);
+  RequestManager.onProcessingChanged = useCallback(processing => setLoading(processing), []);
 
   const classes = useStyles();
 

@@ -9,9 +9,9 @@ export default class RequestManager {
   static onProcessingChanged?(processing: boolean): void;
 
   static async request<R>(service: string, command: string, data?: any): Promise<ServerResult<R>> {
-    // RequestManager.onProcessingChanged && RequestManager.onProcessingChanged(true);
+    RequestManager.onProcessingChanged && RequestManager.onProcessingChanged(true);
     const result = await send();
-    // RequestManager.onProcessingChanged && RequestManager.onProcessingChanged(false);
+    RequestManager.onProcessingChanged && RequestManager.onProcessingChanged(false);
     return result;
 
     async function send() {

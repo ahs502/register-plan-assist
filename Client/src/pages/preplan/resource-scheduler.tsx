@@ -26,7 +26,7 @@ import { parseMinute, parseHHMM } from 'src/utils/model-parsers';
 import MasterData from '@core/master-data';
 import StatusBar, { StatusBarProps } from 'src/components/preplan/resource-scheduler/StatusBar';
 import DeepWritablePartial from '@core/types/DeepWritablePartial';
-import { FlightScopeModel } from '@core/models/flights/FlightScopeModel';
+import FlightScopeModel from '@core/models/flights/FlightScopeModel';
 import WeekdayFlightRequirementModel from '@core/models/flights/WeekdayFlightRequirementModel';
 
 const useStyles = makeStyles((theme: Theme) => ({

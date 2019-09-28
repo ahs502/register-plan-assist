@@ -7,9 +7,9 @@ export default interface EditPreplanModel {
   readonly endDate: string;
 }
 
-//TODO: Not implemented.
-export class EditPreplanModelValidation extends Validation<''> {
-  constructor(editPreplan: EditPreplanModel, userPreplanNames: string[]) {
-    super(validator => {});
-  }
-}
+// //TODO: Not implemented.
+// export class EditPreplanModelValidation extends Validation<''> {
+//   constructor(editPreplan: EditPreplanModel, userPreplanNames: string[]) {
+//     super(validator => {});
+//   }
+// }

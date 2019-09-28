@@ -10,8 +10,8 @@ import { PreplanHeader } from 'src/business/Preplan';
 import SimpleModal from 'src/components/SimpleModal';
 import persistant from 'src/utils/persistant';
 import PreplanService from 'src/services/PreplanService';
-import NewPreplanModel, { NewPreplanModelValidation } from '@core/models/NewPreplanModel';
-import EditPreplanModel, { EditPreplanModelValidation } from '@core/models/EditPreplanModel';
+import NewPreplanModel from '@core/models/NewPreplanModel';
+import EditPreplanModel from '@core/models/EditPreplanModel';
 import useRouter from 'src/utils/useRouter';
 import { VariantType, useSnackbar } from 'notistack';
 import ProgressSwitch from 'src/components/ProgressSwitch';
@@ -340,12 +340,12 @@ const PreplanListPage: FC = () => {
                 endDate: Date.toJSON(newPreplanModalModel.endDate)
               };
 
-              const validation = new NewPreplanModelValidation(model, preplanHeaders.filter(s => s.userId === persistant.user!.id).map(p => p.name));
-              if (!validation.ok) {
-                //TODO: Show error messages of form fields.
-                setNewPreplanModalModel({ ...newPreplanModalModel, loading: false });
-                return;
-              }
+              // const validation = new NewPreplanModelValidation(model, preplanHeaders.filter(s => s.userId === persistant.user!.id).map(p => p.name));
+              // if (!validation.ok) {
+              //   //TODO: Show error messages of form fields.
+              //   setNewPreplanModalModel({ ...newPreplanModalModel, loading: false });
+              //   return;
+              // }
 
               const result = await PreplanService.createEmpty(model);
               if (result.message) {
@@ -412,13 +412,13 @@ const PreplanListPage: FC = () => {
                 endDate: Date.toJSON(editPreplanModalModel.endDate)
               };
 
-              const validation = new EditPreplanModelValidation(model, preplanHeaders.filter(s => s.userId === persistant.user!.id && s.id !== model.id).map(p => p.name));
+              // const validation = new EditPreplanModelValidation(model, preplanHeaders.filter(s => s.userId === persistant.user!.id && s.id !== model.id).map(p => p.name));
 
-              if (!validation.ok) {
-                //TODO: Show error messages of form fields.
-                setEditPreplanModalModel({ ...editPreplanModalModel, loading: false });
-                return;
-              }
+              // if (!validation.ok) {
+              //   //TODO: Show error messages of form fields.
+              //   setEditPreplanModalModel({ ...editPreplanModalModel, loading: false });
+              //   return;
+              // }
 
               const result = await PreplanService.editHeader(model);
               if (result.message) {
@@ -487,13 +487,13 @@ const PreplanListPage: FC = () => {
                 endDate: Date.toJSON(copyPreplanModalModel.endDate)
               };
 
-              const validation = new NewPreplanModelValidation(model, preplanHeaders.filter(s => s.userId === persistant.user!.id).map(p => p.name));
+              // const validation = new NewPreplanModelValidation(model, preplanHeaders.filter(s => s.userId === persistant.user!.id).map(p => p.name));
 
-              if (!validation.ok) {
-                //TODO: Show error messages of form fields.
-                setCopyPreplanModalModel({ ...copyPreplanModalModel, loading: false });
-                return;
-              }
+              // if (!validation.ok) {
+              //   //TODO: Show error messages of form fields.
+              //   setCopyPreplanModalModel({ ...copyPreplanModalModel, loading: false });
+              //   return;
+              // }
 
               const result = await PreplanService.clone(copyPreplanModalModel.id!, model);
               if (result.message) {

@@ -1,4 +1,4 @@
-import { FlightScopeModel } from '@core/models/flights/FlightScopeModel';
+import FlightScopeModel from '@core/models/flights/FlightScopeModel';
 import Rsx from '@core/types/flight-requirement/Rsx';
 import { XmlArray, xmlArray } from 'src/utils/xml';
 import FlightTimeEntity, { convertFlightTimeEntityToModel, convertFlightTimeModelToEntity } from './FlightTimeEntity';

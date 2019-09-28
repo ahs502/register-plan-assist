@@ -5,7 +5,7 @@ import { DbAccess } from 'src/utils/sqlServer';
 import FlightRequirementEntity, { convertFlightRequirementEntityToModel } from 'src/entities/flight/FlightRequirementEntity';
 import PreplanModel, { PreplanHeaderModel } from '@core/models/PreplanModel';
 import { requestMiddlewareWithDbAccess } from 'src/utils/requestMiddleware';
-import NewPreplanModel, { NewPreplanModelValidation } from '@core/models/NewPreplanModel';
+import NewPreplanModel from '@core/models/NewPreplanModel';
 import EditPreplanModel from '@core/models/EditPreplanModel';
 import FlightRequirementModel from '@core/models/flights/FlightRequirementModel';
 import { TYPES } from 'tedious';
@@ -33,7 +33,7 @@ router.post(
   '/create-empty',
   requestMiddlewareWithDbAccess<NewPreplanModel, string>(async (userId, newPreplan, { runSp, runQuery }) => {
     const userPreplanNames: string[] = await runQuery(`select [Name] from [RPA].[Preplan] where [Id_User] = '${userId}'`);
-    new NewPreplanModelValidation(newPreplan, userPreplanNames).throw('Invalid API input.');
+    // new NewPreplanModelValidation(newPreplan, userPreplanNames).throw('Invalid API input.');
 
     const result: string[] = await runSp(
       '[RPA].[SP_InsertEmptyPreplan]',
@@ -52,7 +52,7 @@ router.post(
   '/clone',
   requestMiddlewareWithDbAccess<{ id: string; newPreplan: NewPreplanModel }, string>(async (userId, { id, newPreplan }, { runSp, runQuery }) => {
     const userPreplanNames: string[] = await runQuery(`select [Name] from [RPA].[Preplan] where [Id_User] = '${userId}'`);
-    new NewPreplanModelValidation(newPreplan, userPreplanNames).throw('Invalid API input.');
+    // new NewPreplanModelValidation(newPreplan, userPreplanNames).throw('Invalid API input.');
 
     const result: string[] = await runSp(
       '[RPA].[SP_ClonePreplan]',
@@ -72,7 +72,7 @@ router.post(
   '/edit-header',
   requestMiddlewareWithDbAccess<EditPreplanModel, PreplanHeaderModel[]>(async (userId, editPreplan, { runSp, runQuery }) => {
     const userPreplanNames: string[] = await runQuery(`select [Name] from [RPA].[Preplan] where [Id_User] = '${userId}' and [Id] <> '${editPreplan.id}'`);
-    new NewPreplanModelValidation(editPreplan, userPreplanNames).throw('Invalid API input.');
+    // new NewPreplanModelValidation(editPreplan, userPreplanNames).throw('Invalid API input.');
 
     const preplanHeaderEntity: PreplanHeaderEntity[] = await runSp(
       '[RPA].[Sp_UpdatePreplanHeader]',

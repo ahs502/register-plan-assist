@@ -13,11 +13,11 @@ import MasterData, { Stc } from '@core/master-data';
 import FlightRequirement from 'src/business/flights/FlightRequirement';
 import AircraftIdentityType from '@core/types/aircraft-identity/AircraftIdentityType';
 import PreplanService from 'src/services/PreplanService';
-import FlightRequirementModel, { FlightRequirementValidation } from '@core/models/flights/FlightRequirementModel';
+import FlightRequirementModel from '@core/models/flights/FlightRequirementModel';
 import FlightTimeModel from '@core/models/flights/FlightTimeModel';
 import { parseAirport, parseHHMM, parseMinute } from 'src/utils/model-parsers';
 import WeekdayFlightRequirementModel from '@core/models/flights/WeekdayFlightRequirementModel';
-import { FlightScopeModel } from '@core/models/flights/FlightScopeModel';
+import FlightScopeModel from '@core/models/flights/FlightScopeModel';
 import SimpleModal from 'src/components/SimpleModal';
 import AutoComplete from 'src/components/AutoComplete';
 import DaysPicker from 'src/components/DaysPicker';
@@ -335,11 +335,11 @@ const PreplanPage: FC = () => {
                   ignored: false
                 };
 
-                const validation = new FlightRequirementValidation(model, preplan!.aircraftRegisters.items.map(a => a.id));
-                if (!validation.ok) {
-                  setFlightRequirementModalModel(flightRequirementModalModel => ({ ...flightRequirementModalModel, loading: false }));
-                  return;
-                }
+                // const validation = new FlightRequirementValidation(model, preplan!.aircraftRegisters.items.map(a => a.id));
+                // if (!validation.ok) {
+                //   setFlightRequirementModalModel(flightRequirementModalModel => ({ ...flightRequirementModalModel, loading: false }));
+                //   return;
+                // }
 
                 let result: FlightRequirementModel | undefined;
                 let resultMessage: string | undefined;
@@ -464,11 +464,11 @@ const PreplanPage: FC = () => {
                   ignored: false
                 };
 
-                const validation = new FlightRequirementValidation(model, preplan!.aircraftRegisters.items.map(a => a.id));
-                if (!validation.ok) {
-                  setFlightRequirementModalModel(flightRequirementModalModel => ({ ...flightRequirementModalModel, loading: false }));
-                  return;
-                }
+                // const validation = new FlightRequirementValidation(model, preplan!.aircraftRegisters.items.map(a => a.id));
+                // if (!validation.ok) {
+                //   setFlightRequirementModalModel(flightRequirementModalModel => ({ ...flightRequirementModalModel, loading: false }));
+                //   return;
+                // }
 
                 preplan!.stage({ mergingFlightRequirementModels: [model] });
                 preplan!.commit();

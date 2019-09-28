@@ -72,7 +72,7 @@ export class PreplanAircraftRegisters extends MasterDataItems<PreplanAircraftReg
   constructor(dummyAircraftRegisters: readonly DummyAircraftRegisterModel[], aircraftRegisterOptionsDictionary: AircraftRegisterOptionsDictionaryModel, preplan: Preplan) {
     const dictionary = new AircraftRegisterOptionsDictionary(aircraftRegisterOptionsDictionary);
     let masterDataItems = MasterData.all.aircraftRegisters.items
-      .filter(a => a.validPeriods.some(p => p.startDate <= preplan.endDate && p.endDate >= preplan.startDate))
+      // .filter(a => a.validPeriods.some(p => Date.intervalOverlaps(p.startDate, p.endDate, preplan.startDate, preplan.endDate))) // Keep it commented, it distrupts loading flight requirements with invalid aircraft registers.
       .map(a => new PreplanAircraftRegister(a.id, a.name, a.aircraftType, a.validPeriods, false, dictionary[a.id]));
     let dummyItems = dummyAircraftRegisters
       ? dummyAircraftRegisters.map(

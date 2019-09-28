@@ -1,13 +1,19 @@
-import { Constraint } from '@core/master-data';
-import ConstraintTemplate from '@core/master-data/ConstraintTemplate';
+import { Constraint, ConstraintTemplate } from '@core/master-data';
+import Preplan from 'src/business/Preplan';
+import ConstraintSystem from './ConstraintSystem';
+import Objection from './Objection';
 
 export default abstract class Checker {
-  protected constructor(readonly constraintTemplate: ConstraintTemplate, readonly constraint?: Constraint) {}
+  readonly derivedId: string;
 
-  static createFromNonInstantiableConstraintTemplate(constraintTemplate: ConstraintTemplate): Checker {
-    return 0 as any;
+  protected constructor(
+    protected readonly preplan: Preplan,
+    protected readonly constraintSystem: ConstraintSystem,
+    readonly constraintTemplate: ConstraintTemplate,
+    readonly constraint?: Constraint
+  ) {
+    this.derivedId = constraint ? `${constraintTemplate.id}-${constraint.id}` : constraintTemplate.id;
   }
-  static createFromConstraint(constraint: Constraint): Checker {
-    return 0 as any;
-  }
+
+  abstract check(): Objection[];
 }

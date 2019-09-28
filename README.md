@@ -30,7 +30,7 @@ To check and install available updates for all dependencies:
 
 #### Version
 
-To increment version after committing every staged changes:
+To increment version, after committing every staged changes:
 
     $ npm run version-patch   # or
     $ npm run version-minor   # or
@@ -65,6 +65,12 @@ The default port is **3000** and the default node environment is **production** 
     dist$ PORT=3000 NODE_ENV=production npm start
 
 > The node environment can be either **`production`**, **`user acceptance test`**, **`quality assurance`** or **`development`**.
+
+### Code Status
+
+To view a summary on code files and lines:
+
+    $ npm run status
 
 ## Public files
 

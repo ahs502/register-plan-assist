@@ -1,6 +1,5 @@
 import AircraftIdentityType, { AircraftIdentityTypes } from '@core/types/aircraft-identity/AircraftIdentityType';
 import MasterData from '@core/master-data';
-import DummyAircraftRegisterModel from './DummyAircraftRegisterModel';
 import Validation from '@ahs502/validation';
 
 export default interface AircraftIdentityModel {
@@ -22,7 +21,7 @@ export class AircraftIdentityValidation extends Validation<'TYPE_EXISTS' | 'TYPE
             case 'TYPE_DUMMY':
               return !!MasterData.all.aircraftTypes.id[entityId];
             case 'GROUP':
-              return !!MasterData.all.aircraftGroups.id[entityId];
+              return !!MasterData.all.aircraftRegisterGroups.id[entityId];
             default:
               return false;
           }

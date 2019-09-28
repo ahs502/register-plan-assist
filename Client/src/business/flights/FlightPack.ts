@@ -1,6 +1,7 @@
 import PreplanAircraftRegister from 'src/business/PreplanAircraftRegister';
 import Daytime from '@core/types/Daytime';
 import Flight from './Flight';
+import { ObjectionStatus } from 'src/business/constraints/Objectionable';
 
 export default class FlightPack {
   readonly derivedId: string;
@@ -10,6 +11,8 @@ export default class FlightPack {
   readonly day: number;
   readonly start: Daytime;
   readonly end: Daytime;
+  readonly weekStart: number;
+  readonly weekEnd: number;
   readonly sections: readonly {
     readonly start: number;
     readonly end: number;
@@ -25,6 +28,7 @@ export default class FlightPack {
 
   constructor(flight: Flight, changed: boolean) {
     (flight as { pack: FlightPack }).pack = this;
+    (flight as { transit: boolean }).transit = false;
     this.derivedId = flight.derivedId;
     this.label = flight.label;
     this.aircraftRegister = flight.aircraftRegister;
@@ -32,6 +36,8 @@ export default class FlightPack {
     this.day = flight.day;
     this.start = flight.std;
     this.end = new Daytime(flight.std.minutes + flight.blockTime);
+    this.weekStart = this.day * 24 * 60 + this.start.minutes;
+    this.weekEnd = this.day * 24 * 60 + this.end.minutes;
     this.sections = [{ start: 0, end: 1 }];
     this.knownAircraftRegister = !!flight.aircraftRegister && !flight.aircraftRegister.dummy;
     this.required = flight.required;
@@ -45,9 +51,11 @@ export default class FlightPack {
 
   append(flight: Flight, changed: boolean): void {
     (flight as { pack: FlightPack }).pack = this;
+    (flight as { transit: boolean }).transit = true;
     const flightPack = (this as unknown) as {
       flights: Flight[];
       end: Daytime;
+      weekEnd: number;
       required: boolean | undefined;
       freezed: boolean | undefined;
       originPermission: boolean | undefined;
@@ -56,6 +64,7 @@ export default class FlightPack {
     };
     flightPack.flights.push(flight);
     flightPack.end = new Daytime((flight.day - this.day) * 24 * 60 + flight.std.minutes + flight.blockTime);
+    flightPack.weekEnd = this.day * 24 * 60 + flightPack.end.minutes;
     flightPack.required !== undefined && flightPack.required !== flight.required && delete flightPack.required;
     flightPack.freezed !== undefined && flightPack.freezed !== flight.freezed && delete flightPack.freezed;
     flightPack.originPermission !== undefined && flightPack.originPermission !== flight.originPermission && delete flightPack.originPermission;
@@ -64,12 +73,7 @@ export default class FlightPack {
   }
 
   close(): void {
-    (this as {
-      sections: readonly {
-        readonly start: number;
-        readonly end: number;
-      }[];
-    }).sections = this.flights.map(f => {
+    (this as { sections: FlightPack['sections'] }).sections = this.flights.map(f => {
       const dayDiff = (f.day - this.day) * 24 * 60;
       return {
         start: (dayDiff + f.std.minutes - this.start.minutes) / (this.end.minutes - this.start.minutes),
@@ -79,10 +83,9 @@ export default class FlightPack {
   }
 
   startDateTime(startDate: Date): Date {
-    return new Date(startDate.getTime() + this.day * 24 * 60 * 60 * 1000 + this.start.minutes * 60 * 1000);
+    return new Date(startDate.getTime() + this.weekStart * 60 * 1000);
   }
-
   endDateTime(startDate: Date): Date {
-    return new Date(startDate.getTime() + this.day * 24 * 60 * 60 * 1000 + this.end.minutes * 60 * 1000);
+    return new Date(startDate.getTime() + this.weekEnd * 60 * 1000);
   }
 }

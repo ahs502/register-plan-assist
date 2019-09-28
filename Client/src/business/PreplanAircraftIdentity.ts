@@ -1,8 +1,8 @@
 import AircraftIdentityType from '@core/types/aircraft-identity/AircraftIdentityType';
-import MasterData, { MasterDataItem, AircraftType, AircraftGroup } from '@core/master-data';
+import MasterData, { MasterDataItem, AircraftIdentity } from '@core/master-data';
 import PreplanAircraftRegister, { PreplanAircraftRegisters } from './PreplanAircraftRegister';
 import AircraftIdentityModel from '@core/models/AircraftIdentityModel';
-import ModelConvertable, { getOverrided } from 'src/utils/ModelConvertable';
+import ModelConvertable, { getOverrided } from 'src/business/ModelConvertable';
 import DeepWritablePartial from '@core/types/DeepWritablePartial';
 
 /**
@@ -13,16 +13,21 @@ export default abstract class PreplanAircraftIdentity implements ModelConvertabl
   readonly type: AircraftIdentityType;
   readonly entity: MasterDataItem;
 
-  protected readonly aircraftRegisters: PreplanAircraftRegisters;
+  // Computational:
 
-  protected constructor(raw: AircraftIdentityModel, entity: MasterDataItem, aircraftRegisters: PreplanAircraftRegisters) {
+  /**
+   * The set of all corresponding preplan aircraft registers
+   * for this aircraft identity, regardless of their status.
+   */
+  readonly aircraftRegisters: Set<PreplanAircraftRegister>;
+
+  protected constructor(raw: AircraftIdentityModel | AircraftIdentity, entity: MasterDataItem, aircraftRegisters: readonly PreplanAircraftRegister[]) {
     this.type = raw.type;
     this.entity = entity;
-
-    this.aircraftRegisters = aircraftRegisters;
+    this.aircraftRegisters = new Set(aircraftRegisters);
   }
 
-  static parse(raw: AircraftIdentityModel, aircraftRegisters: PreplanAircraftRegisters): PreplanAircraftIdentity {
+  static parse(raw: AircraftIdentityModel | AircraftIdentity, aircraftRegisters: PreplanAircraftRegisters): PreplanAircraftIdentity {
     switch (raw.type) {
       case 'REGISTER':
         return new PreplanAircraftRegisterIdentity(raw, aircraftRegisters);
@@ -33,7 +38,7 @@ export default abstract class PreplanAircraftIdentity implements ModelConvertabl
       case 'TYPE_DUMMY':
         return new PreplanAircraftTypeDummyIdentity(raw, aircraftRegisters);
       case 'GROUP':
-        return new PreplanAircraftGroupIdentity(raw, aircraftRegisters);
+        return new PreplanAircraftRegisterGroupIdentity(raw, aircraftRegisters);
       default:
         throw 'Invalid aircraft identity type.';
     }
@@ -45,60 +50,39 @@ export default abstract class PreplanAircraftIdentity implements ModelConvertabl
       type: getOverrided(this.type, overrides, 'type')
     };
   }
-
-  /**
-   * Returns the set of all corresponding preplan aircraft registers
-   * for this aircraft identity, regardless of their status.
-   */
-  abstract resolve(): Set<PreplanAircraftRegister>;
 }
 
 export class PreplanAircraftRegisterIdentity extends PreplanAircraftIdentity {
-  constructor(raw: AircraftIdentityModel, aircraftRegisters: PreplanAircraftRegisters) {
-    super(raw, aircraftRegisters.id[raw.entityId], aircraftRegisters);
-  }
-
-  resolve(): Set<PreplanAircraftRegister> {
-    return new Set([this.entity as PreplanAircraftRegister]);
+  constructor(raw: AircraftIdentityModel | AircraftIdentity, aircraftRegisters: PreplanAircraftRegisters) {
+    const entityId = raw instanceof AircraftIdentity ? raw.entity.id : raw.entityId;
+    super(raw, aircraftRegisters.id[entityId], [aircraftRegisters.id[entityId]]);
   }
 }
 
 export class PreplanAircraftTypeIdentity extends PreplanAircraftIdentity {
-  constructor(raw: AircraftIdentityModel, aircraftRegisters: PreplanAircraftRegisters) {
-    super(raw, MasterData.all.aircraftTypes.id[raw.entityId], aircraftRegisters);
-  }
-
-  resolve(): Set<PreplanAircraftRegister> {
-    return new Set(this.aircraftRegisters.items.filter(r => r.aircraftType.id === this.entity.id));
+  constructor(raw: AircraftIdentityModel | AircraftIdentity, aircraftRegisters: PreplanAircraftRegisters) {
+    const entityId = raw instanceof AircraftIdentity ? raw.entity.id : raw.entityId;
+    super(raw, MasterData.all.aircraftTypes.id[entityId], aircraftRegisters.items.filter(r => r.aircraftType.id === entityId));
   }
 }
 
 export class PreplanAircraftTypeExistingIdentity extends PreplanAircraftIdentity {
-  constructor(raw: AircraftIdentityModel, aircraftRegisters: PreplanAircraftRegisters) {
-    super(raw, MasterData.all.aircraftTypes.id[raw.entityId], aircraftRegisters);
-  }
-
-  resolve(): Set<PreplanAircraftRegister> {
-    return new Set(this.aircraftRegisters.items.filter(r => r.aircraftType.id === this.entity.id && !r.dummy));
+  constructor(raw: AircraftIdentityModel | AircraftIdentity, aircraftRegisters: PreplanAircraftRegisters) {
+    const entityId = raw instanceof AircraftIdentity ? raw.entity.id : raw.entityId;
+    super(raw, MasterData.all.aircraftTypes.id[entityId], aircraftRegisters.items.filter(r => r.aircraftType.id === entityId && !r.dummy));
   }
 }
 
 export class PreplanAircraftTypeDummyIdentity extends PreplanAircraftIdentity {
-  constructor(raw: AircraftIdentityModel, aircraftRegisters: PreplanAircraftRegisters) {
-    super(raw, MasterData.all.aircraftTypes.id[raw.entityId], aircraftRegisters);
-  }
-
-  resolve(): Set<PreplanAircraftRegister> {
-    return new Set(this.aircraftRegisters.items.filter(r => r.aircraftType.id === this.entity.id && r.dummy));
+  constructor(raw: AircraftIdentityModel | AircraftIdentity, aircraftRegisters: PreplanAircraftRegisters) {
+    const entityId = raw instanceof AircraftIdentity ? raw.entity.id : raw.entityId;
+    super(raw, MasterData.all.aircraftTypes.id[entityId], aircraftRegisters.items.filter(r => r.aircraftType.id === entityId && r.dummy));
   }
 }
 
-export class PreplanAircraftGroupIdentity extends PreplanAircraftIdentity {
-  constructor(raw: AircraftIdentityModel, aircraftRegisters: PreplanAircraftRegisters) {
-    super(raw, MasterData.all.aircraftGroups.id[raw.entityId], aircraftRegisters);
-  }
-
-  resolve(): Set<PreplanAircraftRegister> {
-    return new Set((this.entity as AircraftGroup).aircraftRegisters.map(r => this.aircraftRegisters.id[r.id]));
+export class PreplanAircraftRegisterGroupIdentity extends PreplanAircraftIdentity {
+  constructor(raw: AircraftIdentityModel | AircraftIdentity, aircraftRegisters: PreplanAircraftRegisters) {
+    const entityId = raw instanceof AircraftIdentity ? raw.entity.id : raw.entityId;
+    super(raw, MasterData.all.aircraftRegisterGroups.id[entityId], MasterData.all.aircraftRegisterGroups.id[entityId].aircraftRegisters.map(r => aircraftRegisters.id[r.id]));
   }
 }

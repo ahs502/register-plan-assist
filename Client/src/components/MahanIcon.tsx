@@ -102,10 +102,8 @@ const MahanIcon: FC<MahanIconProps> = ({ children, className, component, color, 
         },
         'material-icons',
         classes.root,
-        {
-          [classes[`color${capitalize(color as string)}`]]: color !== (MahanIcon.defaultProps as Partial<MahanIconProps>).color,
-          [classes[`fontSize${capitalize(fontSize as string)}`]]: fontSize !== (MahanIcon.defaultProps as Partial<MahanIconProps>).fontSize
-        },
+        color !== (MahanIcon.defaultProps as Partial<MahanIconProps>).color && [classes[`color${capitalize(color as string)}`]],
+        fontSize !== (MahanIcon.defaultProps as Partial<MahanIconProps>).fontSize && [classes[`fontSize${capitalize(fontSize as string)}`]],
         className
       )}
       aria-hidden="true"

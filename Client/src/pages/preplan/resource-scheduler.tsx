@@ -7,7 +7,7 @@ import LinkIconButton from 'src/components/LinkIconButton';
 import { NavBarToolsContainerContext } from 'src/pages/preplan';
 import AutoArrangerChangeLogSideBar from 'src/components/preplan/resource-scheduler/AutoArrangerChangeLogSideBar';
 import SearchFlightsSideBar from 'src/components/preplan/resource-scheduler/SearchFlightsSideBar';
-import ErrorsAndWarningsSideBar from 'src/components/preplan/resource-scheduler/ErrorsAndWarningsSideBar';
+import ObjectionsSideBar from 'src/components/preplan/resource-scheduler/ObjectionsSideBar';
 import SelectAircraftRegistersSideBar from 'src/components/preplan/resource-scheduler/SelectAircraftRegistersSideBar';
 import SettingsSideBar from 'src/components/preplan/resource-scheduler/SettingsSideBar';
 import ResourceSchedulerView from 'src/components/preplan/resource-scheduler/ResourceSchedulerView';
@@ -161,6 +161,14 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
   );
   const onFreezeFlightPackMemoized = useCallback(async (flightPack: FlightPack, freezed: boolean) => {
     setResourceSchedulerViewModel(resourceSchedulerViewModel => ({ ...resourceSchedulerViewModel, loading: true }));
+    preplan.stage({
+      mergingFlightRequirementModels: flightPack.flights.map(f =>
+        f.requirement.extractModel({
+          days: { [f.requirement.days.findIndex(d => d.day === f.day)]: { freezed } }
+        })
+      )
+    });
+    preplan.commit();
     const result = await PreplanService.editFlightRequirements(
       flightPack.flights.map(f =>
         f.requirement.extractModel({
@@ -173,6 +181,14 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
   }, []);
   const onRequireFlightPackMemoized = useCallback(async (flightPack: FlightPack, required: boolean) => {
     setResourceSchedulerViewModel(resourceSchedulerViewModel => ({ ...resourceSchedulerViewModel, loading: true }));
+    preplan.stage({
+      mergingFlightRequirementModels: flightPack.flights.map(f =>
+        f.requirement.extractModel({
+          days: { [f.requirement.days.findIndex(d => d.day === f.day)]: { scope: { required } } }
+        })
+      )
+    });
+    preplan.commit();
     const result = await PreplanService.editFlightRequirements(
       flightPack.flights.map(f =>
         f.requirement.extractModel({
@@ -217,6 +233,21 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
   }, []);
   const onFlightPackDragAndDropMemoized = useCallback(async (flightPack: FlightPack, deltaStd: number, newAircraftRegister?: PreplanAircraftRegister) => {
     setResourceSchedulerViewModel(resourceSchedulerViewModel => ({ ...resourceSchedulerViewModel, loading: true }));
+    preplan.stage({
+      mergingFlightRequirementModels: flightPack.flights.map(f =>
+        f.requirement.extractModel({
+          days: {
+            [f.requirement.days.findIndex(d => d.day === f.day)]: {
+              flight: {
+                std: f.std.minutes + deltaStd,
+                aircraftRegisterId: newAircraftRegister && newAircraftRegister.id
+              }
+            }
+          }
+        })
+      )
+    });
+    preplan.commit();
     const result = await PreplanService.editFlightRequirements(
       flightPack.flights.map(f =>
         f.requirement.extractModel({
@@ -241,8 +272,6 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
     []
   );
   const onNowhereMouseHoverMemoized = useCallback(() => setStatusBarProps({}), []);
-
-  const numberOfObjections: number = 12; //TODO: Not implemented.
 
   const navBarToolsContainer = useContext(NavBarToolsContainerContext);
 
@@ -297,7 +326,7 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
             onClick={() => setSideBarState({ ...sideBarState, sideBar: 'OBJECTIONS', open: true })}
             title="Errors and Warnings"
           >
-            <Badge badgeContent={numberOfObjections} color="secondary" invisible={!numberOfObjections}>
+            <Badge badgeContent={preplan.constraintSystem.objections.length} color="secondary" invisible={preplan.constraintSystem.objections.length === 0}>
               <MahanIcon type={MahanIconType.Alert} fontSize="inherit" />
             </Badge>
           </IconButton>
@@ -337,6 +366,8 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
             errorMessage={sideBarState.errorMessage}
             onApply={async (dummyAircraftRegisters, aircraftRegisterOptionsDictionary) => {
               setSideBarState(sideBarState => ({ ...sideBarState, loading: true, errorMessage: '' }));
+              preplan.stage({ updatingAircraftRegisters: { dummyAircraftRegisters, aircraftRegisterOptionsDictionary } });
+              preplan.commit();
               const result = await PreplanService.setAircraftRegisters(preplan.id, dummyAircraftRegisters, aircraftRegisterOptionsDictionary);
               result.message
                 ? setSideBarState(sideBarState => ({ ...sideBarState, loading: false, errorMessage: result.message }))
@@ -350,7 +381,7 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
         {sideBarState.sideBar === 'AUTO_ARRANGER_CHANGE_LOG' && (
           <AutoArrangerChangeLogSideBar initialSearch={sideBarState.initialSearch} changeLogs={preplan.autoArrangerState.changeLogs} onClick={() => alert('not implemented.')} />
         )}
-        {sideBarState.sideBar === 'OBJECTIONS' && <ErrorsAndWarningsSideBar initialSearch={sideBarState.initialSearch} objections={[]} />}
+        {sideBarState.sideBar === 'OBJECTIONS' && <ObjectionsSideBar initialSearch={sideBarState.initialSearch} objections={preplan.constraintSystem.objections} />}
       </Drawer>
 
       <div className={resourceSchedulerViewModel.loading ? classes.disable : ''}>
@@ -399,6 +430,8 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
               });
 
               //TODO: change included sp, get multi flightRequirments id
+              preplan.stage({ mergingFlightRequirementModels: newFlightRequirementsModel });
+              preplan.commit();
               const result = await PreplanService.editFlightRequirements(newFlightRequirementsModel);
 
               if (result.message) {
@@ -469,6 +502,8 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
                 })
               );
 
+              preplan.stage({ mergingFlightRequirementModels: models });
+              preplan.commit();
               const result = await PreplanService.editFlightRequirements(models);
 
               if (result.message) {
@@ -641,6 +676,8 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
                   }
                 }
               });
+              preplan.stage({ mergingFlightRequirementModels: [model] });
+              preplan.commit();
               const result = await PreplanService.editFlightRequirements([model]);
 
               if (result.message) {

@@ -282,19 +282,14 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
       {resourceSchedulerViewModel.loading && <CircularProgress size={48} className={classes.progress} />}
       <Portal container={navBarToolsContainer}>
         <div className={resourceSchedulerViewModel.loading ? classes.disable : ''}>
-          <span>00:01:23</span>
-          <IconButton disabled={resourceSchedulerViewModel.loading} color="inherit" onClick={() => alert('Not implemented.')}>
+          {/* <span>00:01:23</span> */}
+          <IconButton disabled color="inherit" onClick={() => alert('Not implemented.')}>
             {true ? <MahanIcon type={MahanIconType.CheckBoxEmpty} title="Stop Auto Arrange" /> : <MahanIcon type={MahanIconType.UsingChlorine} title="Start Auto Arrange" />}
           </IconButton>
           <IconButton disabled={resourceSchedulerViewModel.loading} color="inherit" title="Finilize Preplan">
             <FinilizedIcon />
           </IconButton>
-          <IconButton
-            disabled={resourceSchedulerViewModel.loading}
-            color="inherit"
-            onClick={() => alert('Not implemented.')}
-            title={allFlightsFreezed ? 'Unfreeze All Flights' : 'Freeze All Flights'}
-          >
+          <IconButton disabled color="inherit" onClick={() => alert('Not implemented.')} title={allFlightsFreezed ? 'Unfreeze All Flights' : 'Freeze All Flights'}>
             {allFlightsFreezed ? <LockOpenIcon /> : <LockIcon />}
           </IconButton>
           <LinkIconButton disabled={resourceSchedulerViewModel.loading} color="inherit" to={`/preplan/${preplan.id}/flight-requirement-list`} title="Flight Requirments">
@@ -304,7 +299,7 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
             <MahanIcon type={MahanIconType.Chart} />
           </LinkIconButton>
           <IconButton
-            disabled={resourceSchedulerViewModel.loading}
+            disabled
             color="inherit"
             onClick={() => setSideBarState({ ...sideBarState, sideBar: 'AUTO_ARRANGER_CHANGE_LOG', open: true })}
             title="Auto Arrange Change Log"
@@ -339,12 +334,7 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
           >
             <MahanIcon type={MahanIconType.Flights} />
           </IconButton>
-          <IconButton
-            disabled={resourceSchedulerViewModel.loading}
-            color="inherit"
-            onClick={() => setSideBarState({ ...sideBarState, sideBar: 'SETTINGS', open: true })}
-            title="Settings"
-          >
+          <IconButton disabled color="inherit" onClick={() => setSideBarState({ ...sideBarState, sideBar: 'SETTINGS', open: true })} title="Settings">
             <SettingsIcon />
           </IconButton>
         </div>

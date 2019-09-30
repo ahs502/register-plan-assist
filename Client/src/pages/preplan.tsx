@@ -921,6 +921,13 @@ const PreplanPage: FC = () => {
         : flightRequirement.scope.aircraftSelection.forbiddenIdentities;
       model.forbiddenAircraftIdentities = convertPreplanAircraftIdentityToAircraftIdentity(forbiddenIdentities);
 
+      const minimumGroundTime = flightRequirement.scope.aircraftSelection.getMinimumGroundTime(
+        true,
+        flightRequirement.definition.arrivalAirport.international || flightRequirement.definition.departureAirport.international,
+        preplan!.startDate,
+        preplan!.endDate
+      );
+
       model.arrivalAirport = mode === 'RETURN' ? flightRequirement.definition.departureAirport.name : flightRequirement.definition.arrivalAirport.name;
       model.departureAirport = mode === 'RETURN' ? flightRequirement.definition.arrivalAirport.name : flightRequirement.definition.departureAirport.name;
       model.blockTime = weekdayFlightRequirement ? parseMinute(weekdayFlightRequirement.scope.blockTime) : parseMinute(flightRequirement.scope.blockTime);
@@ -935,8 +942,8 @@ const PreplanPage: FC = () => {
       model.rsx = weekdayFlightRequirement ? weekdayFlightRequirement.scope.rsx : flightRequirement.scope.rsx;
       model.stc = flightRequirement.definition.stc;
       model.times = (weekdayFlightRequirement ? weekdayFlightRequirement.scope.times : flightRequirement.scope.times).map(t => ({
-        stdLowerBound: parseMinute(t.stdLowerBound.minutes + (mode === 'RETURN' ? 120 + flightRequirement.scope.blockTime : 0)),
-        stdUpperBound: parseMinute(t.stdUpperBound.minutes + (mode === 'RETURN' ? 120 + flightRequirement.scope.blockTime : 0))
+        stdLowerBound: parseMinute(t.stdLowerBound.minutes + (mode === 'RETURN' ? minimumGroundTime + flightRequirement.scope.blockTime : 0)),
+        stdUpperBound: parseMinute(t.stdUpperBound.minutes + (mode === 'RETURN' ? minimumGroundTime + flightRequirement.scope.blockTime : 0))
       }));
       model.day = weekdayFlightRequirement && weekdayFlightRequirement.day;
       //modalModel.unavailableDays =

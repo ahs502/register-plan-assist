@@ -4,10 +4,11 @@ import { Add as AddIcon } from '@material-ui/icons';
 import { makeStyles } from '@material-ui/styles';
 import classNames from 'classnames';
 
-const useStyles = makeStyles((theme: Theme) => ({
+const useStyles = makeStyles<Theme, StyleProps>((theme: Theme) => ({
   root: {
     margin: 0,
-    width: theme.spacing(60)
+    width: theme.spacing(60),
+    height: '100%'
   },
   label: {
     border: 'solid',
@@ -21,10 +22,12 @@ const useStyles = makeStyles((theme: Theme) => ({
     margin: 0,
     padding: theme.spacing(2)
   },
-  contents: {
+  contents: props => ({
     margin: 0,
-    padding: theme.spacing(2)
-  },
+    padding: theme.spacing(2),
+    height: `calc(100% - ${props.headerHeight})`,
+    overflow: `auto`
+  }),
   progress: {
     position: 'absolute',
     top: '50%',
@@ -53,9 +56,13 @@ export interface SideBarContainerProps {
   loading?: boolean;
   errorMessage?: string;
 }
+interface StyleProps {
+  headerHeight: string;
+}
 
 const SideBarContainer: FC<SideBarContainerProps> = ({ label, onApply, onAdd, loading, errorMessage, children }) => {
-  const classes = useStyles();
+  const styleProps: StyleProps = { headerHeight: onAdd || onApply ? '70px' : '58px' };
+  const classes = useStyles(styleProps);
 
   return (
     <div className={classes.root}>

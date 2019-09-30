@@ -15,3 +15,16 @@ export function xmlStringify(xml: any, root: string): string {
 export function xmlParse(value: string, root: string): any {
   return JSON.parse(xml2json(value, { compact: true }))[root];
 }
+
+const xmlEscapeMap = {
+  '>': '&gt;',
+  '<': '&lt;',
+  "'": '&apos;',
+  '"': '&quot;',
+  '&': '&amp;'
+};
+const xmlEscapePattern = /[&"<>']/g;
+export function xmlEscape(value: string): string {
+  if (!value) return value;
+  return value.replace(xmlEscapePattern, (str, item) => xmlEscapeMap[item]);
+}

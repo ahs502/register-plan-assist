@@ -1,10 +1,11 @@
 import AircraftIdentityModel from '@core/models/AircraftIdentityModel';
-import AircraftIdentityType from '@core/types/aircraft-identity/AircraftIdentityType';
+import AircraftIdentityType from '@core/types/AircraftIdentityType';
+import Id from '@core/types/Id';
 
 export default interface AircraftIdentityEntity {
   readonly _attributes: {
     readonly Type: string;
-    readonly Id_Entity: string;
+    readonly Id_Entity: Id;
   };
 }
 

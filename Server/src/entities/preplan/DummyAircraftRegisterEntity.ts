@@ -1,10 +1,12 @@
-import DummyAircraftRegisterModel from '@core/models/DummyAircraftRegisterModel';
+import Id from '@core/types/Id';
+import DummyAircraftRegisterModel from '@core/models/preplan/DummyAircraftRegisterModel';
+import { xmlEscape } from 'src/utils/xml';
 
 export default interface DummyAircraftRegisterEntity {
   readonly _attributes: {
-    readonly Id: string;
+    readonly Id: Id;
     readonly Name: string;
-    readonly Id_AircraftType: string;
+    readonly Id_AircraftType: Id;
   };
 }
 
@@ -12,16 +14,15 @@ export function convertDummyAircraftRegisterModelToEntity(data: DummyAircraftReg
   return {
     _attributes: {
       Id: data.id,
-      Id_AircraftType: data.aircraftTypeId,
-      Name: data.name
+      Name: xmlEscape(data.name),
+      Id_AircraftType: data.aircraftTypeId
     }
   };
 }
-
 export function convertDummyAircraftRegisterEntityToModel(data: DummyAircraftRegisterEntity): DummyAircraftRegisterModel {
   return {
     id: data._attributes.Id,
-    aircraftTypeId: data._attributes.Id_AircraftType,
-    name: data._attributes.Name
+    name: data._attributes.Name,
+    aircraftTypeId: data._attributes.Id_AircraftType
   };
 }

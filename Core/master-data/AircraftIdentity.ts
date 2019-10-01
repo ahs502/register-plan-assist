@@ -1,4 +1,4 @@
-import AircraftIdentityType from '@core/types/aircraft-identity/AircraftIdentityType';
+import AircraftIdentityType from '@core/types/AircraftIdentityType';
 import MasterDataItem from './MasterDataItem';
 import { AircraftRegisters } from './AircraftRegister';
 import { AircraftTypes } from './AircraftType';

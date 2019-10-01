@@ -64,8 +64,8 @@ export default class Constraint extends MasterDataItem {
           ));
           this.description = `When planning the flights of airport${getPluralS(data.airports)} ${convertNameArrayToString(data.airports.map(a => a.name))}, ${
             data.never ? 'never' : 'only'
-          } use ${convertAircraftIdentityArrayToString(data.aircraftSelection.allowedIdentities)}${convertAircraftIdentityArrayToString(
-            data.aircraftSelection.forbiddenIdentities,
+          } use ${convertAircraftIdentityArrayToString(data.aircraftSelection.includedIdentities)}${convertAircraftIdentityArrayToString(
+            data.aircraftSelection.excludedIdentities,
             ' except for '
           )}.${extractScope()}`;
         }
@@ -93,8 +93,8 @@ export default class Constraint extends MasterDataItem {
             aircraftRegisterGroups
           ));
           this.description = `When planning flights longer than ${data.maximumBlockTime} minutes, never use ${convertAircraftIdentityArrayToString(
-            data.aircraftSelection.allowedIdentities
-          )}${convertAircraftIdentityArrayToString(data.aircraftSelection.forbiddenIdentities, ' except for ')}.${extractScope()}`;
+            data.aircraftSelection.includedIdentities
+          )}${convertAircraftIdentityArrayToString(data.aircraftSelection.excludedIdentities, ' except for ')}.${extractScope()}`;
         }
         break;
 

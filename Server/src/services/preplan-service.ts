@@ -206,7 +206,7 @@ router.post(
           { name: 'scope', type: TYPES.NVarChar },
           { name: 'days', type: TYPES.NVarChar },
           { name: 'ignored', type: TYPES.Bit },
-          { name: 'lable', type: TYPES.NVarChar, length: 100 },
+          { name: 'label', type: TYPES.NVarChar, length: 100 },
           { name: 'category', type: TYPES.NVarChar, length: 100 },
           { name: 'stcId', type: TYPES.Int },
           { name: 'flightNumber', type: TYPES.VarChar, length: 10 },

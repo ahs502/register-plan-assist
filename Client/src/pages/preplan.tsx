@@ -437,18 +437,31 @@ const PreplanPage: FC = () => {
 
                 const selectedDayOldFlightRequirment = flightRequirementModalModel.flightRequirement!.days!.find(d => d.day === flightRequirementModalModel.day!)!;
 
-                const day: WeekdayFlightRequirementModel = {
-                  day: flightRequirementModalModel.day!,
-                  flight: {
-                    std: selectedDayOldFlightRequirment.flight.std.minutes,
-                    aircraftRegisterId: selectedDayOldFlightRequirment.flight.aircraftRegister!.id
-                  },
-                  freezed: false,
-                  notes: flightRequirementModalModel.notes || '',
-                  scope: weekDayScope
-                };
+                const aircraftRegister: PreplanAircraftRegister | undefined = new PreplanAircraftSelection(weekDayScope.aircraftSelection, preplan!.aircraftRegisters)
+                  .aircraftRegisters[0];
 
-                days.push(day);
+                flightRequirementModalModel
+                  .days!.map((d, index) => (d ? index : -1))
+                  .filter(i => i >= 0 && (i === flightRequirementModalModel.day || !flightRequirementModalModel.flightRequirement!.days!.some(x => x.day === i)))
+                  .forEach(n => {
+                    const weekdayRegister =
+                      n === flightRequirementModalModel.day
+                        ? selectedDayOldFlightRequirment.flight.aircraftRegister && selectedDayOldFlightRequirment.flight.aircraftRegister.id
+                        : aircraftRegister && aircraftRegister.id;
+                    const weekdayStd = n === flightRequirementModalModel.day ? selectedDayOldFlightRequirment.flight.std.minutes : weekDayScope.times[0].stdLowerBound;
+                    const day: WeekdayFlightRequirementModel = {
+                      day: n,
+                      flight: {
+                        std: weekdayStd,
+                        aircraftRegisterId: weekdayRegister
+                      },
+                      freezed: false,
+                      notes: flightRequirementModalModel.notes || '',
+                      scope: weekDayScope
+                    };
+                    days.push(day);
+                  });
+
                 const model: FlightRequirementModel = {
                   id: flightRequirementModalModel.flightRequirement!.id,
                   definition: {
@@ -689,8 +702,15 @@ const PreplanPage: FC = () => {
                     <Grid item>
                       <DaysPicker
                         selectedDays={flightRequirementModalModel.days}
+                        disabledDays={
+                          !flightRequirementModalModel.weekly && flightRequirementModalModel.mode !== 'ADD' && flightRequirementModalModel.days
+                            ? Array.range(0, 6).map(d =>
+                                flightRequirementModalModel.day === d ? false : flightRequirementModalModel.flightRequirement!.days.some(n => n.day === d)
+                              )
+                            : undefined
+                        }
                         onItemClick={w => setFlightRequirementModalModel({ ...flightRequirementModalModel, days: w })}
-                        disabled={(!flightRequirementModalModel.weekly && flightRequirementModalModel.mode !== 'ADD') || flightRequirementModalModel.disable}
+                        disabled={flightRequirementModalModel.disable}
                       />
                     </Grid>
                   </Grid>

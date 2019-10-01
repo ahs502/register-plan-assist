@@ -36,14 +36,14 @@ const useStyles = makeStyles((theme: Theme) => ({
     backgroundColor: theme.palette.extraColors.ignoredRegister
   },
   content: {
-    height: `calc(100% - 24px)`
+    height: `calc(100%)`
   },
   body: {
-    height: `calc(100% - 48px)`,
+    height: `calc(100% - 82px)`,
     overflow: 'auto'
   },
   bodyWithAddDummy: {
-    height: `calc(100% - 154px)`,
+    height: `calc(100% - 188px)`,
     overflow: 'auto'
   }
 }));

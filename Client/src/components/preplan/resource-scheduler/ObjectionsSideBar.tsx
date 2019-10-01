@@ -15,10 +15,10 @@ const useStyles = makeStyles((theme: Theme) => ({
     color: theme.palette.extraColors.warnedFlight
   },
   content: {
-    height: `calc(100% - 24px)`
+    height: `calc(100%)`
   },
   body: {
-    height: `calc(100% - 72px)`,
+    height: `calc(100% - 85px)`,
     overflow: 'auto'
   }
 }));

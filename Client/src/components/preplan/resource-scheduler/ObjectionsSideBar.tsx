@@ -13,6 +13,13 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
   warningIcon: {
     color: theme.palette.extraColors.warnedFlight
+  },
+  content: {
+    height: `calc(100% - 24px)`
+  },
+  body: {
+    height: `calc(100% - 72px)`,
+    overflow: 'auto'
   }
 }));
 
@@ -43,7 +50,7 @@ const ObjectionsSideBar: FC<ObjectionsSideBarProps> = ({ objections, initialSear
   return (
     <SideBarContainer label="Errors and Warnings">
       {totalErrorCount + totalWarningCount > 0 ? (
-        <Fragment>
+        <div className={classes.content}>
           <Search
             initialSearch={initialSearch}
             onQueryChange={query => setFilteredObjections(filterOnProperties(objections as readonly { message: string }[], query, 'message') as any)}
@@ -72,9 +79,10 @@ const ObjectionsSideBar: FC<ObjectionsSideBarProps> = ({ objections, initialSear
           )}
 
           <br />
-
-          <ObjectionList objections={filteredObjections} />
-        </Fragment>
+          <div className={classes.body}>
+            <ObjectionList objections={filteredObjections} />
+          </div>
+        </div>
       ) : (
         <Typography variant="subtitle1">There are no objections!</Typography>
       )}

@@ -1,18 +1,23 @@
-import AircraftSelectionModel from '../AircraftSelectionModel';
-import Rsx from '@core/types/Rsx';
-import FlightRequirementLegModel from './FlightRequirementLegModel';
-import DayFlightRequirementModel from './DayFlightRequirementModel';
+import NewFlightRequirementModel, { NewFlightRequirementModelValidation } from './NewFlightRequirementModel';
 import Id from '@core/types/Id';
+import Validation from '@ahs502/validation';
 
-export default interface FlightRequirementModel {
-  readonly id?: Id;
-  readonly label: string;
-  readonly category: string;
-  readonly stcId: Id;
-  readonly aircraftSelection: AircraftSelectionModel;
-  readonly rsx: Rsx;
-  readonly required: boolean;
-  readonly ignored: boolean;
-  readonly route: readonly FlightRequirementLegModel[];
-  readonly days: readonly DayFlightRequirementModel[];
+export default interface FlightRequirementModel extends NewFlightRequirementModel {
+  readonly id: Id;
+}
+
+export class FlightRequirementModelValidation extends Validation<
+  string,
+  {
+    newFlightRequirement: NewFlightRequirementModelValidation;
+  }
+> {
+  constructor(data: FlightRequirementModel, flightRequirementIds: readonly Id[], dummyAircraftRegisterIds: readonly Id[]) {
+    super(validator =>
+      validator
+        .put(validator.$.newFlightRequirement, new NewFlightRequirementModelValidation(data, dummyAircraftRegisterIds))
+        .object(data)
+        .then(({ id }) => validator.must(() => flightRequirementIds.includes(id)))
+    );
+  }
 }

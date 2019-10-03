@@ -9,17 +9,17 @@ export default interface PreplanHeaderEntity {
   readonly userId: Id;
   readonly userName: string;
   readonly userDisplayName: string;
-  readonly parentPreplanId?: Id;
-  readonly parentPreplanName?: string;
-  readonly parentPreplanUserId?: Id;
-  readonly parentPreplanUserName?: string;
-  readonly parentPreplanUserDisplayName?: string;
+  readonly parentPreplanId: Id | null;
+  readonly parentPreplanName: string | null;
+  readonly parentPreplanUserId: Id | null;
+  readonly parentPreplanUserName: string | null;
+  readonly parentPreplanUserDisplayName: string | null;
   readonly creationDateTime: string;
   readonly lastEditDateTime: string;
   readonly startDate: string;
   readonly endDate: string;
-  readonly simulationId?: Id;
-  readonly simulationName?: string;
+  readonly simulationId: Id | null;
+  readonly simulationName: string | null;
 }
 
 export function convertPreplanHeaderEntityToModel(data: PreplanHeaderEntity): PreplanHeaderModel {

@@ -1,6 +1,5 @@
 import Id from '@core/types/Id';
-import { XmlBoolean, XmlArray, booleanToXml, xmlToBoolean, xmlArray } from 'src/utils/xml';
-import StdBoundaryEntity, { convertStdBoundaryModelToEntity, convertStdBoundaryEntityToModel } from './StdBoundaryEntity';
+import { XmlBoolean, booleanToXml, xmlToBoolean } from 'src/utils/xml';
 import FlightRequirementLegModel from '@core/models/flight-requirement/FlightRequirementLegModel';
 
 export default interface FlightRequirementLegEntity {
@@ -9,11 +8,10 @@ export default interface FlightRequirementLegEntity {
     readonly Id_DepartureAirport: Id;
     readonly Id_ArrivalAirport: Id;
     readonly BlockTime: string;
+    readonly StdLowerBound: string;
+    readonly StdUpperBound?: string;
     readonly OriginPermission: XmlBoolean;
     readonly DestinationPermission: XmlBoolean;
-  };
-  readonly StdBoundaries: {
-    readonly StdBoundary: XmlArray<StdBoundaryEntity>;
   };
 }
 
@@ -24,11 +22,10 @@ export function convertFlightRequirementLegModelToEntity(data: FlightRequirement
       Id_DepartureAirport: data.departureAirportId,
       Id_ArrivalAirport: data.arrivalAirportId,
       BlockTime: String(data.blockTime),
+      StdLowerBound: String(data.stdLowerBound),
+      StdUpperBound: data.stdUpperBound === undefined ? undefined : String(data.stdUpperBound),
       OriginPermission: booleanToXml(data.originPermission),
       DestinationPermission: booleanToXml(data.destinationPermission)
-    },
-    StdBoundaries: {
-      StdBoundary: data.stdBoundaries.map(convertStdBoundaryModelToEntity)
     }
   };
 }
@@ -38,8 +35,9 @@ export function convertFlightRequirementLegEntityToModel(data: FlightRequirement
     departureAirportId: data._attributes.Id_DepartureAirport,
     arrivalAirportId: data._attributes.Id_ArrivalAirport,
     blockTime: Number(data._attributes.BlockTime),
+    stdLowerBound: Number(data._attributes.StdLowerBound),
+    stdUpperBound: data._attributes.StdUpperBound === undefined ? undefined : Number(data._attributes.StdUpperBound),
     originPermission: xmlToBoolean(data._attributes.OriginPermission),
-    destinationPermission: xmlToBoolean(data._attributes.DestinationPermission),
-    stdBoundaries: xmlArray(data.StdBoundaries.StdBoundary).map(convertStdBoundaryEntityToModel)
+    destinationPermission: xmlToBoolean(data._attributes.DestinationPermission)
   };
 }

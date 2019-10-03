@@ -1,5 +1,6 @@
 import { Connection, Request as TediousRequest, TYPES, TediousType, ParameterOptions, TediousTypes, ISOLATION_LEVEL } from 'tedious';
 import config from 'src/config';
+import { Xml } from './xml';
 
 function createConnection() {
   return new Connection({
@@ -140,7 +141,7 @@ interface DbAccessQueryParams {
   varCharParam(name: string, value: string | null, length: number | 'max'): SqlParameter;
   nVarCharParam(name: string, value: string | null, length: number | 'max'): SqlParameter;
   dateTimeParam(name: string, value: Date | string | null, scale?: number): SqlParameter;
-  xmlParam(name: string, value: string | null): SqlParameter;
+  xmlParam(name: string, value: Xml | null): SqlParameter;
   tableParam(name: string, columns: readonly TableColumn[], rows: readonly any[][]): SqlParameter;
 }
 export interface DbAccess {
@@ -186,7 +187,7 @@ function attachHelperFunctions(f: any): any {
   function dateTimeParam(name: string, value: Date | string | null, scale?: number): SqlParameter {
     return { name, type: TYPES.VarChar, value: typeof value === 'string' ? value : value.toJSON(), options: { scale } };
   }
-  function xmlParam(name: string, value: string | null): SqlParameter {
+  function xmlParam(name: string, value: Xml | null): SqlParameter {
     return { name, type: TYPES.Xml, value };
   }
   function tableParam(name: string, columns: readonly TableColumn[], rows: readonly any[][]): SqlParameter {

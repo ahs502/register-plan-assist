@@ -5,7 +5,7 @@ import * as querystring from 'querystring';
 import config from 'src/config';
 import { withDbAccess } from 'src/utils/sqlServer';
 import { jwtDecodeRawToken, RawToken, cryptr } from 'src/utils/oauth';
-import UserModel from '@core/models/authentication/UserModel';
+import UserModel from '@core/models/UserModel';
 import AuthenticationModel from '@core/models/authentication/AuthenticationModel';
 import AuthenticationHeaderModel from '@core/models/authentication/AuthenticationHeaderModel';
 import AuthenticationResultModel from '@core/models/authentication/AuthenticationResultModel';

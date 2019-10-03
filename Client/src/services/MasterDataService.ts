@@ -7,7 +7,7 @@ export default class MasterDataService {
   /**
    * Provides all or some of master data collections.
    */
-  static async get(...collections: (keyof MasterDataModel)[]) {
-    return await request<MasterDataModel>('get', { collections });
+  static async get(...collections: (keyof MasterDataModel)[]): Promise<MasterDataModel> {
+    return await request('get', { collections });
   }
 }

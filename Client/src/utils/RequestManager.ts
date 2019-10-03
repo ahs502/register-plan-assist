@@ -7,23 +7,22 @@ export default class RequestManager {
   static requestsCount: number = 0;
   static onProcessingChanged?(processing: boolean): void;
 
-  static async request<R>(service: string, command: string, data?: any): Promise<ServerResult<R>> {
+  static async request<R>(service: string, command: string, data?: any): Promise<R> {
     RequestManager.requestsCount++;
     RequestManager.onProcessingChanged && RequestManager.onProcessingChanged(true);
-    let result: any;
     try {
-      result = await send();
+      const result = await send<R>();
       RequestManager.requestsCount--;
       RequestManager.requestsCount === 0 && RequestManager.onProcessingChanged && RequestManager.onProcessingChanged(false);
+      return result;
     } catch (error) {
       RequestManager.requestsCount--;
       RequestManager.requestsCount === 0 && RequestManager.onProcessingChanged && RequestManager.onProcessingChanged(false);
       throw error;
     }
-    return result;
 
-    async function send() {
-      try {
+    async function send<R>(): Promise<R> {
+      {
         const response = await fetch(`/api/${service}/${command}`, {
           method: 'POST',
           cache: 'no-cache',
@@ -34,10 +33,12 @@ export default class RequestManager {
           redirect: 'follow',
           body: JSON.stringify(data || {})
         });
-        if (response.ok) return await response.json();
+        if (response.ok) {
+          const result = (await response.json()) as ServerResult<R>;
+          if (result.message) throw result.message;
+          return result.value!;
+        }
         if (response.status !== 401) throw new Error(`Code ${response.status}: ${response.statusText}`);
-      } catch (reason) {
-        return { message: String(reason) };
       }
 
       // Unauthorized access.
@@ -76,7 +77,7 @@ export default class RequestManager {
 
       // Token is refreshed.
 
-      try {
+      {
         const response = await fetch(`/api/${service}/${command}`, {
           method: 'POST',
           cache: 'no-cache',
@@ -87,15 +88,17 @@ export default class RequestManager {
           redirect: 'follow',
           body: JSON.stringify(data || {})
         });
-        if (response.ok) return await response.json();
+        if (response.ok) {
+          const result = (await response.json()) as ServerResult<R>;
+          if (result.message) throw result.message;
+          return result.value!;
+        }
         throw new Error(`Code ${response.status}: ${response.statusText}`);
-      } catch (reason) {
-        return { message: String(reason) };
       }
     }
   }
 
-  static makeRequester(service: string): <R>(command: string, data?: any) => Promise<ServerResult<R>> {
+  static makeRequester(service: string): <R>(command: string, data?: any) => Promise<R> {
     return async (command: string, data?: any) => await RequestManager.request(service, command, data);
   }
 }

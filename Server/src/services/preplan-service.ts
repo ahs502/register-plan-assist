@@ -1,21 +1,25 @@
 import { Router } from 'express';
 import { requestMiddlewareWithDbAccess } from 'src/utils/requestMiddleware';
 import { TYPES } from 'tedious';
-import { xmlStringify, Xml, xmlParse, xmlArray } from 'src/utils/xml';
+import { Xml } from 'src/utils/xml';
 import Id from '@core/types/Id';
 import PreplanHeaderModel from '@core/models/preplan/PreplanHeaderModel';
 import NewPreplanModel, { NewPreplanModelValidation } from '@core/models/preplan/NewPreplanModel';
 import PreplanHeaderEntity, { convertPreplanHeaderEntityToModel } from 'src/entities/preplan/PreplanHeaderEntity';
 import PreplanModel from '@core/models/preplan/PreplanModel';
-import PreplanEntity, { convertPreplanEntityToModel } from 'src/entities/preplan/PreplanEntity';
+import PreplanEntity, {
+  convertPreplanEntityToModel,
+  parsePreplanDummyAircraftRegistersXml,
+  stringifyPreplanDummyAircraftRegistersXml,
+  stringifyPreplanAircraftRegisterOptionsXml
+} from 'src/entities/preplan/PreplanEntity';
 import FlightRequirementEntity, { convertFlightRequirementModelToEntity, convertFlightRequirementEntityToModel } from 'src/entities/flight-requirement/FlightRequirementEntity';
 import FlightRequirementModel, { FlightRequirementModelValidation } from '@core/models/flight-requirement/FlightRequirementModel';
 import { convertNewPreplanModelToEntity } from 'src/entities/preplan/NewPreplanEntity';
-import { convertDummyAircraftRegisterEntityToModel } from 'src/entities/preplan/DummyAircraftRegisterEntity';
 import NewFlightRequirementModel, { NewFlightRequirementModelValidation } from '@core/models/flight-requirement/NewFlightRequirementModel';
 import { convertNewFlightRequirementModelToEntity } from 'src/entities/flight-requirement/NewFlightRequirementEntity';
-import DummyAircraftRegisterModel from '@core/models/preplan/DummyAircraftRegisterModel';
-import AircraftRegisterOptionsModel from '@core/models/preplan/AircraftRegisterOptionsModel';
+import DummyAircraftRegisterModel, { DummyAircraftRegisterModelValidation } from '@core/models/preplan/DummyAircraftRegisterModel';
+import AircraftRegisterOptionsModel, { AircraftRegisterOptionsModelValidation } from '@core/models/preplan/AircraftRegisterOptionsModel';
 
 const router = Router();
 export default router;
@@ -163,9 +167,7 @@ router.post(
         `select [DummyAircraftRegisters] as [dummyAircraftRegistersXml] from [RPA].[Preplan] where [Id] = '${id}'`
       );
       if (rawDummyAircraftRegistersXml.length === 0) throw 'Preplan is not found.';
-      const dummyAircraftRegisterIds: Id[] = xmlArray(xmlParse(rawDummyAircraftRegistersXml[0].dummyAircraftRegistersXml, 'DummyAircraftRegisters')['DummyAircraftRegister'])
-        .map(convertDummyAircraftRegisterEntityToModel)
-        .map(r => r.id);
+      const dummyAircraftRegisterIds: Id[] = parsePreplanDummyAircraftRegistersXml(rawDummyAircraftRegistersXml[0].dummyAircraftRegistersXml).map(r => r.id);
       new NewFlightRequirementModelValidation(newFlightRequirement, dummyAircraftRegisterIds).throw('Invalid API input.');
 
       const newFlightRequirementEntity = convertNewFlightRequirementModelToEntity(newFlightRequirement);
@@ -212,9 +214,7 @@ router.post(
         `select [DummyAircraftRegisters] as [dummyAircraftRegistersXml] from [RPA].[Preplan] where [Id] = '${id}'`
       );
       if (rawDummyAircraftRegistersXml.length === 0) throw 'Preplan is not found.';
-      const dummyAircraftRegisterIds: Id[] = xmlArray(xmlParse(rawDummyAircraftRegistersXml[0].dummyAircraftRegistersXml, 'DummyAircraftRegisters')['DummyAircraftRegister'])
-        .map(convertDummyAircraftRegisterEntityToModel)
-        .map(r => r.id);
+      const dummyAircraftRegisterIds: Id[] = parsePreplanDummyAircraftRegistersXml(rawDummyAircraftRegistersXml[0].dummyAircraftRegistersXml).map(r => r.id);
       flightRequirements.forEach(flightRequirement =>
         new FlightRequirementModelValidation(flightRequirement, flightRequirementIds, dummyAircraftRegisterIds).throw('Invalid API input.')
       );
@@ -281,17 +281,48 @@ router.post(
       aircraftRegisterOptions: AircraftRegisterOptionsModel;
     },
     void
-  >(async (userId, { id, dummyAircraftRegisters, aircraftRegisterOptions }, { runSp }) => {
+  >(async (userId, { id, dummyAircraftRegisters, aircraftRegisterOptions }, { runQuery, runSp }) => {
+    // Validation:
+    if (!Array.isArray(dummyAircraftRegisters)) throw 'Invalid API input.';
+    const dummyAircraftRegisterIds = dummyAircraftRegisters.map(r => r.id).distinct();
+    if (dummyAircraftRegisterIds.length !== dummyAircraftRegisters.length) throw 'Duplicated dummy aircraft register ids.';
+    dummyAircraftRegisters.forEach(r => new DummyAircraftRegisterModelValidation(r).throw('Invalid API input.'));
+    new AircraftRegisterOptionsModelValidation(aircraftRegisterOptions, dummyAircraftRegisterIds).throw('Invalid API input.');
+
+    // Check for removed dummy aircraft registers usage:
+    const rawDummyAircraftRegistersXml: { dummyAircraftRegistersXml: Xml }[] = await runQuery(
+      `select [DummyAircraftRegisters] as [dummyAircraftRegistersXml] from [RPA].[Preplan] where [Id] = '${id}'`
+    );
+    if (rawDummyAircraftRegistersXml.length === 0) throw 'Preplan is not found.';
+    const existingDummyAircraftRegisterIds: Id[] = parsePreplanDummyAircraftRegistersXml(rawDummyAircraftRegistersXml[0].dummyAircraftRegistersXml).map(r => r.id);
+    const removedDummyAircraftRegisterIds = existingDummyAircraftRegisterIds.filter(id => !dummyAircraftRegisterIds.includes(id));
+    const flightRequirementEntities: FlightRequirementEntity[] = await runSp(
+      '[RPA].[Sp_GetFlightRequirements]',
+      runSp.varCharParam('userId', userId, 30),
+      runSp.intParam('preplanId', id)
+    );
+    const flightRequirementModels = flightRequirementEntities.map(convertFlightRequirementEntityToModel);
+    flightRequirementModels.forEach(f => {
+      if (
+        [
+          ...[f.aircraftSelection, ...f.days.map(d => d.aircraftSelection)]
+            .map(s => [...s.includedIdentities, ...s.excludedIdentities].filter(i => i.type === 'REGISTER').map(i => i.entityId))
+            .flatten(),
+          ...f.days.filter(d => d.aircraftRegisterId).map(d => d.aircraftRegisterId)
+        ].some(id => removedDummyAircraftRegisterIds.includes(id))
+      )
+        throw `Some of the removing dummy aircraft registers are being used in flight requirements or flights.`;
+    });
+
+    // Apply to database:
+    const dummyAircraftRegistersXml = stringifyPreplanDummyAircraftRegistersXml(dummyAircraftRegisters);
+    const aircraftRegisterOptionsXml = stringifyPreplanAircraftRegisterOptionsXml(aircraftRegisterOptions);
     await runSp(
       '[RPA].[SP_UpdateAircraftRegisters]',
       runSp.varCharParam('userId', userId, 30),
-      runSp.intParam('id', id),
-      runSp.nVarCharParam('dummyAircraftRegisters', xmlStringify(convertDummyAircraftRegisterListModelToEntity(dummyAircraftRegisters), 'DummyAircraftRegisters'), 'max'),
-      runSp.nVarCharParam(
-        'AircraftRegisterOptions',
-        xmlStringify(convertAircraftRegisterOptionsListModelToEntity(aircraftRegisterOptionsDictionary), 'AircraftRegistersOptions'),
-        'max'
-      )
+      runSp.intParam('preplanId', id),
+      runSp.xmlParam('dummyAircraftRegistersXml', dummyAircraftRegistersXml),
+      runSp.xmlParam('aircraftRegisterOptionsXml', aircraftRegisterOptionsXml)
     );
   })
 );

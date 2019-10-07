@@ -1,5 +1,5 @@
 import React, { FC, Fragment, useState, useEffect, useRef, createContext, useCallback, useMemo } from 'react';
-import { Theme, TextField, Fab, Grid, Typography, IconButton, FormControlLabel, Checkbox } from '@material-ui/core';
+import { Theme, TextField, Fab, Grid, Typography, IconButton, FormControlLabel, Checkbox, Tabs, Tab, Button } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import { Switch, Redirect, Route } from 'react-router-dom';
 import useRouter from 'src/utils/useRouter';
@@ -21,7 +21,7 @@ import { FlightScopeModel } from '@core/models/flights/FlightScopeModel';
 import SimpleModal from 'src/components/SimpleModal';
 import AutoComplete from 'src/components/AutoComplete';
 import DaysPicker from 'src/components/DaysPicker';
-import { Clear as ClearIcon, Add as AddIcon } from '@material-ui/icons';
+import { Clear as ClearIcon, Add as AddIcon, WrapText as WrapTextIcon } from '@material-ui/icons';
 import Rsx, { Rsxes } from '@core/types/flight-requirement/Rsx';
 import AircraftIdentityModel from '@core/models/AircraftIdentityModel';
 import MultiSelect from 'src/components/MultiSelect';
@@ -30,6 +30,7 @@ import WeekdayFlightRequirement from 'src/business/flights/WeekdayFlightRequirem
 import PreplanAircraftRegister from 'src/business/PreplanAircraftRegister';
 import { FlightRequirementModalModel, FlightRequirementModalAircraftIdentity, FlightRequirementModalMode } from 'src/components/preplan/flight-requirement/FlightRequirementEditor';
 import FlightModel from '@core/models/flights/FlightModel';
+import Weekday from '@core/types/Weekday';
 
 const useStyles = makeStyles((theme: Theme) => ({
   flightRequirementStyle: {
@@ -67,12 +68,51 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
   disable: {
     opacity: 0.5
+  },
+  dayTab: {
+    minWidth: 70,
+    maxWidth: 70
   }
 }));
 
 export interface ObjectionModalModel {
   open: boolean;
   newErrorObjectsCount?: number;
+}
+
+interface FlightRequirementWithMultiLegModalModel {
+  open: boolean;
+  loading: boolean;
+  errorMessage?: string;
+  mode?: FlightRequirementModalMode;
+  label?: string;
+  disable?: boolean;
+  category?: string;
+  stc?: Stc;
+  days?: boolean[];
+
+  //details?: { [index: number]: FlightRequirmentDetailModalModel };
+  details: FlightRequirmentDetailModalModel[];
+}
+
+interface FlightRequirmentDetailModalModel {
+  rsx?: Rsx;
+  required?: boolean;
+  allowedAircraftIdentities?: FlightRequirementModalAircraftIdentity[];
+  forbiddenAircraftIdentities?: FlightRequirementModalAircraftIdentity[];
+  notes?: string;
+  legs: Leg[];
+}
+
+interface Leg {
+  flightNumber?: string;
+  departure?: string;
+  arrival?: string;
+  blockTime?: string;
+  stdLowerbound?: string;
+  stdUpperbound?: string;
+  originPermission?: boolean;
+  destinationpermission?: boolean;
 }
 
 export const NavBarToolsContainerContext = createContext<HTMLDivElement | null>(null);
@@ -83,7 +123,17 @@ const PreplanPage: FC = () => {
   const [preplan, setPreplan] = useState<Preplan | null>(null);
   const [flightRequirementModalModel, setFlightRequirementModalModel] = useState<FlightRequirementModalModel>({ open: false, loading: false });
   const [objectionModalModel, setObjectionModalModel] = useState<ObjectionModalModel>({ open: false });
+  const [flightRequirementWithMultiLegModalModel, setFlightRequirementWithMultiLegModalModel] = useState<FlightRequirementWithMultiLegModalModel>(() => {
+    const result: FlightRequirementWithMultiLegModalModel = { open: false, loading: false, details: [] };
+
+    // for (let index = 0; index < 8; index++) {
+    //   result.details.push({} as FlightRequirmentDetailModalModel);
+    // }
+    return result;
+  });
   const navBarToolsRef = useRef<HTMLDivElement>(null);
+  const [selectedDay, setSelectedDay] = useState(0);
+  const [legIndex, setLegIndex] = useState(0);
 
   const { match } = useRouter<{ id: string }>();
   const classes = useStyles();
@@ -153,11 +203,23 @@ const PreplanPage: FC = () => {
     });
   }, [match.params.id]);
 
+  useEffect(() => {
+    console.log(flightRequirementWithMultiLegModalModel, flightRequirementWithMultiLegModalModel.details);
+  }, [flightRequirementWithMultiLegModalModel, flightRequirementWithMultiLegModalModel.details]);
+
   const resourceSchedulerPageSelected = window.location.href.startsWith(`${window.location.origin}/#${match.url}/resource-scheduler`);
   const flightRequirementListPageSelected = window.location.href.startsWith(`${window.location.origin}/#${match.url}/flight-requirement-list`);
   const reportsPageSelected = window.location.href.startsWith(`${window.location.origin}/#${match.url}/reports`);
   const reportsProposalPageSelected = reportsPageSelected && window.location.hash.endsWith('/proposal');
   const reportsConnectionsPageSelected = reportsPageSelected && window.location.hash.endsWith('/connections');
+  flightRequirementWithMultiLegModalModel.details = flightRequirementWithMultiLegModalModel.details || [];
+  //flightRequirementWithMultiLegModalModel.details.legs = flightRequirementWithMultiLegModalModel.details.legs || [];
+
+  if (flightRequirementWithMultiLegModalModel.details.length === 0) {
+    for (let index = 0; index < 8; index++) {
+      flightRequirementWithMultiLegModalModel.details.push({ legs: [{}] } as FlightRequirmentDetailModalModel);
+    }
+  }
 
   return (
     <Fragment>
@@ -492,7 +554,6 @@ const PreplanPage: FC = () => {
                 } else {
                   preplan!.mergeFlightRequirements(result.value![0]);
                   setFlightRequirementModalModel(flightRequirementModalModel => ({ ...flightRequirementModalModel, loading: false, open: false }));
-                  //setFlightRequirements([...preplan!.flightRequirements]);
                 }
               }
             }
@@ -912,12 +973,353 @@ const PreplanPage: FC = () => {
           new error objections to be issued.
         </Typography>
       </SimpleModal>
+
+      <SimpleModal
+        key="flightRequirementEditorWithMultiLeg"
+        open={flightRequirementWithMultiLegModalModel.open && (flightRequirementWithMultiLegModalModel.mode === 'ADD' || flightRequirementWithMultiLegModalModel.mode === 'EDIT')}
+        loading={flightRequirementWithMultiLegModalModel.loading}
+        errorMessage={flightRequirementWithMultiLegModalModel.errorMessage}
+        cancelable={true}
+        title={
+          flightRequirementWithMultiLegModalModel.mode === 'ADD'
+            ? 'What is the new flight requirement?'
+            : flightRequirementWithMultiLegModalModel.mode === 'EDIT'
+            ? 'Edit flight requirement'
+            : flightRequirementWithMultiLegModalModel.mode === 'READ_ONLY'
+            ? 'Flight requirement'
+            : ''
+        }
+        actions={[
+          {
+            title: 'Cancel'
+          },
+          {
+            title: 'Submit',
+            action: () => {
+              setFlightRequirementWithMultiLegModalModel({ ...flightRequirementWithMultiLegModalModel, loading: true });
+
+              if (true) {
+                setFlightRequirementWithMultiLegModalModel(flightRequirementWithMultiLegModalModel => ({
+                  ...flightRequirementWithMultiLegModalModel,
+                  open: false,
+                  loading: false
+                }));
+              } else {
+                setFlightRequirementWithMultiLegModalModel(flightRequirementWithMultiLegModalModel => ({
+                  ...flightRequirementWithMultiLegModalModel,
+                  errorMessage: 'error accourd',
+                  loading: false
+                }));
+              }
+            }
+          }
+        ]}
+        onClose={() => setFlightRequirementWithMultiLegModalModel(flightRequirementWithMultiLegModalModel => ({ ...flightRequirementWithMultiLegModalModel, open: false }))}
+      >
+        <Grid container>
+          <Grid item xs={12}>
+            <Typography variant="caption" className={classes.captionTextColor}>
+              Flight Information
+            </Typography>
+          </Grid>
+          <Grid item xs={4}>
+            <TextField
+              fullWidth
+              label="Label"
+              value={flightRequirementWithMultiLegModalModel.label || ''}
+              onChange={l => setFlightRequirementWithMultiLegModalModel({ ...flightRequirementWithMultiLegModalModel, label: l.target.value })}
+              disabled={flightRequirementWithMultiLegModalModel.disable}
+            />
+          </Grid>
+          <Grid item xs={4}>
+            <TextField
+              fullWidth
+              label="Category"
+              value={flightRequirementWithMultiLegModalModel.category || ''}
+              onChange={l => setFlightRequirementWithMultiLegModalModel({ ...flightRequirementWithMultiLegModalModel, category: l.target.value })}
+              disabled={flightRequirementWithMultiLegModalModel.disable}
+            />
+          </Grid>
+          <Grid item xs={4}>
+            <AutoComplete
+              options={MasterData.all.stcs.items}
+              label="Stc"
+              getOptionLabel={l => l.name}
+              getOptionValue={l => l.id}
+              value={flightRequirementWithMultiLegModalModel.stc}
+              onSelect={s => {
+                setFlightRequirementWithMultiLegModalModel({ ...flightRequirementWithMultiLegModalModel, stc: s });
+              }}
+              isDisabled={flightRequirementWithMultiLegModalModel.disable}
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <Grid container>
+              <Grid item xs={2}>
+                <Typography variant="subtitle2">Days:</Typography>
+              </Grid>
+              <Grid item xs={10}>
+                <DaysPicker
+                  selectedDays={flightRequirementWithMultiLegModalModel.days}
+                  onItemClick={w => setFlightRequirementWithMultiLegModalModel({ ...flightRequirementWithMultiLegModalModel, days: w })}
+                  disabled={flightRequirementWithMultiLegModalModel.disable}
+                />
+              </Grid>
+            </Grid>
+          </Grid>
+
+          <Grid item xs={12}>
+            <Tabs
+              key="weekday"
+              value={selectedDay}
+              onChange={(event, t) => {
+                setSelectedDay(t);
+              }}
+            >
+              <Tab className={classes.dayTab} label="Main" />
+              <Tab className={classes.dayTab} label="Sat" />
+              <Tab className={classes.dayTab} label="Sun" />
+              <Tab className={classes.dayTab} label="Mon" />
+              <Tab className={classes.dayTab} label="Tue" />
+              <Tab className={classes.dayTab} label="Wed" />
+              <Tab className={classes.dayTab} label="Thu" />
+              <Tab className={classes.dayTab} label="Fri" />
+            </Tabs>
+            <Grid item xs={12}>
+              {/* <FlightRequirementDetail></FlightRequirementDetail> */}
+
+              <Grid container>
+                <Grid item xs={6}>
+                  <AutoComplete
+                    label="RSX"
+                    options={rsxOptions}
+                    getOptionLabel={l => l.name}
+                    getOptionValue={v => v.name}
+                    value={{ name: flightRequirementWithMultiLegModalModel.details[selectedDay].rsx! }}
+                    onSelect={s => {
+                      flightRequirementWithMultiLegModalModel.details[selectedDay].rsx = s.name;
+                      setFlightRequirementWithMultiLegModalModel({ ...flightRequirementWithMultiLegModalModel });
+                    }}
+                    disabled={flightRequirementWithMultiLegModalModel.disable}
+                  />
+                </Grid>
+                <Grid item xs={6}>
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        color="primary"
+                        checked={flightRequirementWithMultiLegModalModel.details[selectedDay].required}
+                        onChange={e => {
+                          flightRequirementWithMultiLegModalModel.details[selectedDay].required = e.target.checked;
+                          setFlightRequirementWithMultiLegModalModel({ ...flightRequirementWithMultiLegModalModel });
+                        }}
+                      />
+                    }
+                    label="Required"
+                  />
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="caption" className={classes.captionTextColor}>
+                    Allowed Aircrafts
+                  </Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="caption" className={classes.captionTextColor}>
+                    Forbidden Aircrafts
+                  </Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <MultiSelect
+                    options={aircraftIdentities}
+                    getOptionLabel={l => l.name}
+                    getOptionValue={l => l.id}
+                    value={flightRequirementWithMultiLegModalModel.details[selectedDay].allowedAircraftIdentities}
+                    isDisabled={flightRequirementWithMultiLegModalModel.disable}
+                    onSelect={l => {
+                      flightRequirementWithMultiLegModalModel.details[selectedDay].allowedAircraftIdentities = l ? [...l] : [];
+                      setFlightRequirementWithMultiLegModalModel({ ...flightRequirementWithMultiLegModalModel });
+                    }}
+                  ></MultiSelect>
+                </Grid>
+                <Grid item xs={6}>
+                  <MultiSelect
+                    options={aircraftIdentities}
+                    getOptionLabel={l => l.name}
+                    getOptionValue={l => l.id}
+                    value={flightRequirementWithMultiLegModalModel.details[selectedDay].forbiddenAircraftIdentities}
+                    isDisabled={flightRequirementWithMultiLegModalModel.disable}
+                    onSelect={l => {
+                      flightRequirementWithMultiLegModalModel.details[selectedDay].forbiddenAircraftIdentities = l ? [...l] : [];
+                      setFlightRequirementWithMultiLegModalModel({ ...flightRequirementWithMultiLegModalModel });
+                    }}
+                  ></MultiSelect>
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    label="Notes"
+                    value={flightRequirementWithMultiLegModalModel.details[selectedDay].notes}
+                    onChange={s => {
+                      flightRequirementWithMultiLegModalModel.details[selectedDay].notes = s.target.value;
+                      setFlightRequirementWithMultiLegModalModel({ ...flightRequirementWithMultiLegModalModel });
+                    }}
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <Grid container>
+                    <Grid item xs={11}>
+                      <Tabs key="legs" value={legIndex} onChange={(event, newValue: number) => setLegIndex(newValue)}>
+                        {flightRequirementWithMultiLegModalModel.details[selectedDay].legs.map((l, index) => (
+                          <Tab
+                            component={() => (
+                              <Fragment>
+                                <Button>{(!index ? l.departure || 'Dep' : '') + '->' + (l.arrival || 'Arr')}</Button>
+                                <IconButton>
+                                  <ClearIcon />
+                                </IconButton>
+                              </Fragment>
+                            )}
+                          />
+                        ))}
+                        <Tab
+                          component={() => (
+                            <IconButton
+                              onClick={() => {
+                                const legLength = flightRequirementWithMultiLegModalModel.details[selectedDay].legs.length;
+                                const lastLeg = flightRequirementWithMultiLegModalModel.details[selectedDay].legs[legLength - 1];
+                                const leg: Leg = { departure: lastLeg.arrival, stdLowerbound: lastLeg.stdLowerbound, stdUpperbound: lastLeg.stdUpperbound };
+
+                                flightRequirementWithMultiLegModalModel.details[selectedDay].legs.push(leg);
+                                setFlightRequirementWithMultiLegModalModel({ ...flightRequirementWithMultiLegModalModel });
+                              }}
+                            >
+                              <AddIcon />
+                            </IconButton>
+                          )}
+                        ></Tab>
+                      </Tabs>
+                    </Grid>
+                    <Grid item xs={1}>
+                      <Tab
+                        component={() => (
+                          <IconButton>
+                            <WrapTextIcon />
+                          </IconButton>
+                        )}
+                      ></Tab>
+                    </Grid>
+                  </Grid>
+
+                  <Grid container>
+                    <Grid item xs={4}>
+                      <TextField
+                        label="Flight Number"
+                        value={flightRequirementWithMultiLegModalModel.details[selectedDay].legs[legIndex].flightNumber || ''}
+                        onChange={l => {
+                          flightRequirementWithMultiLegModalModel.details[selectedDay].legs[legIndex].flightNumber = l.target.value;
+
+                          setFlightRequirementWithMultiLegModalModel({ ...flightRequirementWithMultiLegModalModel });
+                        }}
+                        disabled={!!selectedDay || flightRequirementWithMultiLegModalModel.disable}
+                      />
+                    </Grid>
+                    <Grid item xs={4}>
+                      <TextField
+                        label="Departure"
+                        value={flightRequirementWithMultiLegModalModel.details[selectedDay].legs[legIndex].departure}
+                        onChange={l => {
+                          flightRequirementWithMultiLegModalModel.details[selectedDay].legs[legIndex].departure = l.target.value;
+                          setFlightRequirementWithMultiLegModalModel({ ...flightRequirementWithMultiLegModalModel });
+                        }}
+                        disabled={!!selectedDay || flightRequirementWithMultiLegModalModel.disable}
+                      />
+                    </Grid>
+                    <Grid item xs={4}>
+                      <TextField
+                        label="Arrival"
+                        value={flightRequirementWithMultiLegModalModel.details[selectedDay].legs[legIndex].arrival}
+                        onChange={l => {
+                          flightRequirementWithMultiLegModalModel.details[selectedDay].legs[legIndex].arrival = l.target.value;
+                          setFlightRequirementWithMultiLegModalModel({ ...flightRequirementWithMultiLegModalModel });
+                        }}
+                        disabled={!!selectedDay || flightRequirementWithMultiLegModalModel.disable}
+                      />
+                    </Grid>
+                    <Grid item xs={3}>
+                      <TextField
+                        label="BlockTime"
+                        value={flightRequirementWithMultiLegModalModel.details[selectedDay].legs[legIndex].blockTime}
+                        onChange={l => {
+                          flightRequirementWithMultiLegModalModel.details[selectedDay].legs[legIndex].blockTime = l.target.value;
+                          setFlightRequirementWithMultiLegModalModel({ ...flightRequirementWithMultiLegModalModel });
+                        }}
+                        disabled={flightRequirementWithMultiLegModalModel.disable}
+                      />
+                    </Grid>
+                    <Grid item xs={5}>
+                      <FormControlLabel
+                        label="Destination Permmision"
+                        control={
+                          <Checkbox
+                            color="primary"
+                            checked={flightRequirementWithMultiLegModalModel.details[selectedDay].legs[legIndex].destinationpermission}
+                            onChange={e => {
+                              flightRequirementWithMultiLegModalModel.details[selectedDay].legs[legIndex].destinationpermission = e.target.checked;
+                              setFlightRequirementWithMultiLegModalModel({ ...flightRequirementWithMultiLegModalModel });
+                            }}
+                          />
+                        }
+                      />
+                    </Grid>
+                    <Grid item xs={4}>
+                      <FormControlLabel
+                        label="Origin Permission"
+                        control={
+                          <Checkbox
+                            color="primary"
+                            checked={flightRequirementWithMultiLegModalModel.details[selectedDay].legs[legIndex].originPermission}
+                            onChange={e => {
+                              flightRequirementWithMultiLegModalModel.details[selectedDay].legs[legIndex].originPermission = e.target.checked;
+                              setFlightRequirementWithMultiLegModalModel({ ...flightRequirementWithMultiLegModalModel });
+                            }}
+                          />
+                        }
+                      />
+                    </Grid>
+                    <Grid item xs={6}>
+                      <TextField
+                        label="STDLowerbound"
+                        value={flightRequirementWithMultiLegModalModel.details[selectedDay].legs[legIndex].stdLowerbound}
+                        onChange={l => {
+                          flightRequirementWithMultiLegModalModel.details[selectedDay].legs[legIndex].stdLowerbound = l.target.value;
+                          setFlightRequirementWithMultiLegModalModel({ ...flightRequirementWithMultiLegModalModel });
+                        }}
+                        disabled={flightRequirementWithMultiLegModalModel.disable}
+                      />
+                    </Grid>
+                    <Grid item xs={6}>
+                      <TextField
+                        label="STDUpperbound"
+                        value={flightRequirementWithMultiLegModalModel.details[selectedDay].legs[legIndex].stdUpperbound}
+                        onChange={l => {
+                          setFlightRequirementWithMultiLegModalModel({ ...flightRequirementWithMultiLegModalModel });
+                        }}
+                        disabled={flightRequirementWithMultiLegModalModel.disable}
+                      />
+                    </Grid>
+                  </Grid>
+                </Grid>
+              </Grid>
+            </Grid>
+          </Grid>
+        </Grid>
+      </SimpleModal>
     </Fragment>
   );
 
   function applyFlightRequirementModalModel(mode: FlightRequirementModalMode, flightRequirement?: FlightRequirement, weekdayFlightRequirement?: WeekdayFlightRequirement): void {
     const model: FlightRequirementModalModel = {
-      open: true,
+      open: false,
       loading: false,
       actionTitle: mode === 'ADD' || mode === 'RETURN' ? 'Add' : 'Edit',
       mode: mode,
@@ -974,6 +1376,15 @@ const PreplanPage: FC = () => {
     function convertPreplanAircraftIdentityToAircraftIdentity(preplanAircraftIdentities: readonly PreplanAircraftIdentity[]): FlightRequirementModalAircraftIdentity[] {
       return preplanAircraftIdentities.map(n => aircraftIdentities.find(a => a.entityId === n.entity.id && a.type === n.type)!);
     }
+
+    const newModel: FlightRequirementWithMultiLegModalModel = {
+      open: true,
+      loading: false,
+      mode: mode,
+      details: []
+    };
+
+    setFlightRequirementWithMultiLegModalModel(newModel);
   }
 };
 

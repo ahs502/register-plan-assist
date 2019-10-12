@@ -29,6 +29,7 @@ import WeekdayFlightRequirement from 'src/business/flights/WeekdayFlightRequirem
 import PreplanAircraftRegister from 'src/business/PreplanAircraftRegister';
 import { FlightRequirementModalModel, FlightRequirementModalAircraftIdentity, FlightRequirementModalMode } from 'src/components/preplan/flight-requirement/FlightRequirementEditor';
 import FlightModel from '@core/models/flights/FlightModel';
+import StarRateIcon from '@material-ui/icons/StarRate';
 
 const useStyles = makeStyles((theme: Theme) => ({
   flightRequirementStyle: {
@@ -130,6 +131,8 @@ const PreplanPage: FC = () => {
   const [selectedDay, setSelectedDay] = useState(0);
   const [legIndex, setLegIndex] = useState(0);
   const [selectedLeg, setSelectedLeg] = useState(0);
+  const [selectedDaysStatus, setSelectedDaysStatus] = useState(Array.range(0, 6).map(i => false))
+
 
   const { match } = useRouter<{ id: string }>();
   const classes = useStyles();
@@ -1073,7 +1076,20 @@ const PreplanPage: FC = () => {
               <Grid item xs={10}>
                 <DaysPicker
                   selectedDays={flightRequirementWithMultiLegModalModel.days}
-                  onItemClick={w => setFlightRequirementWithMultiLegModalModel({ ...flightRequirementWithMultiLegModalModel, days: w })}
+                  onItemClick={w => {
+                    setFlightRequirementWithMultiLegModalModel({ ...flightRequirementWithMultiLegModalModel, days: w })
+                    setSelectedDaysStatus(w);
+                    w.map((element, index) => {
+                      if (element) {
+                        const mainTabInfo = { ...flightRequirementWithMultiLegModalModel.details[0] };
+                        flightRequirementWithMultiLegModalModel.details[index + 1].legs[legIndex] = mainTabInfo.legs[legIndex];
+                        flightRequirementWithMultiLegModalModel.details[index + 1].rsx = mainTabInfo.rsx;
+                      }
+                      else {
+                        flightRequirementWithMultiLegModalModel.details[index + 1].legs[legIndex] = {};
+                      }
+                    });
+                  }}
                   disabled={flightRequirementWithMultiLegModalModel.disable}
                 />
               </Grid>
@@ -1081,16 +1097,19 @@ const PreplanPage: FC = () => {
           </Grid>
 
           <Grid item xs={12}>
+            {/* <Tabs key="" ></Tabs> */}
             <Tabs
               key="weekday"
               value={selectedDay}
               onChange={(event, t) => {
                 setSelectedDay(t);
+
               }}
             >
               <Tab key={'Main'} className={classes.dayTab} label={'Main'} disabled={false} />
-              {weekDaysArray.map((item, index) => (
-                <Tab key={item} className={classes.dayTab} label={item} disabled={!flightRequirementWithMultiLegModalModel.days[index]} />
+              {weekDaysArray.map((weekDay, index) => (
+                <Tab key={weekDay} className={classes.dayTab} label={weekDay} disabled={!flightRequirementWithMultiLegModalModel.days[index]} />
+                // <Tab key={weekDay} className={classes.dayTab} label={weekDay + '*'} disabled={!flightRequirementWithMultiLegModalModel.days[index]} />
               ))}
             </Tabs>
             <Grid item xs={12}>
@@ -1113,6 +1132,7 @@ const PreplanPage: FC = () => {
                 </Grid>
                 <Grid item xs={6}>
                   <FormControlLabel
+                    label="Required"
                     control={
                       <Checkbox
                         color="primary"
@@ -1123,7 +1143,6 @@ const PreplanPage: FC = () => {
                         }}
                       />
                     }
-                    label="Required"
                   />
                 </Grid>
                 <Grid item xs={6}>
@@ -1243,8 +1262,8 @@ const PreplanPage: FC = () => {
                       <IconButton
                         onClick={() => {
                           const legs = flightRequirementWithMultiLegModalModel.details[selectedDay].legs;
-                          const legsCopy = [...legs];
-                          legsCopy.reverse().map((leg, index) => {
+                          const legsReversed = [...legs].reverse();
+                          legsReversed.map((leg, index) => {
                             flightRequirementWithMultiLegModalModel.details[selectedDay].legs.push({
                               departure: leg.arrival,
                               arrival: leg.departure,
@@ -1358,7 +1377,7 @@ const PreplanPage: FC = () => {
 
                     <Grid item xs={6}>
                       <FormControlLabel
-                        label="Destination Permmision"
+                        label="Destination Permission"
                         control={
                           <Checkbox
                             color="primary"

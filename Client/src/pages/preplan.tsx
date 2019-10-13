@@ -1242,10 +1242,15 @@ const PreplanPage: FC = () => {
                               onClick={() => {
                                 const legs = flightRequirementWithMultiLegModalModel.details[selectedDay].legs;
                                 const lastLeg = legs[legs.length - 1];
+                                const lastLegStdUpperBoundInMinute = parseHHMM(lastLeg.stdUpperbound!);
+                                const lastLegStdLowerBoundInMinute = parseHHMM(lastLeg.stdLowerbound!);
+                                const lastLegBlockTimeInMinute = parseHHMM(lastLeg.blockTime);
+                                const newLegStdUpperBoundInMinute = isNaN(lastLegStdUpperBoundInMinute && lastLegBlockTimeInMinute) ? '' : parseMinute(lastLegStdUpperBoundInMinute + 120 + lastLegBlockTimeInMinute);
+                                const newLegStdLowerBoundInMinute = isNaN(lastLegStdLowerBoundInMinute && lastLegBlockTimeInMinute) ? '' : parseMinute(lastLegStdLowerBoundInMinute + 120 + lastLegBlockTimeInMinute);
                                 const leg: Leg = {
                                   departure: lastLeg.arrival,
-                                  stdUpperbound: isNaN(+parseMinute(parseHHMM(lastLeg.stdUpperbound!) + 120 + parseHHMM(lastLeg.blockTime))) ? '' : parseMinute(parseHHMM(lastLeg.stdUpperbound!) + 120 + parseHHMM(lastLeg.blockTime)),
-                                  stdLowerbound: isNaN(+parseMinute(parseHHMM(lastLeg.stdLowerbound!) + 120 + parseHHMM(lastLeg.blockTime))) ? '' : parseMinute(parseHHMM(lastLeg.stdLowerbound!) + 120 + parseHHMM(lastLeg.blockTime))
+                                  stdUpperbound: newLegStdUpperBoundInMinute,
+                                  stdLowerbound: newLegStdLowerBoundInMinute
                                 };
                                 flightRequirementWithMultiLegModalModel.details[selectedDay].legs.push(leg);
                                 setLegIndex(legs.length - 1);
@@ -1264,12 +1269,18 @@ const PreplanPage: FC = () => {
                           const legs = flightRequirementWithMultiLegModalModel.details[selectedDay].legs;
                           const legsReversed = [...legs].reverse();
                           legsReversed.map((leg, index) => {
+                            const legStdUpperBoundInMinute = parseHHMM(leg.stdUpperbound!);
+                            const legStdLowerBoundInMinute = parseHHMM(leg.stdLowerbound!);
+                            const legBlockTimeInMinute = parseHHMM(leg.blockTime);
+                            const returnLegStdUpperBoundInMinute = isNaN(legStdUpperBoundInMinute && legBlockTimeInMinute) ? '' : parseMinute(legStdUpperBoundInMinute + 120 + legBlockTimeInMinute);
+                            const returnLegStdLowerBoundInMinute = isNaN(legStdLowerBoundInMinute && legBlockTimeInMinute) ? '' : parseMinute(legStdLowerBoundInMinute + 120 + legBlockTimeInMinute);
+
                             flightRequirementWithMultiLegModalModel.details[selectedDay].legs.push({
                               departure: leg.arrival,
                               arrival: leg.departure,
                               blockTime: '',
-                              stdLowerbound: parseMinute(parseHHMM(leg.stdLowerbound!) + 120 + parseHHMM(leg.blockTime)),
-                              stdUpperbound: parseMinute(parseHHMM(leg.stdUpperbound!) + 120 + parseHHMM(leg.blockTime))
+                              stdUpperbound: returnLegStdUpperBoundInMinute,
+                              stdLowerbound: returnLegStdLowerBoundInMinute
                             });
                           });
                           setLegIndex(legs.length / 2);

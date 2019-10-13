@@ -22,3 +22,20 @@ export class DummyAircraftRegisterModelValidation extends Validation {
     );
   }
 }
+
+export class DummyAircraftRegisterModelArrayValidation extends Validation<
+  string,
+  {
+    items: DummyAircraftRegisterModelValidation[];
+  }
+> {
+  constructor(data: readonly DummyAircraftRegisterModel[]) {
+    super(validator =>
+      validator
+        .array(data)
+        .each((register, index) => validator.put(validator.$.items[index], new DummyAircraftRegisterModelValidation(register)))
+        .must(() => data.map(r => r.id).distinct().length === data.length)
+        .must(() => data.map(r => r.name).distinct().length === data.length)
+    );
+  }
+}

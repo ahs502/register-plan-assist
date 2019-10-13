@@ -2,22 +2,24 @@ import PreplanHeaderEntity, { convertPreplanHeaderEntityToModel } from './Prepla
 import { Xml, xmlParse, xmlArray, xmlStringify } from 'src/utils/xml';
 import PreplanModel from '@core/models/preplan/PreplanModel';
 import { convertDummyAircraftRegisterEntityToModel, convertDummyAircraftRegisterModelToEntity } from './DummyAircraftRegisterEntity';
-import FlightRequirementEntity, { convertFlightRequirementEntityToModel } from 'src/entities/flight-requirement/FlightRequirementEntity';
 import { convertAircraftRegisterOptionsEntityToModel, convertAircraftRegisterOptionsModelToEntity } from './AircraftRegisterOptionsEntity';
 import DummyAircraftRegisterModel from '@core/models/preplan/DummyAircraftRegisterModel';
 import AircraftRegisterOptionsModel from '@core/models/preplan/AircraftRegisterOptionsModel';
+import FlightRequirementEntity, { convertFlightRequirementEntityToModel } from 'src/entities/flight-requirement/FlightRequirementEntity';
+import FlightEntity, { convertFlightEntityToModel } from 'src/entities/flight/FlightEntity';
 
 export default interface PreplanEntity extends PreplanHeaderEntity {
   readonly dummyAircraftRegistersXml: Xml;
   readonly aircraftRegisterOptionsXml: Xml;
 }
 
-export function convertPreplanEntityToModel(data: PreplanEntity, flightRequirements: readonly FlightRequirementEntity[]): PreplanModel {
+export function convertPreplanEntityToModel(data: PreplanEntity, flightRequirements: readonly FlightRequirementEntity[], flights: readonly FlightEntity[]): PreplanModel {
   return {
     ...convertPreplanHeaderEntityToModel(data),
     dummyAircraftRegisters: parsePreplanDummyAircraftRegistersXml(data.dummyAircraftRegistersXml),
     aircraftRegisterOptions: parsePreplanAircraftRegisterOptionsXml(data.aircraftRegisterOptionsXml),
-    flightRequirements: flightRequirements.map(convertFlightRequirementEntityToModel)
+    flightRequirements: flightRequirements.map(convertFlightRequirementEntityToModel),
+    flights: flights.map(convertFlightEntityToModel)
   };
 }
 

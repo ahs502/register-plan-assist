@@ -1087,12 +1087,6 @@ const PreplanPage: FC = () => {
                       .map((day, index) => {
                         if ((!day.isModified) && w[index]) {
                           const mainTabInfo = { ...flightRequirementWithMultiLegModalModel.details[0] };
-                          // console.log("-------->", mainTabInfo);
-                          // for (var key in mainTabInfo) {
-                          //   if (mainTabInfo.hasOwnProperty(key) && (key!='isModified')) {
-                          //     flightRequirementWithMultiLegModalModel.details[index + 1][key] = mainTabInfo[key];
-                          //   }
-                          // }
                           flightRequirementWithMultiLegModalModel.details[index + 1].legs = [...mainTabInfo.legs];
                           flightRequirementWithMultiLegModalModel.details[index + 1].rsx = { ...mainTabInfo }.rsx;
                           flightRequirementWithMultiLegModalModel.details[index + 1].required = { ...mainTabInfo }.required;
@@ -1151,7 +1145,7 @@ const PreplanPage: FC = () => {
                     disabled={flightRequirementWithMultiLegModalModel.disable}
                   />
                 </Grid>
-                <Grid item xs={6}>
+                <Grid item xs={4}>
                   <FormControlLabel
                     label="Required"
                     control={
@@ -1173,6 +1167,23 @@ const PreplanPage: FC = () => {
                       />
                     }
                   />
+                </Grid>
+                <Grid item xs={2} >
+                  {!selectedDay ? null : <Button
+                    onClick={() => {
+                      const mainTabInfo = { ...flightRequirementWithMultiLegModalModel.details[0] };
+                      flightRequirementWithMultiLegModalModel.details[selectedDay].legs = [...mainTabInfo.legs];
+                      flightRequirementWithMultiLegModalModel.details[selectedDay].rsx = { ...mainTabInfo }.rsx;
+                      flightRequirementWithMultiLegModalModel.details[selectedDay].required = { ...mainTabInfo }.required;
+                      flightRequirementWithMultiLegModalModel.details[selectedDay].allowedAircraftIdentities = [...mainTabInfo.allowedAircraftIdentities || []];
+                      flightRequirementWithMultiLegModalModel.details[selectedDay].forbiddenAircraftIdentities = [...mainTabInfo.forbiddenAircraftIdentities || []];
+                      flightRequirementWithMultiLegModalModel.details[selectedDay].notes = { ...mainTabInfo }.notes;
+                      setFlightRequirementWithMultiLegModalModel({ ...flightRequirementWithMultiLegModalModel });
+                    }}
+                    color="primary"
+                  >
+                    {"Default"}
+                  </Button>}
                 </Grid>
                 <Grid item xs={6}>
                   <Typography variant="caption" className={classes.captionTextColor}>

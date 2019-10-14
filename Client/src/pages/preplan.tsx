@@ -1178,7 +1178,9 @@ const PreplanPage: FC = () => {
                       flightRequirementWithMultiLegModalModel.details[selectedDay].allowedAircraftIdentities = [...mainTabInfo.allowedAircraftIdentities || []];
                       flightRequirementWithMultiLegModalModel.details[selectedDay].forbiddenAircraftIdentities = [...mainTabInfo.forbiddenAircraftIdentities || []];
                       flightRequirementWithMultiLegModalModel.details[selectedDay].notes = { ...mainTabInfo }.notes;
+                      flightRequirementWithMultiLegModalModel.details[selectedDay].isModified = false;
                       setFlightRequirementWithMultiLegModalModel({ ...flightRequirementWithMultiLegModalModel });
+
                     }}
                     color="primary"
                   >

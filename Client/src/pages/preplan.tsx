@@ -1112,16 +1112,16 @@ const PreplanPage: FC = () => {
                 setSelectedDay(t);
 
               }}
+              variant="scrollable"
+              scrollButtons="auto"
             >
               <Tab key={'Main'} className={classes.dayTab} label={'Main'} disabled={false} />
-              {weekDaysArray.map((weekDay, index) => (
-                <Tab key={weekDay} className={classes.dayTab} label={weekDay} disabled={!flightRequirementWithMultiLegModalModel.days[index]} />
-                // <Tab key={weekDay} className={classes.dayTab} label={weekDay + '*'} disabled={!flightRequirementWithMultiLegModalModel.days[index]} />
+              {weekDaysArray.map((weekDay, tabIndex) => (
+                <Tab key={weekDay} className={classes.dayTab} label={flightRequirementWithMultiLegModalModel.details[tabIndex + 1].isModified ? weekDay + '*' : weekDay} disabled={!flightRequirementWithMultiLegModalModel.days[tabIndex]} />
               ))}
             </Tabs>
             <Grid item xs={12}>
               {/* <FlightRequirementDetail></FlightRequirementDetail> */}
-
               <Grid container>
                 <Grid item xs={6}>
                   <AutoComplete
@@ -1258,10 +1258,10 @@ const PreplanPage: FC = () => {
                     }}
                   />
                 </Grid>
-                <Grid item xs={12}>
+                <Grid item xs={12} >
                   <Grid container>
                     <Grid item xs={11}>
-                      <Tabs key="legs" value={legIndex} onChange={(event, newValue) => setLegIndex(newValue)}>
+                      <Tabs key="legs" value={legIndex} onChange={(event, newValue) => setLegIndex(newValue)} variant="scrollable" scrollButtons="auto">
                         {flightRequirementWithMultiLegModalModel.details[selectedDay].legs.map((l, index, source) => (
                           <Tab
                             key={index}
@@ -1419,7 +1419,6 @@ const PreplanPage: FC = () => {
                         disabled={flightRequirementWithMultiLegModalModel.disable}
                       />
                     </Grid>
-
                     <Grid item xs={4}>
                       <TextField
                         label="STDLowerbound"
@@ -1450,7 +1449,6 @@ const PreplanPage: FC = () => {
                         disabled={flightRequirementWithMultiLegModalModel.disable}
                       />
                     </Grid>
-
                     <Grid item xs={6}>
                       <FormControlLabel
                         label="Destination Permission"

@@ -174,7 +174,7 @@ const PreplanPage: FC = () => {
   const [flightRequirementModalModel, setFlightRequirementModalModel] = useState<FlightRequirementModalModel>({ open: false, loading: false });
   const [objectionModalModel, setObjectionModalModel] = useState<ObjectionModalModel>({ open: false });
   const [flightRequirementWithMultiLegModalModel, setFlightRequirementWithMultiLegModalModel] = useState<FlightRequirementWithMultiLegModalModel>(() => {
-    const result: FlightRequirementWithMultiLegModalModel = { open: false, loading: false, details: [], days: [] };
+    const result: FlightRequirementWithMultiLegModalModel = { open: false, loading: false, details: [], days: [], stc: MasterData.all.stcs.items.find(n => n.name === 'J') };
     Array.range(0, 6).forEach(i => result.days!.push(false));
     return result;
   });
@@ -257,8 +257,8 @@ const PreplanPage: FC = () => {
   // }, [flightRequirementWithMultiLegModalModel, flightRequirementWithMultiLegModalModel.details]);
 
   useEffect(() => {
-    console.table('Detail', flightRequirementWithMultiLegModalModel.details);
-  }, [flightRequirementWithMultiLegModalModel.details]);
+    console.table('flightRequirementWithMultiLegModalModel', flightRequirementWithMultiLegModalModel);
+  }, [flightRequirementWithMultiLegModalModel]);
 
   const resourceSchedulerPageSelected = window.location.href.startsWith(`${window.location.origin}/#${match.url}/resource-scheduler`);
   const flightRequirementListPageSelected = window.location.href.startsWith(`${window.location.origin}/#${match.url}/flight-requirement-list`);
@@ -266,12 +266,12 @@ const PreplanPage: FC = () => {
   const reportsProposalPageSelected = reportsPageSelected && window.location.hash.endsWith('/proposal');
   const reportsConnectionsPageSelected = reportsPageSelected && window.location.hash.endsWith('/connections');
   flightRequirementWithMultiLegModalModel.details = flightRequirementWithMultiLegModalModel.details || [];
-  //flightRequirementWithMultiLegModalModel.details.legs = flightRequirementWithMultiLegModalModel.details.legs || [];
 
   if (flightRequirementWithMultiLegModalModel.details.length === 0) {
     for (let index = 0; index < 8; index++) {
-      flightRequirementWithMultiLegModalModel.details.push({ legs: [{}] } as FlightRequirmentDetailModalModel);
+      flightRequirementWithMultiLegModalModel.details.push({ legs: [{}], rsx: {} } as FlightRequirmentDetailModalModel);
     }
+    flightRequirementWithMultiLegModalModel.details[0].rsx = Rsxes[0];
   }
 
   const customTab = React.forwardRef<HTMLDivElement>((props, ref) => {
@@ -1220,7 +1220,7 @@ const PreplanPage: FC = () => {
                   />
                 </Grid>
                 <Grid item xs={2}>
-                  {!selectedDay ? null : (
+                  {!selectedDay || !flightRequirementWithMultiLegModalModel.details[selectedDay].isModified ? null : (
                     <Button
                       onClick={() => {
                         const mainTabInfo = { ...flightRequirementWithMultiLegModalModel.details[0] };
@@ -1630,7 +1630,8 @@ const PreplanPage: FC = () => {
       loading: false,
       mode: mode,
       details: [],
-      days: Array.range(0, 6).map(i => false)
+      days: Array.range(0, 6).map(i => false),
+      stc: MasterData.all.stcs.items.find(n => n.name === 'J')
     };
 
     setFlightRequirementWithMultiLegModalModel(newModel);

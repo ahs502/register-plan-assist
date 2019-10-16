@@ -1194,7 +1194,7 @@ const PreplanPage: FC = () => {
                   />
                 </Grid>
                 <Grid item xs={2}>
-                  {!selectedDay ? null : (
+                  {!selectedDay || !flightRequirementWithMultiLegModalModel.details[selectedDay].isModified ? null : (
                     <Button
                       onClick={() => {
                         const mainTabInfo = { ...flightRequirementWithMultiLegModalModel.details[0] };

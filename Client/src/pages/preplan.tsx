@@ -1140,7 +1140,7 @@ const PreplanPage: FC = () => {
                 <Tab
                   key={weekDay}
                   className={classes.dayTab}
-                  label={flightRequirementWithMultiLegModalModel.details[tabIndex + 1].isModified ? weekDay + '*' : weekDay}
+                  label={flightRequirementWithMultiLegModalModel.details[tabIndex + 1].isModified ? '*' + weekDay : weekDay}
                   disabled={!flightRequirementWithMultiLegModalModel.days[tabIndex]}
                 />
               ))}

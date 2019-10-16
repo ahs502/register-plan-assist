@@ -75,7 +75,7 @@ const useStyles = makeStyles((theme: Theme) => ({
   clearButton: {
     height: '25px',
     width: '25px',
-    margin: '15px 0px 0px 5px',
+    margin: '0px 0px 0px 5px',
     padding: '1px 10px 0px 10px'
   },
   clearIcon: {
@@ -83,8 +83,33 @@ const useStyles = makeStyles((theme: Theme) => ({
     height: '20px'
   },
   legTab: {
-    height: '60px',
-    minWidth: '100px'
+    display: 'flex',
+    flexDirection: 'column',
+    justifyItems: 'center',
+    alignContent: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: '50px',
+    width: '100px',
+    minWidth: '90px',
+    border: 'solid 1px gray',
+    borderRadius: '5px'
+  },
+  legTabButton: {
+    display: 'flex',
+    margin: '-5px',
+    padding: '0px'
+  },
+  legTabFlightNumber: {
+    display: 'flex',
+    color: 'grey',
+    fontSize: '10px'
+  },
+  legTabRightArrow: {
+    marginTop: '5px'
+  },
+  legInfo: {
+    marginTop: '10px'
   },
   addButton: {
     width: '35px',
@@ -1014,6 +1039,7 @@ const PreplanPage: FC = () => {
       </SimpleModal>
 
       <SimpleModal
+        // style={{ maxWidth: '700px', width: '1000px' }}
         key="flightRequirementEditorWithMultiLeg"
         open={flightRequirementWithMultiLegModalModel.open && (flightRequirementWithMultiLegModalModel.mode === 'ADD' || flightRequirementWithMultiLegModalModel.mode === 'EDIT')}
         loading={flightRequirementWithMultiLegModalModel.loading}
@@ -1290,21 +1316,27 @@ const PreplanPage: FC = () => {
                       <Tabs key="legs" value={legIndex} onChange={(event, newValue) => setLegIndex(newValue)} variant="scrollable" scrollButtons="auto">
                         {flightRequirementWithMultiLegModalModel.details[selectedDay].legs.map((l, index, source) => (
                           <Tab
-                            className={classes.legTab}
                             key={index}
                             component={React.forwardRef<HTMLDivElement>((props, ref) => {
                               return (
                                 <div {...props} ref={ref}>
-                                  <Button>
-                                    <Typography variant="caption">{!index ? l.departure || 'Dep' : ''}</Typography>
-
-                                    <Typography variant="caption">{l.flightNumber}</Typography>
-                                    <Typography variant="caption">
-                                      <ArrowRightAltIcon />
-                                    </Typography>
-
-                                    <Typography variant="caption">{l.arrival || 'Arr'}</Typography>
-                                  </Button>
+                                  <div className={classes.legTab}>
+                                    {!!flightRequirementWithMultiLegModalModel.details[selectedDay].legs[index].flightNumber ? (
+                                      <Typography className={classes.legTabFlightNumber} variant="caption">
+                                        {flightRequirementWithMultiLegModalModel.details[selectedDay].legs[index].flightNumber}
+                                      </Typography>
+                                    ) : (
+                                      <Typography className={classes.legTabFlightNumber}>{'Flight Number'}</Typography>
+                                    )}
+                                    {/* <TextField floatingLabelText="Fixed Floating Label Text" floatingLabelFixed={true} /> */}
+                                    <Button className={classes.legTabButton}>
+                                      <Typography variant="caption">{!index ? l.departure || 'Dep' : ''}</Typography>
+                                      <Typography variant="caption">
+                                        <ArrowRightAltIcon className={classes.legTabRightArrow} />
+                                      </Typography>
+                                      <Typography variant="caption">{l.arrival || 'Arr'}</Typography>
+                                    </Button>
+                                  </div>
                                   {index > 0 && (
                                     <IconButton
                                       className={classes.clearButton}
@@ -1394,7 +1426,7 @@ const PreplanPage: FC = () => {
                     </Grid>
                   </Grid>
 
-                  <Grid container>
+                  <Grid container className={classes.legInfo}>
                     <Grid item xs={4}>
                       <TextField
                         label="Flight Number"

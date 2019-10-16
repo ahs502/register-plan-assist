@@ -232,8 +232,8 @@ const PreplanPage: FC = () => {
   // }, [flightRequirementWithMultiLegModalModel, flightRequirementWithMultiLegModalModel.details]);
 
   useEffect(() => {
-    console.table('Detail', flightRequirementWithMultiLegModalModel.details);
-  }, [flightRequirementWithMultiLegModalModel.details]);
+    console.table('flightRequirementWithMultiLegModalModel', flightRequirementWithMultiLegModalModel);
+  }, [flightRequirementWithMultiLegModalModel]);
 
   const resourceSchedulerPageSelected = window.location.href.startsWith(`${window.location.origin}/#${match.url}/resource-scheduler`);
   const flightRequirementListPageSelected = window.location.href.startsWith(`${window.location.origin}/#${match.url}/flight-requirement-list`);
@@ -1598,7 +1598,8 @@ const PreplanPage: FC = () => {
       loading: false,
       mode: mode,
       details: [],
-      days: Array.range(0, 6).map(i => false)
+      days: Array.range(0, 6).map(i => false),
+      stc: MasterData.all.stcs.items.find(n => n.name === 'J')
     };
 
     setFlightRequirementWithMultiLegModalModel(newModel);

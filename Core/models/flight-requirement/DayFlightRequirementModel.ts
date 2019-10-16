@@ -3,13 +3,14 @@ import Rsx, { Rsxes } from '@core/types/Rsx';
 import DayFlightRequirementLegModel, { DayFlightRequirementLegModelValidation } from './DayFlightRequirementLegModel';
 import Id from '@core/types/Id';
 import Validation from '@ahs502/validation';
+import Weekday from '@core/types/Weekday';
 
 export default interface DayFlightRequirementModel {
   readonly aircraftSelection: AircraftSelectionModel;
   readonly rsx: Rsx;
   readonly required: boolean;
   readonly freezed: boolean;
-  readonly day: number;
+  readonly day: Weekday;
   readonly notes: string;
   readonly route: readonly DayFlightRequirementLegModel[];
 }

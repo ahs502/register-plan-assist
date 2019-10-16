@@ -1,6 +1,5 @@
 import Checker from 'src/business/constraints/Checker';
-import Objection from 'src/business/constraints/Objection';
-import Preplan from 'src/business/Preplan';
+import Preplan from 'src/business/preplan/Preplan';
 import ConstraintSystem from 'src/business/constraints/ConstraintSystem';
 import { Constraint } from '@core/master-data';
 import { AirportRestrictionOnAircraftsConstraintData } from '@core/master-data/Constraint';
@@ -13,7 +12,7 @@ export default class AirportRestrictionOnAircraftsChecker extends Checker {
     this.data = constraint.data as AirportRestrictionOnAircraftsConstraintData;
   }
 
-  check(): Objection[] {
-    return []; //TODO: Not implemented.
+  check(): void {
+    //TODO: Not implemented.
   }
 }

@@ -51,7 +51,15 @@ export default class FlightNumber {
     this.airlineCode = this.number = this.postfix = this.standardFormat = '';
   }
 
+  /**
+   * The same as `number` property but only 3 digits for numbers less than 1000,
+   * e.g.: **`'061'`** for `'W5 0061'` or **`'4580'`** for `'W5 4580'`.
+   */
   get shortNumber(): string {
     return this.number[0] === '0' ? this.number.slice(1) : this.number;
+  }
+
+  toString(): string {
+    return this.isValid ? this.standardFormat : 'Invalid Flight Number';
   }
 }

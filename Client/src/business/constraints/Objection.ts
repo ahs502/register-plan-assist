@@ -1,30 +1,30 @@
-import Checker from './Checker';
-import Objectionable from './Objectionable';
+import Id from '@core/types/Id';
+import Objectionable from 'src/business/constraints/Objectionable';
+import Checker from 'src/business/constraints/Checker';
 
 export type ObjectionType = 'ERROR' | 'WARNING';
 
-// const ObjectionTargetPriority = <const>{ FLIGHT: 4000, FLIGHT_REQUIREMENT: 3000, WEEKDAY_FLIGHT_REQUIREMENT: 2000, AIRCRAFT_REGISTER: 1000 };
-
 export default class Objection<T extends Objectionable = Objectionable> {
-  readonly derivedId: string;
   readonly type: ObjectionType;
   readonly target: T;
-  readonly targetId: string;
+  readonly targetId: Id;
   readonly displayOrder: number;
   readonly priority: number;
   readonly checker: Checker;
   readonly message: string;
+  readonly derivedId: Id;
 
-  constructor(type: ObjectionType, target: T, targetId: string, displayOrder: number, priority: number, checker: Checker, messageProvider: (constraintMarker: string) => string) {
-    this.derivedId = `${type}-${(target as Object).constructor.name}-${targetId}-${checker.derivedId}`;
+  constructor(type: ObjectionType, target: T, displayOrder: number, priority: number, checker: Checker, messageProvider: (constraintMarker: string) => string) {
     this.type = type;
     this.target = target;
-    this.targetId = targetId;
+    this.targetId = (this.target.id || this.target.derivedId)!;
+    if (!this.targetId) throw 'Can not instantiate an objection from a target without id.';
     this.displayOrder = displayOrder;
     this.priority = priority;
     this.checker = checker;
     const message = messageProvider(checker.constraint ? `constraint ${checker.constraint.name}` : `general constraint ${checker.constraintTemplate.name}`);
     this.message = message[0].toUpperCase() + message.slice(1);
+    this.derivedId = `${type}-${(target as Object).constructor.name}-${this.targetId}-${checker.derivedId}`;
   }
 
   static sort(objections: Objection[]): Objection[] {
@@ -37,7 +37,7 @@ export default class Objection<T extends Objectionable = Objectionable> {
       if (a.priority < b.priority) return -1;
       if (a.message > b.message) return +1;
       if (a.message < b.message) return -1;
-      return 0; // Or maybe we should throw an error here!
+      return 0; // Or maybe we should throw an exception here?!
     });
   }
 }

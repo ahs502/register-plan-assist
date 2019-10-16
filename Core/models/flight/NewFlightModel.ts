@@ -2,9 +2,10 @@ import Id from '@core/types/Id';
 import FlightLegModel, { FlightLegModelValidation } from '@core/models/flight/FlightLegModel';
 import Validation from '@ahs502/validation';
 import AircraftRegisterOptionsModel from '@core/models/preplan/AircraftRegisterOptionsModel';
+import Weekday from '@core/types/Weekday';
 
 export default interface NewFlightModel {
-  readonly day: number;
+  readonly day: Weekday;
   readonly aircraftRegisterId?: Id;
   readonly legs: readonly FlightLegModel[];
 }

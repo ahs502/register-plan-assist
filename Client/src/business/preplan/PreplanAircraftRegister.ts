@@ -1,13 +1,13 @@
-import DummyAircraftRegisterModel from '@core/models/DummyAircraftRegisterModel';
-import { AircraftRegisterOptionsDictionaryModel } from '@core/models/AircraftRegisterOptionsModel';
+import DummyAircraftRegisterModel from '@core/models/preplan/DummyAircraftRegisterModel';
+import AircraftRegisterOptionsModel from '@core/models/preplan/AircraftRegisterOptionsModel';
 import MasterData, { MasterDataItem, MasterDataItems, AircraftType, AircraftRegisterGroup, AircraftRegister } from '@core/master-data';
-import AircraftRegisterOptions, { AircraftRegisterOptionsDictionary } from './AircraftRegisterOptions';
+import AircraftRegisterOptionsDictionary from './AircraftRegisterOptionsDictionary';
 import AircraftIdentity from '@core/master-data/AircraftIdentity';
 import AircraftSelection from '@core/master-data/AircraftSelection';
 import Preplan from './Preplan';
-import Objectionable, { ObjectionStatus } from './constraints/Objectionable';
-import Objection, { ObjectionType } from './constraints/Objection';
-import Checker from './constraints/Checker';
+import Objectionable from 'src/business/constraints/Objectionable';
+import Objection, { ObjectionType } from 'src/business/constraints/Objection';
+import Checker from 'src/business/constraints/Checker';
 
 /**
  * An enhanced aircraft register capable of presenting both master data and dummy aircraft registers.
@@ -32,30 +32,29 @@ export default class PreplanAircraftRegister implements MasterDataItem, Objectio
    */
   readonly dummy: boolean;
 
-  readonly options: AircraftRegisterOptions;
+  readonly options: AircraftRegisterOptionsDictionary[string];
 
-  objections?: Objection<PreplanAircraftRegister>[];
-
-  constructor(id: string, name: string, aircraftType: AircraftType, validPeriods: AircraftRegister['validPeriods'], dummy: boolean, options?: AircraftRegisterOptions) {
+  constructor(
+    id: string,
+    name: string,
+    aircraftType: AircraftType,
+    validPeriods: AircraftRegister['validPeriods'],
+    dummy: boolean,
+    options?: AircraftRegisterOptionsDictionary[string]
+  ) {
     this.id = id;
     this.name = name;
     this.aircraftType = aircraftType;
     this.validPeriods = validPeriods;
     this.dummy = dummy;
-    this.options = options || AircraftRegisterOptions.default;
+    this.options = options || AircraftRegisterOptionsDictionary.defaultAircraftRegisterOptions;
   }
 
   get marker(): string {
     return `aircraft register ${this.name} of type ${this.aircraftType.name}`;
   }
-
-  get objectionStatus(): ObjectionStatus {
-    if (!this.objections || this.objections.length === 0) return 'NONE';
-    if (this.objections.some(o => o.type === 'ERROR')) return 'ERROR';
-    return 'WARNING';
-  }
   issueObjection(type: ObjectionType, priority: number, checker: Checker, messageProvider: (constraintMarker: string) => string): Objection<PreplanAircraftRegister> {
-    return new Objection<PreplanAircraftRegister>(type, this, this.id, 4, priority, checker, messageProvider);
+    return new Objection<PreplanAircraftRegister>(type, this, 4, priority, checker, messageProvider);
   }
 
   getMinimumGroundTime(transit: boolean, international: boolean, startDate: Date, endDate?: Date, method: 'MAXIMUM' | 'MINIMUM' = 'MAXIMUM'): number {
@@ -67,14 +66,14 @@ export default class PreplanAircraftRegister implements MasterDataItem, Objectio
  * Encapsulates all master data and dummy aircraft registers as a single collection.
  */
 export class PreplanAircraftRegisters extends MasterDataItems<PreplanAircraftRegister> {
-  preplan: Preplan;
+  readonly preplan: Preplan;
 
-  constructor(dummyAircraftRegisters: readonly DummyAircraftRegisterModel[], aircraftRegisterOptionsDictionary: AircraftRegisterOptionsDictionaryModel, preplan: Preplan) {
-    const dictionary = new AircraftRegisterOptionsDictionary(aircraftRegisterOptionsDictionary);
-    let masterDataItems = MasterData.all.aircraftRegisters.items
+  constructor(dummyAircraftRegisters: readonly DummyAircraftRegisterModel[], aircraftRegisterOptions: AircraftRegisterOptionsModel, preplan: Preplan) {
+    const aircraftRegisterOptionsDictionary = new AircraftRegisterOptionsDictionary(aircraftRegisterOptions);
+    const masterDataItems = MasterData.all.aircraftRegisters.items
       // .filter(a => a.validPeriods.some(p => Date.intervalOverlaps(p.startDate, p.endDate, preplan.startDate, preplan.endDate))) // Keep it commented, it distrupts loading flight requirements with invalid aircraft registers.
-      .map(a => new PreplanAircraftRegister(a.id, a.name, a.aircraftType, a.validPeriods, false, dictionary[a.id]));
-    let dummyItems = dummyAircraftRegisters
+      .map(a => new PreplanAircraftRegister(a.id, a.name, a.aircraftType, a.validPeriods, false, aircraftRegisterOptionsDictionary[a.id]));
+    const dummyItems = dummyAircraftRegisters
       ? dummyAircraftRegisters.map(
           a =>
             new PreplanAircraftRegister(
@@ -83,11 +82,11 @@ export class PreplanAircraftRegisters extends MasterDataItems<PreplanAircraftReg
               MasterData.all.aircraftTypes.id[a.aircraftTypeId],
               [{ startDate: new Date(1970, 1, 1), endDate: new Date(2070, 1, 1) }],
               true,
-              dictionary[a.id]
+              aircraftRegisterOptionsDictionary[a.id]
             )
         )
       : [];
-    super(masterDataItems.concat(dummyItems));
+    super([...masterDataItems, ...dummyItems]);
     this.preplan = preplan;
   }
 
@@ -109,8 +108,8 @@ export class PreplanAircraftRegisters extends MasterDataItems<PreplanAircraftReg
   }
   resolveAircraftSelection(aircraftSelection: AircraftSelection): readonly PreplanAircraftRegister[] {
     const result: PreplanAircraftRegister[] = [];
-    aircraftSelection.allowedIdentities.forEach(i => this.resolveAircraftIdentity(i).forEach(r => result.includes(r) || result.push(r)));
-    aircraftSelection.forbiddenIdentities.forEach(i => this.resolveAircraftIdentity(i).forEach(r => result.includes(r) && result.remove(r)));
+    aircraftSelection.includedIdentities.forEach(i => this.resolveAircraftIdentity(i).forEach(r => result.includes(r) || result.push(r)));
+    aircraftSelection.excludedIdentities.forEach(i => this.resolveAircraftIdentity(i).forEach(r => result.includes(r) && result.remove(r)));
     return result;
   }
 }

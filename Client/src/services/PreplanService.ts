@@ -68,30 +68,13 @@ export default class PreplanService {
   }
 
   /**
-   * Adds a new flight requirement and provides it again including its new id.
-   */
-  static async addFlightRequirement(id: Id, newFlightRequirement: NewFlightRequirementModel): Promise<NewFlightRequirementModel> {
-    return await request('add-flight-requirement', { id, newFlightRequirement });
-  }
-
-  /**
-   * Removes a flight requirement.
-   */
-  static async removeFlightRequirement(id: Id, flightRequirementId: Id): Promise<void> {
-    return await request('remove-flight-requirement', { id, flightRequirementId });
-  }
-
-  /**
-   * Edits all the given flight requirements and provides them with their new values.
-   */
-  static async editFlightRequirements(id: Id, flightRequirements: readonly NewFlightRequirementModel[]): Promise<NewFlightRequirementModel[]> {
-    return await request('edit-flight-requirements', { id, flightRequirements });
-  }
-
-  /**
    * Sets the status of aircraft registers.
    */
-  static async setAircraftRegisters(id: Id, dummyAircraftRegisters: readonly DummyAircraftRegisterModel[], aircraftRegisterOptions: AircraftRegisterOptionsModel): Promise<void> {
+  static async setAircraftRegisters(
+    id: Id,
+    dummyAircraftRegisters: readonly DummyAircraftRegisterModel[],
+    aircraftRegisterOptions: AircraftRegisterOptionsModel
+  ): Promise<PreplanModel> {
     return await request('set-aircraft-registers', { id, dummyAircraftRegisters, aircraftRegisterOptions });
   }
 }

@@ -17,6 +17,7 @@ import { convertNewPreplanModelToEntity } from 'src/entities/preplan/NewPreplanE
 import DummyAircraftRegisterModel, { DummyAircraftRegisterModelArrayValidation } from '@core/models/preplan/DummyAircraftRegisterModel';
 import AircraftRegisterOptionsModel, { AircraftRegisterOptionsModelValidation } from '@core/models/preplan/AircraftRegisterOptionsModel';
 import FlightEntity from 'src/entities/flight/FlightEntity';
+import { DbAccess } from 'src/utils/sqlServer';
 
 const router = Router();
 export default router;
@@ -24,9 +25,7 @@ export default router;
 router.post(
   '/get-all-headers',
   requestMiddlewareWithDbAccess<{}, PreplanHeaderModel[]>(async (userId, {}, { runSp }) => {
-    const preplanHeaderEntities: PreplanHeaderEntity[] = await runSp('[RPA].[SP_GetPreplanHeaders]', runSp.varCharParam('userId', userId, 30));
-    const preplanHeaderModels = preplanHeaderEntities.map(convertPreplanHeaderEntityToModel);
-    return preplanHeaderModels;
+    return await getPreplanHeaderModels(runSp, userId);
   })
 );
 
@@ -90,9 +89,7 @@ router.post(
       runSp.dateTimeParam('endDate', newPreplanEntity.endDate)
     );
 
-    const preplanHeaderEntities: PreplanHeaderEntity[] = await runSp('[RPA].[SP_GetPreplanHeaders]', runSp.varCharParam('userId', userId, 30));
-    const preplanHeaderModels = preplanHeaderEntities.map(convertPreplanHeaderEntityToModel);
-    return preplanHeaderModels;
+    return await getPreplanHeaderModels(runSp, userId);
   })
 );
 
@@ -101,9 +98,7 @@ router.post(
   requestMiddlewareWithDbAccess<{ id: Id; published: boolean }, PreplanHeaderModel[]>(async (userId, { id, published }, { runSp }) => {
     await runSp('[RPA].[Sp_SetPublished]', runSp.varCharParam('userId', userId, 30), runSp.intParam('id', id), runSp.bitParam('published', published));
 
-    const preplanHeaderEntities: PreplanHeaderEntity[] = await runSp('[RPA].[SP_GetPreplanHeaders]', runSp.varCharParam('userId', userId, 30));
-    const preplanHeaderModels = preplanHeaderEntities.map(convertPreplanHeaderEntityToModel);
-    return preplanHeaderModels;
+    return await getPreplanHeaderModels(runSp, userId);
   })
 );
 
@@ -112,29 +107,14 @@ router.post(
   requestMiddlewareWithDbAccess<{ id: Id }, PreplanHeaderModel[]>(async (userId, { id }, { runSp }) => {
     await runSp('[RPA].[Sp_DeletePreplan]', runSp.varCharParam('userId', userId, 30), runSp.intParam('id', id));
 
-    const preplanHeaderEntities: PreplanHeaderEntity[] = await runSp('[RPA].[SP_GetPreplanHeaders]', runSp.varCharParam('userId', userId, 30));
-    const preplanHeaderModels = preplanHeaderEntities.map(convertPreplanHeaderEntityToModel);
-    return preplanHeaderModels;
+    return await getPreplanHeaderModels(runSp, userId);
   })
 );
 
 router.post(
   '/get',
   requestMiddlewareWithDbAccess<{ id: Id }, PreplanModel>(async (userId, { id }, { runSp }) => {
-    const result: PreplanEntity[] = await runSp('[RPA].[SP_GetPreplan]', runSp.varCharParam('userId', userId, 30), runSp.intParam('id', id));
-    if (result.length === 0) throw 'Preplan is not found.';
-    const preplanEntity = result[0];
-
-    const flightRequirementEntities: FlightRequirementEntity[] = await runSp(
-      '[RPA].[Sp_GetFlightRequirements]',
-      runSp.varCharParam('userId', userId, 30),
-      runSp.intParam('preplanId', id)
-    );
-
-    const flightEntities: FlightEntity[] = await runSp('[RPA].[Sp_GetFlights]', runSp.varCharParam('userId', userId, 30), runSp.intParam('preplanId', id));
-
-    const preplanModel = convertPreplanEntityToModel(preplanEntity, flightRequirementEntities, flightEntities);
-    return preplanModel;
+    return await getPreplanModel(runSp, userId, id);
   })
 );
 
@@ -143,20 +123,7 @@ router.post(
   requestMiddlewareWithDbAccess<{ id: Id }, PreplanModel>(async (userId, { id }, { runSp }) => {
     await runSp('[RPA].[Sp_SetPreplanFinalized]', runSp.varCharParam('userId', userId, 30), runSp.intParam('Id', id), runSp.bitParam('finalized', true));
 
-    const result: PreplanEntity[] = await runSp('[RPA].[SP_GetPreplan]', runSp.varCharParam('userId', userId, 30), runSp.intParam('id', id));
-    if (result.length === 0) throw 'Preplan is not found.';
-    const preplanEntity = result[0];
-
-    const flightRequirementEntities: FlightRequirementEntity[] = await runSp(
-      '[RPA].[Sp_GetFlightRequirements]',
-      runSp.varCharParam('userId', userId, 30),
-      runSp.intParam('preplanId', id)
-    );
-
-    const flightEntities: FlightEntity[] = await runSp('[RPA].[Sp_GetFlights]', runSp.varCharParam('userId', userId, 30), runSp.intParam('preplanId', id));
-
-    const preplanModel = convertPreplanEntityToModel(preplanEntity, flightRequirementEntities, flightEntities);
-    return preplanModel;
+    return await getPreplanModel(runSp, userId, id);
   })
 );
 
@@ -168,7 +135,7 @@ router.post(
       dummyAircraftRegisters: readonly DummyAircraftRegisterModel[];
       aircraftRegisterOptions: AircraftRegisterOptionsModel;
     },
-    void
+    PreplanModel
   >(async (userId, { id, dummyAircraftRegisters, aircraftRegisterOptions }, { runQuery, runSp }) => {
     new DummyAircraftRegisterModelArrayValidation(dummyAircraftRegisters).throw('Invalid API input.');
     const dummyAircraftRegisterIds = dummyAircraftRegisters.map(r => r.id);
@@ -212,5 +179,30 @@ router.post(
     );
 
     await runSp('[RPA].[SP_UpdatePreplanLastEditDateTime]', runSp.varCharParam('userId', userId, 30), runSp.intParam('id', id));
+
+    return await getPreplanModel(runSp, userId, id);
   })
 );
+
+export async function getPreplanHeaderModels(runSp: DbAccess['runSp'], userId: Id): Promise<PreplanHeaderModel[]> {
+  const preplanHeaderEntities: PreplanHeaderEntity[] = await runSp('[RPA].[SP_GetPreplanHeaders]', runSp.varCharParam('userId', userId, 30));
+  const preplanHeaderModels = preplanHeaderEntities.map(convertPreplanHeaderEntityToModel);
+  return preplanHeaderModels;
+}
+
+export async function getPreplanModel(runSp: DbAccess['runSp'], userId: Id, preplanId: Id): Promise<PreplanModel> {
+  const result: PreplanEntity[] = await runSp('[RPA].[SP_GetPreplan]', runSp.varCharParam('userId', userId, 30), runSp.intParam('id', preplanId));
+  if (result.length === 0) throw 'Preplan is not found.';
+  const preplanEntity = result[0];
+
+  const flightRequirementEntities: FlightRequirementEntity[] = await runSp(
+    '[RPA].[Sp_GetFlightRequirements]',
+    runSp.varCharParam('userId', userId, 30),
+    runSp.intParam('preplanId', preplanId)
+  );
+
+  const flightEntities: FlightEntity[] = await runSp('[RPA].[Sp_GetFlights]', runSp.varCharParam('userId', userId, 30), runSp.intParam('preplanId', preplanId));
+
+  const preplanModel = convertPreplanEntityToModel(preplanEntity, flightRequirementEntities, flightEntities);
+  return preplanModel;
+}

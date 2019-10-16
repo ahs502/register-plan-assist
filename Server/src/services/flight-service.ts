@@ -5,13 +5,15 @@ import Id from '@core/types/Id';
 import { parsePreplanAircraftRegisterOptionsXml } from 'src/entities/preplan/PreplanEntity';
 import FlightModel, { FlightModelArrayValidation } from '@core/models/flight/FlightModel';
 import { convertFlightModelToEntity } from 'src/entities/flight/FlightEntity';
+import PreplanModel from '@core/models/preplan/PreplanModel';
+import { getPreplanModel } from 'src/services/preplan-service';
 
 const router = Router();
 export default router;
 
 router.post(
   '/edit',
-  requestMiddlewareWithDbAccess<{ preplanId: Id; flights: readonly FlightModel[] }, void>(async (userId, { preplanId, flights }, { runQuery, runSp, types }) => {
+  requestMiddlewareWithDbAccess<{ preplanId: Id; flights: readonly FlightModel[] }, PreplanModel>(async (userId, { preplanId, flights }, { runQuery, runSp, types }) => {
     const rawFlightIds: { id: Id }[] = await runQuery(`select f.[Id] as [id] from [RPA].[Flight] as f join [RPA].[FlightRequirement] as r where r.[Id_Preplan] = '${preplanId}'`);
     const flightIds = rawFlightIds.map(f => f.id);
     const rawFlightRequirementIds: { id: Id }[] = await runQuery(`select [Id] as [id] from [RPA].[FlightRequirement] where [Id_Preplan] = '${preplanId}'`);
@@ -41,5 +43,7 @@ router.post(
         flightEntities.map(f => [f.id, f.flightRequirementId, f.day, f.aircraftRegisterId, f.legsXml])
       )
     );
+
+    return await getPreplanModel(runSp, userId, preplanId);
   })
 );

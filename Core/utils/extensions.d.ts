@@ -48,7 +48,7 @@ declare interface Array<T> {
   /**
    * Returns the flattened array of this array.
    */
-  flatten(): T extends (infer U)[] ? U[] : T[];
+  flatten(): T extends readonly (infer U)[] ? U[] : T[];
 
   /**
    * Returns a grouped dictionary of this array.
@@ -99,7 +99,7 @@ declare interface ReadonlyArray<T> {
   /**
    * Returns the flattened array of this array.
    */
-  flatten(): T extends (infer U)[] ? U[] : T[];
+  flatten(): T extends readonly (infer U)[] ? U[] : T[];
 
   /**
    * Returns a grouped dictionary of this array.

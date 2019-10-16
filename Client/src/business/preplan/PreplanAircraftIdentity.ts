@@ -1,4 +1,4 @@
-import AircraftIdentityType from '@core/types/aircraft-identity/AircraftIdentityType';
+import AircraftIdentityType from '@core/types/AircraftIdentityType';
 import MasterData, { MasterDataItem, AircraftIdentity } from '@core/master-data';
 import PreplanAircraftRegister, { PreplanAircraftRegisters } from './PreplanAircraftRegister';
 import AircraftIdentityModel from '@core/models/AircraftIdentityModel';

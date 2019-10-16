@@ -11,13 +11,15 @@ import NewFlightModel, { NewFlightModelArrayValidation } from '@core/models/flig
 import FlightModel, { FlightModelArrayValidation } from '@core/models/flight/FlightModel';
 import { convertNewFlightModelToEntity } from 'src/entities/flight/NewFlightEntity';
 import FlightEntity, { convertFlightModelToEntity, convertFlightEntityToModel } from 'src/entities/flight/FlightEntity';
+import PreplanModel from '@core/models/preplan/PreplanModel';
+import { getPreplanModel } from 'src/services/preplan-service';
 
 const router = Router();
 export default router;
 
 router.post(
   '/add',
-  requestMiddlewareWithTransactionalDbAccess<{ preplanId: Id; newFlightRequirement: NewFlightRequirementModel; newFlights: readonly NewFlightModel[] }, void>(
+  requestMiddlewareWithTransactionalDbAccess<{ preplanId: Id; newFlightRequirement: NewFlightRequirementModel; newFlights: readonly NewFlightModel[] }, PreplanModel>(
     async (userId, { preplanId, newFlightRequirement, newFlights }, { runQuery, runSp, types }) => {
       const rawDummyAircraftRegistersXml: { dummyAircraftRegistersXml: Xml }[] = await runQuery(
         `select [DummyAircraftRegisters] as [dummyAircraftRegistersXml] from [RPA].[Preplan] where [Id] = '${preplanId}'`
@@ -66,13 +68,15 @@ router.post(
       );
 
       await runSp('[RPA].[SP_UpdatePreplanLastEditDateTime]', runSp.varCharParam('userId', userId, 30), runSp.intParam('id', preplanId));
+
+      return await getPreplanModel(runSp, userId, preplanId);
     }
   )
 );
 
 router.post(
   '/remove',
-  requestMiddlewareWithTransactionalDbAccess<{ preplanId: Id; id: Id }, void>(async (userId, { id, preplanId }, { runQuery, runSp }) => {
+  requestMiddlewareWithTransactionalDbAccess<{ preplanId: Id; id: Id }, PreplanModel>(async (userId, { id, preplanId }, { runQuery, runSp }) => {
     const result = await runQuery(`select * from [RPA].[FlightRequirement] where [Id] = '${id}'`);
     if (result.length === 0) throw 'Flight requirement is not found.';
 
@@ -81,6 +85,8 @@ router.post(
     await runSp('[RPA].[Sp_DeleteFlightRequirement]', runSp.varCharParam('userId', userId, 30), runSp.intParam('id', id));
 
     await runSp('[RPA].[SP_UpdatePreplanLastEditDateTime]', runSp.varCharParam('userId', userId, 30), runSp.intParam('id', preplanId));
+
+    return await getPreplanModel(runSp, userId, preplanId);
   })
 );
 
@@ -88,7 +94,7 @@ router.post(
   '/edit',
   requestMiddlewareWithTransactionalDbAccess<
     { preplanId: Id; flightRequirement: FlightRequirementModel; flights: readonly FlightModel[]; newFlights: readonly NewFlightModel[] },
-    FlightModel[]
+    PreplanModel
   >(async (userId, { preplanId, flightRequirement, flights, newFlights }, { runQuery, runSp, types }) => {
     const rawFlightRequirementIds: { id: Id }[] = await runQuery(`select [Id] as [id] from [RPA].[FlightRequirement] where [Id_Preplan] = '${preplanId}'`);
     const flightRequirementIds = rawFlightRequirementIds.map(item => item.id);
@@ -153,8 +159,6 @@ router.post(
 
     await runSp('[RPA].[SP_UpdatePreplanLastEditDateTime]', runSp.varCharParam('userId', userId, 30), runSp.intParam('id', preplanId));
 
-    const allFlightEntities: FlightEntity[] = await runSp('[RPA].[Sp_GetFlights]', runSp.varCharParam('userId', userId, 30), runSp.intParam('preplanId', preplanId));
-    const allFlightModels = allFlightEntities.map(convertFlightEntityToModel);
-    return allFlightModels;
+    return await getPreplanModel(runSp, userId, preplanId);
   })
 );

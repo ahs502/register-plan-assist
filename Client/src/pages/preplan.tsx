@@ -73,19 +73,29 @@ const useStyles = makeStyles((theme: Theme) => ({
     maxWidth: 70
   },
   clearButton: {
-    height: '15px',
-    width: '15px',
-    padding: '10px 10px 18px 15px',
-    margin: '-6px 5px 0px 10px'
+    height: '25px',
+    width: '25px',
+    margin: '15px 0px 0px 5px',
+    padding: '1px 10px 0px 10px'
   },
   clearIcon: {
-    width: '15px',
-    height: '15px',
-    marginTop: '-3px',
-    marginLeft: '-5px'
+    width: '20px',
+    height: '20px'
   },
   legTab: {
+    height: '60px',
     minWidth: '100px'
+  },
+  addButton: {
+    width: '35px',
+    height: '35px',
+    minWidth: '20px',
+    minHeight: '20px',
+    margin: '14px 5px 5px 5px'
+  },
+  addIcon: {
+    minHeight: '10px',
+    minWidth: '10px'
   }
 }));
 
@@ -1318,6 +1328,7 @@ const PreplanPage: FC = () => {
                           />
                         ))}
                         <Tab
+                          className={classes.addButton}
                           component={React.forwardRef<HTMLButtonElement>((props, ref) => (
                             <IconButton
                               {...props}
@@ -1346,7 +1357,7 @@ const PreplanPage: FC = () => {
                                 setFlightRequirementWithMultiLegModalModel({ ...flightRequirementWithMultiLegModalModel });
                               }}
                             >
-                              <AddIcon />
+                              <AddIcon className={classes.addIcon} />
                             </IconButton>
                           ))}
                         ></Tab>

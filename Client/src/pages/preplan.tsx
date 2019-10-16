@@ -71,6 +71,21 @@ const useStyles = makeStyles((theme: Theme) => ({
   dayTab: {
     minWidth: 70,
     maxWidth: 70
+  },
+  clearButton: {
+    height: '15px',
+    width: '15px',
+    padding: '10px 10px 18px 15px',
+    margin: '-6px 5px 0px 10px'
+  },
+  clearIcon: {
+    width: '15px',
+    height: '15px',
+    marginTop: '-3px',
+    marginLeft: '-5px'
+  },
+  legTab: {
+    minWidth: '100px'
   }
 }));
 
@@ -1112,8 +1127,6 @@ const PreplanPage: FC = () => {
                 setSelectedDay(t);
 
               }}
-              variant="scrollable"
-              scrollButtons="auto"
             >
               <Tab key={'Main'} className={classes.dayTab} label={'Main'} disabled={false} />
               {weekDaysArray.map((weekDay, tabIndex) => (
@@ -1263,7 +1276,7 @@ const PreplanPage: FC = () => {
                     <Grid item xs={11}>
                       <Tabs key="legs" value={legIndex} onChange={(event, newValue) => setLegIndex(newValue)} variant="scrollable" scrollButtons="auto">
                         {flightRequirementWithMultiLegModalModel.details[selectedDay].legs.map((l, index, source) => (
-                          <Tab
+                          <Tab className={classes.legTab}
                             key={index}
                             component={React.forwardRef<HTMLDivElement>((props, ref) => {
                               return (
@@ -1279,7 +1292,7 @@ const PreplanPage: FC = () => {
                                     <Typography variant="caption">{l.arrival || 'Arr'}</Typography>
                                   </Button>
                                   {index > 0 && (
-                                    <IconButton
+                                    <IconButton className={classes.clearButton}
                                       onClick={(event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
                                         event.stopPropagation();
                                         const legs = flightRequirementWithMultiLegModalModel.details[selectedDay].legs;
@@ -1292,7 +1305,7 @@ const PreplanPage: FC = () => {
                                         setFlightRequirementWithMultiLegModalModel({ ...flightRequirementWithMultiLegModalModel });
                                       }}
                                     >
-                                      <ClearIcon />
+                                      <ClearIcon className={classes.clearIcon} />
                                     </IconButton>
                                   )}
                                 </div>

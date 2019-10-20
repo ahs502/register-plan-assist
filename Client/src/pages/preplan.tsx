@@ -1,5 +1,5 @@
 import React, { FC, Fragment, useState, useEffect, useRef, createContext, useCallback, useMemo, RefObject } from 'react';
-import { Theme, TextField, Fab, Grid, Typography, IconButton, FormControlLabel, Checkbox, Tabs, Tab, Button, Icon } from '@material-ui/core';
+import { Theme, TextField, Fab, Grid, Typography, IconButton, FormControlLabel, Checkbox, Tabs, Tab, Button, Icon, Box } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import { Switch, Redirect, Route } from 'react-router-dom';
 import useRouter from 'src/utils/useRouter';
@@ -30,6 +30,7 @@ import PreplanAircraftRegister from 'src/business/PreplanAircraftRegister';
 import { FlightRequirementModalModel, FlightRequirementModalAircraftIdentity, FlightRequirementModalMode } from 'src/components/preplan/flight-requirement/FlightRequirementEditor';
 import FlightModel from '@core/models/flights/FlightModel';
 import StarRateIcon from '@material-ui/icons/StarRate';
+import { borders } from '@material-ui/system';
 
 const useStyles = makeStyles((theme: Theme) => ({
   flightRequirementStyle: {
@@ -75,16 +76,44 @@ const useStyles = makeStyles((theme: Theme) => ({
   clearButton: {
     height: '25px',
     width: '25px',
-    margin: '15px 0px 0px 5px',
+    margin: '0px 0px 0px 5px',
     padding: '1px 10px 0px 10px'
   },
   clearIcon: {
     width: '20px',
     height: '20px'
   },
+  legsTab: {
+    display: 'flex',
+    flexDirection: 'row',
+    justifyItems: 'center',
+    alignContent: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: '50px',
+    width: '100px',
+    minWidth: '90px',
+    marginRight: '5px'
+  },
   legTab: {
-    height: '60px',
-    minWidth: '100px'
+    display: 'flex',
+    flexDirection: 'column'
+  },
+  legTabButton: {
+    display: 'flex',
+    margin: '-5px',
+    padding: '0px'
+  },
+  legTabFlightNumber: {
+    display: 'flex',
+    color: 'grey',
+    fontSize: '10px'
+  },
+  legTabRightArrow: {
+    marginTop: '5px'
+  },
+  legInfo: {
+    marginTop: '10px'
   },
   addButton: {
     width: '35px',
@@ -96,7 +125,24 @@ const useStyles = makeStyles((theme: Theme) => ({
   addIcon: {
     minHeight: '10px',
     minWidth: '10px'
+  },
+  flightRequirementLegContentBox: {
+    borderBottom: '3px solid gray',
+    marginTop: '5px',
+    paddingTop: '5px'
+  },
+  flightRequirementLegInfoTextField: {
+    padding: '0px 15px 0px 15px'
+  },
+  flightRequirementLegInfoCheckBox: {
+    padding: '5px 0px 0px 15px'
   }
+  // ,
+  // flightRequirementLegItems: {
+  //   '& span': {
+
+  //   }
+  // }
 }));
 
 export interface ObjectionModalModel {
@@ -1014,6 +1060,7 @@ const PreplanPage: FC = () => {
       </SimpleModal>
 
       <SimpleModal
+        // style={{ maxWidth: '700px', width: '1000px' }}
         key="flightRequirementEditorWithMultiLeg"
         open={flightRequirementWithMultiLegModalModel.open && (flightRequirementWithMultiLegModalModel.mode === 'ADD' || flightRequirementWithMultiLegModalModel.mode === 'EDIT')}
         loading={flightRequirementWithMultiLegModalModel.loading}
@@ -1314,27 +1361,33 @@ const PreplanPage: FC = () => {
                     }}
                   />
                 </Grid>
-                <Grid item xs={12}>
+                <Grid item xs={12} className={classes.flightRequirementLegContentBox}>
                   <Grid container>
                     <Grid item xs={11}>
                       <Tabs key="legs" value={legIndex} onChange={(event, newValue) => setLegIndex(newValue)} variant="scrollable" scrollButtons="auto">
                         {flightRequirementWithMultiLegModalModel.details[selectedDay].legs.map((l, index, source) => (
                           <Tab
-                            className={classes.legTab}
                             key={index}
                             component={React.forwardRef<HTMLDivElement>((props, ref) => {
                               return (
-                                <div {...props} ref={ref}>
-                                  <Button>
-                                    <Typography variant="caption">{!index ? l.departure || 'Dep' : ''}</Typography>
-
-                                    <Typography variant="caption">{l.flightNumber}</Typography>
-                                    <Typography variant="caption">
-                                      <ArrowRightAltIcon />
-                                    </Typography>
-
-                                    <Typography variant="caption">{l.arrival || 'Arr'}</Typography>
-                                  </Button>
+                                <div {...props} ref={ref} className={classes.legsTab}>
+                                  <div className={classes.legTab}>
+                                    {!!flightRequirementWithMultiLegModalModel.details[selectedDay].legs[index].flightNumber ? (
+                                      <Typography className={classes.legTabFlightNumber} variant="caption">
+                                        {flightRequirementWithMultiLegModalModel.details[selectedDay].legs[index].flightNumber}
+                                      </Typography>
+                                    ) : (
+                                      <Typography className={classes.legTabFlightNumber}>{'Flight Number'}</Typography>
+                                    )}
+                                    {/* <TextField floatingLabelText="Fixed Floating Label Text" floatingLabelFixed={true} /> */}
+                                    <Button className={classes.legTabButton}>
+                                      <Typography variant="caption">{!index ? l.departure || 'Dep' : ''}</Typography>
+                                      <Typography variant="caption">
+                                        <ArrowRightAltIcon className={classes.legTabRightArrow} />
+                                      </Typography>
+                                      <Typography variant="caption">{l.arrival || 'Arr'}</Typography>
+                                    </Button>
+                                  </div>
                                   {index > 0 && (
                                     <IconButton
                                       className={classes.clearButton}
@@ -1424,8 +1477,8 @@ const PreplanPage: FC = () => {
                     </Grid>
                   </Grid>
 
-                  <Grid container>
-                    <Grid item xs={4}>
+                  <Grid container className={classes.legInfo}>
+                    <Grid item xs={4} className={classes.flightRequirementLegInfoTextField}>
                       <TextField
                         label="Flight Number"
                         value={
@@ -1440,7 +1493,7 @@ const PreplanPage: FC = () => {
                         disabled={!!selectedDay || flightRequirementWithMultiLegModalModel.disable}
                       />
                     </Grid>
-                    <Grid item xs={4}>
+                    <Grid item xs={4} className={classes.flightRequirementLegInfoTextField}>
                       <TextField
                         label="Departure"
                         value={
@@ -1455,7 +1508,7 @@ const PreplanPage: FC = () => {
                         disabled={!!selectedDay || flightRequirementWithMultiLegModalModel.disable}
                       />
                     </Grid>
-                    <Grid item xs={4}>
+                    <Grid item xs={4} className={classes.flightRequirementLegInfoTextField}>
                       <TextField
                         label="Arrival"
                         value={
@@ -1470,7 +1523,7 @@ const PreplanPage: FC = () => {
                         disabled={!!selectedDay || flightRequirementWithMultiLegModalModel.disable}
                       />
                     </Grid>
-                    <Grid item xs={4}>
+                    <Grid item xs={4} className={classes.flightRequirementLegInfoTextField}>
                       <TextField
                         label="BlockTime"
                         value={
@@ -1485,7 +1538,7 @@ const PreplanPage: FC = () => {
                         disabled={flightRequirementWithMultiLegModalModel.disable}
                       />
                     </Grid>
-                    <Grid item xs={4}>
+                    <Grid item xs={4} className={classes.flightRequirementLegInfoTextField}>
                       <TextField
                         label="STDLowerbound"
                         value={
@@ -1500,7 +1553,7 @@ const PreplanPage: FC = () => {
                         disabled={flightRequirementWithMultiLegModalModel.disable}
                       />
                     </Grid>
-                    <Grid item xs={4}>
+                    <Grid item xs={4} className={classes.flightRequirementLegInfoTextField}>
                       <TextField
                         label="STDUpperbound"
                         value={
@@ -1515,7 +1568,7 @@ const PreplanPage: FC = () => {
                         disabled={flightRequirementWithMultiLegModalModel.disable}
                       />
                     </Grid>
-                    <Grid item xs={6}>
+                    <Grid item xs={6} className={classes.flightRequirementLegInfoCheckBox}>
                       <FormControlLabel
                         label="Destination Permission"
                         control={
@@ -1534,7 +1587,7 @@ const PreplanPage: FC = () => {
                         }
                       />
                     </Grid>
-                    <Grid item xs={6}>
+                    <Grid item xs={6} className={classes.flightRequirementLegInfoCheckBox}>
                       <FormControlLabel
                         label="Origin Permission"
                         control={

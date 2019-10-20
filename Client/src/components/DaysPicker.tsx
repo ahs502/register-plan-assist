@@ -18,9 +18,10 @@ export interface DaysPickerProps {
   selectedDays?: boolean[];
   onItemClick?: (selectedDays: boolean[]) => void;
   disabled?: boolean;
+  disabledDays?: boolean[];
 }
 
-const DaysPicker: FC<DaysPickerProps> = ({ selectedDays, onItemClick, disabled }) => {
+const DaysPicker: FC<DaysPickerProps> = ({ selectedDays, onItemClick, disabled, disabledDays: disabledDays }) => {
   const [buttonsState, setButtonsState] = useState(selectedDays || Array.range(0, 6).map(d => false));
 
   const classes = useStyles();
@@ -29,7 +30,7 @@ const DaysPicker: FC<DaysPickerProps> = ({ selectedDays, onItemClick, disabled }
     <Fragment>
       {Array.range(0, 6).map(d => (
         <Button
-          disabled={disabled}
+          disabled={disabled || (disabledDays && disabledDays[d])}
           size="small"
           key={d}
           variant={buttonsState[d] ? 'contained' : 'outlined'}
@@ -56,9 +57,13 @@ const DaysPicker: FC<DaysPickerProps> = ({ selectedDays, onItemClick, disabled }
         className={classes.button}
         onClick={() => {
           const weekday = [...buttonsState];
-          const numberOfSelected = buttonsState.filter(d => d).length;
+          const numberOfDisabled = disabledDays ? disabledDays.filter(d => d).length : 0;
+          const numberOfSelected = buttonsState.filter(d => d).length - numberOfDisabled;
+          const allAvaliableDay = 7 - numberOfDisabled;
+
           for (let index = 0; index < buttonsState.length; index++) {
-            weekday[index] = (numberOfSelected > 3 && numberOfSelected !== 7) || numberOfSelected === 0;
+            if (disabledDays && disabledDays[index]) continue;
+            weekday[index] = (numberOfSelected > allAvaliableDay / 2 && numberOfSelected !== allAvaliableDay) || numberOfSelected === 0;
           }
 
           setButtonsState(weekday);

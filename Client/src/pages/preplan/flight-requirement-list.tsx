@@ -87,7 +87,7 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = React.memo
     onRemoveWeekdayFlightRequirement,
     onEditWeekdayFlightRequirement
   }) => {
-    console.log(flightRequirements);
+    //console.log(flightRequirements);
 
     const navBarToolsContainer = useContext(NavBarToolsContainerContext);
     const [tab, setTab] = useState<Tab>('ALL');
@@ -251,7 +251,7 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = React.memo
                   </TableHead>
                   <TableBody>
                     {d.days.map(item => {
-                      console.log(item);
+                      //console.log(item);
                       return (
                         <TableRow key={item.derivedId} hover={true}>
                           <TableCell>{Weekday[item.day]}</TableCell>

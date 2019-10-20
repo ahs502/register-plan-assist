@@ -19,7 +19,7 @@ export interface ObjectionStatusProps {
   filteredWarningsCount?: number;
 }
 
-const ObjectionComponenet: FC<ObjectionStatusProps> = ({ errorsCount, filteredErrorsCount, warningsCount, filteredWarningsCount }) => {
+const ObjectionStatus: FC<ObjectionStatusProps> = ({ errorsCount, filteredErrorsCount, warningsCount, filteredWarningsCount }) => {
   const classes = useStyles();
 
   return (
@@ -47,4 +47,4 @@ const ObjectionComponenet: FC<ObjectionStatusProps> = ({ errorsCount, filteredEr
   );
 };
 
-export default ObjectionComponenet;
+export default ObjectionStatus;

@@ -22,7 +22,7 @@ export interface TargetObjectionStatusProps {
   onClick(): void;
 }
 
-const TargetObjectionComponenet: FC<TargetObjectionStatusProps> = ({ target, onClick }) => {
+const TargetObjectionStatus: FC<TargetObjectionStatusProps> = ({ target, onClick }) => {
   const objections: readonly Objection[] = []; //TODO: Get objections by target...
   const errorsCount = objections.filter(o => o.type === 'ERROR').length;
   const warningsCount = objections.length - errorsCount;
@@ -52,4 +52,4 @@ const TargetObjectionComponenet: FC<TargetObjectionStatusProps> = ({ target, onC
   );
 };
 
-export default TargetObjectionComponenet;
+export default TargetObjectionStatus;

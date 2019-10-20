@@ -21,9 +21,7 @@ export default class Flight implements ModelConvertable<FlightModel> {
   readonly category: string;
   readonly stc: Stc;
   readonly rsx: Rsx;
-  readonly required: boolean;
   readonly ignored: boolean;
-  readonly freezed: boolean;
   readonly day: Weekday;
   readonly notes: string;
   readonly originPermission: boolean | undefined;
@@ -54,9 +52,7 @@ export default class Flight implements ModelConvertable<FlightModel> {
     this.category = dayFlightRequirement.flightRequirement.category;
     this.stc = dayFlightRequirement.flightRequirement.stc;
     this.rsx = dayFlightRequirement.rsx;
-    this.required = dayFlightRequirement.required;
     this.ignored = dayFlightRequirement.flightRequirement.ignored;
-    this.freezed = dayFlightRequirement.freezed;
     this.day = dayFlightRequirement.day;
     this.notes = dayFlightRequirement.notes;
     const originPermissions = dayFlightRequirement.route.map(l => l.originPermission).distinct();

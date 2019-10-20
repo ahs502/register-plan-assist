@@ -6,7 +6,6 @@ export default interface DayFlightRequirementLegEntity {
     readonly BlockTime: string;
     readonly StdLowerBound: string;
     readonly StdUpperBound?: string;
-    readonly Std: string;
     readonly OriginPermission: XmlBoolean;
     readonly DestinationPermission: XmlBoolean;
   };
@@ -18,7 +17,6 @@ export function convertDayFlightRequirementLegModelToEntity(data: DayFlightRequi
       BlockTime: String(data.blockTime),
       StdLowerBound: String(data.stdLowerBound),
       StdUpperBound: data.stdUpperBound === undefined ? undefined : String(data.stdUpperBound),
-      Std: String(data.std),
       OriginPermission: booleanToXml(data.originPermission),
       DestinationPermission: booleanToXml(data.destinationPermission)
     }
@@ -29,7 +27,6 @@ export function convertDayFlightRequirementLegEntityToModel(data: DayFlightRequi
     blockTime: Number(data._attributes.BlockTime),
     stdLowerBound: Number(data._attributes.StdLowerBound),
     stdUpperBound: data._attributes.StdUpperBound === undefined ? undefined : Number(data._attributes.StdUpperBound),
-    std: Number(data._attributes.Std),
     originPermission: xmlToBoolean(data._attributes.OriginPermission),
     destinationPermission: xmlToBoolean(data._attributes.DestinationPermission)
   };

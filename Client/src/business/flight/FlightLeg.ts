@@ -27,9 +27,7 @@ export default class FlightLeg implements ModelConvertable<FlightLegModel>, Obje
   readonly stc: Stc;
   readonly aircraftRegister?: PreplanAircraftRegister;
   readonly rsx: Rsx;
-  readonly required: boolean;
   readonly ignored: boolean;
-  readonly freezed: boolean;
   readonly day: Weekday;
   readonly notes: string;
   readonly index: number;
@@ -69,9 +67,7 @@ export default class FlightLeg implements ModelConvertable<FlightLegModel>, Obje
     this.stc = flight.stc;
     this.aircraftRegister = flight.aircraftRegister;
     this.rsx = flight.rsx;
-    this.required = flight.required;
     this.ignored = flight.ignored;
-    this.freezed = flight.freezed;
     this.day = flight.day;
     this.notes = flight.notes;
     this.index = dayFlightRequirementLeg.index;

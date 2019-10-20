@@ -22,11 +22,11 @@ export class FlightRequirementLegModelValidation extends Validation {
         validator.must(typeof departureAirportId === 'string').must(() => departureAirportId in MasterData.all.airports.id);
         validator.must(typeof arrivalAirportId === 'string').must(() => arrivalAirportId in MasterData.all.airports.id);
         validator.must(typeof blockTime === 'number', !isNaN(blockTime)).must(() => blockTime > 0 && blockTime <= 16 * 60);
-        validator.must(typeof stdLowerBound === 'number', !isNaN(stdLowerBound)).then(() => stdUpperBound >= 0);
+        validator.must(typeof stdLowerBound === 'number', !isNaN(stdLowerBound)).then(() => stdLowerBound >= 0);
         validator
           .if(stdUpperBound !== undefined)
-          .must(() => typeof stdUpperBound === 'number', () => !isNaN(stdUpperBound))
-          .must(() => stdUpperBound > 0);
+          .must(() => typeof stdUpperBound === 'number', () => !isNaN(stdUpperBound!))
+          .must(() => stdUpperBound! > 0);
         validator.must(typeof originPermission === 'boolean', typeof destinationPermission === 'boolean');
       })
     );

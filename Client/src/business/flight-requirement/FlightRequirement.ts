@@ -19,7 +19,6 @@ export default class FlightRequirement implements ModelConvertable<FlightRequire
   readonly stc: Stc;
   readonly aircraftSelection: PreplanAircraftSelection;
   readonly rsx: Rsx;
-  readonly required: boolean;
   readonly ignored: boolean;
   readonly route: readonly FlightRequirementLeg[];
   readonly days: readonly DayFlightRequirement[];
@@ -33,7 +32,6 @@ export default class FlightRequirement implements ModelConvertable<FlightRequire
     this.stc = MasterData.all.stcs.id[raw.stcId];
     this.aircraftSelection = new PreplanAircraftSelection(raw.aircraftSelection, aircraftRegisters);
     this.rsx = raw.rsx;
-    this.required = raw.required;
     this.ignored = raw.ignored;
     this.route = raw.route.map((l, index) => new FlightRequirementLeg(l, index, this));
     this.days = raw.days.map(d => new DayFlightRequirement(d, aircraftRegisters, this));
@@ -49,7 +47,6 @@ export default class FlightRequirement implements ModelConvertable<FlightRequire
       stcId: getOverrided(this.stc.id, overrides, 'stcId'),
       aircraftSelection: getOverridedObject(this.aircraftSelection, overrides, 'aircraftSelection'),
       rsx: getOverrided(this.rsx, overrides, 'rsx'),
-      required: getOverrided(this.required, overrides, 'required'),
       ignored: getOverrided(this.ignored, overrides, 'ignored'),
       route: getOverridedArray(this.route, overrides, 'route'),
       days: getOverridedArray(this.days, overrides, 'days')

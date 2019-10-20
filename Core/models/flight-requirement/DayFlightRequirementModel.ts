@@ -8,8 +8,6 @@ import Weekday from '@core/types/Weekday';
 export default interface DayFlightRequirementModel {
   readonly aircraftSelection: AircraftSelectionModel;
   readonly rsx: Rsx;
-  readonly required: boolean;
-  readonly freezed: boolean;
   readonly day: Weekday;
   readonly notes: string;
   readonly route: readonly DayFlightRequirementLegModel[];
@@ -24,11 +22,9 @@ export class DayFlightRequirementModelValidation extends Validation<
 > {
   constructor(data: DayFlightRequirementModel, dummyAircraftRegisterIds: readonly Id[]) {
     super(validator =>
-      validator.object(data).then(({ aircraftSelection, rsx, required, freezed, day, notes, route }) => {
+      validator.object(data).then(({ aircraftSelection, rsx, day, notes, route }) => {
         validator.put(validator.$.aircraftSelection, new AircraftSelectionModelValidation(aircraftSelection, dummyAircraftRegisterIds));
         validator.must(Rsxes.includes(rsx));
-        validator.must(typeof required === 'boolean');
-        validator.must(typeof freezed === 'boolean');
         validator.must(typeof day === 'number', !isNaN(day)).must(() => day === Math.round(day) && day >= 0 && day < 7);
         validator.must(typeof notes === 'string');
         validator.array(route).each((leg, index) => validator.put(validator.$.route[index], new DayFlightRequirementLegModelValidation(leg)));

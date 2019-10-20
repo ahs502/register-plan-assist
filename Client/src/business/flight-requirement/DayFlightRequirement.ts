@@ -16,8 +16,6 @@ export default class DayFlightRequirement implements ModelConvertable<DayFlightR
   readonly derivedId: Id;
   readonly aircraftSelection: PreplanAircraftSelection;
   readonly rsx: Rsx;
-  readonly required: boolean;
-  readonly freezed: boolean;
   readonly day: Weekday;
   readonly notes: string;
   readonly route: readonly DayFlightRequirementLeg[];
@@ -26,8 +24,6 @@ export default class DayFlightRequirement implements ModelConvertable<DayFlightR
     this.derivedId = `${flightRequirement.id}-${raw.day}`;
     this.aircraftSelection = new PreplanAircraftSelection(raw.aircraftSelection, aircraftRegisters);
     this.rsx = raw.rsx;
-    this.required = raw.required;
-    this.freezed = raw.freezed;
     this.day = raw.day;
     this.notes = raw.notes;
 
@@ -54,8 +50,6 @@ export default class DayFlightRequirement implements ModelConvertable<DayFlightR
     return {
       aircraftSelection: getOverridedObject(this.aircraftSelection, overrides, 'aircraftSelection'),
       rsx: getOverrided(this.rsx, overrides, 'rsx'),
-      required: getOverrided(this.required, overrides, 'required'),
-      freezed: getOverrided(this.freezed, overrides, 'freezed'),
       day: getOverrided(this.day, overrides, 'day'),
       notes: getOverrided(this.notes, overrides, 'notes'),
       route: getOverridedArray(this.route, overrides, 'route')

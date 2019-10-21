@@ -109,13 +109,12 @@ const useStyles = makeStyles((theme: Theme) => ({
     margin: '-5px',
     padding: '0px',
     '&:hover': {
-      backgroundColor: 'rgb(255, 255, 255)'
+      backgroundColor: 'transparent'
     }
   },
   legTabFlightNumber: {
     color: 'grey',
-    fontSize: '10px',
-    zIndex: 100
+    fontSize: '10px'
   },
   legTabRightArrow: {
     marginTop: '5px'
@@ -1387,7 +1386,7 @@ const PreplanPage: FC = () => {
                                         {flightRequirementWithMultiLegModalModel.details[selectedDay].legs[index].flightNumber}
                                       </Typography>
                                     ) : (
-                                        <Typography className={classes.legTabFlightNumber}>{'W5 xxx'}</Typography>
+                                        <Typography className={classes.legTabFlightNumber}>{'W5 XXXX'}</Typography>
                                       )}
                                     {/* <TextField floatingLabelText="Fixed Floating Label Text" floatingLabelFixed={true} /> */}
                                     <Button className={classes.legTabButton}>

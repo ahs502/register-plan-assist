@@ -1194,7 +1194,7 @@ const PreplanPage: FC = () => {
                 <Tab
                   key={weekDay}
                   className={classes.dayTab}
-                  label={!flightRequirementWithMultiLegModalModel.details[tabIndex + 1].isModified ? weekDay : '*' + weekDay}
+                  label={flightRequirementWithMultiLegModalModel.details[tabIndex + 1].isModified ? '*' + weekDay : weekDay}
                   disabled={!flightRequirementWithMultiLegModalModel.days[tabIndex]}
                 />
               ))}
@@ -1222,7 +1222,7 @@ const PreplanPage: FC = () => {
                       // }
                       ///////
                       for (let index = 0; index < flightRequirementWithMultiLegModalModel.days.length; index++) {
-                        if (flightRequirementWithMultiLegModalModel.days[index] && selectedDay === 0) {
+                        if (flightRequirementWithMultiLegModalModel.days[index] && !flightRequirementWithMultiLegModalModel.details[index + 1].isModified && selectedDay === 0) {
                           flightRequirementWithMultiLegModalModel.details[index + 1].rsx = s.name;
                         }
                       }
@@ -1250,7 +1250,7 @@ const PreplanPage: FC = () => {
                           //   });
                           // }
                           for (let index = 0; index < flightRequirementWithMultiLegModalModel.days.length; index++) {
-                            if (flightRequirementWithMultiLegModalModel.days[index] && selectedDay === 0) {
+                            if (flightRequirementWithMultiLegModalModel.days[index] && !flightRequirementWithMultiLegModalModel.details[index + 1].isModified && selectedDay === 0) {
                               flightRequirementWithMultiLegModalModel.details[index + 1].required = e.target.checked;
                             }
                           }
@@ -1308,7 +1308,7 @@ const PreplanPage: FC = () => {
                       //   });
                       // }
                       for (let index = 0; index < flightRequirementWithMultiLegModalModel.days.length; index++) {
-                        if (flightRequirementWithMultiLegModalModel.days[index] && selectedDay === 0) {
+                        if (flightRequirementWithMultiLegModalModel.days[index] && !flightRequirementWithMultiLegModalModel.details[index + 1].isModified && selectedDay === 0) {
                           flightRequirementWithMultiLegModalModel.details[index + 1].allowedAircraftIdentities = l ? [...l] : [];
                         }
                       }
@@ -1334,7 +1334,7 @@ const PreplanPage: FC = () => {
                       //   });
                       // }
                       for (let index = 0; index < flightRequirementWithMultiLegModalModel.days.length; index++) {
-                        if (flightRequirementWithMultiLegModalModel.days[index] && selectedDay === 0) {
+                        if (flightRequirementWithMultiLegModalModel.days[index] && !flightRequirementWithMultiLegModalModel.details[index + 1].isModified && selectedDay === 0) {
                           flightRequirementWithMultiLegModalModel.details[index + 1].forbiddenAircraftIdentities = l ? [...l] : [];
                         }
                       }
@@ -1361,7 +1361,7 @@ const PreplanPage: FC = () => {
                       //////
 
                       for (let index = 0; index < flightRequirementWithMultiLegModalModel.days.length; index++) {
-                        if (flightRequirementWithMultiLegModalModel.days[index] && selectedDay === 0) {
+                        if (flightRequirementWithMultiLegModalModel.days[index] && !flightRequirementWithMultiLegModalModel.details[index + 1].isModified && selectedDay === 0) {
                           flightRequirementWithMultiLegModalModel.details[index + 1].notes = s.target.value;
                         }
                       }

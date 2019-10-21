@@ -109,13 +109,12 @@ const useStyles = makeStyles((theme: Theme) => ({
     margin: '-5px',
     padding: '0px',
     '&:hover': {
-      backgroundColor: 'rgb(255, 255, 255)'
+      backgroundColor: 'transparent'
     }
   },
   legTabFlightNumber: {
     color: 'grey',
-    fontSize: '10px',
-    zIndex: 100
+    fontSize: '10px'
   },
   legTabRightArrow: {
     marginTop: '5px'
@@ -220,11 +219,11 @@ const PreplanPage: FC = () => {
     () =>
       preplan
         ? preplan.aircraftRegisters.items.map((a, index) => ({
-          entityId: a.id,
-          name: a.name,
-          type: 'REGISTER',
-          id: 'register ' + index
-        }))
+            entityId: a.id,
+            name: a.name,
+            type: 'REGISTER',
+            id: 'register ' + index
+          }))
         : [],
     [preplan && preplan.aircraftRegisters]
   );
@@ -322,8 +321,8 @@ const PreplanPage: FC = () => {
           resourceSchedulerPageSelected
             ? 'Back to Pre Plan List'
             : reportsProposalPageSelected || reportsConnectionsPageSelected
-              ? `Back to Pre Plan ${preplan && preplan.name} Reports`
-              : `Back to Pre Plan ${preplan && preplan.name}`
+            ? `Back to Pre Plan ${preplan && preplan.name} Reports`
+            : `Back to Pre Plan ${preplan && preplan.name}`
         }
         navBarLinks={[
           {
@@ -397,12 +396,12 @@ const PreplanPage: FC = () => {
           flightRequirementModalModel.mode === 'ADD'
             ? 'What is the new flight requirement?'
             : flightRequirementModalModel.mode === 'EDIT'
-              ? 'Edit flight requirement'
-              : flightRequirementModalModel.mode === 'READ_ONLY'
-                ? 'Flight requirement'
-                : flightRequirementModalModel.mode === 'RETURN'
-                  ? 'What is the returning/next flight requirement?'
-                  : ''
+            ? 'Edit flight requirement'
+            : flightRequirementModalModel.mode === 'READ_ONLY'
+            ? 'Flight requirement'
+            : flightRequirementModalModel.mode === 'RETURN'
+            ? 'What is the returning/next flight requirement?'
+            : ''
         }
         open={
           flightRequirementModalModel.open &&
@@ -1047,8 +1046,8 @@ const PreplanPage: FC = () => {
         {flightRequirementModalModel.weekly ? (
           <Typography>Delete daily flight requirement from {flightRequirementModalModel.label}.</Typography>
         ) : (
-            <Typography>Delete flight requirement {flightRequirementModalModel.label}.</Typography>
-          )}
+          <Typography>Delete flight requirement {flightRequirementModalModel.label}.</Typography>
+        )}
       </SimpleModal>
 
       <SimpleModal
@@ -1079,10 +1078,10 @@ const PreplanPage: FC = () => {
           flightRequirementWithMultiLegModalModel.mode === 'ADD'
             ? 'What is the new flight requirement?'
             : flightRequirementWithMultiLegModalModel.mode === 'EDIT'
-              ? 'Edit flight requirement'
-              : flightRequirementWithMultiLegModalModel.mode === 'READ_ONLY'
-                ? 'Flight requirement'
-                : ''
+            ? 'Edit flight requirement'
+            : flightRequirementWithMultiLegModalModel.mode === 'READ_ONLY'
+            ? 'Flight requirement'
+            : ''
         }
         actions={[
           {
@@ -1265,7 +1264,11 @@ const PreplanPage: FC = () => {
                           //   });
                           // }
                           for (let index = 0; index < flightRequirementWithMultiLegModalModel.days.length; index++) {
-                            if (flightRequirementWithMultiLegModalModel.days[index] && !flightRequirementWithMultiLegModalModel.details[index + 1].isModified && selectedDay === 0) {
+                            if (
+                              flightRequirementWithMultiLegModalModel.days[index] &&
+                              !flightRequirementWithMultiLegModalModel.details[index + 1].isModified &&
+                              selectedDay === 0
+                            ) {
                               flightRequirementWithMultiLegModalModel.details[index + 1].required = e.target.checked;
                             }
                           }
@@ -1401,8 +1404,8 @@ const PreplanPage: FC = () => {
                                         {flightRequirementWithMultiLegModalModel.details[selectedDay].legs[index].flightNumber}
                                       </Typography>
                                     ) : (
-                                        <Typography className={classes.legTabFlightNumber}>{'W5 xxx'}</Typography>
-                                      )}
+                                      <Typography className={classes.legTabFlightNumber}>{'W5 XXXX'}</Typography>
+                                    )}
                                     {/* <TextField floatingLabelText="Fixed Floating Label Text" floatingLabelFixed={true} /> */}
                                     <Button className={classes.legTabButton}>
                                       <Typography variant="caption">{!index ? l.departure || 'Dep' : ''}</Typography>

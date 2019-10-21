@@ -1091,21 +1091,22 @@ const PreplanPage: FC = () => {
           {
             title: 'Submit',
             action: () => {
-              setFlightRequirementWithMultiLegModalModel({ ...flightRequirementWithMultiLegModalModel, loading: true });
+              console.log(flightRequirementWithMultiLegModalModel);
+              // setFlightRequirementWithMultiLegModalModel({ ...flightRequirementWithMultiLegModalModel, loading: true });
 
-              if (true) {
-                setFlightRequirementWithMultiLegModalModel(flightRequirementWithMultiLegModalModel => ({
-                  ...flightRequirementWithMultiLegModalModel,
-                  open: false,
-                  loading: false
-                }));
-              } else {
-                setFlightRequirementWithMultiLegModalModel(flightRequirementWithMultiLegModalModel => ({
-                  ...flightRequirementWithMultiLegModalModel,
-                  errorMessage: 'error accourd',
-                  loading: false
-                }));
-              }
+              // if (true) {
+              //   setFlightRequirementWithMultiLegModalModel(flightRequirementWithMultiLegModalModel => ({
+              //     ...flightRequirementWithMultiLegModalModel,
+              //     open: false,
+              //     loading: false
+              //   }));
+              // } else {
+              //   setFlightRequirementWithMultiLegModalModel(flightRequirementWithMultiLegModalModel => ({
+              //     ...flightRequirementWithMultiLegModalModel,
+              //     errorMessage: 'error accourd',
+              //     loading: false
+              //   }));
+              // }
             }
           }
         ]}
@@ -1161,33 +1162,18 @@ const PreplanPage: FC = () => {
                 <DaysPicker
                   selectedDays={flightRequirementWithMultiLegModalModel.days}
                   onItemClick={w => {
+
+
+                    const mainTabInfo = { ...flightRequirementWithMultiLegModalModel.details[0] };
+
+                    for (let index = 0; index < flightRequirementWithMultiLegModalModel.days.length; index++) {
+                      if (w[index] && (!flightRequirementWithMultiLegModalModel.details[index + 1].isModified)) {
+                        flightRequirementWithMultiLegModalModel.details[index + 1] = mainTabInfo;
+                      }
+                    }
+
                     setFlightRequirementWithMultiLegModalModel({ ...flightRequirementWithMultiLegModalModel, days: w });
 
-                    // flightRequirementWithMultiLegModalModel.details
-                    //   .filter((e, i) => i > 0)
-                    //   .map((day, index) => {
-                    //     if (!day.isModified && w[index]) {
-                    //       const mainTabInfo = { ...flightRequirementWithMultiLegModalModel.details[0] };
-                    //       flightRequirementWithMultiLegModalModel.details[index + 1].legs = [...mainTabInfo.legs];
-                    //       flightRequirementWithMultiLegModalModel.details[index + 1].rsx = { ...mainTabInfo }.rsx;
-                    //       flightRequirementWithMultiLegModalModel.details[index + 1].required = { ...mainTabInfo }.required;
-                    //       flightRequirementWithMultiLegModalModel.details[index + 1].allowedAircraftIdentities = [...(mainTabInfo.allowedAircraftIdentities || [])];
-                    //       flightRequirementWithMultiLegModalModel.details[index + 1].forbiddenAircraftIdentities = [...(mainTabInfo.forbiddenAircraftIdentities || [])];
-                    //       flightRequirementWithMultiLegModalModel.details[index + 1].notes = { ...mainTabInfo }.notes;
-                    //     }
-                    //   });
-                    w.map((chosedDay, index) => {
-                      if (chosedDay && !flightRequirementWithMultiLegModalModel.details[index + 1].isModified) {
-                        const mainTabInfo = { ...flightRequirementWithMultiLegModalModel.details[0] };
-                        flightRequirementWithMultiLegModalModel.details[index + 1].legs = [...mainTabInfo.legs];
-                        flightRequirementWithMultiLegModalModel.details[index + 1].rsx = { ...mainTabInfo }.rsx;
-                        flightRequirementWithMultiLegModalModel.details[index + 1].required = { ...mainTabInfo }.required;
-                        flightRequirementWithMultiLegModalModel.details[index + 1].allowedAircraftIdentities = [...(mainTabInfo.allowedAircraftIdentities || [])];
-                        flightRequirementWithMultiLegModalModel.details[index + 1].forbiddenAircraftIdentities = [...(mainTabInfo.forbiddenAircraftIdentities || [])];
-                        flightRequirementWithMultiLegModalModel.details[index + 1].notes = { ...mainTabInfo }.notes;
-                        flightRequirementWithMultiLegModalModel.details[index + 1].isModified = false;
-                      }
-                    });
                   }}
                   disabled={flightRequirementWithMultiLegModalModel.disable}
                 />
@@ -1209,7 +1195,7 @@ const PreplanPage: FC = () => {
                 <Tab
                   key={weekDay}
                   className={classes.dayTab}
-                  label={flightRequirementWithMultiLegModalModel.details[tabIndex + 1].isModified ? '*' + weekDay : weekDay}
+                  label={!flightRequirementWithMultiLegModalModel.details[tabIndex + 1].isModified ? weekDay : '*' + weekDay}
                   disabled={!flightRequirementWithMultiLegModalModel.days[tabIndex]}
                 />
               ))}
@@ -1237,7 +1223,7 @@ const PreplanPage: FC = () => {
                       // }
                       ///////
                       for (let index = 0; index < flightRequirementWithMultiLegModalModel.days.length; index++) {
-                        if (flightRequirementWithMultiLegModalModel.days[index] && !flightRequirementWithMultiLegModalModel.details[index + 1].isModified && selectedDay === 0) {
+                        if (flightRequirementWithMultiLegModalModel.days[index] && selectedDay === 0) {
                           flightRequirementWithMultiLegModalModel.details[index + 1].rsx = s.name;
                         }
                       }
@@ -1265,7 +1251,7 @@ const PreplanPage: FC = () => {
                           //   });
                           // }
                           for (let index = 0; index < flightRequirementWithMultiLegModalModel.days.length; index++) {
-                            if (flightRequirementWithMultiLegModalModel.days[index] && !flightRequirementWithMultiLegModalModel.details[index + 1].isModified && selectedDay === 0) {
+                            if (flightRequirementWithMultiLegModalModel.days[index] && selectedDay === 0) {
                               flightRequirementWithMultiLegModalModel.details[index + 1].required = e.target.checked;
                             }
                           }
@@ -1323,7 +1309,7 @@ const PreplanPage: FC = () => {
                       //   });
                       // }
                       for (let index = 0; index < flightRequirementWithMultiLegModalModel.days.length; index++) {
-                        if (flightRequirementWithMultiLegModalModel.days[index] && !flightRequirementWithMultiLegModalModel.details[index + 1].isModified && selectedDay === 0) {
+                        if (flightRequirementWithMultiLegModalModel.days[index] && selectedDay === 0) {
                           flightRequirementWithMultiLegModalModel.details[index + 1].allowedAircraftIdentities = l ? [...l] : [];
                         }
                       }
@@ -1349,7 +1335,7 @@ const PreplanPage: FC = () => {
                       //   });
                       // }
                       for (let index = 0; index < flightRequirementWithMultiLegModalModel.days.length; index++) {
-                        if (flightRequirementWithMultiLegModalModel.days[index] && !flightRequirementWithMultiLegModalModel.details[index + 1].isModified && selectedDay === 0) {
+                        if (flightRequirementWithMultiLegModalModel.days[index] && selectedDay === 0) {
                           flightRequirementWithMultiLegModalModel.details[index + 1].forbiddenAircraftIdentities = l ? [...l] : [];
                         }
                       }
@@ -1376,7 +1362,7 @@ const PreplanPage: FC = () => {
                       //////
 
                       for (let index = 0; index < flightRequirementWithMultiLegModalModel.days.length; index++) {
-                        if (flightRequirementWithMultiLegModalModel.days[index] && !flightRequirementWithMultiLegModalModel.details[index + 1].isModified && selectedDay === 0) {
+                        if (flightRequirementWithMultiLegModalModel.days[index] && selectedDay === 0) {
                           flightRequirementWithMultiLegModalModel.details[index + 1].notes = s.target.value;
                         }
                       }

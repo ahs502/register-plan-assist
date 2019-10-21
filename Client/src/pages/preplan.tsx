@@ -34,7 +34,7 @@ import { borders } from '@material-ui/system';
 
 const useStyles = makeStyles((theme: Theme) => ({
   flightRequirementStyle: {
-    height: 830
+    width: '800px'
   },
   root: {
     position: 'relative'
@@ -76,7 +76,7 @@ const useStyles = makeStyles((theme: Theme) => ({
   clearButton: {
     height: '25px',
     width: '25px',
-    margin: '0px 0px 0px 5px',
+    margin: '0px 0px 0px 10px',
     padding: '1px 10px 0px 10px'
   },
   clearIcon: {
@@ -90,24 +90,32 @@ const useStyles = makeStyles((theme: Theme) => ({
     alignContent: 'center',
     alignItems: 'center',
     justifyContent: 'center',
-    height: '50px',
+    // height: '50px',
     width: '100px',
     minWidth: '90px',
-    marginRight: '5px'
+    maxWidth: '100px'
+    // marginRight: '5px'
   },
   legTab: {
     display: 'flex',
-    flexDirection: 'column'
+    flexDirection: 'column',
+    justifyItems: 'center',
+    alignContent: 'center',
+    alignItems: 'center',
+    justifyContent: 'center'
   },
   legTabButton: {
     display: 'flex',
     margin: '-5px',
-    padding: '0px'
+    padding: '0px',
+    '&:hover': {
+      backgroundColor: 'rgb(255, 255, 255)'
+    }
   },
   legTabFlightNumber: {
-    display: 'flex',
     color: 'grey',
-    fontSize: '10px'
+    fontSize: '10px',
+    zIndex: 100
   },
   legTabRightArrow: {
     marginTop: '5px'
@@ -120,7 +128,7 @@ const useStyles = makeStyles((theme: Theme) => ({
     height: '35px',
     minWidth: '20px',
     minHeight: '20px',
-    margin: '14px 5px 5px 5px'
+    margin: '5px 5px 5px 5px'
   },
   addIcon: {
     minHeight: '10px',
@@ -1060,7 +1068,8 @@ const PreplanPage: FC = () => {
       </SimpleModal>
 
       <SimpleModal
-        // style={{ maxWidth: '700px', width: '1000px' }}
+        maxWidth={false}
+        PaperProps={{ className: classes.flightRequirementStyle }}
         key="flightRequirementEditorWithMultiLeg"
         open={flightRequirementWithMultiLegModalModel.open && (flightRequirementWithMultiLegModalModel.mode === 'ADD' || flightRequirementWithMultiLegModalModel.mode === 'EDIT')}
         loading={flightRequirementWithMultiLegModalModel.loading}
@@ -1347,7 +1356,7 @@ const PreplanPage: FC = () => {
                                         {flightRequirementWithMultiLegModalModel.details[selectedDay].legs[index].flightNumber}
                                       </Typography>
                                     ) : (
-                                      <Typography className={classes.legTabFlightNumber}>{'Flight Number'}</Typography>
+                                      <Typography className={classes.legTabFlightNumber}>{'W5 xxx'}</Typography>
                                     )}
                                     {/* <TextField floatingLabelText="Fixed Floating Label Text" floatingLabelFixed={true} /> */}
                                     <Button className={classes.legTabButton}>

@@ -31,10 +31,12 @@ import { FlightRequirementModalModel, FlightRequirementModalAircraftIdentity, Fl
 import FlightModel from '@core/models/flights/FlightModel';
 import StarRateIcon from '@material-ui/icons/StarRate';
 import { borders } from '@material-ui/system';
+import Divider from '@material-ui/core/Divider';
 
 const useStyles = makeStyles((theme: Theme) => ({
   flightRequirementStyle: {
-    width: '800px'
+    width: '800px',
+    height: '720px'
   },
   root: {
     position: 'relative'
@@ -93,7 +95,11 @@ const useStyles = makeStyles((theme: Theme) => ({
     // height: '50px',
     width: '100px',
     minWidth: '90px',
-    maxWidth: '100px'
+    maxWidth: '100px',
+    '&:hover': {
+      backgroundColor: '#D3D3D3',
+      cursor: 'pointer'
+    }
     // marginRight: '5px'
   },
   legTab: {
@@ -119,8 +125,8 @@ const useStyles = makeStyles((theme: Theme) => ({
   legTabRightArrow: {
     marginTop: '5px'
   },
-  legInfo: {
-    marginTop: '10px'
+  flightRequirementLegInfoContainer: {
+    marginTop: '5px'
   },
   addButton: {
     width: '35px',
@@ -135,14 +141,44 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
   flightRequirementLegContentBox: {
     borderBottom: '3px solid gray',
-    marginTop: '5px',
+    marginTop: '15px',
     paddingTop: '5px'
   },
   flightRequirementLegInfoTextField: {
-    padding: '0px 15px 0px 15px'
+    padding: '0px 15px 0px 15px',
+    marginTop: '5px'
   },
   flightRequirementLegInfoCheckBox: {
+    padding: '5px 0px 0px 15px',
+    marginTop: '5px'
+  },
+  flightRequirementDaysTextField: {
+    padding: '0px 15px 0px 15px',
+    margin: '5px 0px 0px 0px'
+  },
+  flightRequirementDaysCheckBox: {
     padding: '5px 0px 0px 15px'
+  },
+  flightRequirementInformationTextField: {
+    padding: '0px 15px 0px 15px',
+    margin: '5px 0px 0px 0px'
+  },
+  flightRequirementInformationButton: {
+    padding: '5px 0px 0px 15px'
+  },
+  flightRequirementWeekDaysTab: {
+    padding: '0px 15px 0px 15px',
+    margin: '5px 0px 0px 0px'
+  },
+  flightRequirementWeekDaySelectionTab: {
+    padding: '0px 15px 0px 15px',
+    margin: '5px 0px 0px 0px',
+    '& h6': {
+      padding: '10px 0px 0px 20px'
+    },
+    '& button': {
+      marginRight: '25px'
+    }
   }
   // ,
   // flightRequirementLegItems: {
@@ -1120,7 +1156,7 @@ const PreplanPage: FC = () => {
               Flight Information
             </Typography>
           </Grid>
-          <Grid item xs={4}>
+          <Grid item xs={4} className={classes.flightRequirementInformationTextField}>
             <TextField
               fullWidth
               label="Label"
@@ -1129,7 +1165,7 @@ const PreplanPage: FC = () => {
               disabled={flightRequirementWithMultiLegModalModel.disable}
             />
           </Grid>
-          <Grid item xs={4}>
+          <Grid item xs={4} className={classes.flightRequirementInformationTextField}>
             <TextField
               fullWidth
               label="Category"
@@ -1138,7 +1174,7 @@ const PreplanPage: FC = () => {
               disabled={flightRequirementWithMultiLegModalModel.disable}
             />
           </Grid>
-          <Grid item xs={4}>
+          <Grid item xs={4} className={classes.flightRequirementInformationTextField}>
             <AutoComplete
               options={MasterData.all.stcs.items}
               label="Stc"
@@ -1151,7 +1187,7 @@ const PreplanPage: FC = () => {
               isDisabled={flightRequirementWithMultiLegModalModel.disable}
             />
           </Grid>
-          <Grid item xs={12}>
+          <Grid item xs={12} className={classes.flightRequirementWeekDaySelectionTab}>
             <Grid container>
               <Grid item xs={2}>
                 <Typography variant="subtitle2">Days:</Typography>
@@ -1194,8 +1230,7 @@ const PreplanPage: FC = () => {
             </Grid>
           </Grid>
 
-          <Grid item xs={12}>
-            {/* <Tabs key="" ></Tabs> */}
+          <Grid item xs={12} className={classes.flightRequirementWeekDaysTab}>
             <Tabs
               key="weekday"
               value={selectedDay}
@@ -1216,7 +1251,7 @@ const PreplanPage: FC = () => {
             <Grid item xs={12}>
               {/* <FlightRequirementDetail></FlightRequirementDetail> */}
               <Grid container>
-                <Grid item xs={6}>
+                <Grid item xs={6} className={classes.flightRequirementDaysTextField}>
                   <AutoComplete
                     label="RSX"
                     options={rsxOptions}
@@ -1247,7 +1282,7 @@ const PreplanPage: FC = () => {
                     disabled={flightRequirementWithMultiLegModalModel.disable}
                   />
                 </Grid>
-                <Grid item xs={4}>
+                <Grid item xs={4} className={classes.flightRequirementDaysCheckBox}>
                   <FormControlLabel
                     label="Required"
                     control={
@@ -1279,7 +1314,7 @@ const PreplanPage: FC = () => {
                     }
                   />
                 </Grid>
-                <Grid item xs={2}>
+                <Grid item xs={2} className={classes.flightRequirementInformationButton}>
                   {!selectedDay || !flightRequirementWithMultiLegModalModel.details[selectedDay].isModified ? null : (
                     <Button
                       onClick={() => {
@@ -1299,17 +1334,17 @@ const PreplanPage: FC = () => {
                     </Button>
                   )}
                 </Grid>
-                <Grid item xs={6}>
+                <Grid item xs={6} className={classes.flightRequirementDaysTextField}>
                   <Typography variant="caption" className={classes.captionTextColor}>
                     Allowed Aircrafts
                   </Typography>
                 </Grid>
-                <Grid item xs={6}>
+                <Grid item xs={6} className={classes.flightRequirementDaysTextField}>
                   <Typography variant="caption" className={classes.captionTextColor}>
                     Forbidden Aircrafts
                   </Typography>
                 </Grid>
-                <Grid item xs={6}>
+                <Grid item xs={6} className={classes.flightRequirementDaysTextField}>
                   <MultiSelect
                     options={aircraftIdentities}
                     getOptionLabel={l => l.name}
@@ -1335,7 +1370,7 @@ const PreplanPage: FC = () => {
                     }}
                   ></MultiSelect>
                 </Grid>
-                <Grid item xs={6}>
+                <Grid item xs={6} className={classes.flightRequirementDaysTextField}>
                   <MultiSelect
                     options={aircraftIdentities}
                     getOptionLabel={l => l.name}
@@ -1361,7 +1396,7 @@ const PreplanPage: FC = () => {
                     }}
                   ></MultiSelect>
                 </Grid>
-                <Grid item xs={12}>
+                <Grid item xs={12} className={classes.flightRequirementDaysTextField}>
                   <TextField
                     fullWidth
                     label="Notes"
@@ -1504,7 +1539,7 @@ const PreplanPage: FC = () => {
                     </Grid>
                   </Grid>
 
-                  <Grid container className={classes.legInfo}>
+                  <Grid container className={classes.flightRequirementLegInfoContainer}>
                     <Grid item xs={4} className={classes.flightRequirementLegInfoTextField}>
                       <TextField
                         label="Flight Number"

@@ -36,7 +36,7 @@ import Paper from '@material-ui/core/Paper';
 const useStyles = makeStyles((theme: Theme) => ({
   flightRequirementStyle: {
     width: '850px',
-    height: '750px'
+    height: '780px'
   },
   root: {
     position: 'relative'
@@ -193,6 +193,10 @@ const useStyles = makeStyles((theme: Theme) => ({
   flightRequirementDaysCheckBox: {
     padding: '5px 0px 0px 15px'
   },
+  flightRequirementInformationTitle: {
+    padding: '0px 0px 0px 15px',
+    fontSize: '16px'
+  },
   flightRequirementInformationTextField: {
     padding: '0px 15px 0px 15px',
     margin: '5px 0px 0px 0px'
@@ -211,15 +215,16 @@ const useStyles = makeStyles((theme: Theme) => ({
     }
   },
   flightRequirementWeekDaySelectionTab: {
-    padding: '0px 15px 0px 15px',
-    margin: '5px 0px 0px 0px',
+    padding: '5px 15px 0px 15px',
+    margin: '5px 0px',
     '& h6': {
-      padding: '10px 0px 0px 20px'
+      padding: '10px 0px 0px 40px',
+      margin: '5px 0px'
     },
-    '& > div > div': {
+    '& div ~ div': {
       display: 'flex',
       flexDirection: 'row',
-      justifyContent: 'space-evenly'
+      justifyContent: 'space-between'
     }
     // '& button': {
     //   marginRight: '25px'
@@ -1207,7 +1212,7 @@ const PreplanPage: FC = () => {
       >
         <Grid container>
           <Grid item xs={12}>
-            <Typography variant="caption" className={classes.captionTextColor}>
+            <Typography variant="caption" className={classes.flightRequirementInformationTitle}>
               Flight Information
             </Typography>
           </Grid>

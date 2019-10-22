@@ -89,7 +89,8 @@ const useStyles = makeStyles((theme: Theme) => ({
   clearButton: {
     height: '25px',
     width: '25px',
-    // margin: '0px 0px 0px 10px',
+    color: '#EEEEEE',
+    marginLeft: '5px',
     padding: '1px 10px 0px 10px',
     '&:active': {
       backgroundColor: 'transparent'
@@ -102,8 +103,8 @@ const useStyles = makeStyles((theme: Theme) => ({
     }
   },
   clearIcon: {
-    width: '20px',
-    height: '20px'
+    width: '16px',
+    height: '16px'
   },
   legsTab: {
     display: 'flex',

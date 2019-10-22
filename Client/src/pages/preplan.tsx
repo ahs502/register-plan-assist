@@ -35,7 +35,7 @@ import Paper from '@material-ui/core/Paper';
 
 const useStyles = makeStyles((theme: Theme) => ({
   flightRequirementStyle: {
-    width: '804px',
+    width: '785px',
     height: '775px',
     padding: '4px',
     margin: '0px',
@@ -157,7 +157,10 @@ const useStyles = makeStyles((theme: Theme) => ({
   flightRequirementLegInfoTexFields: {
     display: 'flex',
     flexDirection: 'row',
-    justifyContent: 'space-evenly'
+    justifyContent: 'space-evenly',
+    '& div > div': {
+      width: '215px'
+    }
   },
   addButton: {
     width: '35px',
@@ -178,8 +181,8 @@ const useStyles = makeStyles((theme: Theme) => ({
   flightRequirementLegContainerPaper: {
     padding: '5px',
     margin: '10px 5px 5px 5px',
-    width: '750px',
-    maxWidth: '750px'
+    width: '730px',
+    maxWidth: '730px'
   },
   flightRequirementLegTabs: {
     padding: '0px 5px',
@@ -189,14 +192,14 @@ const useStyles = makeStyles((theme: Theme) => ({
     // marginTop: '5px'
   },
   flightRequirementLegInfoCheckBox: {
-    padding: '5px 0px 0px 15px',
-    marginTop: '5px'
+    padding: '5px 0px 0px 5px',
+    margin: '0px 20px 0px 0px'
   },
   flightRequirementLegInfoCheckBoxes: {
     display: 'flex',
     flexDirection: 'row',
     justifyContent: 'flex-start',
-    marginLeft: theme.spacing(4)
+    margin: '5px 0px 0px 0px'
   },
   flightRequirementDaysTextField: {
     padding: '0px 15px 0px 15px',
@@ -245,8 +248,8 @@ const useStyles = makeStyles((theme: Theme) => ({
   flightRequirementInformationContainerPaper: {
     margin: '10px',
     padding: '5px 5px',
-    width: '770px',
-    maxWidth: '770px'
+    width: '750px',
+    maxWidth: '750px'
   }
   // ,
   // flightRequirementLegItems: {

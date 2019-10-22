@@ -1224,7 +1224,7 @@ const PreplanPage: FC = () => {
               Flight Information
             </Typography>
           </Grid>
-          <Grid item xs={4} className={classes.flightRequirementInformationTextField}>
+          <Grid item xs={5} className={classes.flightRequirementInformationTextField}>
             <TextField
               fullWidth
               label="Label"
@@ -1233,7 +1233,7 @@ const PreplanPage: FC = () => {
               disabled={flightRequirementWithMultiLegModalModel.disable}
             />
           </Grid>
-          <Grid item xs={4} className={classes.flightRequirementInformationTextField}>
+          <Grid item xs={5} className={classes.flightRequirementInformationTextField}>
             <TextField
               fullWidth
               label="Category"
@@ -1242,7 +1242,7 @@ const PreplanPage: FC = () => {
               disabled={flightRequirementWithMultiLegModalModel.disable}
             />
           </Grid>
-          <Grid item xs={4} className={classes.flightRequirementInformationTextField}>
+          <Grid item xs={2} className={classes.flightRequirementInformationTextField}>
             <AutoComplete
               options={MasterData.all.stcs.items}
               label="Stc"

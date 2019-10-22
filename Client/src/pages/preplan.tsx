@@ -201,9 +201,6 @@ const useStyles = makeStyles((theme: Theme) => ({
     padding: '0px 15px 0px 15px',
     margin: '5px 0px 0px 0px'
   },
-  flightRequirementDaysCheckBox: {
-    padding: '10px 0px 0px 15px'
-  },
   flightRequirementInformationTitle: {
     padding: '0px 0px 0px 15px',
     fontSize: '16px'
@@ -1322,7 +1319,7 @@ const PreplanPage: FC = () => {
               <Grid item xs={12} className={classes.flightRequirementInformationContainer}>
                 {/* <FlightRequirementDetail></FlightRequirementDetail> */}
                 <Grid container>
-                  <Grid item xs={6} className={classes.flightRequirementDaysTextField}>
+                  <Grid item xs={2} className={classes.flightRequirementDaysTextField}>
                     <AutoComplete
                       label="RSX"
                       options={rsxOptions}
@@ -1353,36 +1350,31 @@ const PreplanPage: FC = () => {
                       disabled={flightRequirementWithMultiLegModalModel.disable}
                     />
                   </Grid>
-                  <Grid item xs={4} className={classes.flightRequirementDaysCheckBox}>
-                    <FormControlLabel
-                      label="Required"
-                      control={
-                        <Checkbox
-                          color="primary"
-                          checked={flightRequirementWithMultiLegModalModel.details[selectedDay].required || false}
-                          onChange={e => {
-                            flightRequirementWithMultiLegModalModel.details[selectedDay].isModified = true;
-                            // if (selectedDay === 0) {
-                            //   flightRequirementWithMultiLegModalModel.details.map((day, index) => {
-                            //     if (!day.isModified && index > 0) {
-                            //       flightRequirementWithMultiLegModalModel.details[index].required = e.target.checked;
-                            //     }
-                            //   });
-                            // }
-                            for (let index = 0; index < flightRequirementWithMultiLegModalModel.days.length; index++) {
-                              if (
-                                flightRequirementWithMultiLegModalModel.days[index] &&
-                                !flightRequirementWithMultiLegModalModel.details[index + 1].isModified &&
-                                selectedDay === 0
-                              ) {
-                                flightRequirementWithMultiLegModalModel.details[index + 1].required = e.target.checked;
-                              }
-                            }
-                            flightRequirementWithMultiLegModalModel.details[selectedDay].required = e.target.checked;
-                            setFlightRequirementWithMultiLegModalModel({ ...flightRequirementWithMultiLegModalModel });
-                          }}
-                        />
-                      }
+                  <Grid item xs={8} className={classes.flightRequirementDaysTextField}>
+                    <TextField
+                      fullWidth
+                      label="Notes"
+                      value={flightRequirementWithMultiLegModalModel.details[selectedDay].notes || ''}
+                      onChange={s => {
+                        flightRequirementWithMultiLegModalModel.details[selectedDay].isModified = true;
+                        //////
+                        // if (selectedDay === 0) {
+                        //   flightRequirementWithMultiLegModalModel.details.map((day, index) => {
+                        //     if (!day.isModified && index > 0) {
+                        //       flightRequirementWithMultiLegModalModel.details[index].notes = s.target.value;
+                        //     }
+                        //   });
+                        // }
+                        //////
+
+                        for (let index = 0; index < flightRequirementWithMultiLegModalModel.days.length; index++) {
+                          if (flightRequirementWithMultiLegModalModel.days[index] && !flightRequirementWithMultiLegModalModel.details[index + 1].isModified && selectedDay === 0) {
+                            flightRequirementWithMultiLegModalModel.details[index + 1].notes = s.target.value;
+                          }
+                        }
+                        flightRequirementWithMultiLegModalModel.details[selectedDay].notes = s.target.value;
+                        setFlightRequirementWithMultiLegModalModel({ ...flightRequirementWithMultiLegModalModel });
+                      }}
                     />
                   </Grid>
                   <Grid item xs={2} className={classes.flightRequirementInformationButton}>
@@ -1467,33 +1459,7 @@ const PreplanPage: FC = () => {
                       }}
                     ></MultiSelect>
                   </Grid>
-                  <Grid item xs={12} className={classes.flightRequirementDaysTextField}>
-                    <TextField
-                      fullWidth
-                      label="Notes"
-                      value={flightRequirementWithMultiLegModalModel.details[selectedDay].notes || ''}
-                      onChange={s => {
-                        flightRequirementWithMultiLegModalModel.details[selectedDay].isModified = true;
-                        //////
-                        // if (selectedDay === 0) {
-                        //   flightRequirementWithMultiLegModalModel.details.map((day, index) => {
-                        //     if (!day.isModified && index > 0) {
-                        //       flightRequirementWithMultiLegModalModel.details[index].notes = s.target.value;
-                        //     }
-                        //   });
-                        // }
-                        //////
 
-                        for (let index = 0; index < flightRequirementWithMultiLegModalModel.days.length; index++) {
-                          if (flightRequirementWithMultiLegModalModel.days[index] && !flightRequirementWithMultiLegModalModel.details[index + 1].isModified && selectedDay === 0) {
-                            flightRequirementWithMultiLegModalModel.details[index + 1].notes = s.target.value;
-                          }
-                        }
-                        flightRequirementWithMultiLegModalModel.details[selectedDay].notes = s.target.value;
-                        setFlightRequirementWithMultiLegModalModel({ ...flightRequirementWithMultiLegModalModel });
-                      }}
-                    />
-                  </Grid>
                   <Paper className={classes.flightRequirementLegContainerPaper}>
                     <Grid item xs={12} className={classes.flightRequirementLegContainer}>
                       <Grid container className={classes.flightRequirementLegTabs}>

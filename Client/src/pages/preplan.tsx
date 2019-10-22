@@ -35,8 +35,19 @@ import Paper from '@material-ui/core/Paper';
 
 const useStyles = makeStyles((theme: Theme) => ({
   flightRequirementStyle: {
-    width: '850px',
-    height: '780px'
+    width: '804px',
+    height: '775px',
+    padding: '4px',
+    margin: '0px',
+    '& div.MuiDialogContent-root': {
+      padding: '4px 4px'
+    },
+    '& div.MuiDialogTitle-root': {
+      padding: '16px 16px'
+    },
+    '& div.MuiDialogActions-root': {
+      padding: '5px'
+    }
   },
   root: {
     position: 'relative'
@@ -165,9 +176,9 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
   flightRequirementLegContainerPaper: {
     padding: '5px',
-    margin: '10px',
-    width: '752px',
-    maxWidth: '752px'
+    margin: '5px',
+    width: '750px',
+    maxWidth: '750px'
   },
   flightRequirementLegTabs: {
     padding: '0px 5px',
@@ -236,8 +247,8 @@ const useStyles = makeStyles((theme: Theme) => ({
   flightRequirementInformationContainerPaper: {
     margin: '10px',
     padding: '5px 5px',
-    width: '782px',
-    maxWidth: '782px'
+    width: '770px',
+    maxWidth: '770px'
   }
   // ,
   // flightRequirementLegItems: {
@@ -1289,25 +1300,25 @@ const PreplanPage: FC = () => {
           </Grid>
 
           <Grid item xs={12}>
-            <Tabs
-              className={classes.flightRequirementWeekDaysTab}
-              key="weekday"
-              value={selectedDay}
-              onChange={(event, t) => {
-                setSelectedDay(t);
-              }}
-            >
-              <Tab key={'Main'} className={classes.dayTab} label={'Main'} disabled={false} />
-              {weekDaysArray.map((weekDay, tabIndex) => (
-                <Tab
-                  key={weekDay}
-                  className={classes.dayTab}
-                  label={flightRequirementWithMultiLegModalModel.details[tabIndex + 1].isModified ? '*' + weekDay : weekDay}
-                  disabled={!flightRequirementWithMultiLegModalModel.days[tabIndex]}
-                />
-              ))}
-            </Tabs>
             <Paper className={classes.flightRequirementInformationContainerPaper}>
+              <Tabs
+                className={classes.flightRequirementWeekDaysTab}
+                key="weekday"
+                value={selectedDay}
+                onChange={(event, t) => {
+                  setSelectedDay(t);
+                }}
+              >
+                <Tab key={'Main'} className={classes.dayTab} label={'Main'} disabled={false} />
+                {weekDaysArray.map((weekDay, tabIndex) => (
+                  <Tab
+                    key={weekDay}
+                    className={classes.dayTab}
+                    label={flightRequirementWithMultiLegModalModel.details[tabIndex + 1].isModified ? '*' + weekDay : weekDay}
+                    disabled={!flightRequirementWithMultiLegModalModel.days[tabIndex]}
+                  />
+                ))}
+              </Tabs>
               <Grid item xs={12} className={classes.flightRequirementInformationContainer}>
                 {/* <FlightRequirementDetail></FlightRequirementDetail> */}
                 <Grid container>

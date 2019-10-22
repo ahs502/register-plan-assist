@@ -36,7 +36,7 @@ import Paper from '@material-ui/core/Paper';
 const useStyles = makeStyles((theme: Theme) => ({
   flightRequirementStyle: {
     width: '850px',
-    height: '820px'
+    height: '750px'
   },
   root: {
     position: 'relative'

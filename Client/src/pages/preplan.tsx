@@ -78,8 +78,17 @@ const useStyles = makeStyles((theme: Theme) => ({
   clearButton: {
     height: '25px',
     width: '25px',
-    margin: '0px 0px 0px 10px',
-    padding: '1px 10px 0px 10px'
+    // margin: '0px 0px 0px 10px',
+    padding: '1px 10px 0px 10px',
+    '&:active': {
+      backgroundColor: 'transparent'
+    },
+    '&:focus': {
+      backgroundColor: 'transparent'
+    },
+    '&:target': {
+      backgroundColor: 'transparent'
+    }
   },
   clearIcon: {
     width: '20px',
@@ -99,6 +108,9 @@ const useStyles = makeStyles((theme: Theme) => ({
     '&:hover': {
       backgroundColor: '#D3D3D3',
       cursor: 'pointer'
+    },
+    '&:active': {
+      backgroundColor: '#848689'
     }
     // marginRight: '5px'
   },
@@ -218,7 +230,9 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
   flightRequirementInformationContainerPaper: {
     margin: '10px',
-    padding: '5px 5px'
+    padding: '5px 5px',
+    width: '782px',
+    maxWidth: '782px'
   }
   // ,
   // flightRequirementLegItems: {

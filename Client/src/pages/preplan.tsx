@@ -176,7 +176,7 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
   flightRequirementLegContainerPaper: {
     padding: '5px',
-    margin: '5px',
+    margin: '10px 5px 5px 5px',
     width: '750px',
     maxWidth: '750px'
   },
@@ -202,7 +202,7 @@ const useStyles = makeStyles((theme: Theme) => ({
     margin: '5px 0px 0px 0px'
   },
   flightRequirementDaysCheckBox: {
-    padding: '5px 0px 0px 15px'
+    padding: '10px 0px 0px 15px'
   },
   flightRequirementInformationTitle: {
     padding: '0px 0px 0px 15px',

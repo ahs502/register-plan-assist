@@ -35,8 +35,8 @@ import Paper from '@material-ui/core/Paper';
 
 const useStyles = makeStyles((theme: Theme) => ({
   flightRequirementStyle: {
-    width: '800px',
-    height: '740px'
+    width: '850px',
+    height: '820px'
   },
   root: {
     position: 'relative'
@@ -126,7 +126,14 @@ const useStyles = makeStyles((theme: Theme) => ({
     marginTop: '5px'
   },
   flightRequirementLegInfoContainer: {
+    display: 'flex',
+    flexDirection: 'column',
     marginTop: '5px'
+  },
+  flightRequirementLegInfoTexFields: {
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'space-evenly'
   },
   addButton: {
     width: '35px',
@@ -146,15 +153,26 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
   flightRequirementLegContainerPaper: {
     padding: '5px',
-    margin: '10px'
+    margin: '10px',
+    width: '752px',
+    maxWidth: '752px'
+  },
+  flightRequirementLegTabs: {
+    padding: '0px 5px',
+    margin: '0px 5px'
   },
   flightRequirementLegInfoTextField: {
-    padding: '0px 15px 0px 15px',
-    marginTop: '5px'
+    // marginTop: '5px'
   },
   flightRequirementLegInfoCheckBox: {
     padding: '5px 0px 0px 15px',
     marginTop: '5px'
+  },
+  flightRequirementLegInfoCheckBoxes: {
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    marginLeft: theme.spacing(4)
   },
   flightRequirementDaysTextField: {
     padding: '0px 15px 0px 15px',
@@ -199,8 +217,8 @@ const useStyles = makeStyles((theme: Theme) => ({
     marginTop: '5px'
   },
   flightRequirementInformationContainerPaper: {
-    margin: '5px',
-    padding: '0px 5px'
+    margin: '10px',
+    padding: '5px 5px'
   }
   // ,
   // flightRequirementLegItems: {
@@ -1448,7 +1466,7 @@ const PreplanPage: FC = () => {
                   </Grid>
                   <Paper className={classes.flightRequirementLegContainerPaper}>
                     <Grid item xs={12} className={classes.flightRequirementLegContainer}>
-                      <Grid container>
+                      <Grid container className={classes.flightRequirementLegTabs}>
                         <Grid item xs={11}>
                           <Tabs key="legs" value={legIndex} onChange={(event, newValue) => setLegIndex(newValue)} variant="scrollable" scrollButtons="auto">
                             {flightRequirementWithMultiLegModalModel.details[selectedDay].legs.map((l, index, source) => (
@@ -1564,8 +1582,9 @@ const PreplanPage: FC = () => {
                       </Grid>
 
                       <Grid container className={classes.flightRequirementLegInfoContainer}>
-                        <Grid item xs={4} className={classes.flightRequirementLegInfoTextField}>
+                        <Grid item xs={12} className={classes.flightRequirementLegInfoTexFields}>
                           <TextField
+                            className={classes.flightRequirementLegInfoTextField}
                             label="Flight Number"
                             value={
                               (flightRequirementWithMultiLegModalModel.details[selectedDay].legs[legIndex] &&
@@ -1578,9 +1597,8 @@ const PreplanPage: FC = () => {
                             }}
                             disabled={!!selectedDay || flightRequirementWithMultiLegModalModel.disable}
                           />
-                        </Grid>
-                        <Grid item xs={4} className={classes.flightRequirementLegInfoTextField}>
                           <TextField
+                            className={classes.flightRequirementLegInfoTextField}
                             label="Departure"
                             value={
                               (flightRequirementWithMultiLegModalModel.details[selectedDay].legs[legIndex] &&
@@ -1593,9 +1611,8 @@ const PreplanPage: FC = () => {
                             }}
                             disabled={!!selectedDay || flightRequirementWithMultiLegModalModel.disable}
                           />
-                        </Grid>
-                        <Grid item xs={4} className={classes.flightRequirementLegInfoTextField}>
                           <TextField
+                            className={classes.flightRequirementLegInfoTextField}
                             label="Arrival"
                             value={
                               (flightRequirementWithMultiLegModalModel.details[selectedDay].legs[legIndex] &&
@@ -1609,8 +1626,9 @@ const PreplanPage: FC = () => {
                             disabled={!!selectedDay || flightRequirementWithMultiLegModalModel.disable}
                           />
                         </Grid>
-                        <Grid item xs={4} className={classes.flightRequirementLegInfoTextField}>
+                        <Grid item xs={12} className={classes.flightRequirementLegInfoTexFields}>
                           <TextField
+                            className={classes.flightRequirementLegInfoTextField}
                             label="BlockTime"
                             value={
                               (flightRequirementWithMultiLegModalModel.details[selectedDay].legs[legIndex] &&
@@ -1623,9 +1641,8 @@ const PreplanPage: FC = () => {
                             }}
                             disabled={flightRequirementWithMultiLegModalModel.disable}
                           />
-                        </Grid>
-                        <Grid item xs={4} className={classes.flightRequirementLegInfoTextField}>
                           <TextField
+                            className={classes.flightRequirementLegInfoTextField}
                             label="STDLowerbound"
                             value={
                               (flightRequirementWithMultiLegModalModel.details[selectedDay].legs[legIndex] &&
@@ -1638,9 +1655,8 @@ const PreplanPage: FC = () => {
                             }}
                             disabled={flightRequirementWithMultiLegModalModel.disable}
                           />
-                        </Grid>
-                        <Grid item xs={4} className={classes.flightRequirementLegInfoTextField}>
                           <TextField
+                            className={classes.flightRequirementLegInfoTextField}
                             label="STDUpperbound"
                             value={
                               (flightRequirementWithMultiLegModalModel.details[selectedDay].legs[legIndex] &&
@@ -1654,8 +1670,9 @@ const PreplanPage: FC = () => {
                             disabled={flightRequirementWithMultiLegModalModel.disable}
                           />
                         </Grid>
-                        <Grid item xs={6} className={classes.flightRequirementLegInfoCheckBox}>
+                        <Grid item xs={12} className={classes.flightRequirementLegInfoCheckBoxes}>
                           <FormControlLabel
+                            className={classes.flightRequirementLegInfoCheckBox}
                             label="Destination Permission"
                             control={
                               <Checkbox
@@ -1672,9 +1689,8 @@ const PreplanPage: FC = () => {
                               />
                             }
                           />
-                        </Grid>
-                        <Grid item xs={6} className={classes.flightRequirementLegInfoCheckBox}>
                           <FormControlLabel
+                            className={classes.flightRequirementLegInfoCheckBox}
                             label="Origin Permission"
                             control={
                               <Checkbox

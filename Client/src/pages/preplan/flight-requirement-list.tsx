@@ -106,7 +106,6 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = React.memo
       enqueueSnackbar(message, { variant });
     }
     useEffect(() => {
-      console.log('use effect', flightRequirements, tab, searchValue);
       filterFlightRequiermentBySelectedTab(filterOnProperties(searchValue), tab);
     }, [flightRequirements, tab, searchValue, preplan.flights, preplan.flightPacks]);
 

@@ -1,5 +1,6 @@
 import FlightScopeEntity, { convertFlightScopeModelToEntity, convertflightScopeEntityToModel } from './FlightScopeEntity';
 import WeekdayFlightRequirementModel from '@core/models/flights/WeekdayFlightRequirementModel';
+import { xmlEscape } from 'src/utils/xml';
 
 export default interface WeekdayFlightRequirementEntity {
   readonly _attributes: {
@@ -19,7 +20,7 @@ export default interface WeekdayFlightRequirementEntity {
 export function convertWeekdayFlightRequirementModelToEntity(data: WeekdayFlightRequirementModel): WeekdayFlightRequirementEntity {
   return {
     _attributes: {
-      Notes: data.notes,
+      Notes: xmlEscape(data.notes),
       Freezed: String(data.freezed),
       Day: String(data.day)
     },

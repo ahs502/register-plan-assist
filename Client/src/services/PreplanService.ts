@@ -88,13 +88,6 @@ export default class PreplanService {
   }
 
   /**
-   * Sets a flight requirement included/excluded status and provides it again with new value.
-   */
-  static async setFlightRequirementIncluded(flightRequirementId: string, included: boolean) {
-    return await request<FlightRequirementModel>('set-flight-requirement-included', { flightRequirementId, included });
-  }
-
-  /**
    * Sets the status of aircraft registers.
    */
   static async setAircraftRegisters(

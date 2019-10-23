@@ -1,4 +1,4 @@
-import React, { FC, useState, Fragment } from 'react';
+import React, { FC, useState, Fragment as div, Fragment } from 'react';
 import { Theme, Table, TableHead, TableBody, TableCell, TableRow, Typography, TextField, IconButton, FormControl, Select, Divider, Grow, Collapse } from '@material-ui/core';
 import { Clear as RemoveIcon, Check as CheckIcon } from '@material-ui/icons';
 import { makeStyles } from '@material-ui/styles';
@@ -34,6 +34,17 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
   ignoredRegister: {
     backgroundColor: theme.palette.extraColors.ignoredRegister
+  },
+  content: {
+    height: `calc(100%)`
+  },
+  body: {
+    height: `calc(100% - 82px)`,
+    overflow: 'auto'
+  },
+  bodyWithAddDummy: {
+    height: `calc(100% - 188px)`,
+    overflow: 'auto'
   }
 }));
 
@@ -383,32 +394,44 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
   return (
     <SideBarContainer
       onApply={applyHandler}
-      onAdd={() => setAddDummyRegisterFormModel({ show: true, name: '', aircraftType: '', baseAirport: '', status: 'INCLUDED' })}
+      onAdd={() => {
+        setAddDummyRegisterFormModel({ show: true, name: '', aircraftType: '', baseAirport: '', status: 'INCLUDED' });
+      }}
       label="Select Aircraft Registers"
       loading={loading}
       errorMessage={errorMessage}
     >
-      <div className={classes.searchWrapper}>
-        <Search disabled={loading} onQueryChange={query => setQuery(query)} />
-      </div>
+      <div className={classes.content}>
+        <div className={classes.searchWrapper}>
+          <Search disabled={loading} onQueryChange={query => setQuery(query)} />
+        </div>
 
-      {addDummyRegisterForm}
-      {list.map(t => (
-        <Fragment key={t.type.id}>
-          <br />
-          <br />
-          <Typography variant="h6" display="inline">
-            Type: {t.type.name}
-          </Typography>
-          <Table size="small">
-            {tableHead}
-            <TableBody>
-              {filterOnProperties(t.registers, query, 'name').map(r => aircraftRegisterRow(t, r))}
-              {filterOnProperties(t.dummyRegisters, query, 'name').map(r => dummyAircraftRegisterRow(t, r))}
-            </TableBody>
-          </Table>
-        </Fragment>
-      ))}
+        {addDummyRegisterForm}
+        <div className={addDummyRegisterFormModel.show ? classes.bodyWithAddDummy : classes.body}>
+          {list.map((t, index) => (
+            <div key={t.type.id}>
+              <Typography variant="h6" display="inline">
+                Type: {t.type.name}
+              </Typography>
+              <Table size="small">
+                {tableHead}
+                <TableBody>
+                  {filterOnProperties(t.registers, query, 'name').map(r => aircraftRegisterRow(t, r))}
+                  {filterOnProperties(t.dummyRegisters, query, 'name').map(r => dummyAircraftRegisterRow(t, r))}
+                </TableBody>
+              </Table>
+              {index !== list.length - 1 ? (
+                <Fragment>
+                  <br />
+                  <br />
+                </Fragment>
+              ) : (
+                <Fragment></Fragment>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
     </SideBarContainer>
   );
 };

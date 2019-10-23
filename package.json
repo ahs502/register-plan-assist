@@ -1,6 +1,6 @@
 {
   "name": "register-plan-assist",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "private": true,
   "description": "Intelligent Flight Scheduler",
   "scripts": {
@@ -27,9 +27,7 @@
   "author": "Mahan Air",
   "license": "ISC",
   "devDependencies": {
-    "@types/gulp": "^4.0.6"
-  },
-  "dependencies": {
+    "@types/gulp": "^4.0.6",
     "concurrently": "^4.1.1",
     "del": "^5.0.0",
     "gulp": "^4.0.2",

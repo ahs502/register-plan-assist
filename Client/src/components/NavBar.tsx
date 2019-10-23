@@ -36,7 +36,7 @@ export interface NavBarLink {
 export interface NavBarProps {
   backLink?: string;
   backTitle?: string;
-  navBarLinks: ReadonlyArray<NavBarLink | false | null | undefined>;
+  navBarLinks: readonly (NavBarLink | false | null | undefined)[];
 }
 
 const NavBar: FC<NavBarProps> = ({ children, backLink, navBarLinks, backTitle }) => {
@@ -46,12 +46,12 @@ const NavBar: FC<NavBarProps> = ({ children, backLink, navBarLinks, backTitle })
   return (
     <Toolbar className={classes.root} variant="dense">
       {backLink && (
-        // <LinkIconButton to={backLink} color="inherit" title={backTitle}>
-        //   <BackIcon />
-        // </LinkIconButton>
-        <IconButton color="inherit" title={backTitle} onClick={() => history.goBack() /* history.push(backLink) */}>
+        <LinkIconButton to={backLink} color="inherit" title={backTitle}>
           <BackIcon />
-        </IconButton>
+        </LinkIconButton>
+        // <IconButton color="inherit" title={backTitle} onClick={() => history.goBack() /* history.push(backLink) */}>
+        //   <BackIcon />
+        // </IconButton>
       )}
       <div className={classes.navigation}>
         {(navBarLinks.filter(Boolean) as NavBarLink[]).map((navBarLink, index) => (

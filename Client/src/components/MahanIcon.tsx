@@ -96,7 +96,7 @@ const MahanIcon: FC<MahanIconProps> = ({ children, className, component, color, 
   return (
     <Component
       className={classNames(
-        `icon-${toKebabCase(MahanIconType[iconType])}`,
+        `rpa-icon-${toKebabCase(MahanIconType[iconType])}`,
         {
           'animate-spin': spinner
         },

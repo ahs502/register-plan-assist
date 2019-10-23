@@ -4,14 +4,22 @@ import persistant from './persistant';
 import ServerResult from '@core/types/ServerResult';
 
 export default class RequestManager {
-  //TODO: Manage concurrent requests too.
-
+  static requestsCount: number = 0;
   static onProcessingChanged?(processing: boolean): void;
 
   static async request<R>(service: string, command: string, data?: any): Promise<ServerResult<R>> {
-    // RequestManager.onProcessingChanged && RequestManager.onProcessingChanged(true);
-    const result = await send();
-    // RequestManager.onProcessingChanged && RequestManager.onProcessingChanged(false);
+    RequestManager.requestsCount++;
+    RequestManager.onProcessingChanged && RequestManager.onProcessingChanged(true);
+    let result: any;
+    try {
+      result = await send();
+      RequestManager.requestsCount--;
+      RequestManager.requestsCount === 0 && RequestManager.onProcessingChanged && RequestManager.onProcessingChanged(false);
+    } catch (error) {
+      RequestManager.requestsCount--;
+      RequestManager.requestsCount === 0 && RequestManager.onProcessingChanged && RequestManager.onProcessingChanged(false);
+      throw error;
+    }
     return result;
 
     async function send() {

@@ -36,7 +36,7 @@ router.post(
     new NewPreplanModelValidation(newPreplan, userPreplanNames).throw('Invalid API input.');
 
     const result: string[] = await runSp(
-      '[RPA].[SP_CreatePreplanEmpty]',
+      '[RPA].[SP_InsertEmptyPreplan]',
       runSp.varCharParam('userId', userId, 30),
       runSp.nVarCharParam('name', newPreplan.name, 200),
       runSp.dateTimeParam('startDate', newPreplan.startDate),
@@ -75,7 +75,7 @@ router.post(
     new NewPreplanModelValidation(editPreplan, userPreplanNames).throw('Invalid API input.');
 
     const preplanHeaderEntity: PreplanHeaderEntity[] = await runSp(
-      '[RPA].[Sp_EditPreplanHeader]',
+      '[RPA].[Sp_UpdatePreplanHeader]',
       runSp.varCharParam('userId', userId, 30),
       runSp.intParam('id', editPreplan.id),
       runSp.nVarCharParam('name', editPreplan.name, 200),
@@ -103,7 +103,7 @@ router.post(
 router.post(
   '/remove',
   requestMiddlewareWithDbAccess<{ id: string }, PreplanHeaderModel[]>(async (userId, { id }, { runSp }) => {
-    await runSp('[RPA].[Sp_RemovePrePlan]', runSp.varCharParam('userId', userId, 30), runSp.intParam('id', id));
+    await runSp('[RPA].[Sp_DeletePreplan]', runSp.varCharParam('userId', userId, 30), runSp.intParam('id', id));
 
     const preplanHeaderEntities: readonly PreplanHeaderEntity[] = await runSp('[RPA].[SP_GetPreplanHeaders]', runSp.varCharParam('userId', userId, 30));
     const preplanHeaderModels = preplanHeaderEntities.map(convertPreplanHeaderEntityToModel);
@@ -154,13 +154,13 @@ router.post(
     //TODO: Validator
 
     const newFlightRequirements: FlightRequirementEntity[] = await runSp(
-      '[RPA].[SP_AddFlightRrequirements]',
+      '[RPA].[SP_InsertFlightRequirement]',
       runSp.varCharParam('userId', userId, 30),
       runSp.intParam('preplanId', id),
       runSp.nVarCharParam('scope', xmlStringify(convertFlightScopeModelToEntity(flightRequirement.scope), 'Scope'), 'max'),
       runSp.nVarCharParam('days', xmlStringify(convertWeekdayFlightRequirementListModelToEntity(flightRequirement.days), 'WeekdayFlightRequirements'), 'max'),
       runSp.bitParam('ignored', flightRequirement.ignored),
-      runSp.nVarCharParam('lable', flightRequirement.definition.label, 200),
+      runSp.nVarCharParam('label', flightRequirement.definition.label, 200),
       runSp.nVarCharParam('category', flightRequirement.definition.category, 200),
       runSp.intParam('stcId', flightRequirement.definition.stcId),
       runSp.nVarCharParam('flightNumber', flightRequirement.definition.flightNumber, 10),
@@ -176,7 +176,7 @@ router.post(
 router.post(
   '/remove-flight-requirement',
   requestMiddlewareWithDbAccess<{ flightRequirementId: string }, void>(async (userId, { flightRequirementId }, { runSp }) => {
-    await runSp('[RPA].[Sp_RemoveFlightRequirement]', runSp.varCharParam('userId', userId, 30), runSp.intParam('id', flightRequirementId));
+    await runSp('[RPA].[Sp_DeleteFlightRequirement]', runSp.varCharParam('userId', userId, 30), runSp.intParam('id', flightRequirementId));
   })
 );
 
@@ -197,7 +197,7 @@ router.post(
     ]);
 
     const updatedFlightRequirement: FlightRequirementEntity[] = await runSp(
-      '[RPA].[SP_EditFlightRequirements]',
+      '[RPA].[SP_UpdateFlightRequirements]',
       runSp.varCharParam('userId', userId, 30),
       runSp.tableParam(
         'flightRequirementParameter',
@@ -206,7 +206,7 @@ router.post(
           { name: 'scope', type: TYPES.NVarChar },
           { name: 'days', type: TYPES.NVarChar },
           { name: 'ignored', type: TYPES.Bit },
-          { name: 'lable', type: TYPES.NVarChar, length: 100 },
+          { name: 'label', type: TYPES.NVarChar, length: 100 },
           { name: 'category', type: TYPES.NVarChar, length: 100 },
           { name: 'stcId', type: TYPES.Int },
           { name: 'flightNumber', type: TYPES.VarChar, length: 10 },
@@ -223,21 +223,6 @@ router.post(
 );
 
 router.post(
-  '/set-flight-requirement-included',
-  requestMiddlewareWithDbAccess<{ flightRequirementId: string; included: boolean }, FlightRequirementModel>(async (userId, { flightRequirementId, included }, { runSp }) => {
-    const flightRequirementEntities: readonly FlightRequirementEntity[] = await runSp(
-      '[RPA].[SP_SetFlightRequirementIncluded]',
-      runSp.varCharParam('userId', userId, 30),
-      runSp.intParam('id', flightRequirementId),
-      runSp.bitParam('ignored', !included)
-    );
-
-    const flightRequirement: FlightRequirementModel = await convertFlightRequirementEntityToModel(flightRequirementEntities[0]);
-    return flightRequirement;
-  })
-);
-
-router.post(
   '/set-aircraft-registers',
   requestMiddlewareWithDbAccess<
     {
@@ -248,7 +233,7 @@ router.post(
     void
   >(async (userId, { id, dummyAircraftRegisters, aircraftRegisterOptionsDictionary }, { runSp }) => {
     await runSp(
-      '[RPA].[SP_SetAircraftRegisters]',
+      '[RPA].[SP_UpdateAircraftRegisters]',
       runSp.varCharParam('userId', userId, 30),
       runSp.intParam('id', id),
       runSp.nVarCharParam('dummyAircraftRegisters', xmlStringify(convertDummyAircraftRegisterListModelToEntity(dummyAircraftRegisters), 'DummyAircraftRegisters'), 'max'),

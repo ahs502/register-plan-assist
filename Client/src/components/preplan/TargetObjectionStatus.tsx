@@ -31,7 +31,7 @@ const TargetObjectionStatus: FC<TargetObjectionStatusProps> = ({ target, onClick
 
   return (
     <div className={classes.root} onClick={onClick}>
-      {errorsCount && (
+      {errorsCount > 0 && (
         <Fragment>
           <Typography variant="body2" display="inline">
             <MahanIcon type={MahanIconType.CancelButton} className={classes.errorIcon} fontSize="small"></MahanIcon>
@@ -41,7 +41,7 @@ const TargetObjectionStatus: FC<TargetObjectionStatusProps> = ({ target, onClick
           {warningsCount && <span>&nbsp;&nbsp;&nbsp;</span>}
         </Fragment>
       )}
-      {warningsCount && (
+      {warningsCount > 0 && (
         <Typography variant="body2" display="inline">
           <MahanIcon type={MahanIconType.Alert} className={classes.warningIcon} fontSize="small"></MahanIcon>
           &nbsp;

@@ -1,10 +1,10 @@
 import React, { FC, useState, useContext, useEffect } from 'react';
-import { Theme, Paper, Tabs, Tab, IconButton, Grid, TableHead, TableRow, TableCell, Table, TableBody, Typography, Switch, Button } from '@material-ui/core';
+import { Theme, Paper, Tabs, Tab, IconButton, Grid, TableHead, TableRow, TableCell, Table, TableBody, Typography, Switch, Button, Divider } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import { NavBarToolsContainerContext } from 'src/pages/preplan';
 import { fade } from '@material-ui/core/styles';
 import Search from 'src/components/Search';
-import { DoneAll as FinilizedIcon, Add as AddIcon, Edit as EditIcon, Clear as ClearIcon, Done as DoneIcon } from '@material-ui/icons';
+import { DoneAll as FinilizedIcon, Add as AddIcon, Edit as EditIcon, Clear as ClearIcon, Done as DoneIcon, TrendingFlat as TrendingFlatIcon } from '@material-ui/icons';
 import classNames from 'classnames';
 import Weekday from '@core/types/Weekday';
 import TablePagination from '@material-ui/core/TablePagination';
@@ -16,6 +16,8 @@ import PreplanService from 'src/services/PreplanService';
 import ProgressSwitch from 'src/components/ProgressSwitch';
 import { useSnackbar, VariantType } from 'notistack';
 import { parseMinute } from 'src/utils/model-parsers';
+import TargetObjectionStatus from 'src/components/preplan/TargetObjectionStatus';
+import Objectionable from 'src/business/constraints/Objectionable';
 
 const useStyles = makeStyles((theme: Theme) => ({
   contentPage: {
@@ -26,7 +28,6 @@ const useStyles = makeStyles((theme: Theme) => ({
     marginTop: theme.spacing(2)
   },
   flightDefinitionStyle: {
-    backgroundColor: theme.palette.grey[300],
     padding: theme.spacing(2, 2),
     borderRadius: '4px 4px 0px 0px'
   },
@@ -163,23 +164,31 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = React.memo
           return (
             <Paper key={d.id} className={classNames(classes.flightRequirmentStyle, d.ignored && classes.paperDisableStyle)}>
               <Grid container direction="row" justify="space-between" alignItems="center" className={classes.flightDefinitionStyle}>
-                <Grid item className={classNames(d.ignored && classes.disableOpacityStyle)}>
-                  <Grid container direction="row" justify="center" alignItems="center" spacing={3}>
-                    <Grid item>
-                      <Typography variant="h6">{d.definition.label}</Typography>
-                    </Grid>
-                    <Grid item>
-                      <Typography variant="h6">{d.definition.flightNumber}</Typography>
-                    </Grid>
-                    <Grid item>
-                      <Typography variant="h6">
-                        {d.definition.departureAirport.name}-{d.definition.arrivalAirport.name}
+                <Grid item className={classNames(d.ignored && classes.disableOpacityStyle)} xs={8}>
+                  <Grid container direction="row" justify="flex-start" alignItems="center" spacing={1}>
+                    <Grid item xs={10}>
+                      <Typography display="inline" variant="h6">
+                        DOH(BND/PGU)
+                        <Typography display="inline" variant="body2">
+                          Category
+                        </Typography>
                       </Typography>
+                    </Grid>
+
+                    <Grid item xs={2}>
+                      <TargetObjectionStatus target={{} as Objectionable} onClick={() => {}}></TargetObjectionStatus>
                     </Grid>
                   </Grid>
                 </Grid>
-                <Grid item>
-                  <Grid container direction="row" justify="center" alignItems="center" spacing={3}>
+                <Grid item xs={4}>
+                  <Grid container direction="row" justify="center" alignItems="center" spacing={1}>
+                    <Grid item xs={5}>
+                      {Array.range(0, 6).map(n => (
+                        <Typography color="primary" variant="subtitle1" key={n} display="inline">
+                          {Weekday[n][0]}&nbsp;&nbsp;
+                        </Typography>
+                      ))}
+                    </Grid>
                     <Grid item>Include</Grid>
                     <Grid item>
                       <ProgressSwitch
@@ -205,16 +214,7 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = React.memo
                         inputProps={{ 'aria-label': 'primary checkbox' }}
                       />
                     </Grid>
-                    <Grid item className={d.ignored ? classes.disableOpacityStyle : ''}>
-                      <Button
-                        color="primary"
-                        onClick={() => {
-                          onAddReturnFlightRequirement(d);
-                        }}
-                      >
-                        RETURN
-                      </Button>
-                    </Grid>
+
                     <Grid item className={classNames(d.ignored && classes.disableOpacityStyle)}>
                       <IconButton size="small" disabled={d.ignored} onClick={() => onEditFlightRequirement(d)}>
                         <EditIcon fontSize="large" />
@@ -234,71 +234,22 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = React.memo
                   </Grid>
                 </Grid>
               </Grid>
-              <Grid container className={classNames(d.ignored && classes.disableOpacityStyle)}>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>WeekDay</TableCell>
-                      <TableCell>BlockTime</TableCell>
-                      <TableCell>Allowed Registers</TableCell>
-                      <TableCell>Forbidden Registers</TableCell>
-                      <TableCell align="center">STD Lower Bound</TableCell>
-                      <TableCell align="center">STD Upper Bound</TableCell>
-                      <TableCell>Requierd</TableCell>
-                      <TableCell align="center">Action</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {d.days.map(item => {
-                      //console.log(item);
-                      return (
-                        <TableRow key={item.derivedId} hover={true}>
-                          <TableCell>{Weekday[item.day]}</TableCell>
-                          <TableCell>{parseMinute(item.scope.blockTime)}</TableCell>
-                          <TableCell>{item.scope.aircraftSelection.allowedIdentities.map(a => a.entity.name).join(', ')}</TableCell>
-                          <TableCell>{item.scope.aircraftSelection.forbiddenIdentities.map(a => a.entity.name).join(', ')}</TableCell>
-                          <TableCell align="center" className={classes.STDpadding}>
-                            {item.scope.times.map(t => {
-                              return (
-                                <div className={classNames(classes.STDStyle, classes.STDpadding)} key={'timescopeLowerBound' + Math.random() + d.id}>
-                                  <div>{t.stdLowerBound.toString()}</div>
-                                </div>
-                              );
-                            })}
-                          </TableCell>
-                          <TableCell align="center" className={classes.STDpadding}>
-                            {item.scope.times.map(t => {
-                              return (
-                                <div className={classNames(classes.STDStyle, classes.STDpadding)} key={'timescopeUpperBound' + Math.random() + d.id}>
-                                  <div>{t.stdUpperBound.toString()}</div>
-                                </div>
-                              );
-                            })}
-                          </TableCell>
-                          <TableCell>{item.scope.required && <DoneIcon />}</TableCell>
-                          <TableCell>
-                            <IconButton
-                              disabled={d.ignored}
-                              onClick={() => {
-                                onEditWeekdayFlightRequirement(item, d);
-                              }}
-                            >
-                              <EditIcon />
-                            </IconButton>
-                            <IconButton
-                              disabled={d.ignored}
-                              onClick={() => {
-                                onRemoveWeekdayFlightRequirement(item, d);
-                              }}
-                            >
-                              <ClearIcon />
-                            </IconButton>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
+
+              <Divider variant="middle" />
+              <Grid container direction="row" alignItems="center" className={classes.flightDefinitionStyle}>
+                <Typography display="inline">IKA</Typography>
+                <TrendingFlatIcon></TrendingFlatIcon>
+                <Typography display="inline">DOH</Typography>
+                <TrendingFlatIcon></TrendingFlatIcon>
+                <Typography display="inline">BND</Typography>
+                <TrendingFlatIcon></TrendingFlatIcon>
+                <Typography display="inline">DOH</Typography>
+                <TrendingFlatIcon></TrendingFlatIcon>
+                <Typography display="inline">PGU</Typography>
+                <TrendingFlatIcon></TrendingFlatIcon>
+                <Typography display="inline">DOH</Typography>
+                <TrendingFlatIcon></TrendingFlatIcon>
+                <Typography display="inline">IKA</Typography>
               </Grid>
             </Paper>
           );

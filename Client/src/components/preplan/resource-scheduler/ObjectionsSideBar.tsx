@@ -1,19 +1,14 @@
-import React, { FC, useState, Fragment } from 'react';
+import React, { FC, useState, Fragment, useContext } from 'react';
 import { Theme, Typography } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import Search, { filterOnProperties } from 'src/components/Search';
-import SideBarContainer from './SideBarContainer';
-import ObjectionList from './ObjectionList';
-import Objection from 'src/business/constraints/Objection';
-import MahanIcon, { MahanIconType } from 'src/components/MahanIcon';
+import { PreplanContext } from 'src/pages/preplan';
+import SideBarContainer from 'src/components/preplan/resource-scheduler/SideBarContainer';
+import ObjectionStatus from 'src/components/preplan/ObjectionStatus';
+import ObjectionList from 'src/components/preplan/ObjectionList';
+import Objectionable from 'src/business/constraints/Objectionable';
 
 const useStyles = makeStyles((theme: Theme) => ({
-  errorIcon: {
-    color: theme.palette.extraColors.erroredFlight
-  },
-  warningIcon: {
-    color: theme.palette.extraColors.warnedFlight
-  },
   content: {
     height: `calc(100%)`
   },
@@ -24,67 +19,31 @@ const useStyles = makeStyles((theme: Theme) => ({
 }));
 
 export interface ObjectionsSideBarProps {
-  objections: readonly Objection[];
   initialSearch?: string;
+  onClick(target: Objectionable): void;
 }
 
-const ObjectionsSideBar: FC<ObjectionsSideBarProps> = ({ objections, initialSearch }) => {
-  const [filteredObjections, setFilteredObjections] = useState(objections);
+const ObjectionsSideBar: FC<ObjectionsSideBarProps> = ({ initialSearch, onClick }) => {
+  const preplan = useContext(PreplanContext);
+
+  const [filteredObjections, setFilteredObjections] = useState(preplan.constraintSystem.objections);
 
   const classes = useStyles();
 
-  let totalErrorCount = 0,
-    totalWarningCount = 0,
-    filteredErrorCount = 0,
-    filteredWarningCount = 0;
-
-  objections.forEach(objection => {
-    objection.type === 'ERROR' && totalErrorCount++;
-    objection.type === 'WARNING' && totalWarningCount++;
-  });
-  filteredObjections.forEach(objection => {
-    objection.type === 'ERROR' && filteredErrorCount++;
-    objection.type === 'WARNING' && filteredWarningCount++;
-  });
-
   return (
     <SideBarContainer label="Errors and Warnings">
-      {totalErrorCount + totalWarningCount > 0 ? (
+      {preplan.constraintSystem.objections.length > 0 ? (
         <div className={classes.content}>
-          <Search
-            initialSearch={initialSearch}
-            onQueryChange={query => setFilteredObjections(filterOnProperties(objections as readonly { message: string }[], query, 'message') as any)}
-          />
-
+          <Search initialSearch={initialSearch} onQueryChange={query => setFilteredObjections(filterOnProperties(preplan.constraintSystem.objections, query, 'message'))} />
           <br />
-
-          {!!totalErrorCount && (
-            <Fragment>
-              <Typography variant="body2" display="inline">
-                <MahanIcon type={MahanIconType.CancelButton} className={classes.errorIcon} fontSize="small"></MahanIcon>
-                &nbsp;
-                {filteredErrorCount !== totalErrorCount && <span>{filteredErrorCount} of </span>}
-                {totalErrorCount} Errors
-              </Typography>
-              &nbsp;&nbsp;&nbsp;
-            </Fragment>
-          )}
-          {!!totalWarningCount && (
-            <Typography variant="body2" display="inline">
-              <MahanIcon type={MahanIconType.Alert} className={classes.warningIcon} fontSize="small"></MahanIcon>
-              &nbsp;
-              {filteredWarningCount !== totalWarningCount && <span>{filteredWarningCount} of </span>}
-              {totalWarningCount} Warnings
-            </Typography>
-          )}
-
+          <ObjectionStatus objections={preplan.constraintSystem.objections} filteredObjections={filteredObjections} />
           <br />
           <div className={classes.body}>
-            <ObjectionList objections={filteredObjections} />
+            <ObjectionList objections={filteredObjections} onClick={onClick} />
           </div>
         </div>
       ) : (
-        <Typography variant="subtitle1">There are no objections!</Typography>
+        <Typography variant="subtitle1">Nothing!</Typography>
       )}
     </SideBarContainer>
   );

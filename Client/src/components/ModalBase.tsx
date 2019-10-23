@@ -1,8 +1,8 @@
-import React, { FC, useState, useEffect, ReactElement } from 'react';
+import React, { FC, ReactElement } from 'react';
 import { Theme, DialogTitle, DialogContent, DialogActions, Button, CircularProgress, Paper, Typography } from '@material-ui/core';
-import { makeStyles, useTheme } from '@material-ui/styles';
-import DraggableDialog, { DraggableDialogProps } from './DraggableDialog';
+import { makeStyles } from '@material-ui/styles';
 import classNames from 'classnames';
+import DraggableDialog, { DraggableDialogProps } from 'src/components/DraggableDialog';
 
 const useStyles = makeStyles((theme: Theme) => ({
   progress: {
@@ -26,18 +26,18 @@ const useStyles = makeStyles((theme: Theme) => ({
     padding: theme.spacing(1.5, 1.5, 1.5, 3)
   },
   paperError: {
-    boxShadow: '0px 1px 3px 0px rgba(255, 0, 0, 0.2), 0px 1px 1px 0px rgba(255, 0, 0, 0.14), 0px 2px 1px -1px rgba(255, 0, 0, 0.12);'
+    boxShadow: '0px 1px 3px 0px rgba(255, 0, 0, 0.2), 0px 1px 1px 0px rgba(255, 0, 0, 0.14), 0px 2px 1px -1px rgba(255, 0, 0, 0.12)'
   }
 }));
 
-export interface SimpleModalProps extends DraggableDialogProps {
+export interface ModalBaseProps extends DraggableDialogProps {
   open: boolean;
   loading?: boolean;
-  errorMessage?: string;
+  complexTitle?: ReactElement;
   cancelable?: boolean;
+  errorMessage?: string;
   onClose?(): void;
   actions: ModalAction[];
-  complexTitle?: ReactElement;
 }
 
 export interface ModalAction {
@@ -45,9 +45,11 @@ export interface ModalAction {
   action?(): void;
 }
 
-const SimpleModal: FC<SimpleModalProps> = ({ children, loading, title, cancelable, onClose, actions: modalActions, errorMessage, complexTitle, ...other }) => {
-  if (cancelable && !onClose) throw 'Cancelable SimpleModals need onClose handler to be defined.';
+const ModalBase: FC<ModalBaseProps> = ({ children, loading, title, complexTitle, cancelable, errorMessage, onClose, actions, ...other }) => {
+  if (cancelable && !onClose) throw 'Cancelable ModalBases need onClose handler to be defined.';
+
   const classes = useStyles();
+
   return (
     <DraggableDialog {...other} aria-labelledby="form-dialog-title" disableBackdropClick={loading || !cancelable} disableEscapeKeyDown={loading || !cancelable} onClose={onClose}>
       <DialogTitle className={loading ? classes.disable : ''} id="form-dialog-title">
@@ -65,21 +67,21 @@ const SimpleModal: FC<SimpleModalProps> = ({ children, loading, title, cancelabl
         )}
       </DialogContent>
       <DialogActions>
-        {modalActions.map((ma, index) => (
+        {actions.map((action, index) => (
           <Button
             key={index}
             onClick={() => {
-              const handler = ma.action || onClose;
+              const handler = action.action || onClose;
               handler && handler();
             }}
             disabled={loading}
             color="primary"
           >
-            {ma.title}
+            {action.title}
           </Button>
         ))}
       </DialogActions>
     </DraggableDialog>
   );
 };
-export default SimpleModal;
+export default ModalBase;

@@ -57,9 +57,6 @@ export interface SideBarContainerProps {
   loading?: boolean;
   errorMessage?: string;
 }
-interface StyleProps {
-  headerHeight: string;
-}
 
 const SideBarContainer: FC<SideBarContainerProps> = ({ label, onApply, onAdd, loading, errorMessage, children }) => {
   const classes = useStyles();

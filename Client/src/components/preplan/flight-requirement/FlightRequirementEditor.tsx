@@ -19,14 +19,12 @@ import {
 import { Clear as ClearIcon, Add as AddIcon } from '@material-ui/icons';
 import { makeStyles } from '@material-ui/styles';
 import DaysPicker from 'src/components/DaysPicker';
-import classNames from 'classnames';
 import Weekday from '@core/types/Weekday';
 import MasterData, { Stc } from '@core/master-data';
-import FlightTime from 'src/business/flights/FlightTime';
-import Rsx, { Rsxes } from '@core/types/flight-requirement/Rsx';
 import AutoComplete from 'src/components/AutoComplete';
-import FlightRequirement from 'src/business/flights/FlightRequirement';
-import AircraftIdentityType from '@core/types/aircraft-identity/AircraftIdentityType';
+import Rsx, { Rsxes } from '@core/types/Rsx';
+import AircraftIdentityType from '@core/types/AircraftIdentityType';
+import FlightRequirement from 'src/business/flight-requirement/FlightRequirement';
 
 const useStyles = makeStyles((theme: Theme) => ({
   root: {
@@ -73,7 +71,7 @@ const useStyles = makeStyles((theme: Theme) => ({
 //   return: 'What is the return flight requierment?'
 // };
 
-const rsxes = Rsxes.map((r, index) => {
+const rsxes = Rsxes.map(r => {
   return { name: r };
 });
 

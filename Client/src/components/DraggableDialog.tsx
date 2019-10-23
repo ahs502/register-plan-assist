@@ -16,7 +16,7 @@ const DraggablePaper = withStyles(styles)((props: PaperProps) => (
   </Draggable>
 ));
 
-export type DraggableDialogProps = DialogProps;
+export interface DraggableDialogProps extends DialogProps {}
 
 const DraggableDialog: FC<DraggableDialogProps> = props => <Dialog {...props} PaperComponent={DraggablePaper} />;
 

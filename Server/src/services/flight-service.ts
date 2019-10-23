@@ -14,12 +14,12 @@ export default router;
 router.post(
   '/edit',
   requestMiddlewareWithDbAccess<{ preplanId: Id; flights: readonly FlightModel[] }, PreplanModel>(async (userId, { preplanId, flights }, { runQuery, runSp, types }) => {
-    const rawFlightIds: { id: Id }[] = await runQuery(`select f.[Id] as [id] from [RPA].[Flight] as f join [RPA].[FlightRequirement] as r where r.[Id_Preplan] = '${preplanId}'`);
+    const rawFlightIds: { id: Id }[] = await runQuery(`select f.[Id] as [id] from [Rpa].[Flight] as f join [Rpa].[FlightRequirement] as r where r.[Id_Preplan] = '${preplanId}'`);
     const flightIds = rawFlightIds.map(f => f.id);
-    const rawFlightRequirementIds: { id: Id }[] = await runQuery(`select [Id] as [id] from [RPA].[FlightRequirement] where [Id_Preplan] = '${preplanId}'`);
+    const rawFlightRequirementIds: { id: Id }[] = await runQuery(`select [Id] as [id] from [Rpa].[FlightRequirement] where [Id_Preplan] = '${preplanId}'`);
     const flightRequirementIds = rawFlightRequirementIds.map(item => item.id);
     const rawAircraftRegisterOptionsXml: { aircraftRegisterOptionsXml: Xml }[] = await runQuery(
-      `select [AircraftRegisterOptions] as [aircraftRegisterOptionsXml] from [RPA].[Preplan] where [Id] = '${preplanId}'`
+      `select [AircraftRegisterOptions] as [aircraftRegisterOptionsXml] from [Rpa].[Preplan] where [Id] = '${preplanId}'`
     );
     const aircraftRegisterOptions = parsePreplanAircraftRegisterOptionsXml(rawAircraftRegisterOptionsXml[0].aircraftRegisterOptionsXml);
     new FlightModelArrayValidation(flights, flightIds, flightRequirementIds, aircraftRegisterOptions).throw('Invalid API input.');
@@ -28,7 +28,7 @@ router.post(
 
     const flightEntities = flights.map(convertFlightModelToEntity);
     await runSp(
-      '[RPA].[SP_UpdateFlights]',
+      '[Rpa].[SP_UpdateFlights]',
       runSp.varCharParam('userId', userId, 30),
       runSp.intParam('flightRequirementId', flights[0].flightRequirementId),
       runSp.tableParam(

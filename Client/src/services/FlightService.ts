@@ -9,9 +9,9 @@ const request = RequestManager.makeRequester('flight');
 
 export default class FlightService {
   /**
-   * Edits all the given flights.
+   * Edits all the given flight(s) and provides the whole new preplan itself.
    */
-  static async editFlightRequirements(preplanId: Id, flights: readonly FlightModel[]): Promise<PreplanModel> {
+  static async edit(preplanId: Id, ...flights: readonly FlightModel[]): Promise<PreplanModel> {
     return await request('edit', { preplanId, flights });
   }
 }

@@ -22,21 +22,21 @@ router.post(
   requestMiddlewareWithTransactionalDbAccess<{ preplanId: Id; newFlightRequirement: NewFlightRequirementModel; newFlights: readonly NewFlightModel[] }, PreplanModel>(
     async (userId, { preplanId, newFlightRequirement, newFlights }, { runQuery, runSp, types }) => {
       const rawDummyAircraftRegistersXml: { dummyAircraftRegistersXml: Xml }[] = await runQuery(
-        `select [DummyAircraftRegisters] as [dummyAircraftRegistersXml] from [RPA].[Preplan] where [Id] = '${preplanId}'`
+        `select [DummyAircraftRegisters] as [dummyAircraftRegistersXml] from [Rpa].[Preplan] where [Id] = '${preplanId}'`
       );
       if (rawDummyAircraftRegistersXml.length === 0) throw 'Preplan is not found.';
       const dummyAircraftRegisterIds: Id[] = parsePreplanDummyAircraftRegistersXml(rawDummyAircraftRegistersXml[0].dummyAircraftRegistersXml).map(r => r.id);
       new NewFlightRequirementModelValidation(newFlightRequirement, dummyAircraftRegisterIds).throw('Invalid API input.');
 
       const rawAircraftRegisterOptionsXml: { aircraftRegisterOptionsXml: Xml }[] = await runQuery(
-        `select [AircraftRegisterOptions] as [aircraftRegisterOptionsXml] from [RPA].[Preplan] where [Id] = '${preplanId}'`
+        `select [AircraftRegisterOptions] as [aircraftRegisterOptionsXml] from [Rpa].[Preplan] where [Id] = '${preplanId}'`
       );
       const aircraftRegisterOptions = parsePreplanAircraftRegisterOptionsXml(rawAircraftRegisterOptionsXml[0].aircraftRegisterOptionsXml);
       new NewFlightModelArrayValidation(newFlights, aircraftRegisterOptions).throw('Invalid API input.');
 
       const newFlightRequirementEntity = convertNewFlightRequirementModelToEntity(newFlightRequirement);
       const result: Id[] = await runSp(
-        '[RPA].[SP_InsertFlightRequirement]',
+        '[Rpa].[SP_InsertFlightRequirement]',
         runSp.varCharParam('userId', userId, 30),
         runSp.intParam('preplanId', preplanId),
         runSp.nVarCharParam('label', newFlightRequirementEntity.label, 100),
@@ -52,7 +52,7 @@ router.post(
 
       const newFlightEntities = newFlights.map(convertNewFlightModelToEntity);
       await runSp(
-        '[RPA].[SP_InsertFlights]',
+        '[Rpa].[SP_InsertFlights]',
         runSp.varCharParam('userId', userId, 30),
         runSp.tableParam(
           'flights',
@@ -66,7 +66,7 @@ router.post(
         )
       );
 
-      await runSp('[RPA].[SP_UpdatePreplanLastEditDateTime]', runSp.varCharParam('userId', userId, 30), runSp.intParam('id', preplanId));
+      await runSp('[Rpa].[SP_UpdatePreplanLastEditDateTime]', runSp.varCharParam('userId', userId, 30), runSp.intParam('id', preplanId));
 
       return await getPreplanModel(runSp, userId, preplanId);
     }
@@ -76,14 +76,14 @@ router.post(
 router.post(
   '/remove',
   requestMiddlewareWithTransactionalDbAccess<{ preplanId: Id; id: Id }, PreplanModel>(async (userId, { id, preplanId }, { runQuery, runSp }) => {
-    const result = await runQuery(`select * from [RPA].[FlightRequirement] where [Id] = '${id}'`);
+    const result = await runQuery(`select * from [Rpa].[FlightRequirement] where [Id] = '${id}'`);
     if (result.length === 0) throw 'Flight requirement is not found.';
 
-    await runSp('[RPA].[SP_DeleteFlights]', runSp.varCharParam('userId', userId, 30), runSp.intParam('flightRequirementId', id));
+    await runSp('[Rpa].[SP_DeleteFlights]', runSp.varCharParam('userId', userId, 30), runSp.intParam('flightRequirementId', id));
 
-    await runSp('[RPA].[Sp_DeleteFlightRequirement]', runSp.varCharParam('userId', userId, 30), runSp.intParam('id', id));
+    await runSp('[Rpa].[Sp_DeleteFlightRequirement]', runSp.varCharParam('userId', userId, 30), runSp.intParam('id', id));
 
-    await runSp('[RPA].[SP_UpdatePreplanLastEditDateTime]', runSp.varCharParam('userId', userId, 30), runSp.intParam('id', preplanId));
+    await runSp('[Rpa].[SP_UpdatePreplanLastEditDateTime]', runSp.varCharParam('userId', userId, 30), runSp.intParam('id', preplanId));
 
     return await getPreplanModel(runSp, userId, preplanId);
   })
@@ -95,19 +95,19 @@ router.post(
     { preplanId: Id; flightRequirement: FlightRequirementModel; flights: readonly FlightModel[]; newFlights: readonly NewFlightModel[] },
     PreplanModel
   >(async (userId, { preplanId, flightRequirement, flights, newFlights }, { runQuery, runSp, types }) => {
-    const rawFlightRequirementIds: { id: Id }[] = await runQuery(`select [Id] as [id] from [RPA].[FlightRequirement] where [Id_Preplan] = '${preplanId}'`);
+    const rawFlightRequirementIds: { id: Id }[] = await runQuery(`select [Id] as [id] from [Rpa].[FlightRequirement] where [Id_Preplan] = '${preplanId}'`);
     const flightRequirementIds = rawFlightRequirementIds.map(item => item.id);
     const rawDummyAircraftRegistersXml: { dummyAircraftRegistersXml: Xml }[] = await runQuery(
-      `select [DummyAircraftRegisters] as [dummyAircraftRegistersXml] from [RPA].[Preplan] where [Id] = '${preplanId}'`
+      `select [DummyAircraftRegisters] as [dummyAircraftRegistersXml] from [Rpa].[Preplan] where [Id] = '${preplanId}'`
     );
     if (rawDummyAircraftRegistersXml.length === 0) throw 'Preplan is not found.';
     const dummyAircraftRegisterIds: Id[] = parsePreplanDummyAircraftRegistersXml(rawDummyAircraftRegistersXml[0].dummyAircraftRegistersXml).map(r => r.id);
     new FlightRequirementModelValidation(flightRequirement, flightRequirementIds, dummyAircraftRegisterIds).throw('Invalid API input.');
 
-    const rawFlightIds: { id: Id }[] = await runQuery(`select f.[Id] as [id] from [RPA].[Flight] as f join [RPA].[FlightRequirement] as r where r.[Id_Preplan] = '${preplanId}'`);
+    const rawFlightIds: { id: Id }[] = await runQuery(`select f.[Id] as [id] from [Rpa].[Flight] as f join [Rpa].[FlightRequirement] as r where r.[Id_Preplan] = '${preplanId}'`);
     const flightIds = rawFlightIds.map(f => f.id);
     const rawAircraftRegisterOptionsXml: { aircraftRegisterOptionsXml: Xml }[] = await runQuery(
-      `select [AircraftRegisterOptions] as [aircraftRegisterOptionsXml] from [RPA].[Preplan] where [Id] = '${preplanId}'`
+      `select [AircraftRegisterOptions] as [aircraftRegisterOptionsXml] from [Rpa].[Preplan] where [Id] = '${preplanId}'`
     );
     const aircraftRegisterOptions = parsePreplanAircraftRegisterOptionsXml(rawAircraftRegisterOptionsXml[0].aircraftRegisterOptionsXml);
     new FlightModelArrayValidation(flights, flightIds, flightRequirementIds, aircraftRegisterOptions).throw('Invalid API input.');
@@ -119,7 +119,7 @@ router.post(
 
     const flightRequirementEntity = convertFlightRequirementModelToEntity(flightRequirement);
     await runSp(
-      '[RPA].[SP_UpdateFlightRequirement]',
+      '[Rpa].[SP_UpdateFlightRequirement]',
       runSp.varCharParam('userId', userId, 30),
       runSp.intParam('id', flightRequirementEntity.id),
       runSp.intParam('preplanId', preplanId),
@@ -136,7 +136,7 @@ router.post(
     const flightEntities = flights.map(convertFlightModelToEntity);
     const newFlightEntities = newFlights.map(convertNewFlightModelToEntity);
     await runSp(
-      '[RPA].[SP_UpdateFlights]',
+      '[Rpa].[SP_UpdateFlights]',
       runSp.varCharParam('userId', userId, 30),
       runSp.intParam('flightRequirementId', flightRequirementEntity.id),
       runSp.tableParam(
@@ -155,7 +155,7 @@ router.post(
       )
     );
 
-    await runSp('[RPA].[SP_UpdatePreplanLastEditDateTime]', runSp.varCharParam('userId', userId, 30), runSp.intParam('id', preplanId));
+    await runSp('[Rpa].[SP_UpdatePreplanLastEditDateTime]', runSp.varCharParam('userId', userId, 30), runSp.intParam('id', preplanId));
 
     return await getPreplanModel(runSp, userId, preplanId);
   })

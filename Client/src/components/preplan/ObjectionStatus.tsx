@@ -24,7 +24,7 @@ const ObjectionStatus: FC<ObjectionStatusProps> = ({ errorsCount, filteredErrors
 
   return (
     <div>
-      {errorsCount && (
+      {errorsCount > 0 && (
         <Fragment>
           <Typography variant="body2" display="inline">
             <MahanIcon type={MahanIconType.CancelButton} className={classes.errorIcon} fontSize="small"></MahanIcon>
@@ -32,10 +32,10 @@ const ObjectionStatus: FC<ObjectionStatusProps> = ({ errorsCount, filteredErrors
             {filteredErrorsCount !== undefined && <Fragment>{filteredErrorsCount} / </Fragment>}
             {errorsCount}
           </Typography>
-          {warningsCount && <span>&nbsp;&nbsp;&nbsp;</span>}
+          {warningsCount > 0 && <span>&nbsp;&nbsp;&nbsp;</span>}
         </Fragment>
       )}
-      {warningsCount && (
+      {warningsCount > 0 && (
         <Typography variant="body2" display="inline">
           <MahanIcon type={MahanIconType.Alert} className={classes.warningIcon} fontSize="small"></MahanIcon>
           &nbsp;

@@ -5,6 +5,7 @@ import Flight from 'src/business/flight/Flight';
 import ConstraintSystem from 'src/business/constraints/ConstraintSystem';
 import PreplanModel from '@core/models/preplan/PreplanModel';
 import FlightLeg from 'src/business/flight/FlightLeg';
+import persistant from 'src/utils/persistant';
 
 export default class Preplan extends PreplanHeader {
   /**
@@ -21,6 +22,8 @@ export default class Preplan extends PreplanHeader {
   readonly flightLegsByAircraftRegisterId: { readonly [aircraftRegisterId: string]: readonly FlightLeg[] };
 
   readonly constraintSystem: ConstraintSystem;
+
+  readonly readonly: boolean;
 
   constructor(raw: PreplanModel, oldPreplan?: Preplan) {
     super(raw);
@@ -43,5 +46,7 @@ export default class Preplan extends PreplanHeader {
     });
 
     this.constraintSystem = new ConstraintSystem(this, oldPreplan && oldPreplan.constraintSystem);
+
+    this.readonly = this.finalized || this.user.id !== persistant.user!.id;
   }
 }

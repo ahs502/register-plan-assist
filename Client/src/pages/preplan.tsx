@@ -273,7 +273,6 @@ interface FlightRequirementWithMultiLegModalModel {
   disable?: boolean;
   category?: string;
   stc?: Stc;
-  days: boolean[];
 
   //details?: { [index: number]: FlightRequirmentDetailModalModel };
   details: FlightRequirmentDetailModalModel[];
@@ -285,6 +284,7 @@ interface FlightRequirmentDetailModalModel {
   forbiddenAircraftIdentities?: FlightRequirementModalAircraftIdentity[];
   notes?: string;
   legs: Leg[];
+  isSelected: boolean;
 }
 
 interface Leg {
@@ -306,8 +306,15 @@ const PreplanPage: FC = () => {
   const [preplan, setPreplan] = useState<Preplan | null>(null);
   const [objectionModalModel, setObjectionModalModel] = useState<ObjectionModalModel>({ open: false });
   const [flightRequirementWithMultiLegModalModel, setFlightRequirementWithMultiLegModalModel] = useState<FlightRequirementWithMultiLegModalModel>(() => {
-    const result: FlightRequirementWithMultiLegModalModel = { open: false, loading: false, details: [], days: [], stc: MasterData.all.stcs.items.find(n => n.name === 'J') };
-    Array.range(0, 6).forEach(i => result.days!.push(false));
+    const result: FlightRequirementWithMultiLegModalModel = { open: false, loading: false, details: [], stc: MasterData.all.stcs.items.find(n => n.name === 'J') };
+
+    result.details = [];
+    for (let index = 0; index < 8; index++) {
+      const detailModalModel: FlightRequirmentDetailModalModel = { legs: [{}], rsx: Rsxes[0], isSelected: false };
+      if (index === 0) detailModalModel.isSelected = true;
+      result.details.push(detailModalModel);
+    }
+
     return result;
   });
   const navBarToolsRef = useRef<HTMLDivElement>(null);
@@ -387,22 +394,24 @@ const PreplanPage: FC = () => {
   //   console.log(flightRequirementWithMultiLegModalModel, flightRequirementWithMultiLegModalModel.details);
   // }, [flightRequirementWithMultiLegModalModel, flightRequirementWithMultiLegModalModel.details]);
 
-  // useEffect(() => {
-  //   console.table('flightRequirementWithMultiLegModalModel', flightRequirementWithMultiLegModalModel);
-  // }, [flightRequirementWithMultiLegModalModel]);
+  useEffect(() => {
+    console.table('flightRequirementWithMultiLegModalModel', flightRequirementWithMultiLegModalModel);
+  }, [flightRequirementWithMultiLegModalModel, flightRequirementWithMultiLegModalModel.details]);
 
   const resourceSchedulerPageSelected = window.location.href.startsWith(`${window.location.origin}/#${match.url}/resource-scheduler`);
   const flightRequirementListPageSelected = window.location.href.startsWith(`${window.location.origin}/#${match.url}/flight-requirement-list`);
   const reportsPageSelected = window.location.href.startsWith(`${window.location.origin}/#${match.url}/reports`);
   const reportsProposalPageSelected = reportsPageSelected && window.location.hash.endsWith('/proposal');
   const reportsConnectionsPageSelected = reportsPageSelected && window.location.hash.endsWith('/connections');
+
   flightRequirementWithMultiLegModalModel.details = flightRequirementWithMultiLegModalModel.details || [];
 
   if (flightRequirementWithMultiLegModalModel.details.length === 0) {
     for (let index = 0; index < 8; index++) {
-      flightRequirementWithMultiLegModalModel.details.push({ legs: [{}], rsx: {} } as FlightRequirmentDetailModalModel);
+      const detailModalModel: FlightRequirmentDetailModalModel = { legs: [{}], rsx: Rsxes[0], isSelected: false };
+      if (index === 0) detailModalModel.isSelected = true;
+      flightRequirementWithMultiLegModalModel.details.push(detailModalModel);
     }
-    flightRequirementWithMultiLegModalModel.details[0].rsx = Rsxes[0];
   }
 
   return (
@@ -721,28 +730,51 @@ const PreplanPage: FC = () => {
                   key={'All'}
                   className={classes.dayTab}
                   label={'All'}
-                  // component={React.forwardRef<HTMLDivElement>((props, ref) => {
-                  //   return (
-                  //     <div {...props} ref={ref}>
-                  //       <Checkbox indeterminate color="primary" />
-                  //       All
-                  //     </div>
-                  //   );
-                  // })}
+                  component={React.forwardRef<HTMLDivElement>((props, ref) => {
+                    return (
+                      <div {...props} ref={ref}>
+                        <Checkbox
+                          indeterminate={
+                            !(
+                              (!flightRequirementWithMultiLegModalModel.details.every((d, index) => (index > 0 ? d.isSelected : true)) ? 1 : 0) ^
+                              (!flightRequirementWithMultiLegModalModel.details.every((d, index) => (index > 0 ? !d.isSelected : true)) ? 1 : 0)
+                            )
+                          }
+                          checked={flightRequirementWithMultiLegModalModel.details.every((d, index) => (index > 0 ? d.isSelected : true))}
+                          onChange={e => {
+                            const allSelected = flightRequirementWithMultiLegModalModel.details.every((d, index) => (index > 0 ? d.isSelected : true));
+
+                            flightRequirementWithMultiLegModalModel.details.forEach((n, index) => {
+                              if (index > 0) n.isSelected = !allSelected;
+                            });
+                            setFlightRequirementWithMultiLegModalModel({ ...flightRequirementWithMultiLegModalModel });
+                          }}
+                          color="primary"
+                        />
+                        All
+                      </div>
+                    );
+                  })}
                 />
                 {weekDaysArray.map((weekDay, tabIndex) => (
                   <Tab
                     key={weekDay}
                     className={classes.dayTab}
                     label={weekDay}
-                    // component={React.forwardRef<HTMLDivElement>((props, ref) => {
-                    //   return (
-                    //     <div {...props} ref={ref}>
-                    //       <Checkbox />
-                    //       {weekDay}
-                    //     </div>
-                    //   );
-                    // })}
+                    component={React.forwardRef<HTMLDivElement>((props, ref) => {
+                      return (
+                        <div {...props} ref={ref}>
+                          <Checkbox
+                            checked={flightRequirementWithMultiLegModalModel.details[tabIndex + 1]!.isSelected}
+                            onChange={e => {
+                              flightRequirementWithMultiLegModalModel.details[tabIndex + 1]!.isSelected = e.target.checked;
+                              setFlightRequirementWithMultiLegModalModel({ ...flightRequirementWithMultiLegModalModel });
+                            }}
+                          />
+                          {weekDay}
+                        </div>
+                      );
+                    })}
                   />
                 ))}
               </Tabs>
@@ -757,16 +789,16 @@ const PreplanPage: FC = () => {
                       getOptionValue={v => v.name}
                       value={{ name: flightRequirementWithMultiLegModalModel.details[selectedDay].rsx! || Rsxes[0] }}
                       onSelect={s => {
-                        for (let index = 0; index < flightRequirementWithMultiLegModalModel.days.length; index++) {
-                          if (flightRequirementWithMultiLegModalModel.days[index] && selectedDay === 0) {
-                            flightRequirementWithMultiLegModalModel.details[index + 1].rsx = s.name;
+                        if (selectedDay === 0) {
+                          for (let index = 1; index <= 7; index++) {
+                            flightRequirementWithMultiLegModalModel.details[index].rsx = s.name;
                           }
                         }
 
                         flightRequirementWithMultiLegModalModel.details[selectedDay].rsx = s.name;
                         setFlightRequirementWithMultiLegModalModel({ ...flightRequirementWithMultiLegModalModel });
                       }}
-                      disabled={flightRequirementWithMultiLegModalModel.disable}
+                      disabled={flightRequirementWithMultiLegModalModel.disable || !flightRequirementWithMultiLegModalModel.details[selectedDay].isSelected}
                     />
                   </Grid>
                   <Grid item xs={8} className={classes.flightRequirementDaysTextField}>
@@ -775,47 +807,19 @@ const PreplanPage: FC = () => {
                       label="Notes"
                       value={flightRequirementWithMultiLegModalModel.details[selectedDay].notes || ''}
                       onChange={s => {
-                        //////
-                        // if (selectedDay === 0) {
-                        //   flightRequirementWithMultiLegModalModel.details.map((day, index) => {
-                        //     if (!day.isModified && index > 0) {
-                        //       flightRequirementWithMultiLegModalModel.details[index].notes = s.target.value;
-                        //     }
-                        //   });
-                        // }
-                        //////
-
-                        for (let index = 0; index < flightRequirementWithMultiLegModalModel.days.length; index++) {
-                          if (flightRequirementWithMultiLegModalModel.days[index] && selectedDay === 0) {
-                            flightRequirementWithMultiLegModalModel.details[index + 1].notes = s.target.value;
+                        if (selectedDay === 0) {
+                          for (let index = 1; index <= 7; index++) {
+                            flightRequirementWithMultiLegModalModel.details[index].notes = s.target.value;
                           }
                         }
 
                         flightRequirementWithMultiLegModalModel.details[selectedDay].notes = s.target.value;
                         setFlightRequirementWithMultiLegModalModel({ ...flightRequirementWithMultiLegModalModel });
                       }}
+                      disabled={flightRequirementWithMultiLegModalModel.disable || !flightRequirementWithMultiLegModalModel.details[selectedDay].isSelected}
                     />
                   </Grid>
-                  <Grid item xs={2} className={classes.flightRequirementInformationButton}>
-                    {!selectedDay ? null : (
-                      <Button
-                        onClick={() => {
-                          const mainTabInfo = { ...flightRequirementWithMultiLegModalModel.details[0] };
-                          flightRequirementWithMultiLegModalModel.details[selectedDay].legs = [...mainTabInfo.legs];
-                          flightRequirementWithMultiLegModalModel.details[selectedDay].rsx = { ...mainTabInfo }.rsx;
 
-                          flightRequirementWithMultiLegModalModel.details[selectedDay].allowedAircraftIdentities = [...(mainTabInfo.allowedAircraftIdentities || [])];
-                          flightRequirementWithMultiLegModalModel.details[selectedDay].forbiddenAircraftIdentities = [...(mainTabInfo.forbiddenAircraftIdentities || [])];
-                          flightRequirementWithMultiLegModalModel.details[selectedDay].notes = { ...mainTabInfo }.notes;
-
-                          setFlightRequirementWithMultiLegModalModel({ ...flightRequirementWithMultiLegModalModel });
-                        }}
-                        color="primary"
-                      >
-                        {'Default'}
-                      </Button>
-                    )}
-                  </Grid>
                   <Grid item xs={6} className={classes.flightRequirementDaysTextField}>
                     <Typography variant="caption" className={classes.captionTextColor}>
                       Allowed Aircrafts
@@ -834,14 +838,16 @@ const PreplanPage: FC = () => {
                       value={flightRequirementWithMultiLegModalModel.details[selectedDay].allowedAircraftIdentities || []}
                       isDisabled={flightRequirementWithMultiLegModalModel.disable}
                       onSelect={l => {
-                        for (let index = 0; index < flightRequirementWithMultiLegModalModel.days.length; index++) {
-                          if (flightRequirementWithMultiLegModalModel.days[index] && selectedDay === 0) {
-                            flightRequirementWithMultiLegModalModel.details[index + 1].allowedAircraftIdentities = l ? [...l] : [];
+                        if (selectedDay === 0) {
+                          for (let index = 1; index <= 7; index++) {
+                            flightRequirementWithMultiLegModalModel.details[index].allowedAircraftIdentities = l ? [...l] : [];
                           }
                         }
+
                         flightRequirementWithMultiLegModalModel.details[selectedDay].allowedAircraftIdentities = l ? [...l] : [];
                         setFlightRequirementWithMultiLegModalModel({ ...flightRequirementWithMultiLegModalModel });
                       }}
+                      disabled={flightRequirementWithMultiLegModalModel.disable || !flightRequirementWithMultiLegModalModel.details[selectedDay].isSelected}
                     ></MultiSelect>
                   </Grid>
                   <Grid item xs={6} className={classes.flightRequirementDaysTextField}>
@@ -852,21 +858,16 @@ const PreplanPage: FC = () => {
                       value={flightRequirementWithMultiLegModalModel.details[selectedDay].forbiddenAircraftIdentities || []}
                       isDisabled={flightRequirementWithMultiLegModalModel.disable}
                       onSelect={l => {
-                        // if (selectedDay === 0) {
-                        //   flightRequirementWithMultiLegModalModel.details.map((day, index) => {
-                        //     if (!day.isModified && index > 0) {
-                        //       flightRequirementWithMultiLegModalModel.details[index].forbiddenAircraftIdentities = l ? [...l] : [];
-                        //     }
-                        //   });
-                        // }
-                        for (let index = 0; index < flightRequirementWithMultiLegModalModel.days.length; index++) {
-                          if (flightRequirementWithMultiLegModalModel.days[index] && selectedDay === 0) {
-                            flightRequirementWithMultiLegModalModel.details[index + 1].forbiddenAircraftIdentities = l ? [...l] : [];
+                        if (selectedDay === 0) {
+                          for (let index = 1; index <= 7; index++) {
+                            flightRequirementWithMultiLegModalModel.details[index].forbiddenAircraftIdentities = l ? [...l] : [];
                           }
                         }
+
                         flightRequirementWithMultiLegModalModel.details[selectedDay].forbiddenAircraftIdentities = l ? [...l] : [];
                         setFlightRequirementWithMultiLegModalModel({ ...flightRequirementWithMultiLegModalModel });
                       }}
+                      disabled={flightRequirementWithMultiLegModalModel.disable || !flightRequirementWithMultiLegModalModel.details[selectedDay].isSelected}
                     ></MultiSelect>
                   </Grid>
 
@@ -875,7 +876,7 @@ const PreplanPage: FC = () => {
                       <Grid container className={classes.flightRequirementLegTabs}>
                         <Grid item xs={11}>
                           <Tabs key="legs" value={legIndex} onChange={(event, newValue) => setLegIndex(newValue)} variant="scrollable" scrollButtons="auto">
-                            {flightRequirementWithMultiLegModalModel.details[selectedDay].legs.map((l, index, source) => (
+                            {flightRequirementWithMultiLegModalModel.details[selectedDay].legs.map((l, index) => (
                               <Tab
                                 key={index}
                                 component={React.forwardRef<HTMLDivElement>((props, ref) => {
@@ -903,14 +904,22 @@ const PreplanPage: FC = () => {
                                           className={classes.clearButton}
                                           onClick={(event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
                                             event.stopPropagation();
-                                            const legs = flightRequirementWithMultiLegModalModel.details[selectedDay].legs;
-                                            const leg = legs[index];
-                                            flightRequirementWithMultiLegModalModel.details[selectedDay].legs.remove(leg);
+                                            // const legs = flightRequirementWithMultiLegModalModel.details[selectedDay].legs;
+                                            // const leg = legs[index];
+
+                                            if (selectedDay === 0) {
+                                              for (let index = 1; index <= 7; index++) {
+                                                flightRequirementWithMultiLegModalModel.details[index].legs.remove(l);
+                                              }
+                                            }
+
+                                            flightRequirementWithMultiLegModalModel.details[selectedDay].legs.remove(l);
                                             // legs.splice(index, 1);
                                             if (index <= legIndex) setLegIndex(legIndex - 1);
 
                                             setFlightRequirementWithMultiLegModalModel({ ...flightRequirementWithMultiLegModalModel });
                                           }}
+                                          disabled={flightRequirementWithMultiLegModalModel.disable || !flightRequirementWithMultiLegModalModel.details[selectedDay].isSelected}
                                         >
                                           <ClearIcon className={classes.clearIcon} />
                                         </IconButton>
@@ -947,8 +956,16 @@ const PreplanPage: FC = () => {
                                     };
                                     flightRequirementWithMultiLegModalModel.details[selectedDay].legs.push(leg);
                                     setLegIndex(legs.length - 1);
+
+                                    if (selectedDay === 0) {
+                                      for (let index = 1; index <= 7; index++) {
+                                        flightRequirementWithMultiLegModalModel.details[index].legs = [...flightRequirementWithMultiLegModalModel.details[selectedDay].legs];
+                                      }
+                                    }
+
                                     setFlightRequirementWithMultiLegModalModel({ ...flightRequirementWithMultiLegModalModel });
                                   }}
+                                  disabled={flightRequirementWithMultiLegModalModel.disable || !flightRequirementWithMultiLegModalModel.details[selectedDay].isSelected}
                                 >
                                   <AddIcon className={classes.addIcon} />
                                 </IconButton>
@@ -961,7 +978,7 @@ const PreplanPage: FC = () => {
                             onClick={() => {
                               const legs = flightRequirementWithMultiLegModalModel.details[selectedDay].legs;
                               const legsReversed = [...legs].reverse();
-                              legsReversed.map((leg, index) => {
+                              legsReversed.map(leg => {
                                 const legStdUpperBoundInMinute = parseHHMM(leg.stdUpperbound!);
                                 const legStdLowerBoundInMinute = parseHHMM(leg.stdLowerbound!);
                                 const legBlockTimeInMinute = parseHHMM(leg.blockTime);
@@ -978,9 +995,16 @@ const PreplanPage: FC = () => {
                                   stdLowerbound: returnLegStdLowerBoundInMinute
                                 });
                               });
+
+                              if (selectedDay === 0) {
+                                for (let index = 1; index <= 7; index++) {
+                                  flightRequirementWithMultiLegModalModel.details[index].legs = [...flightRequirementWithMultiLegModalModel.details[selectedDay].legs];
+                                }
+                              }
                               setLegIndex(legs.length / 2);
                               setFlightRequirementWithMultiLegModalModel({ ...flightRequirementWithMultiLegModalModel });
                             }}
+                            disabled={flightRequirementWithMultiLegModalModel.disable || !flightRequirementWithMultiLegModalModel.details[selectedDay].isSelected}
                           >
                             <WrapTextIcon />
                           </IconButton>
@@ -998,8 +1022,12 @@ const PreplanPage: FC = () => {
                               ''
                             }
                             onChange={l => {
-                              flightRequirementWithMultiLegModalModel.details[selectedDay].legs[legIndex].flightNumber = l.target.value;
-                              setFlightRequirementWithMultiLegModalModel({ ...flightRequirementWithMultiLegModalModel });
+                              if (selectedDay === 0) {
+                                for (let index = 0; index <= 7; index++) {
+                                  flightRequirementWithMultiLegModalModel.details[selectedDay].legs[legIndex].flightNumber = l.target.value;
+                                }
+                                setFlightRequirementWithMultiLegModalModel({ ...flightRequirementWithMultiLegModalModel });
+                              }
                             }}
                             disabled={!!selectedDay || flightRequirementWithMultiLegModalModel.disable}
                           />
@@ -1012,8 +1040,12 @@ const PreplanPage: FC = () => {
                               ''
                             }
                             onChange={l => {
-                              flightRequirementWithMultiLegModalModel.details[selectedDay].legs[legIndex].departure = l.target.value;
-                              setFlightRequirementWithMultiLegModalModel({ ...flightRequirementWithMultiLegModalModel });
+                              if (selectedDay === 0) {
+                                for (let index = 0; index <= 7; index++) {
+                                  flightRequirementWithMultiLegModalModel.details[selectedDay].legs[legIndex].departure = l.target.value;
+                                }
+                                setFlightRequirementWithMultiLegModalModel({ ...flightRequirementWithMultiLegModalModel });
+                              }
                             }}
                             disabled={!!selectedDay || flightRequirementWithMultiLegModalModel.disable}
                           />
@@ -1026,8 +1058,12 @@ const PreplanPage: FC = () => {
                               ''
                             }
                             onChange={l => {
-                              flightRequirementWithMultiLegModalModel.details[selectedDay].legs[legIndex].arrival = l.target.value;
-                              setFlightRequirementWithMultiLegModalModel({ ...flightRequirementWithMultiLegModalModel });
+                              if (selectedDay === 0) {
+                                for (let index = 0; index <= 7; index++) {
+                                  flightRequirementWithMultiLegModalModel.details[selectedDay].legs[legIndex].arrival = l.target.value;
+                                }
+                                setFlightRequirementWithMultiLegModalModel({ ...flightRequirementWithMultiLegModalModel });
+                              }
                             }}
                             disabled={!!selectedDay || flightRequirementWithMultiLegModalModel.disable}
                           />
@@ -1042,10 +1078,16 @@ const PreplanPage: FC = () => {
                               ''
                             }
                             onChange={l => {
+                              if (selectedDay === 0) {
+                                for (let index = 1; index <= 7; index++) {
+                                  flightRequirementWithMultiLegModalModel.details[index].legs[legIndex].blockTime = l.target.value;
+                                }
+                              }
+
                               flightRequirementWithMultiLegModalModel.details[selectedDay].legs[legIndex].blockTime = l.target.value;
                               setFlightRequirementWithMultiLegModalModel({ ...flightRequirementWithMultiLegModalModel });
                             }}
-                            disabled={flightRequirementWithMultiLegModalModel.disable}
+                            disabled={flightRequirementWithMultiLegModalModel.disable || !flightRequirementWithMultiLegModalModel.details[selectedDay].isSelected}
                           />
                           <TextField
                             className={classes.flightRequirementLegInfoTextField}
@@ -1056,10 +1098,16 @@ const PreplanPage: FC = () => {
                               ''
                             }
                             onChange={l => {
+                              if (selectedDay === 0) {
+                                for (let index = 1; index <= 7; index++) {
+                                  flightRequirementWithMultiLegModalModel.details[index].legs[legIndex].stdLowerbound = l.target.value;
+                                }
+                              }
+
                               flightRequirementWithMultiLegModalModel.details[selectedDay].legs[legIndex].stdLowerbound = l.target.value;
                               setFlightRequirementWithMultiLegModalModel({ ...flightRequirementWithMultiLegModalModel });
                             }}
-                            disabled={flightRequirementWithMultiLegModalModel.disable}
+                            disabled={flightRequirementWithMultiLegModalModel.disable || !flightRequirementWithMultiLegModalModel.details[selectedDay].isSelected}
                           />
                           <TextField
                             className={classes.flightRequirementLegInfoTextField}
@@ -1070,10 +1118,16 @@ const PreplanPage: FC = () => {
                               ''
                             }
                             onChange={l => {
+                              if (selectedDay === 0) {
+                                for (let index = 1; index <= 7; index++) {
+                                  flightRequirementWithMultiLegModalModel.details[index].legs[legIndex].stdUpperbound = l.target.value;
+                                }
+                              }
+
                               flightRequirementWithMultiLegModalModel.details[selectedDay].legs[legIndex].stdUpperbound = l.target.value;
                               setFlightRequirementWithMultiLegModalModel({ ...flightRequirementWithMultiLegModalModel });
                             }}
-                            disabled={flightRequirementWithMultiLegModalModel.disable}
+                            disabled={flightRequirementWithMultiLegModalModel.disable || !flightRequirementWithMultiLegModalModel.details[selectedDay].isSelected}
                           />
                         </Grid>
                         <Grid item xs={12} className={classes.flightRequirementLegInfoCheckBoxes}>
@@ -1089,11 +1143,18 @@ const PreplanPage: FC = () => {
                                   false
                                 }
                                 onChange={e => {
+                                  if (selectedDay === 0) {
+                                    for (let index = 1; index <= 7; index++) {
+                                      flightRequirementWithMultiLegModalModel.details[index].legs[legIndex].destinationpermission = e.target.checked;
+                                    }
+                                  }
+
                                   flightRequirementWithMultiLegModalModel.details[selectedDay].legs[legIndex].destinationpermission = e.target.checked;
                                   setFlightRequirementWithMultiLegModalModel({ ...flightRequirementWithMultiLegModalModel });
                                 }}
                               />
                             }
+                            disabled={flightRequirementWithMultiLegModalModel.disable || !flightRequirementWithMultiLegModalModel.details[selectedDay].isSelected}
                           />
                           <FormControlLabel
                             className={classes.flightRequirementLegInfoCheckBox}
@@ -1107,11 +1168,17 @@ const PreplanPage: FC = () => {
                                   false
                                 }
                                 onChange={e => {
+                                  if (selectedDay === 0) {
+                                    for (let index = 1; index <= 7; index++) {
+                                      flightRequirementWithMultiLegModalModel.details[index].legs[legIndex].originPermission = e.target.checked;
+                                    }
+                                  }
                                   flightRequirementWithMultiLegModalModel.details[selectedDay].legs[legIndex].originPermission = e.target.checked;
                                   setFlightRequirementWithMultiLegModalModel({ ...flightRequirementWithMultiLegModalModel });
                                 }}
                               />
                             }
+                            disabled={flightRequirementWithMultiLegModalModel.disable || !flightRequirementWithMultiLegModalModel.details[selectedDay].isSelected}
                           />
                         </Grid>
                       </Grid>
@@ -1189,7 +1256,6 @@ const PreplanPage: FC = () => {
       loading: false,
       mode: mode,
       details: [],
-      days: Array.range(0, 6).map(i => false),
       stc: MasterData.all.stcs.items.find(n => n.name === 'J')
     };
 

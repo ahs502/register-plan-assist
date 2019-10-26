@@ -1,5 +1,5 @@
-import React, { FC, Fragment, useState, useEffect, useRef, createContext, useCallback, useMemo, RefObject } from 'react';
-import { Theme, TextField, Fab, Grid, Typography, IconButton, FormControlLabel, Checkbox, Tabs, Tab, Button, Icon, Box } from '@material-ui/core';
+import React, { FC, Fragment, useState, useEffect, useRef, createContext, useMemo } from 'react';
+import { Theme, TextField, Grid, Typography, IconButton, FormControlLabel, Checkbox, Tabs, Tab, Button } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import { Switch, Redirect, Route } from 'react-router-dom';
 import useRouter from 'src/utils/useRouter';
@@ -7,31 +7,19 @@ import NavBar from 'src/components/NavBar';
 import ResourceSchedulerPage from 'src/pages/preplan/resource-scheduler';
 import FlightRequirementListPage from 'src/pages/preplan/flight-requirement-list';
 import ReportsPage from 'src/pages/preplan/reports';
-import Preplan from 'src/business/Preplan';
-import PreplanAircraftIdentity from 'src/business/PreplanAircraftIdentity';
-import MasterData, { Stc, Stcs, MasterDataItem } from '@core/master-data';
-import FlightRequirement from 'src/business/flights/FlightRequirement';
+import MasterData, { Stc } from '@core/master-data';
 import PreplanService from 'src/services/PreplanService';
-import FlightRequirementModel from '@core/models/flights/FlightRequirementModel';
-import FlightTimeModel from '@core/models/flights/FlightTimeModel';
-import { parseAirport, parseHHMM, parseMinute } from 'src/utils/model-parsers';
-import WeekdayFlightRequirementModel from '@core/models/flights/WeekdayFlightRequirementModel';
-import FlightScopeModel from '@core/models/flights/FlightScopeModel';
-import SimpleModal from 'src/components/SimpleModal';
+import { parseHHMM, parseMinute } from 'src/utils/model-parsers';
 import AutoComplete from 'src/components/AutoComplete';
-import DaysPicker from 'src/components/DaysPicker';
 import { Clear as ClearIcon, Add as AddIcon, WrapText as WrapTextIcon, ArrowRightAlt as ArrowRightAltIcon } from '@material-ui/icons';
-import Rsx, { Rsxes } from '@core/types/flight-requirement/Rsx';
-import AircraftIdentityModel from '@core/models/AircraftIdentityModel';
 import MultiSelect from 'src/components/MultiSelect';
-import PreplanAircraftSelection from 'src/business/PreplanAircraftSelection';
-import WeekdayFlightRequirement from 'src/business/flights/WeekdayFlightRequirement';
-import PreplanAircraftRegister from 'src/business/PreplanAircraftRegister';
 import { FlightRequirementModalModel, FlightRequirementModalAircraftIdentity, FlightRequirementModalMode } from 'src/components/preplan/flight-requirement/FlightRequirementEditor';
-import FlightModel from '@core/models/flights/FlightModel';
-import StarRateIcon from '@material-ui/icons/StarRate';
-import { borders } from '@material-ui/system';
 import Paper from '@material-ui/core/Paper';
+import Rsx, { Rsxes } from '@core/types/Rsx';
+import Preplan from 'src/business/preplan/Preplan';
+import ModalBase from 'src/components/ModalBase';
+import FlightRequirement from 'src/business/flight-requirement/FlightRequirement';
+import Weekday from '@core/types/Weekday';
 
 const useStyles = makeStyles((theme: Theme) => ({
   flightRequirementStyle: {
@@ -299,6 +287,7 @@ interface Leg {
 }
 
 export const NavBarToolsContainerContext = createContext<HTMLDivElement | null>(null);
+export const PreplanContext = createContext<Preplan>(null as any);
 
 const rsxOptions = Rsxes.map(r => ({ name: r }));
 
@@ -370,26 +359,14 @@ const PreplanPage: FC = () => {
   );
 
   useEffect(() => {
-    //TODO: Load preplan by match.params.id from server if not loaded yet.
-    //TODO: Go back to preplan list when not succeeded:
-    // history.push('/preplan-list');
-    PreplanService.get(match.params.id).then(p => {
-      if (p.message) {
-        //TODO: Do something!
-      } else {
-        const preplan = new Preplan(p.value!);
-        setPreplan(preplan);
+    PreplanService.get(match.params.id).then(
+      preplanModel => setPreplan(new Preplan(preplanModel)),
+      reason => {
+        console.error(reason);
+        // history.push('/preplan-list');
       }
-    });
+    );
   }, [match.params.id]);
-
-  // useEffect(() => {
-  //   console.log(flightRequirementWithMultiLegModalModel, flightRequirementWithMultiLegModalModel.details);
-  // }, [flightRequirementWithMultiLegModalModel, flightRequirementWithMultiLegModalModel.details]);
-
-  // useEffect(() => {
-  //   console.table('flightRequirementWithMultiLegModalModel', flightRequirementWithMultiLegModalModel);
-  // }, [flightRequirementWithMultiLegModalModel]);
 
   const resourceSchedulerPageSelected = window.location.href.startsWith(`${window.location.origin}/#${match.url}/resource-scheduler`);
   const flightRequirementListPageSelected = window.location.href.startsWith(`${window.location.origin}/#${match.url}/flight-requirement-list`);
@@ -447,42 +424,49 @@ const PreplanPage: FC = () => {
       </NavBar>
       {preplan && (
         <NavBarToolsContainerContext.Provider value={navBarToolsRef.current}>
-          <Switch>
-            <Redirect exact from={match.url} to={match.url + '/resource-scheduler'} />
-            <Route
-              exact
-              path={match.path + '/resource-scheduler'}
-              render={() => (
-                <ResourceSchedulerPage
-                  preplan={preplan}
-                  onEditFlightRequirement={f => applyFlightRequirementModalModel('EDIT', f)}
-                  onEditWeekdayFlightRequirement={(f, weekdayFlightRequirement) => applyFlightRequirementModalModel('EDIT', f, weekdayFlightRequirement)}
-                />
-              )}
-            />
-            <Route
-              exact
-              path={match.path + '/flight-requirement-list'}
-              render={() => (
-                <FlightRequirementListPage
-                  flightRequirements={preplan!.flightRequirements}
-                  preplan={preplan}
-                  onAddFlightRequirement={() => applyFlightRequirementModalModel('ADD')}
-                  onRemoveFlightRequirement={f => applyFlightRequirementModalModel('REMOVE', f)}
-                  onEditFlightRequirement={f => applyFlightRequirementModalModel('EDIT', f)}
-                  onAddReturnFlightRequirement={f => applyFlightRequirementModalModel('RETURN', f)}
-                  onRemoveWeekdayFlightRequirement={(weekday, fr) => applyFlightRequirementModalModel('REMOVE', fr, weekday)}
-                  onEditWeekdayFlightRequirement={(weekday, fr) => applyFlightRequirementModalModel('EDIT', fr, weekday)}
-                />
-              )}
-            />
-            <Route exact path={match.path + '/reports/:report?'} component={() => <ReportsPage preplan={preplan} />} />
-            <Redirect to={match.url} />
-          </Switch>
+          <PreplanContext.Provider value={preplan}>
+            <Switch>
+              <Redirect exact from={match.url} to={match.url + '/resource-scheduler'} />
+              <Route
+                exact
+                path={match.path + '/resource-scheduler'}
+                render={() => (
+                  <ResourceSchedulerPage
+                    reloadPreplan={newPreplanModel => {
+                      if (newPreplanModel) return setPreplan(new Preplan(newPreplanModel));
+                      PreplanService.get(match.params.id).then(
+                        preplanModel => setPreplan(new Preplan(preplanModel)),
+                        reason => {
+                          console.error(reason);
+                          // history.push('/preplan-list');
+                        }
+                      );
+                    }}
+                    onObjectionTargetClick={target => alert('Not implemented.')}
+                    onEditFlightRequirement={flightRequirement => applyFlightRequirementModalModel('EDIT', flightRequirement)}
+                    onEditDayFlightRequirement={dayFlightRequirement => applyFlightRequirementModalModel('EDIT', dayFlightRequirement.flightRequirement, dayFlightRequirement.day)}
+                  />
+                )}
+              />
+              <Route
+                exact
+                path={match.path + '/flight-requirement-list'}
+                render={() => (
+                  <FlightRequirementListPage
+                    onAddFlightRequirement={() => applyFlightRequirementModalModel('ADD')}
+                    onRemoveFlightRequirement={f => applyFlightRequirementModalModel('REMOVE', f)}
+                    onEditFlightRequirement={f => applyFlightRequirementModalModel('EDIT', f)}
+                  />
+                )}
+              />
+              <Route exact path={match.path + '/reports/:report?'} component={() => <ReportsPage />} />
+              <Redirect to={match.url} />
+            </Switch>
+          </PreplanContext.Provider>
         </NavBarToolsContainerContext.Provider>
       )}
 
-      {/* <SimpleModal
+      {/* <ModalBase
         key="delete-flight-requirment"
         title="Would you like to delete this flight requirement?"
         open={flightRequirementModalModel.open && flightRequirementModalModel.mode === 'REMOVE'}
@@ -602,9 +586,9 @@ const PreplanPage: FC = () => {
         ) : (
           <Typography>Delete flight requirement {flightRequirementModalModel.label}.</Typography>
         )}
-      </SimpleModal> */}
+      </ModalBase> */}
 
-      <SimpleModal
+      <ModalBase
         key="objectionModal"
         title="Are you sure to perform this action?"
         open={objectionModalModel.open}
@@ -618,9 +602,9 @@ const PreplanPage: FC = () => {
           </Typography>
           new error objections to be issued.
         </Typography>
-      </SimpleModal>
+      </ModalBase>
 
-      <SimpleModal
+      <ModalBase
         maxWidth={false}
         PaperProps={{ className: classes.flightRequirementStyle }}
         key="flightRequirementEditorWithMultiLeg"
@@ -1122,78 +1106,70 @@ const PreplanPage: FC = () => {
             </Paper>
           </Grid>
         </Grid>
-      </SimpleModal>
+      </ModalBase>
     </Fragment>
   );
 
-  function applyFlightRequirementModalModel(mode: FlightRequirementModalMode, flightRequirement?: FlightRequirement, weekdayFlightRequirement?: WeekdayFlightRequirement): void {
-    const model: FlightRequirementModalModel = {
-      open: false,
-      loading: false,
-      actionTitle: mode === 'ADD' || mode === 'RETURN' ? 'Add' : 'Edit',
-      mode: mode,
-      rsx: 'REAL',
-      times: [{ stdLowerBound: '', stdUpperBound: '' }],
-      stc: MasterData.all.stcs.items.find(n => n.name === 'J'),
-      flightRequirement
-    };
-
-    if (flightRequirement) {
-      model.days = Array.range(0, 6).map(() => false);
-      flightRequirement.days.forEach(d => (model.days![d.day] = true));
-
-      const allowedIdentities = weekdayFlightRequirement
-        ? weekdayFlightRequirement.scope.aircraftSelection.allowedIdentities
-        : flightRequirement.scope.aircraftSelection.allowedIdentities;
-      model.allowedAircraftIdentities = convertPreplanAircraftIdentityToAircraftIdentity(allowedIdentities);
-
-      const forbiddenIdentities = weekdayFlightRequirement
-        ? weekdayFlightRequirement.scope.aircraftSelection.forbiddenIdentities
-        : flightRequirement.scope.aircraftSelection.forbiddenIdentities;
-      model.forbiddenAircraftIdentities = convertPreplanAircraftIdentityToAircraftIdentity(forbiddenIdentities);
-
-      const minimumGroundTime = flightRequirement.scope.aircraftSelection.getMinimumGroundTime(
-        true,
-        flightRequirement.definition.arrivalAirport.international || flightRequirement.definition.departureAirport.international,
-        preplan!.startDate,
-        preplan!.endDate
-      );
-
-      model.arrivalAirport = mode === 'RETURN' ? flightRequirement.definition.departureAirport.name : flightRequirement.definition.arrivalAirport.name;
-      model.departureAirport = mode === 'RETURN' ? flightRequirement.definition.arrivalAirport.name : flightRequirement.definition.departureAirport.name;
-      model.blockTime = weekdayFlightRequirement ? parseMinute(weekdayFlightRequirement.scope.blockTime) : parseMinute(flightRequirement.scope.blockTime);
-      model.category = flightRequirement.definition.category;
-      model.destinationPermission = weekdayFlightRequirement ? weekdayFlightRequirement.scope.destinationPermission : flightRequirement.scope.destinationPermission;
-      model.flightNumber = flightRequirement.definition.flightNumber;
-      model.label = flightRequirement.definition.label;
-      model.notes = weekdayFlightRequirement && weekdayFlightRequirement.notes;
-      model.weekly = !weekdayFlightRequirement;
-      model.originPermission = weekdayFlightRequirement ? weekdayFlightRequirement.scope.originPermission : flightRequirement.scope.originPermission;
-      model.required = weekdayFlightRequirement ? weekdayFlightRequirement.scope.required : flightRequirement.scope.required;
-      model.rsx = weekdayFlightRequirement ? weekdayFlightRequirement.scope.rsx : flightRequirement.scope.rsx;
-      model.stc = flightRequirement.definition.stc;
-      model.times = (weekdayFlightRequirement ? weekdayFlightRequirement.scope.times : flightRequirement.scope.times).map(t => ({
-        stdLowerBound: parseMinute(t.stdLowerBound.minutes + (mode === 'RETURN' ? minimumGroundTime + flightRequirement.scope.blockTime : 0)),
-        stdUpperBound: parseMinute(t.stdUpperBound.minutes + (mode === 'RETURN' ? minimumGroundTime + flightRequirement.scope.blockTime : 0))
-      }));
-      model.day = weekdayFlightRequirement && weekdayFlightRequirement.day;
-      //modalModel.unavailableDays =
-    }
-
-    function convertPreplanAircraftIdentityToAircraftIdentity(preplanAircraftIdentities: readonly PreplanAircraftIdentity[]): FlightRequirementModalAircraftIdentity[] {
-      return preplanAircraftIdentities.map(n => aircraftIdentities.find(a => a.entityId === n.entity.id && a.type === n.type)!);
-    }
-
-    const newModel: FlightRequirementWithMultiLegModalModel = {
-      open: true,
-      loading: false,
-      mode: mode,
-      details: [],
-      days: Array.range(0, 6).map(i => false),
-      stc: MasterData.all.stcs.items.find(n => n.name === 'J')
-    };
-
-    setFlightRequirementWithMultiLegModalModel(newModel);
+  function applyFlightRequirementModalModel(mode: FlightRequirementModalMode, flightRequirement?: FlightRequirement, day?: Weekday): void {
+    // const model: FlightRequirementModalModel = {
+    //   open: false,
+    //   loading: false,
+    //   actionTitle: mode === 'ADD' || mode === 'RETURN' ? 'Add' : 'Edit',
+    //   mode: mode,
+    //   rsx: 'REAL',
+    //   times: [{ stdLowerBound: '', stdUpperBound: '' }],
+    //   stc: MasterData.all.stcs.items.find(n => n.name === 'J'),
+    //   flightRequirement
+    // };
+    // if (flightRequirement) {
+    //   model.days = Array.range(0, 6).map(() => false);
+    //   flightRequirement.days.forEach(d => (model.days![d.day] = true));
+    //   const allowedIdentities = weekdayFlightRequirement
+    //     ? weekdayFlightRequirement.scope.aircraftSelection.allowedIdentities
+    //     : flightRequirement.scope.aircraftSelection.allowedIdentities;
+    //   model.allowedAircraftIdentities = convertPreplanAircraftIdentityToAircraftIdentity(allowedIdentities);
+    //   const forbiddenIdentities = weekdayFlightRequirement
+    //     ? weekdayFlightRequirement.scope.aircraftSelection.forbiddenIdentities
+    //     : flightRequirement.scope.aircraftSelection.forbiddenIdentities;
+    //   model.forbiddenAircraftIdentities = convertPreplanAircraftIdentityToAircraftIdentity(forbiddenIdentities);
+    //   const minimumGroundTime = flightRequirement.scope.aircraftSelection.getMinimumGroundTime(
+    //     true,
+    //     flightRequirement.definition.arrivalAirport.international || flightRequirement.definition.departureAirport.international,
+    //     preplan!.startDate,
+    //     preplan!.endDate
+    //   );
+    //   model.arrivalAirport = mode === 'RETURN' ? flightRequirement.definition.departureAirport.name : flightRequirement.definition.arrivalAirport.name;
+    //   model.departureAirport = mode === 'RETURN' ? flightRequirement.definition.arrivalAirport.name : flightRequirement.definition.departureAirport.name;
+    //   model.blockTime = weekdayFlightRequirement ? parseMinute(weekdayFlightRequirement.scope.blockTime) : parseMinute(flightRequirement.scope.blockTime);
+    //   model.category = flightRequirement.definition.category;
+    //   model.destinationPermission = weekdayFlightRequirement ? weekdayFlightRequirement.scope.destinationPermission : flightRequirement.scope.destinationPermission;
+    //   model.flightNumber = flightRequirement.definition.flightNumber;
+    //   model.label = flightRequirement.definition.label;
+    //   model.notes = weekdayFlightRequirement && weekdayFlightRequirement.notes;
+    //   model.weekly = !weekdayFlightRequirement;
+    //   model.originPermission = weekdayFlightRequirement ? weekdayFlightRequirement.scope.originPermission : flightRequirement.scope.originPermission;
+    //   model.required = weekdayFlightRequirement ? weekdayFlightRequirement.scope.required : flightRequirement.scope.required;
+    //   model.rsx = weekdayFlightRequirement ? weekdayFlightRequirement.scope.rsx : flightRequirement.scope.rsx;
+    //   model.stc = flightRequirement.definition.stc;
+    //   model.times = (weekdayFlightRequirement ? weekdayFlightRequirement.scope.times : flightRequirement.scope.times).map(t => ({
+    //     stdLowerBound: parseMinute(t.stdLowerBound.minutes + (mode === 'RETURN' ? minimumGroundTime + flightRequirement.scope.blockTime : 0)),
+    //     stdUpperBound: parseMinute(t.stdUpperBound.minutes + (mode === 'RETURN' ? minimumGroundTime + flightRequirement.scope.blockTime : 0))
+    //   }));
+    //   model.day = weekdayFlightRequirement && weekdayFlightRequirement.day;
+    //   //modalModel.unavailableDays =
+    //   }
+    //   function convertPreplanAircraftIdentityToAircraftIdentity(preplanAircraftIdentities: readonly PreplanAircraftIdentity[]): FlightRequirementModalAircraftIdentity[] {
+    //     return preplanAircraftIdentities.map(n => aircraftIdentities.find(a => a.entityId === n.entity.id && a.type === n.type)!);
+    //   }
+    //   const newModel: FlightRequirementWithMultiLegModalModel = {
+    //     open: true,
+    //     loading: false,
+    //     mode: mode,
+    //     details: [],
+    //     days: Array.range(0, 6).map(i => false),
+    //     stc: MasterData.all.stcs.items.find(n => n.name === 'J')
+    //   };
+    //   setFlightRequirementWithMultiLegModalModel(newModel);
   }
 };
 

@@ -4,7 +4,7 @@ import { makeStyles } from '@material-ui/styles';
 import { DoneAll as FinilizedIcon, LockOutlined as LockIcon, LockOpenOutlined as LockOpenIcon, Search as SearchIcon, SettingsOutlined as SettingsIcon } from '@material-ui/icons';
 import MahanIcon, { MahanIconType } from 'src/components/MahanIcon';
 import LinkIconButton from 'src/components/LinkIconButton';
-import { NavBarToolsContainerContext } from 'src/pages/preplan';
+import { NavBarToolsContainerContext, PreplanContext } from 'src/pages/preplan';
 import SearchFlightsSideBar from 'src/components/preplan/resource-scheduler/SearchFlightsSideBar';
 import ObjectionsSideBar from 'src/components/preplan/resource-scheduler/ObjectionsSideBar';
 import SelectAircraftRegistersSideBar from 'src/components/preplan/resource-scheduler/SelectAircraftRegistersSideBar';
@@ -129,14 +129,15 @@ interface ResourceSchedulerViewModel {
 // }
 
 export interface ResourceSchedulerPageProps {
-  preplan: Preplan;
   reloadPreplan(newPreplanModel?: PreplanModel): void;
   onObjectionTargetClick(target: Objectionable): void;
   onEditFlightRequirement(flightRequirement: FlightRequirement): void;
   onEditDayFlightRequirement(dayFlightRequirement: DayFlightRequirement): void;
 }
 
-const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, reloadPreplan, onObjectionTargetClick, onEditFlightRequirement, onEditDayFlightRequirement }) => {
+const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ reloadPreplan, onObjectionTargetClick, onEditFlightRequirement, onEditDayFlightRequirement }) => {
+  const preplan = useContext(PreplanContext);
+
   const [sideBarState, setSideBarState] = useState<SideBarState>({ open: false, loading: false, errorMessage: undefined });
   const [resourceSchedulerViewModel, setResourceSchedulerViewModel] = useState<ResourceSchedulerViewModel>({ loading: false });
   const [statusBarProps, setStatusBarProps] = useState<StatusBarProps>({});

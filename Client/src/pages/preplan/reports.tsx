@@ -3,10 +3,9 @@ import { Theme, Portal } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import useRouter from 'src/utils/useRouter';
 import SectionList, { SectionItem } from 'src/components/SectionList';
-import { NavBarToolsContainerContext } from 'src/pages/preplan';
+import { NavBarToolsContainerContext, PreplanContext } from 'src/pages/preplan';
 import ProposalReport from 'src/components/preplan/reports/ProposalReport';
 import ConnectionsReport from 'src/components/preplan/reports/ConnectionsReport';
-import Preplan from 'src/business/Preplan';
 
 const useStyles = makeStyles((theme: Theme) => ({}));
 
@@ -25,12 +24,11 @@ const connectionsPpreplanReport: PreplanReport = {
 };
 const preplanReports = [proposalPreplanReport, connectionsPpreplanReport];
 
-export interface ReportsPageProps {
-  preplan: Preplan;
-}
+export interface ReportsPageProps {}
 
-const ReportsPage: FC<ReportsPageProps> = ({ preplan }) => {
+const ReportsPage: FC<ReportsPageProps> = ({}) => {
   const navBarToolsContainer = useContext(NavBarToolsContainerContext);
+  const preplan = useContext(PreplanContext);
 
   const classes = useStyles();
   const { match, history } = useRouter<{ id: string; report: string }>();
@@ -56,7 +54,7 @@ const ReportsPage: FC<ReportsPageProps> = ({ preplan }) => {
           <ProposalReport flightRequirments={preplan.flightRequirements} preplanName={preplan.name} fromDate={preplan.startDate} toDate={preplan.endDate} />
         )}
         {preplanReport === connectionsPpreplanReport && (
-          <ConnectionsReport preplanName={preplan.name} flights={preplan.flights} fromDate={preplan.startDate} toDate={preplan.endDate} />
+          <ConnectionsReport preplanName={preplan.name} flights={preplan.flightLegs} fromDate={preplan.startDate} toDate={preplan.endDate} />
         )}
       </SectionList>
     </Fragment>

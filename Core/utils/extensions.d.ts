@@ -99,7 +99,7 @@ declare interface ReadonlyArray<T> {
   /**
    * Returns the flattened array of this array.
    */
-  flatten(): T extends readonly (infer U)[] ? U[] : T[];
+  flatten(): any[]; //TODO: T extends readonly (infer U)[] ? U[] : T[];
 
   /**
    * Returns a grouped dictionary of this array.

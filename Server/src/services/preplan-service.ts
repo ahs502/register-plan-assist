@@ -52,7 +52,7 @@ router.post(
 
 router.post(
   '/clone',
-  requestMiddlewareWithDbAccess<{ id: Id; newPreplan: NewPreplanModel }, Id>(async (userId, { id, newPreplan }, { runQuery, runSp }) => {
+  requestMiddlewareWithTransactionalDbAccess<{ id: Id; newPreplan: NewPreplanModel }, Id>(async (userId, { id, newPreplan }, { runQuery, runSp }) => {
     const rawUserPreplanNames: { name: string }[] = await runQuery(`select [Name] as [name] from [Rpa].[Preplan] where [Id_User] = '${userId}'`);
     const userPreplanNames = rawUserPreplanNames.map(item => item.name);
     new NewPreplanModelValidation(newPreplan, userPreplanNames).throw('Invalid API input.');
@@ -104,7 +104,7 @@ router.post(
 
 router.post(
   '/remove',
-  requestMiddlewareWithDbAccess<{ id: Id }, PreplanHeaderModel[]>(async (userId, { id }, { runSp }) => {
+  requestMiddlewareWithTransactionalDbAccess<{ id: Id }, PreplanHeaderModel[]>(async (userId, { id }, { runSp }) => {
     await runSp('[Rpa].[Sp_DeletePreplan]', runSp.varCharParam('userId', userId, 30), runSp.intParam('id', id));
 
     return await getPreplanHeaderModels(runSp, userId);

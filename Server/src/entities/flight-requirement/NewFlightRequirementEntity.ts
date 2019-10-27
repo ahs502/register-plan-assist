@@ -12,6 +12,7 @@ export default interface NewFlightRequirementEntity {
   readonly stcId: Id;
   readonly aircraftSelectionXml: Xml;
   readonly rsx: Rsx;
+  readonly notes: string;
   readonly ignored: boolean;
   readonly routeXml: Xml;
   readonly daysXml: Xml;
@@ -24,6 +25,7 @@ export function convertNewFlightRequirementModelToEntity(data: NewFlightRequirem
     stcId: data.stcId,
     aircraftSelectionXml: xmlStringify(convertAircraftSelectionModelToEntity(data.aircraftSelection), 'AircraftSelection'),
     rsx: data.rsx,
+    notes: data.notes,
     ignored: data.ignored,
     routeXml: xmlStringify({ FlightRequirementLeg: data.route.map(convertFlightRequirementLegModelToEntity) }, 'Route'),
     daysXml: xmlStringify({ DayFlightRequirement: data.days.map(convertDayFlightRequirementModelToEntity) }, 'Days')
@@ -36,6 +38,7 @@ export function convertNewFlightRequirementEntityToModel(data: NewFlightRequirem
     stcId: data.stcId,
     aircraftSelection: convertAircraftSelectionEntityToModel(xmlParse(data.aircraftSelectionXml, 'AircraftSelection')),
     rsx: data.rsx,
+    notes: data.notes,
     ignored: data.ignored,
     route: xmlArray(xmlParse(data.routeXml, 'Route').FlightRequirementLeg).map(convertFlightRequirementLegEntityToModel),
     days: xmlArray(xmlParse(data.daysXml, 'Days').DayFlightRequirement).map(convertDayFlightRequirementEntityToModel)

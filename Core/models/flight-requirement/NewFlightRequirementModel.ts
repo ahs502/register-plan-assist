@@ -12,6 +12,7 @@ export default interface NewFlightRequirementModel {
   readonly stcId: Id;
   readonly aircraftSelection: AircraftSelectionModel;
   readonly rsx: Rsx;
+  readonly notes: string;
   readonly ignored: boolean;
   readonly route: readonly FlightRequirementLegModel[];
   readonly days: readonly DayFlightRequirementModel[];
@@ -27,12 +28,13 @@ export class NewFlightRequirementModelValidation extends Validation<
 > {
   constructor(data: NewFlightRequirementModel, dummyAircraftRegisterIds: readonly Id[]) {
     super(validator =>
-      validator.object(data).then(({ label, category, stcId, aircraftSelection, rsx, ignored, route, days }) => {
+      validator.object(data).then(({ label, category, stcId, aircraftSelection, rsx, notes, ignored, route, days }) => {
         validator.must(typeof label === 'string', !!label).must(() => label === label.trim().toUpperCase());
         validator.must(typeof category === 'string').must(() => category === category.trim().toUpperCase());
         validator.must(typeof stcId === 'string').must(() => stcId in MasterData.all.stcs.id);
         validator.put(validator.$.aircraftSelection, new AircraftSelectionModelValidation(aircraftSelection, dummyAircraftRegisterIds));
         validator.must(Rsxes.includes(rsx));
+        validator.must(typeof notes === 'string');
         validator.must(typeof ignored === 'boolean');
         validator
           .array(route)

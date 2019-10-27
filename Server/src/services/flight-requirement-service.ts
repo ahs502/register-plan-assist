@@ -44,6 +44,7 @@ router.post(
         runSp.intParam('stcId', newFlightRequirementEntity.stcId),
         runSp.xmlParam('aircraftSelectionXml', newFlightRequirementEntity.aircraftSelectionXml),
         runSp.varCharParam('rsx', newFlightRequirementEntity.rsx, 10),
+        runSp.nVarCharParam('notes', newFlightRequirementEntity.notes, 1000),
         runSp.bitParam('ignored', newFlightRequirementEntity.ignored),
         runSp.xmlParam('routeXml', newFlightRequirementEntity.routeXml),
         runSp.xmlParam('daysXml', newFlightRequirementEntity.daysXml)
@@ -126,6 +127,7 @@ router.post(
       runSp.nVarCharParam('label', flightRequirementEntity.label, 100),
       runSp.nVarCharParam('category', flightRequirementEntity.category, 100),
       runSp.intParam('stcId', flightRequirementEntity.stcId),
+      runSp.nVarCharParam('notes', flightRequirementEntity.notes, 1000),
       runSp.xmlParam('aircraftSelectionXml', flightRequirementEntity.aircraftSelectionXml),
       runSp.varCharParam('rsx', flightRequirementEntity.rsx, 10),
       runSp.bitParam('ignored', flightRequirementEntity.ignored),

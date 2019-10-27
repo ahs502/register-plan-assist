@@ -12,6 +12,7 @@ import Preplan from 'src/business/preplan/Preplan';
 import ObjectionModal, { ObjectionModalModel } from 'src/components/preplan/ObjectionModal';
 import FlightRequirementModal, { FlightRequirementModalModel } from 'src/components/preplan/FlightRequirementModal';
 import FlightRequirementService from 'src/services/FlightRequirementService';
+import RemoveFlightRequirementModal, { RemoveFlightRequirementModalModel } from 'src/components/preplan/RemoveFlightRequirementModal';
 
 const useStyles = makeStyles((theme: Theme) => ({}));
 
@@ -22,6 +23,7 @@ const PreplanPage: FC = () => {
   const [preplan, setPreplan] = useState<Preplan | null>(null);
   const [objectionModalModel, setObjectionModalModel] = useState<ObjectionModalModel>({});
   const [flightRequirementModalModel, setFlightRequirementModalModel] = useState<FlightRequirementModalModel>({});
+  const [removeFlightRequirementModalModel, setRemoveFlightRequirementModalModel] = useState<RemoveFlightRequirementModalModel>({});
 
   const navBarToolsRef = useRef<HTMLDivElement>(null);
 
@@ -50,14 +52,14 @@ const PreplanPage: FC = () => {
         backLink={resourceSchedulerPageSelected ? '/preplan-list' : reportsProposalPageSelected || reportsConnectionsPageSelected ? `${match.url}/reports` : match.url}
         backTitle={
           resourceSchedulerPageSelected
-            ? 'Back to Pre Plan List'
+            ? 'Back to Preplan List'
             : reportsProposalPageSelected || reportsConnectionsPageSelected
-            ? `Back to Pre Plan ${preplan && preplan.name} Reports`
-            : `Back to Pre Plan ${preplan && preplan.name}`
+            ? `Back to Preplan ${preplan && preplan.name} Reports`
+            : `Back to Preplan ${preplan && preplan.name}`
         }
         navBarLinks={[
           {
-            title: 'Pre Plans',
+            title: 'Preplans',
             link: '/preplan-list'
           },
           preplan && {
@@ -117,7 +119,7 @@ const PreplanPage: FC = () => {
                 render={() => (
                   <FlightRequirementListPage
                     onAddFlightRequirement={() => setFlightRequirementModalModel({ open: true })}
-                    onRemoveFlightRequirement={flightRequirement => alert('Not implemented.')}
+                    onRemoveFlightRequirement={flightRequirement => setRemoveFlightRequirementModalModel({ open: true, flightRequirement })}
                     onEditFlightRequirement={flightRequirement => setFlightRequirementModalModel({ open: true, sourceFlightRequirement: flightRequirement })}
                   />
                 )}
@@ -134,17 +136,38 @@ const PreplanPage: FC = () => {
       <FlightRequirementModal
         model={flightRequirementModalModel}
         onClose={() => setFlightRequirementModalModel({ ...flightRequirementModalModel, open: false })}
-        onApply={async newFlightRequirementModel => {
+        onApply={async (newFlightRequirementModel, flightModels, newFlightModels) => {
           if (!preplan) return;
           setFlightRequirementModalModel({ ...flightRequirementModalModel, loading: true, errorMessage: undefined });
           try {
             const newPreplanModel = flightRequirementModalModel.sourceFlightRequirement
-              ? await FlightRequirementService.edit(preplan.id, { id: flightRequirementModalModel.sourceFlightRequirement.id, ...newFlightRequirementModel }, [], []) //TODO: How about flights?
-              : await FlightRequirementService.add(preplan.id, newFlightRequirementModel, []); //TODO: How about flights?
-            setFlightRequirementModalModel(flightRequirementModalModel => ({ ...flightRequirementModalModel, loading: false, open: false }));
+              ? await FlightRequirementService.edit(
+                  preplan.id,
+                  { id: flightRequirementModalModel.sourceFlightRequirement.id, ...newFlightRequirementModel },
+                  flightModels,
+                  newFlightModels
+                )
+              : await FlightRequirementService.add(preplan.id, newFlightRequirementModel, newFlightModels);
             setPreplan(new Preplan(newPreplanModel, preplan));
+            setFlightRequirementModalModel(flightRequirementModalModel => ({ ...flightRequirementModalModel, loading: false, open: false }));
           } catch (reason) {
             setFlightRequirementModalModel(flightRequirementModalModel => ({ ...flightRequirementModalModel, loading: false, errorMessage: String(reason) }));
+          }
+        }}
+      />
+
+      <RemoveFlightRequirementModal
+        model={removeFlightRequirementModalModel}
+        onClose={() => setRemoveFlightRequirementModalModel({ ...removeFlightRequirementModalModel, open: false })}
+        onRemove={async () => {
+          if (!preplan) return;
+          setRemoveFlightRequirementModalModel({ ...removeFlightRequirementModalModel, loading: true, errorMessage: undefined });
+          try {
+            const newPreplanModel = await FlightRequirementService.remove(preplan.id, removeFlightRequirementModalModel.flightRequirement!.id);
+            setPreplan(new Preplan(newPreplanModel, preplan));
+            setRemoveFlightRequirementModalModel(removeFlightRequirementModalModel => ({ ...removeFlightRequirementModalModel, loading: false, open: false }));
+          } catch (reason) {
+            setRemoveFlightRequirementModalModel(removeFlightRequirementModalModel => ({ ...removeFlightRequirementModalModel, loading: false, errorMessage: String(reason) }));
           }
         }}
       />

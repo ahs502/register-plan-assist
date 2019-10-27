@@ -13,6 +13,8 @@ import Id from '@core/types/Id';
 import AircraftIdentityType from '@core/types/AircraftIdentityType';
 import { PreplanContext } from 'src/pages/preplan';
 import NewFlightRequirementModel from '@core/models/flight-requirement/NewFlightRequirementModel';
+import FlightModel from '@core/models/flight/FlightModel';
+import NewFlightModel from '@core/models/flight/NewFlightModel';
 
 const useStyles = makeStyles((theme: Theme) => ({
   flightRequirementStyle: {
@@ -254,7 +256,7 @@ export interface FlightRequirementModalModel extends ModalBaseModel {
 }
 
 export interface FlightRequirementModalProps extends ModalBaseProps<FlightRequirementModalModel> {
-  onApply(newFlightRequirementModel: NewFlightRequirementModel): void;
+  onApply(newFlightRequirementModel: NewFlightRequirementModel, flightModels: readonly FlightModel[], newFlightModels: readonly NewFlightModel[]): void;
 }
 
 const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ onApply, ...others }) => {
@@ -429,7 +431,7 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ onApply, ...o
         {
           title: 'Submit',
           action: () => {
-            // onApply({});
+            //TODO: onApply({});
           }
         }
       ]}

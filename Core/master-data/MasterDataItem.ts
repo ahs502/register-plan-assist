@@ -24,10 +24,12 @@ export default abstract class MasterDataItem {
 export abstract class MasterDataItems<T extends MasterDataItem> {
   readonly items: ReadonlyArray<T>;
   readonly id: { readonly [id: string]: T };
+  readonly name: { readonly [name: string]: T };
 
   protected constructor(items: ReadonlyArray<T>) {
     this.items = items;
     this.id = {};
-    items.forEach(item => ((this.id as { [id: string]: T })[item.id] = item));
+    this.name = {};
+    items.forEach(item => ((this.id as { [id: string]: T })[item.id] = (this.name as { [name: string]: T })[item.name.toUpperCase()] = item));
   }
 }

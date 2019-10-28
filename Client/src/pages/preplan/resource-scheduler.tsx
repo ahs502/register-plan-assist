@@ -17,7 +17,7 @@ import PreplanAircraftRegister from 'src/business/preplan/PreplanAircraftRegiste
 import ModalBase from 'src/components/ModalBase';
 import Weekday from '@core/types/Weekday';
 import { red, blue, green, cyan, indigo, orange, purple } from '@material-ui/core/colors';
-import { parseMinute, parseHHMM } from 'src/utils/model-parsers';
+import { parseMinute, parseTime } from 'src/utils/model-parsers';
 import MasterData from '@core/master-data';
 import StatusBar, { StatusBarProps } from 'src/components/preplan/resource-scheduler/StatusBar';
 import DeepWritablePartial from '@core/types/DeepWritablePartial';

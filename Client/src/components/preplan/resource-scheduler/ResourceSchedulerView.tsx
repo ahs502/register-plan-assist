@@ -424,10 +424,10 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = memo(
         return `
           <div class="rpa-item-header">
             <div class="rpa-item-time rpa-item-std">
-              ${flight.start.toString(true)}
+              ${flight.start.toString('H:mm', true)}
             </div>
             <div class="rpa-item-time rpa-item-sta">
-              ${flight.end.toString(true)}
+              ${flight.end.toString('H:mm', true)}
             </div>
           </div>
           <div class="rpa-item-body
@@ -678,8 +678,8 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = memo(
                     <div>
                       &nbsp;&nbsp;&nbsp;&nbsp;
                       ${l.flightNumber}:
-                      ${l.departureAirport.name} (${l.std.toString()}) &dash;
-                      ${l.arrivalAirport.name} (${new Daytime(l.std.minutes + l.blockTime).toString()})
+                      ${l.departureAirport.name} (${l.std.toString('HH:mm')}) &dash;
+                      ${l.arrivalAirport.name} (${new Daytime(l.std.minutes + l.blockTime).toString('HH:mm')})
                     </div>
                   `
                 )

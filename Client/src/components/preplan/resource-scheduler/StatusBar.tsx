@@ -41,7 +41,7 @@ const StatusBar: FC<StatusBarProps> = ({ mode, flight, aircraftRegister, previou
           <Fragment key={l.derivedId}>
             &nbsp;
             <Typography display="inline" variant="overline" classes={{ overline: classes.typograghyOverline }}>
-              {l.std.toString(true)}
+              {l.std.toString('H:mm', true)}
             </Typography>
             &nbsp; &#8599; &nbsp;
             <Typography display="inline" variant="caption">
@@ -49,11 +49,11 @@ const StatusBar: FC<StatusBarProps> = ({ mode, flight, aircraftRegister, previou
             </Typography>
             &nbsp;
             <Typography display="inline" variant="overline" classes={{ overline: classes.typograghyOverline }}>
-              {new Daytime(l.blockTime).toString()}
+              {new Daytime(l.blockTime).toString('H:mm')}
             </Typography>
             &nbsp; &#8600; &nbsp;
             <Typography display="inline" variant="overline" classes={{ overline: classes.typograghyOverline }}>
-              {new Daytime(l.std.minutes + l.blockTime).toString(true)}
+              {new Daytime(l.std.minutes + l.blockTime).toString('H:mm', true)}
             </Typography>
             &nbsp;
             <Typography display="inline" variant="button">
@@ -107,7 +107,7 @@ const StatusBar: FC<StatusBarProps> = ({ mode, flight, aircraftRegister, previou
               </Fragment>
             )}
             <Typography display="inline" variant="overline" classes={{ overline: classes.typograghyOverline }}>
-              {new Daytime(previousFlight.legs[previousFlight.legs.length - 1].std.minutes + previousFlight.legs[previousFlight.legs.length - 1].blockTime).toString(true)}
+              {new Daytime(previousFlight.legs[previousFlight.legs.length - 1].std.minutes + previousFlight.legs[previousFlight.legs.length - 1].blockTime).toString('H:mm', true)}
             </Typography>
             &nbsp; &#8600; &nbsp;
             <Typography display="inline" variant="overline" classes={{ overline: classes.typograghyOverline }}>
@@ -115,7 +115,7 @@ const StatusBar: FC<StatusBarProps> = ({ mode, flight, aircraftRegister, previou
             </Typography>
             &nbsp; &#8599; &nbsp;
             <Typography display="inline" variant="overline" classes={{ overline: classes.typograghyOverline }}>
-              {nextFlight.legs[0].std.toString(true)}
+              {nextFlight.legs[0].std.toString('H:mm', true)}
             </Typography>
             &nbsp;
             {previousFlight.day !== nextFlight.day && (

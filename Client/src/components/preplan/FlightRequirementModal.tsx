@@ -15,6 +15,15 @@ import { PreplanContext } from 'src/pages/preplan';
 import NewFlightRequirementModel from '@core/models/flight-requirement/NewFlightRequirementModel';
 import FlightModel from '@core/models/flight/FlightModel';
 import NewFlightModel from '@core/models/flight/NewFlightModel';
+import FlightNumber from '@core/types/FlightNumber';
+import { parseTime } from 'src/utils/model-parsers';
+import PreplanAircraftSelection from 'src/business/preplan/PreplanAircraftSelection';
+import FlightLegModel from '@core/models/flight/FlightLegModel';
+import AircraftIdentityModel from '@core/models/AircraftIdentityModel';
+import FlightRequirementLegModel from '@core/models/flight-requirement/FlightRequirementLegModel';
+import DayFlightRequirementModel from '@core/models/flight-requirement/DayFlightRequirementModel';
+import Flight from 'src/business/flight/Flight';
+import DeepWritablePartial from '@core/types/DeepWritablePartial';
 
 const useStyles = makeStyles((theme: Theme) => ({
   flightRequirementStyle: {
@@ -217,7 +226,7 @@ interface ViewModel {
   stc: Stc;
   tabIndex: 'ALL' | Weekday;
   legIndex: number;
-  all: TabViewModel;
+  default: TabViewModel;
   route: RouteLegViewModel[];
   days: DayTabViewModel[];
 }
@@ -232,6 +241,7 @@ interface DayTabViewModel extends TabViewModel {
   selected: boolean;
 }
 interface RouteLegViewModel {
+  originalIndex?: number;
   flightNumber: string;
   departureAirport: string;
   arrivalAirport: string;
@@ -311,7 +321,7 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ onApply, ...o
           stc: sourceFlightRequirement.stc,
           tabIndex: day === undefined ? 'ALL' : day,
           legIndex: 0,
-          all: {
+          default: {
             rsx: sourceFlightRequirement.rsx,
             notes: sourceFlightRequirement.notes,
             allowedAircraftIdentities: sourceFlightRequirement.aircraftSelection.includedIdentities.map(
@@ -320,20 +330,21 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ onApply, ...o
             forbiddenAircraftIdentities: sourceFlightRequirement.aircraftSelection.excludedIdentities.map(
               i => aircraftIdentityOptions.find(o => o.type === i.type && o.entityId === i.entity.id)!
             ),
-            legs: sourceFlightRequirement.route.map(l => ({
+            legs: sourceFlightRequirement.route.map<LegViewModel>(l => ({
               blockTime: String(l.blockTime),
-              stdLowerBound: l.stdLowerBound.toString(true),
-              stdUpperBound: l.stdUpperBound === undefined ? '' : l.stdUpperBound.toString(true),
+              stdLowerBound: l.stdLowerBound.toString('HHmm', true),
+              stdUpperBound: l.stdUpperBound === undefined ? '' : l.stdUpperBound.toString('HHmm', true),
               originPermission: l.originPermission,
               destinationPermission: l.destinationPermission
             }))
           },
-          route: sourceFlightRequirement.route.map(l => ({
+          route: sourceFlightRequirement.route.map<RouteLegViewModel>((l, index) => ({
+            originalIndex: index,
             flightNumber: l.flightNumber.standardFormat,
             departureAirport: l.departureAirport.name,
             arrivalAirport: l.arrivalAirport.name
           })),
-          days: Weekdays.map(d => {
+          days: Weekdays.map<DayTabViewModel>(d => {
             const sourceDayFlightRequirement = sourceFlightRequirement.days.find(x => x.day === d);
             return {
               selected: !!sourceDayFlightRequirement,
@@ -348,17 +359,17 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ onApply, ...o
                 : sourceFlightRequirement.aircraftSelection
               ).excludedIdentities.map(i => aircraftIdentityOptions.find(o => o.type === i.type && o.entityId === i.entity.id)!),
               legs: sourceDayFlightRequirement
-                ? sourceDayFlightRequirement.route.map(l => ({
+                ? sourceDayFlightRequirement.route.map<LegViewModel>(l => ({
                     blockTime: String(l.blockTime),
-                    stdLowerBound: l.stdLowerBound.toString(true),
-                    stdUpperBound: l.stdUpperBound === undefined ? '' : l.stdUpperBound.toString(true),
+                    stdLowerBound: l.stdLowerBound.toString('HHmm', true),
+                    stdUpperBound: l.stdUpperBound === undefined ? '' : l.stdUpperBound.toString('HHmm', true),
                     originPermission: l.originPermission,
                     destinationPermission: l.destinationPermission
                   }))
-                : sourceFlightRequirement.route.map(l => ({
+                : sourceFlightRequirement.route.map<LegViewModel>(l => ({
                     blockTime: String(l.blockTime),
-                    stdLowerBound: l.stdLowerBound.toString(true),
-                    stdUpperBound: l.stdUpperBound === undefined ? '' : l.stdUpperBound.toString(true),
+                    stdLowerBound: l.stdLowerBound.toString('HHmm', true),
+                    stdUpperBound: l.stdUpperBound === undefined ? '' : l.stdUpperBound.toString('HHmm', true),
                     originPermission: l.originPermission,
                     destinationPermission: l.destinationPermission
                   }))
@@ -371,7 +382,7 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ onApply, ...o
           stc: MasterData.all.stcs.items.find(s => s.name === 'J')!,
           tabIndex: 'ALL',
           legIndex: 0,
-          all: {
+          default: {
             rsx: 'REAL',
             notes: '',
             allowedAircraftIdentities: [],
@@ -393,7 +404,7 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ onApply, ...o
               arrivalAirport: ''
             }
           ],
-          days: Weekdays.map(d => ({
+          days: Weekdays.map<DayTabViewModel>(d => ({
             selected: false,
             rsx: 'REAL',
             notes: '',
@@ -411,9 +422,9 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ onApply, ...o
           }))
         }
   );
-  const tabViewModel = viewModel.tabIndex === 'ALL' ? viewModel.all : viewModel.days[viewModel.tabIndex];
+  const tabViewModel = viewModel.tabIndex === 'ALL' ? viewModel.default : viewModel.days[viewModel.tabIndex];
   const routeLegViewModel = viewModel.route[viewModel.legIndex];
-  const legViewModel = viewModel.tabIndex === 'ALL' ? viewModel.all.legs[viewModel.legIndex] : viewModel.days[viewModel.tabIndex].legs[viewModel.legIndex];
+  const legViewModel = viewModel.tabIndex === 'ALL' ? viewModel.default.legs[viewModel.legIndex] : viewModel.days[viewModel.tabIndex].legs[viewModel.legIndex];
 
   const classes = useStyles();
 
@@ -431,7 +442,84 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ onApply, ...o
         {
           title: 'Submit',
           action: () => {
-            //TODO: onApply({});
+            //TODO: Validate the view model first.
+
+            const newFlightRequirementModel: NewFlightRequirementModel = {
+              label: viewModel.label,
+              category: viewModel.category,
+              stcId: viewModel.stc.id,
+              aircraftSelection: {
+                includedIdentities: viewModel.default.allowedAircraftIdentities.map<AircraftIdentityModel>(i => ({
+                  type: i.type,
+                  entityId: i.entityId
+                })),
+                excludedIdentities: viewModel.default.forbiddenAircraftIdentities.map<AircraftIdentityModel>(i => ({
+                  type: i.type,
+                  entityId: i.entityId
+                }))
+              },
+              rsx: viewModel.default.rsx,
+              notes: viewModel.default.notes,
+              ignored: sourceFlightRequirement ? sourceFlightRequirement.ignored : false,
+              route: viewModel.default.legs.map<FlightRequirementLegModel>((l, index) => ({
+                flightNumber: new FlightNumber(viewModel.route[index].flightNumber).standardFormat,
+                departureAirportId: MasterData.all.airports.name[viewModel.route[index].departureAirport.toUpperCase()].id,
+                arrivalAirportId: MasterData.all.airports.name[viewModel.route[index].arrivalAirport.toUpperCase()].id,
+                blockTime: parseTime(l.blockTime)!,
+                stdLowerBound: parseTime(l.stdLowerBound)!,
+                stdUpperBound: parseTime(l.stdUpperBound),
+                originPermission: l.originPermission,
+                destinationPermission: l.destinationPermission
+              })),
+              days: viewModel.days
+                .map<{ selected: boolean; model: DayFlightRequirementModel }>((d, index) => ({
+                  selected: d.selected,
+                  model: {
+                    aircraftSelection: {
+                      includedIdentities: d.allowedAircraftIdentities.map(i => ({
+                        type: i.type,
+                        entityId: i.entityId
+                      })),
+                      excludedIdentities: d.forbiddenAircraftIdentities.map(i => ({
+                        type: i.type,
+                        entityId: i.entityId
+                      }))
+                    },
+                    rsx: d.rsx,
+                    day: index,
+                    notes: d.notes,
+                    route: []
+                  }
+                }))
+                .filter(x => x.selected)
+                .map(x => x.model)
+            };
+
+            const flights: Flight[] = sourceFlightRequirement ? preplan.flights.filter(f => f.flightRequirement === sourceFlightRequirement) : [];
+
+            const newFlightModels: NewFlightModel[] = newFlightRequirementModel.days
+              .filter(d => !flights.some(f => f.day === d.day))
+              .map<NewFlightModel>(d => ({
+                day: d.day,
+                aircraftRegisterId: (new PreplanAircraftSelection(d.aircraftSelection, preplan.aircraftRegisters).backupAircraftRegister || { id: undefined }).id,
+                legs: d.route.map<FlightLegModel>(l => ({
+                  std: l.stdLowerBound
+                }))
+              }));
+
+            const flightModels: FlightModel[] = flights
+              .filter(f => newFlightRequirementModel.days.some(d => d.day === f.day))
+              .map(f =>
+                f.extractModel({
+                  legs: newFlightRequirementModel.days
+                    .find(d => d.day === f.day)!
+                    .route.map<DeepWritablePartial<FlightLegModel>>((l, index) => ({
+                      std: viewModel.route[index].originalIndex === undefined ? l.stdLowerBound : f.legs[viewModel.route[index].originalIndex!].std.minutes
+                    }))
+                })
+              );
+
+            onApply(newFlightRequirementModel, flightModels, newFlightModels);
           }
         }
       ]}
@@ -472,7 +560,7 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ onApply, ...o
                       checked={viewModel.days.every(d => d.selected)}
                       onChange={e => {
                         const selected = !viewModel.days.every(d => d.selected);
-                        setViewModel({ ...viewModel, days: Weekdays.map(d => ({ ...viewModel.all, selected })) });
+                        setViewModel({ ...viewModel, days: Weekdays.map(d => ({ ...viewModel.default, selected })) });
                       }}
                       color="primary"
                     />
@@ -489,7 +577,7 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ onApply, ...o
                     <div {...props} ref={ref}>
                       <Checkbox
                         checked={viewModel.days[d].selected}
-                        onChange={e => setViewModel({ ...viewModel, days: daysButOne(d, { ...viewModel.all, selected: e.target.checked }) })}
+                        onChange={e => setViewModel({ ...viewModel, days: daysButOne(d, { ...viewModel.default, selected: e.target.checked }) })}
                       />
                       {Weekday[d].slice(0, 3)}
                     </div>
@@ -510,7 +598,7 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ onApply, ...o
                     onSelect={({ name: rsx }) =>
                       setViewModel(
                         viewModel.tabIndex === 'ALL'
-                          ? { ...viewModel, all: { ...viewModel.all, rsx }, days: viewModel.days.map(day => ({ ...day, rsx })) }
+                          ? { ...viewModel, default: { ...viewModel.default, rsx }, days: viewModel.days.map(day => ({ ...day, rsx })) }
                           : { ...viewModel, days: daysButOne(viewModel.tabIndex, day => ({ ...day, rsx })) }
                       )
                     }
@@ -525,7 +613,7 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ onApply, ...o
                     onChange={({ target: { value: notes } }) =>
                       setViewModel(
                         viewModel.tabIndex === 'ALL'
-                          ? { ...viewModel, all: { ...viewModel.all, notes }, days: viewModel.days.map(day => ({ ...day, notes })) }
+                          ? { ...viewModel, default: { ...viewModel.default, notes }, days: viewModel.days.map(day => ({ ...day, notes })) }
                           : { ...viewModel, days: daysButOne(viewModel.tabIndex, day => ({ ...day, notes })) }
                       )
                     }
@@ -552,7 +640,7 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ onApply, ...o
                     onSelect={allowedAircraftIdentities =>
                       setViewModel(
                         viewModel.tabIndex === 'ALL'
-                          ? { ...viewModel, all: { ...viewModel.all, allowedAircraftIdentities }, days: viewModel.days.map(day => ({ ...day, allowedAircraftIdentities })) }
+                          ? { ...viewModel, default: { ...viewModel.default, allowedAircraftIdentities }, days: viewModel.days.map(day => ({ ...day, allowedAircraftIdentities })) }
                           : { ...viewModel, days: daysButOne(viewModel.tabIndex, day => ({ ...day, allowedAircraftIdentities })) }
                       )
                     }
@@ -568,7 +656,11 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ onApply, ...o
                     onSelect={forbiddenAircraftIdentities =>
                       setViewModel(
                         viewModel.tabIndex === 'ALL'
-                          ? { ...viewModel, all: { ...viewModel.all, forbiddenAircraftIdentities }, days: viewModel.days.map(day => ({ ...day, forbiddenAircraftIdentities })) }
+                          ? {
+                              ...viewModel,
+                              default: { ...viewModel.default, forbiddenAircraftIdentities },
+                              days: viewModel.days.map(day => ({ ...day, forbiddenAircraftIdentities }))
+                            }
                           : { ...viewModel, days: daysButOne(viewModel.tabIndex, day => ({ ...day, forbiddenAircraftIdentities })) }
                       )
                     }
@@ -604,9 +696,9 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ onApply, ...o
                                         setViewModel({
                                           ...viewModel,
                                           legIndex: Math.min(legIndex, viewModel.route.length - 1),
-                                          all: {
-                                            ...viewModel.all,
-                                            legs: [...viewModel.all.legs.slice(0, legIndex - 1), ...viewModel.all.legs.slice(legIndex + 1)]
+                                          default: {
+                                            ...viewModel.default,
+                                            legs: [...viewModel.default.legs.slice(0, legIndex - 1), ...viewModel.default.legs.slice(legIndex + 1)]
                                           },
                                           route: [...viewModel.route.slice(0, legIndex - 1), ...viewModel.route.slice(legIndex + 1)],
                                           days: viewModel.days.map(day => ({ ...day, legs: [...day.legs.slice(0, legIndex - 1), ...day.legs.slice(legIndex + 1)] }))
@@ -631,10 +723,10 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ onApply, ...o
                                     setViewModel({
                                       ...viewModel,
                                       legIndex: viewModel.route.length,
-                                      all: {
-                                        ...viewModel.all,
+                                      default: {
+                                        ...viewModel.default,
                                         legs: [
-                                          ...viewModel.all.legs,
+                                          ...viewModel.default.legs,
                                           { blockTime: '', stdLowerBound: '', stdUpperBound: '', originPermission: false, destinationPermission: false }
                                         ]
                                       },
@@ -663,11 +755,11 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ onApply, ...o
                               setViewModel({
                                 ...viewModel,
                                 legIndex: viewModel.route.length,
-                                all: {
-                                  ...viewModel.all,
+                                default: {
+                                  ...viewModel.default,
                                   legs: [
-                                    ...viewModel.all.legs,
-                                    ...[...viewModel.all.legs]
+                                    ...viewModel.default.legs,
+                                    ...[...viewModel.default.legs]
                                       .reverse()
                                       .map(leg => ({ blockTime: '', stdLowerBound: '', stdUpperBound: '', originPermission: false, destinationPermission: false }))
                                   ]
@@ -730,7 +822,7 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ onApply, ...o
                               viewModel.tabIndex === 'ALL'
                                 ? {
                                     ...viewModel,
-                                    all: { ...viewModel.all, legs: allLegsButOne(leg => ({ ...leg, blockTime })) },
+                                    default: { ...viewModel.default, legs: allLegsButOne(leg => ({ ...leg, blockTime })) },
                                     days: Weekdays.map(d => ({ ...viewModel.days[d], legs: dayLegsButOne(d, leg => ({ ...leg, blockTime })) }))
                                   }
                                 : {
@@ -750,7 +842,7 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ onApply, ...o
                               viewModel.tabIndex === 'ALL'
                                 ? {
                                     ...viewModel,
-                                    all: { ...viewModel.all, legs: allLegsButOne(leg => ({ ...leg, stdLowerBound })) },
+                                    default: { ...viewModel.default, legs: allLegsButOne(leg => ({ ...leg, stdLowerBound })) },
                                     days: Weekdays.map(d => ({ ...viewModel.days[d], legs: dayLegsButOne(d, leg => ({ ...leg, stdLowerBound })) }))
                                   }
                                 : {
@@ -773,7 +865,7 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ onApply, ...o
                               viewModel.tabIndex === 'ALL'
                                 ? {
                                     ...viewModel,
-                                    all: { ...viewModel.all, legs: allLegsButOne(leg => ({ ...leg, stdUpperBound })) },
+                                    default: { ...viewModel.default, legs: allLegsButOne(leg => ({ ...leg, stdUpperBound })) },
                                     days: Weekdays.map(d => ({ ...viewModel.days[d], legs: dayLegsButOne(d, leg => ({ ...leg, stdUpperBound })) }))
                                   }
                                 : {
@@ -801,7 +893,7 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ onApply, ...o
                                   viewModel.tabIndex === 'ALL'
                                     ? {
                                         ...viewModel,
-                                        all: { ...viewModel.all, legs: allLegsButOne(leg => ({ ...leg, originPermission })) },
+                                        default: { ...viewModel.default, legs: allLegsButOne(leg => ({ ...leg, originPermission })) },
                                         days: Weekdays.map(d => ({ ...viewModel.days[d], legs: dayLegsButOne(d, leg => ({ ...leg, originPermission })) }))
                                       }
                                     : {
@@ -829,7 +921,7 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ onApply, ...o
                                   viewModel.tabIndex === 'ALL'
                                     ? {
                                         ...viewModel,
-                                        all: { ...viewModel.all, legs: allLegsButOne(leg => ({ ...leg, destinationPermission })) },
+                                        default: { ...viewModel.default, legs: allLegsButOne(leg => ({ ...leg, destinationPermission })) },
                                         days: Weekdays.map(d => ({ ...viewModel.days[d], legs: dayLegsButOne(d, leg => ({ ...leg, destinationPermission })) }))
                                       }
                                     : {
@@ -869,9 +961,9 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ onApply, ...o
   }
   function allLegsButOne(legFactory: LegViewModel | ((leg: LegViewModel) => LegViewModel)): LegViewModel[] {
     return [
-      ...viewModel.all.legs.slice(0, viewModel.legIndex - 1),
-      typeof legFactory === 'function' ? legFactory(viewModel.all.legs[viewModel.legIndex]) : legFactory,
-      ...viewModel.all.legs.slice(viewModel.legIndex + 1)
+      ...viewModel.default.legs.slice(0, viewModel.legIndex - 1),
+      typeof legFactory === 'function' ? legFactory(viewModel.default.legs[viewModel.legIndex]) : legFactory,
+      ...viewModel.default.legs.slice(viewModel.legIndex + 1)
     ];
   }
   function dayLegsButOne(day: Weekday, legFactory: LegViewModel | ((leg: LegViewModel) => LegViewModel)): LegViewModel[] {

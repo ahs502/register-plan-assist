@@ -1,10 +1,10 @@
 import React, { FC, Fragment } from 'react';
 import { Theme, Typography } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
-import FlightPack from 'src/business/flights/FlightPack';
-import PreplanAircraftRegister from 'src/business/PreplanAircraftRegister';
 import Weekday from '@core/types/Weekday';
 import Daytime from '@core/types/Daytime';
+import Flight from 'src/business/flight/Flight';
+import PreplanAircraftRegister from 'src/business/preplan/PreplanAircraftRegister';
 
 const useStyles = makeStyles((theme: Theme) => ({
   typograghyOverline: {
@@ -13,59 +13,59 @@ const useStyles = makeStyles((theme: Theme) => ({
 }));
 
 export interface StatusBarProps {
-  mode?: 'FLIGHT_PACK' | 'FREE_SPACE';
-  flightPack?: FlightPack;
+  mode?: 'FLIGHT' | 'FREE_SPACE';
+  flight?: Flight;
   aircraftRegister?: PreplanAircraftRegister;
-  previousFlightPack?: FlightPack;
-  nextFlightPack?: FlightPack;
+  previousFlight?: Flight;
+  nextFlight?: Flight;
 }
 
-const StatusBar: FC<StatusBarProps> = ({ mode, flightPack, aircraftRegister, previousFlightPack, nextFlightPack }) => {
+const StatusBar: FC<StatusBarProps> = ({ mode, flight, aircraftRegister, previousFlight, nextFlight }) => {
   const classes = useStyles();
 
-  if (mode == 'FLIGHT_PACK' && flightPack)
+  if (mode == 'FLIGHT' && flight)
     return (
       <Fragment>
         <Typography display="inline" variant="button">
-          {flightPack.label}
+          {flight.label}
         </Typography>
         &nbsp;
         <Typography display="inline" variant="caption">
-          {Weekday[flightPack.day]}s
+          {Weekday[flight.day]}s
         </Typography>
         &nbsp; &#9608; &nbsp;
         <Typography display="inline" variant="button">
-          {flightPack.flights[0].departureAirport.name}
+          {flight.legs[0].departureAirport.name}
         </Typography>
-        {flightPack.flights.map(f => (
-          <Fragment key={f.derivedId}>
+        {flight.legs.map(l => (
+          <Fragment key={l.derivedId}>
             &nbsp;
             <Typography display="inline" variant="overline" classes={{ overline: classes.typograghyOverline }}>
-              ({f.std.toString(true)})
+              {l.std.toString('H:mm', true)}
             </Typography>
             &nbsp; &#8599; &nbsp;
             <Typography display="inline" variant="caption">
-              {f.flightNumber}
+              {l.flightNumber}
             </Typography>
             &nbsp;
             <Typography display="inline" variant="overline" classes={{ overline: classes.typograghyOverline }}>
-              ({new Daytime(f.blockTime).toString()})
+              {new Daytime(l.blockTime).toString('H:mm')}
             </Typography>
             &nbsp; &#8600; &nbsp;
             <Typography display="inline" variant="overline" classes={{ overline: classes.typograghyOverline }}>
-              ({new Daytime(f.std.minutes + f.blockTime).toString(true)})
+              {new Daytime(l.std.minutes + l.blockTime).toString('H:mm', true)}
             </Typography>
             &nbsp;
             <Typography display="inline" variant="button">
-              {f.arrivalAirport.name}
+              {l.arrivalAirport.name}
             </Typography>
           </Fragment>
         ))}
-        {flightPack.notes && (
+        {flight.notes && (
           <Fragment>
             &nbsp; &#9608; &nbsp;
             <Typography display="inline" variant="body2">
-              {flightPack.notes}
+              {flight.notes}
             </Typography>
           </Fragment>
         )}
@@ -88,58 +88,50 @@ const StatusBar: FC<StatusBarProps> = ({ mode, flightPack, aircraftRegister, pre
           </Fragment>
         )}
         &#9608; &nbsp;
-        {previousFlightPack && nextFlightPack ? (
+        {previousFlight && nextFlight ? (
           <Fragment>
             <Typography display="inline" variant="caption">
-              {previousFlightPack.flights[previousFlightPack.flights.length - 1].flightNumber}
+              {previousFlight.legs[previousFlight.legs.length - 1].flightNumber}
             </Typography>
             &nbsp;
             <Typography display="inline" variant="button">
-              {previousFlightPack.flights[previousFlightPack.flights.length - 1].arrivalAirport.name}
+              {previousFlight.legs[previousFlight.legs.length - 1].arrivalAirport.name}
             </Typography>
             &nbsp;
-            {previousFlightPack.day !== nextFlightPack.day && (
+            {previousFlight.day !== nextFlight.day && (
               <Fragment>
                 <Typography display="inline" variant="caption">
-                  {Weekday[previousFlightPack.flights[previousFlightPack.flights.length - 1].day]}s
+                  {Weekday[previousFlight.legs[previousFlight.legs.length - 1].day]}s
                 </Typography>
                 &nbsp;
               </Fragment>
             )}
             <Typography display="inline" variant="overline" classes={{ overline: classes.typograghyOverline }}>
-              (
-              {new Daytime(
-                previousFlightPack.flights[previousFlightPack.flights.length - 1].std.minutes + previousFlightPack.flights[previousFlightPack.flights.length - 1].blockTime
-              ).toString(true)}
-              )
+              {new Daytime(previousFlight.legs[previousFlight.legs.length - 1].std.minutes + previousFlight.legs[previousFlight.legs.length - 1].blockTime).toString('H:mm', true)}
             </Typography>
             &nbsp; &#8600; &nbsp;
             <Typography display="inline" variant="overline" classes={{ overline: classes.typograghyOverline }}>
-              (
-              {new Daytime(
-                (nextFlightPack.day * 24 * 60 + nextFlightPack.start.minutes - previousFlightPack.day * 24 * 60 - previousFlightPack.end.minutes + 7 * 24 * 60) % (7 * 24 * 60)
-              ).toString()}
-              )
+              {new Daytime((nextFlight.day * 24 * 60 + nextFlight.start.minutes - previousFlight.day * 24 * 60 - previousFlight.end.minutes + 7 * 24 * 60) % (7 * 24 * 60))}
             </Typography>
             &nbsp; &#8599; &nbsp;
             <Typography display="inline" variant="overline" classes={{ overline: classes.typograghyOverline }}>
-              ({nextFlightPack.flights[0].std.toString(true)})
+              {nextFlight.legs[0].std.toString('H:mm', true)}
             </Typography>
             &nbsp;
-            {previousFlightPack.day !== nextFlightPack.day && (
+            {previousFlight.day !== nextFlight.day && (
               <Fragment>
                 <Typography display="inline" variant="caption">
-                  {Weekday[nextFlightPack.flights[0].day]}s
+                  {Weekday[nextFlight.legs[0].day]}s
                 </Typography>
                 &nbsp;
               </Fragment>
             )}
             <Typography display="inline" variant="button">
-              {nextFlightPack.flights[0].departureAirport.name}
+              {nextFlight.legs[0].departureAirport.name}
             </Typography>
             &nbsp;
             <Typography display="inline" variant="caption">
-              {nextFlightPack.flights[0].flightNumber}
+              {nextFlight.legs[0].flightNumber}
             </Typography>
           </Fragment>
         ) : (
@@ -149,7 +141,7 @@ const StatusBar: FC<StatusBarProps> = ({ mode, flightPack, aircraftRegister, pre
             </Typography>
             &nbsp;
             <Typography display="inline" variant="button">
-              {aircraftRegister.options.startingAirport!.name}
+              {aircraftRegister.options.baseAirport!.name}
             </Typography>
             &nbsp;
             <Typography display="inline" variant="caption">

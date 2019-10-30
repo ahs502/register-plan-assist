@@ -1,27 +1,28 @@
-import AircraftIdentityModel, { AircraftIdentityValidation } from './AircraftIdentityModel';
+import AircraftIdentityModel, { AircraftIdentityModelValidation } from './AircraftIdentityModel';
 import Validation from '@ahs502/validation';
+import Id from '@core/types/Id';
 
 export default interface AircraftSelectionModel {
-  readonly allowedIdentities: readonly AircraftIdentityModel[];
-  readonly forbiddenIdentities: readonly AircraftIdentityModel[];
+  readonly includedIdentities: readonly AircraftIdentityModel[];
+  readonly excludedIdentities: readonly AircraftIdentityModel[];
 }
 
-export class AircraftSelectionValidation extends Validation<
-  never,
+export class AircraftSelectionModelValidation extends Validation<
+  string,
   {
-    readonly allowedIdentities: readonly AircraftIdentityValidation[];
-    readonly forbiddenIdentities: readonly AircraftIdentityValidation[];
+    includedIdentities: AircraftIdentityModelValidation[];
+    excludedIdentities: AircraftIdentityModelValidation[];
   }
 > {
-  constructor(aircraftSelection: AircraftSelectionModel, dummyAircraftRegistersId: readonly string[]) {
+  constructor(data: AircraftSelectionModel, dummyAircraftRegisterIds: readonly Id[]) {
     super(validator =>
-      validator.object(aircraftSelection).do(({ allowedIdentities, forbiddenIdentities }) => {
+      validator.object(data).then(({ includedIdentities, excludedIdentities }) => {
         validator
-          .array(allowedIdentities)
-          .each((allowedIdentity, index) => validator.into('allowedIdentities', index).set(() => new AircraftIdentityValidation(allowedIdentity, dummyAircraftRegistersId)));
+          .array(includedIdentities)
+          .each((identity, index) => validator.put(validator.$.includedIdentities[index], new AircraftIdentityModelValidation(identity, dummyAircraftRegisterIds)));
         validator
-          .array(forbiddenIdentities)
-          .each((forbiddenIdentity, index) => validator.into('forbiddenIdentities', index).set(() => new AircraftIdentityValidation(forbiddenIdentity, dummyAircraftRegistersId)));
+          .array(excludedIdentities)
+          .each((identity, index) => validator.put(validator.$.excludedIdentities[index], new AircraftIdentityModelValidation(identity, dummyAircraftRegisterIds)));
       })
     );
   }

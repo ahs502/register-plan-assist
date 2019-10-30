@@ -28,11 +28,16 @@ const App: FC = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    MasterDataService.get(...(Object.keys(MasterData.all) as (keyof MasterDataModel)[])).then(result => {
-      if (result.message) throw result.message;
-      MasterData.recieve(result.value!);
-      setInitializing(false);
-    });
+    MasterDataService.get(...(Object.keys(MasterData.all) as (keyof MasterDataModel)[])).then(
+      masterDataModel => {
+        MasterData.recieve(masterDataModel);
+        setInitializing(false);
+      },
+      reason => {
+        console.error(reason);
+        //TODO: Is there really nothing else to do here?!
+      }
+    );
   }, []);
 
   RequestManager.onProcessingChanged = useCallback(processing => setLoading(processing), []);

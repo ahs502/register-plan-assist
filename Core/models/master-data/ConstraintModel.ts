@@ -1,6 +1,7 @@
 import MasterDataItemModel from './MasterDataItemModel';
 import ConstraintTemplateType from '@core/types/ConstraintTemplateType';
 import AircraftSelectionModel from '@core/models/AircraftSelectionModel';
+import Id from '@core/types/Id';
 
 export default interface ConstraintModel extends MasterDataItemModel {
   readonly type: ConstraintTemplateType;
@@ -8,7 +9,7 @@ export default interface ConstraintModel extends MasterDataItemModel {
   readonly scope: {
     readonly fromDate?: string;
     readonly toDate?: string;
-    readonly seasonTypeId?: string;
+    readonly seasonTypeId?: Id;
     readonly days: readonly boolean[];
   };
   readonly data?:
@@ -20,23 +21,23 @@ export default interface ConstraintModel extends MasterDataItemModel {
 }
 
 export interface AircraftRestrictionOnAirportsConstraintDataModel {
-  readonly airportIds: readonly string[];
+  readonly airportIds: readonly Id[];
   readonly restriction: 'POSITIVE_PREFERENCE' | 'NEGATIVE_PREFERENCE' | 'POSITIVE_RESTRICTION' | 'NEGATIVE_RESTRICTION';
   readonly aircraftSelection: AircraftSelectionModel;
 }
 export interface AirportRestrictionOnAircraftsConstraintDataModel {
-  readonly aircraftRegisterId: string;
-  readonly airportIds: readonly string[];
+  readonly aircraftRegisterId: Id;
+  readonly airportIds: readonly Id[];
 }
 export interface BlockTimeRestrictionOnAircraftsConstraintDataModel {
   readonly maximumBlockTime: number;
   readonly aircraftSelection: AircraftSelectionModel;
 }
 export interface RouteSequenceRestrictionOnAirportsConstraintDataModel {
-  readonly airportId: string;
-  readonly nextAirportId: string;
+  readonly airportId: Id;
+  readonly nextAirportId: Id;
 }
 export interface AirportAllocationPriorityForAircraftsConstraintDataModel {
-  readonly aircraftRegisterIds: readonly string[];
-  readonly airportIds: readonly string[];
+  readonly aircraftRegisterIds: readonly Id[];
+  readonly airportIds: readonly Id[];
 }

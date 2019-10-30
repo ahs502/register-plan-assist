@@ -19,5 +19,6 @@
   "prettier.arrowParens": "avoid",
   "prettier.jsxSingleQuote": false,
   "prettier.endOfLine": "crlf",
-  "prettier.quoteProps": "as-needed"
+  "prettier.quoteProps": "as-needed",
+  "typescript.preferences.importModuleSpecifier": "non-relative"
 }

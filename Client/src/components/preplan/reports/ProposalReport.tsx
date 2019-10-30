@@ -3,20 +3,19 @@ import { Theme, InputLabel, TextField, TableHead, TableCell, Table, TableRow, Ta
 import { red, grey } from '@material-ui/core/colors';
 import { makeStyles } from '@material-ui/styles';
 import MasterData, { Airport } from '@core/master-data';
-import FlightRequirement from 'src/business/flights/FlightRequirement';
 import Daytime from '@core/types/Daytime';
 import { Publish as ExportToExcelIcon } from '@material-ui/icons';
 import { ExcelExport, ExcelExportColumn, ExcelExportColumnGroup } from '@progress/kendo-react-excel-export';
 import { CellOptions } from '@progress/kendo-react-excel-export/dist/npm/ooxml/CellOptionsInterface';
 import classNames from 'classnames';
 import AutoComplete from 'src/components/AutoComplete';
-import Preplan, { PreplanHeader } from 'src/business/Preplan';
 import Weekday from '@core/types/Weekday';
-import Rsx from '@core/types/flight-requirement/Rsx';
-import AircraftIdentityType from '@core/types/aircraft-identity/AircraftIdentityType';
 import { WorkbookSheetRow } from '@progress/kendo-ooxml';
 import { parseMinute } from 'src/utils/model-parsers';
 import PreplanService from 'src/services/PreplanService';
+import FlightRequirement from 'src/business/flight-requirement/FlightRequirement';
+import Rsx from '@core/types/Rsx';
+import PreplanHeader from 'src/business/preplan/PreplanHeader';
 
 const makeColor = () => ({
   changeStatus: { background: '#FFFFCC' },
@@ -290,14 +289,10 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
   } as FliterModel);
 
   if (!preplanHeaders.length) {
-    PreplanService.getAllHeaders().then(result => {
-      if (result.message) {
-        //TODO: handle error
-      } else {
-        const preplanHeader = result.value!.map(p => new PreplanHeader(p));
-        preplanHeader.unshift({} as PreplanHeader);
-        setPreplanHeaders(preplanHeader); //TODO: Remove this line later.
-      }
+    PreplanService.getAllHeaders().then(preplanHeaderModels => {
+      const preplanHeader = preplanHeaderModels.map(p => new PreplanHeader(p));
+      preplanHeader.unshift({} as PreplanHeader);
+      setPreplanHeaders(preplanHeader); //TODO: Remove this line later.
     });
   }
 
@@ -1691,29 +1686,29 @@ function findNextAndPreviousFlightRequirment(flattenFlightRequirmentList: Flatte
   });
 }
 
-function createDailyFlightRequirment(flightRequirments: readonly FlightRequirement[], m: string) {
-  return flightRequirments
-    .filter(f => f.definition.label === m)
-    .map(f => {
-      return f.days.map(
-        d =>
-          ({
-            flightNumber: f.definition.flightNumber,
-            arrivalAirport: f.definition.arrivalAirport,
-            departureAirport: f.definition.departureAirport,
-            blocktime: d.scope.blockTime,
-            day: d.day,
-            std: d.flight.std,
-            note: d.notes,
-            aircraftType: d.flight.aircraftRegister && d.flight.aircraftRegister.aircraftType.name,
-            category: f.definition.category,
-            destinationPermission: d.scope.destinationPermission,
-            originPermission: d.scope.originPermission,
-            rsx: d.scope.rsx
-          } as DailyFlightRequirment)
-      );
-    })
-    .flat();
+function createDailyFlightRequirment(flightRequirments: readonly FlightRequirement[], m: string): any {
+  // return flightRequirments
+  //   .filter(f => f.definition.label === m)
+  //   .map(f => {
+  //     return f.days.map(
+  //       d =>
+  //         ({
+  //           flightNumber: f.definition.flightNumber,
+  //           arrivalAirport: f.definition.arrivalAirport,
+  //           departureAirport: f.definition.departureAirport,
+  //           blocktime: d.scope.blockTime,
+  //           day: d.day,
+  //           std: d.flight.std,
+  //           note: d.notes,
+  //           aircraftType: d.flight.aircraftRegister && d.flight.aircraftRegister.aircraftType.name,
+  //           category: f.definition.category,
+  //           destinationPermission: d.scope.destinationPermission,
+  //           originPermission: d.scope.originPermission,
+  //           rsx: d.scope.rsx
+  //         } as DailyFlightRequirment)
+  //     );
+  //   })
+  //   .flat();
 }
 
 function sortFlattenFlightRequirment(flattenFlightRequirmentList: FlattenFlightRequirment[], baseAirport: Airport) {
@@ -1771,24 +1766,25 @@ function createFlattenFlightRequirmentsFromDailyFlightRequirment(dailyFlightRequ
   );
 }
 
-function getLabels(flightRequirments: readonly FlightRequirement[], baseAirport: Airport, flightType: FlightType) {
-  return flightRequirments
-    .filter(f => {
-      return (
-        (f.definition.departureAirport.id === baseAirport.id || f.definition.arrivalAirport.id === baseAirport.id) &&
-        ((f.definition.departureAirport.id === baseAirport.id && f.definition.arrivalAirport.international === (flightType === FlightType.International)) ||
-          (f.definition.arrivalAirport.id === baseAirport.id && f.definition.departureAirport.international === (flightType === FlightType.International)))
-      );
-    })
-    .sort((first, second) => {
-      const firstLabel = first.definition.label;
-      const secondLabel = second.definition.label;
-      return firstLabel > secondLabel ? 1 : firstLabel < secondLabel ? -1 : 0;
-    })
-    .map(f => f.definition.label)
-    .filter((value, index, self) => {
-      return self.indexOf(value) === index;
-    });
+function getLabels(flightRequirments: readonly FlightRequirement[], baseAirport: Airport, flightType: FlightType): string[] {
+  throw 'Not implemented.';
+  // return flightRequirments
+  //   .filter(f => {
+  //     return (
+  //       (f.definition.departureAirport.id === baseAirport.id || f.definition.arrivalAirport.id === baseAirport.id) &&
+  //       ((f.definition.departureAirport.id === baseAirport.id && f.definition.arrivalAirport.international === (flightType === FlightType.International)) ||
+  //         (f.definition.arrivalAirport.id === baseAirport.id && f.definition.departureAirport.international === (flightType === FlightType.International)))
+  //     );
+  //   })
+  //   .sort((first, second) => {
+  //     const firstLabel = first.definition.label;
+  //     const secondLabel = second.definition.label;
+  //     return firstLabel > secondLabel ? 1 : firstLabel < secondLabel ? -1 : 0;
+  //   })
+  //   .map(f => f.definition.label)
+  //   .filter((value, index, self) => {
+  //     return self.indexOf(value) === index;
+  //   });
 }
 
 function createFlattenFlightRequirment(dailyFlightRequirment: DailyFlightRequirment, date: Date, baseAirport: Airport, label: string) {

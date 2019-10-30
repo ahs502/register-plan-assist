@@ -3,8 +3,9 @@ import { DbAccess, withDbAccess, withTransactionalDbAccess, IsolationLevel } fro
 import AuthenticationHeaderModel from '@core/models/authentication/AuthenticationHeaderModel';
 import { cryptr } from './oauth';
 import ServerResult from '@core/types/ServerResult';
+import Id from '@core/types/Id';
 
-export default function requestMiddleware<B extends {}, R>(task: (userId: string, body: B) => Promise<R>) {
+export default function requestMiddleware<B extends {}, R>(task: (userId: Id, body: B) => Promise<R>) {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       const encodedAuthenticationHeader = req.headers['authentication'] as string | undefined; // Apparently, express makes all header keys lower-case.
@@ -34,12 +35,12 @@ export default function requestMiddleware<B extends {}, R>(task: (userId: string
   };
 }
 
-export function requestMiddlewareWithDbAccess<B extends {}, R>(task: (userId: string, body: B, dbAccess: DbAccess) => Promise<R>) {
+export function requestMiddlewareWithDbAccess<B extends {}, R>(task: (userId: Id, body: B, dbAccess: DbAccess) => Promise<R>) {
   return requestMiddleware<B, R>((userId, body) => withDbAccess(dbAccess => task(userId, body, dbAccess)));
 }
 
 export function requestMiddlewareWithTransactionalDbAccess<B extends {}, R>(
-  task: (userId: string, body: B, dbAccess: DbAccess) => Promise<R>,
+  task: (userId: Id, body: B, dbAccess: DbAccess) => Promise<R>,
   isolationLevel: IsolationLevel = IsolationLevel.RepeatableRead
 ) {
   return requestMiddleware<B, R>((userId, body) => withTransactionalDbAccess(dbAccess => task(userId, body, dbAccess), isolationLevel));

@@ -1,33 +1,33 @@
-import React, { FC, Fragment, useState, useContext, useCallback, useEffect } from 'react';
-import { Theme, IconButton, Badge, Drawer, Portal, CircularProgress, Typography, Grid, TextField, Checkbox, FormControlLabel } from '@material-ui/core';
+import React, { FC, Fragment, useState, useContext, useCallback } from 'react';
+import { Theme, IconButton, Badge, Drawer, Portal, CircularProgress, Grid, TextField, Checkbox, FormControlLabel } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import { DoneAll as FinilizedIcon, LockOutlined as LockIcon, LockOpenOutlined as LockOpenIcon, Search as SearchIcon, SettingsOutlined as SettingsIcon } from '@material-ui/icons';
 import MahanIcon, { MahanIconType } from 'src/components/MahanIcon';
 import LinkIconButton from 'src/components/LinkIconButton';
-import { NavBarToolsContainerContext } from 'src/pages/preplan';
-import AutoArrangerChangeLogSideBar from 'src/components/preplan/resource-scheduler/AutoArrangerChangeLogSideBar';
+import { NavBarToolsContainerContext, PreplanContext } from 'src/pages/preplan';
 import SearchFlightsSideBar from 'src/components/preplan/resource-scheduler/SearchFlightsSideBar';
 import ObjectionsSideBar from 'src/components/preplan/resource-scheduler/ObjectionsSideBar';
 import SelectAircraftRegistersSideBar from 'src/components/preplan/resource-scheduler/SelectAircraftRegistersSideBar';
 import SettingsSideBar from 'src/components/preplan/resource-scheduler/SettingsSideBar';
 import ResourceSchedulerView from 'src/components/preplan/resource-scheduler/ResourceSchedulerView';
-import Preplan from 'src/business/Preplan';
-import FlightRequirement from 'src/business/flights/FlightRequirement';
-import WeekdayFlightRequirement from 'src/business/flights/WeekdayFlightRequirement';
-import Flight from 'src/business/flights/Flight';
-import FlightPack from 'src/business/flights/FlightPack';
+import Preplan from 'src/business/preplan/Preplan';
 import PreplanService from 'src/services/PreplanService';
-import { useSnackbar, VariantType } from 'notistack';
-import PreplanAircraftRegister from 'src/business/PreplanAircraftRegister';
-import SimpleModal from 'src/components/SimpleModal';
+import { useSnackbar } from 'notistack';
+import PreplanAircraftRegister from 'src/business/preplan/PreplanAircraftRegister';
+import ModalBase from 'src/components/ModalBase';
 import Weekday from '@core/types/Weekday';
 import { red, blue, green, cyan, indigo, orange, purple } from '@material-ui/core/colors';
-import { parseMinute, parseHHMM } from 'src/utils/model-parsers';
+import { parseMinute, parseTime } from 'src/utils/model-parsers';
 import MasterData from '@core/master-data';
 import StatusBar, { StatusBarProps } from 'src/components/preplan/resource-scheduler/StatusBar';
 import DeepWritablePartial from '@core/types/DeepWritablePartial';
-import { FlightScopeModel } from '@core/models/flights/FlightScopeModel';
-import WeekdayFlightRequirementModel from '@core/models/flights/WeekdayFlightRequirementModel';
+import Flight from 'src/business/flight/Flight';
+import FlightRequirement from 'src/business/flight-requirement/FlightRequirement';
+import DayFlightRequirement from 'src/business/flight-requirement/DayFlightRequirement';
+import PreplanModel from '@core/models/preplan/PreplanModel';
+import Objectionable from 'src/business/constraints/Objectionable';
+import FlightLeg from 'src/business/flight/FlightLeg';
+import FlightService from 'src/services/FlightService';
 
 const useStyles = makeStyles((theme: Theme) => ({
   sideBarBackdrop: {
@@ -84,7 +84,7 @@ const useStyles = makeStyles((theme: Theme) => ({
   }
 }));
 
-type SideBar = 'SETTINGS' | 'SELECT_AIRCRAFT_REGISTERS' | 'SEARCH_FLIGHTS' | 'AUTO_ARRANGER_CHANGE_LOG' | 'OBJECTIONS';
+type SideBar = 'SETTINGS' | 'SELECT_AIRCRAFT_REGISTERS' | 'SEARCH_FLIGHTS' | 'OBJECTIONS';
 
 interface SideBarState {
   open: boolean;
@@ -95,180 +95,108 @@ interface SideBarState {
 }
 
 interface ResourceSchedulerViewModel {
-  selectedFlightPack?: FlightPack;
+  selectedFlight?: Flight;
   loading?: boolean;
 }
 
-interface ConfirmIgnoreFlightPackModalModel {
-  open: boolean;
-  selectedFlightPack?: FlightPack;
-  loading?: boolean;
-  errorMessage?: string;
-}
+// interface EditFlightModalModel {
+//   open: boolean;
+//   loading?: boolean;
+//   errorMessage?: string;
+//   flight?: Flight;
+//   std?: string;
+//   blockTime?: string;
+//   aircraftRegister?: string;
+//   required?: boolean;
+//   freezed?: boolean;
+//   originPermission?: boolean;
+//   destinationPermission?: boolean;
+//   notes?: string;
+// }
 
-interface EditFlightModalModel {
-  open: boolean;
-  loading?: boolean;
-  errorMessage?: string;
-  flight?: Flight;
-  std?: string;
-  blockTime?: string;
-  aircraftRegister?: string;
-  required?: boolean;
-  freezed?: boolean;
-  originPermission?: boolean;
-  destinationPermission?: boolean;
-  notes?: string;
-}
-
-interface EditFlightPackModalModel {
-  open: boolean;
-  selectedFlightPack?: FlightPack;
-  loading?: boolean;
-  errorMessage?: string;
-  std?: string;
-  aircraftRegister?: string;
-  required?: boolean;
-  freezed?: boolean;
-  originPermission?: boolean;
-  destinationPermission?: boolean;
-  notes?: string;
-}
+// interface EditFlightPackModalModel {
+//   open: boolean;
+//   selectedFlightPack?: Flight;
+//   loading?: boolean;
+//   errorMessage?: string;
+//   std?: string;
+//   aircraftRegister?: string;
+//   required?: boolean;
+//   freezed?: boolean;
+//   originPermission?: boolean;
+//   destinationPermission?: boolean;
+//   notes?: string;
+// }
 
 export interface ResourceSchedulerPageProps {
-  preplan: Preplan;
+  reloadPreplan(newPreplanModel?: PreplanModel): void;
+  onObjectionTargetClick(target: Objectionable): void;
   onEditFlightRequirement(flightRequirement: FlightRequirement): void;
-  onEditWeekdayFlightRequirement(flightRequirement: FlightRequirement, weekdayFlightRequirement: WeekdayFlightRequirement): void;
+  onEditDayFlightRequirement(dayFlightRequirement: DayFlightRequirement): void;
 }
 
-const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEditFlightRequirement, onEditWeekdayFlightRequirement }) => {
-  const [autoArrangerRunning, setAutoArrangerRunning] = useState(() => false); //TODO: Initialize by data from server.
-  const [allFlightsFreezed, setAllFlightsFreezed] = useState(() => false); //TODO: Initialize from preplan flights.
-  const [sideBarState, setSideBarState] = useState<SideBarState>({ open: false, loading: false, errorMessage: undefined });
+const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ reloadPreplan, onObjectionTargetClick, onEditFlightRequirement, onEditDayFlightRequirement }) => {
+  const preplan = useContext(PreplanContext);
 
+  const [sideBarState, setSideBarState] = useState<SideBarState>({ open: false, loading: false, errorMessage: undefined });
   const [resourceSchedulerViewModel, setResourceSchedulerViewModel] = useState<ResourceSchedulerViewModel>({ loading: false });
   const [statusBarProps, setStatusBarProps] = useState<StatusBarProps>({});
 
-  const [confirmIgnoreFlightPackModalModel, setConfirmIgnoreFlightPackModalModel] = useState<ConfirmIgnoreFlightPackModalModel>({ open: false });
-  const [editFlightModalModel, setEditFlightModalModel] = useState<EditFlightModalModel>({ open: false });
-  const [editFlightPackModalModel, setEditFlightPackModalModel] = useState<EditFlightPackModalModel>({ open: false });
+  // const [editFlightModalModel, setEditFlightModalModel] = useState<EditFlightModalModel>({ open: false });
+  // const [editFlightPackModalModel, setEditFlightPackModalModel] = useState<EditFlightPackModalModel>({ open: false });
 
   const snackbar = useSnackbar();
 
-  const onSelectFlightPackMemoized = useCallback(
-    (flightPack: FlightPack) => setResourceSchedulerViewModel(resourceSchedulerViewModel => ({ ...resourceSchedulerViewModel, selectedFlightPack: flightPack })),
+  const onSelectFlightMemoized = useCallback(
+    (flight: Flight) => setResourceSchedulerViewModel(resourceSchedulerViewModel => ({ ...resourceSchedulerViewModel, selectedFlight: flight })),
     []
   );
-  const onFreezeFlightPackMemoized = useCallback(async (flightPack: FlightPack, freezed: boolean) => {
-    setResourceSchedulerViewModel(resourceSchedulerViewModel => ({ ...resourceSchedulerViewModel, loading: true }));
-    preplan.stage({
-      mergingFlightRequirementModels: flightPack.flights.map(f =>
-        f.requirement.extractModel({
-          days: { [f.requirement.days.findIndex(d => d.day === f.day)]: { freezed } }
-        })
-      )
-    });
-    preplan.commit();
-    const result = await PreplanService.editFlightRequirements(
-      flightPack.flights.map(f =>
-        f.requirement.extractModel({
-          days: { [f.requirement.days.findIndex(d => d.day === f.day)]: { freezed } }
-        })
-      )
-    );
-    result.message ? snackbar.enqueueSnackbar(result.message, { variant: 'error' }) : preplan.mergeFlightRequirements(...result.value!);
-    setResourceSchedulerViewModel(resourceSchedulerViewModel => ({ ...resourceSchedulerViewModel, loading: false }));
-  }, []);
-  const onRequireFlightPackMemoized = useCallback(async (flightPack: FlightPack, required: boolean) => {
-    setResourceSchedulerViewModel(resourceSchedulerViewModel => ({ ...resourceSchedulerViewModel, loading: true }));
-    preplan.stage({
-      mergingFlightRequirementModels: flightPack.flights.map(f =>
-        f.requirement.extractModel({
-          days: { [f.requirement.days.findIndex(d => d.day === f.day)]: { scope: { required } } }
-        })
-      )
-    });
-    preplan.commit();
-    const result = await PreplanService.editFlightRequirements(
-      flightPack.flights.map(f =>
-        f.requirement.extractModel({
-          days: { [f.requirement.days.findIndex(d => d.day === f.day)]: { scope: { required } } }
-        })
-      )
-    );
-    result.message ? snackbar.enqueueSnackbar(result.message, { variant: 'error' }) : preplan.mergeFlightRequirements(...result.value!);
-    setResourceSchedulerViewModel(resourceSchedulerViewModel => ({ ...resourceSchedulerViewModel, loading: false }));
-  }, []);
-  const onIgnoreFlightPackMemoized = useCallback(async (flightPack: FlightPack) => {
-    setConfirmIgnoreFlightPackModalModel(confirmIgnoreFlightPackModalModel => ({ ...confirmIgnoreFlightPackModalModel, selectedFlightPack: flightPack, open: true }));
-  }, []);
   const onOpenFlightModalMemoized = useCallback((flight: Flight) => {
-    setEditFlightModalModel({
-      ...editFlightModalModel,
-      open: true,
-      flight: flight,
-      std: parseMinute(flight.std.minutes),
-      aircraftRegister: flight.aircraftRegister!.name,
-      blockTime: parseMinute(flight.blockTime),
-      required: flight.required,
-      freezed: flight.freezed,
-      originPermission: flight.originPermission,
-      destinationPermission: flight.destinationPermission,
-      notes: flight.notes
-    });
+    // setEditFlightModalModel({
+    //   ...editFlightModalModel,
+    //   open: true,
+    //   flight: flight,
+    //   std: parseMinute(flight.std.minutes),
+    //   aircraftRegister: flight.aircraftRegister!.name,
+    //   blockTime: parseMinute(flight.blockTime),
+    //   required: flight.required,
+    //   freezed: flight.freezed,
+    //   originPermission: flight.originPermission,
+    //   destinationPermission: flight.destinationPermission,
+    //   notes: flight.notes
+    // });
   }, []);
-  const onOpenFlightPackModalMemoized = useCallback((flightPack: FlightPack) => {
-    setEditFlightPackModalModel({
-      ...editFlightPackModalModel,
-      open: true,
-      std: parseMinute(flightPack.start.minutes),
-      aircraftRegister: flightPack.aircraftRegister && flightPack.aircraftRegister.name,
-      required: flightPack.required,
-      destinationPermission: flightPack.destinationPermission,
-      freezed: flightPack.freezed,
-      notes: flightPack.notes,
-      originPermission: flightPack.originPermission,
-      selectedFlightPack: flightPack
-    });
+  const onOpenFlightLegModalMemoized = useCallback((flightLeg: FlightLeg) => {
+    // setEditFlightPackModalModel({
+    //   ...editFlightPackModalModel,
+    //   open: true,
+    //   std: parseMinute(flightPack.start.minutes),
+    //   aircraftRegister: flightPack.aircraftRegister && flightPack.aircraftRegister.name,
+    //   required: flightPack.required,
+    //   destinationPermission: flightPack.destinationPermission,
+    //   freezed: flightPack.freezed,
+    //   notes: flightPack.notes,
+    //   originPermission: flightPack.originPermission,
+    //   selectedFlightPack: flightPack
+    // });
   }, []);
-  const onFlightPackDragAndDropMemoized = useCallback(async (flightPack: FlightPack, deltaStd: number, newAircraftRegister?: PreplanAircraftRegister) => {
+  const onFlightDragAndDropMemoized = useCallback(async (flight: Flight, deltaStd: number, newAircraftRegister?: PreplanAircraftRegister) => {
     setResourceSchedulerViewModel(resourceSchedulerViewModel => ({ ...resourceSchedulerViewModel, loading: true }));
-    preplan.stage({
-      mergingFlightRequirementModels: flightPack.flights.map(f =>
-        f.requirement.extractModel({
-          days: {
-            [f.requirement.days.findIndex(d => d.day === f.day)]: {
-              flight: {
-                std: f.std.minutes + deltaStd,
-                aircraftRegisterId: newAircraftRegister && newAircraftRegister.id
-              }
-            }
-          }
-        })
-      )
-    });
-    preplan.commit();
-    const result = await PreplanService.editFlightRequirements(
-      flightPack.flights.map(f =>
-        f.requirement.extractModel({
-          days: {
-            [f.requirement.days.findIndex(d => d.day === f.day)]: {
-              flight: {
-                std: f.std.minutes + deltaStd,
-                aircraftRegisterId: newAircraftRegister && newAircraftRegister.id
-              }
-            }
-          }
-        })
-      )
-    );
-    result.message ? snackbar.enqueueSnackbar(result.message, { variant: 'error' }) : preplan.mergeFlightRequirements(...result.value!);
+    try {
+      const newPreplanModel = await FlightService.edit(
+        preplan.id,
+        flight.extractModel({ aircraftRegisterId: newAircraftRegister ? newAircraftRegister.id : undefined, legs: flight.legs.map(l => ({ std: l.std.minutes + deltaStd })) })
+      );
+      reloadPreplan(newPreplanModel);
+    } catch (reason) {
+      snackbar.enqueueSnackbar(String(reason), { variant: 'error' });
+    }
     setResourceSchedulerViewModel(resourceSchedulerViewModel => ({ ...resourceSchedulerViewModel, loading: false }));
   }, []);
-  const onFlightPackMouseHoverMemoized = useCallback((flightPack: FlightPack) => setStatusBarProps({ mode: 'FLIGHT_PACK', flightPack }), []);
+  const onFlightMouseHoverMemoized = useCallback((flight: Flight) => setStatusBarProps({ mode: 'FLIGHT', flight }), []);
   const onFreeSpaceMouseHoverMemoized = useCallback(
-    (aircraftRegister: PreplanAircraftRegister, previousFlightPack?: FlightPack, nextFlightPack?: FlightPack) =>
-      setStatusBarProps({ mode: 'FREE_SPACE', aircraftRegister, previousFlightPack, nextFlightPack }),
+    (aircraftRegister: PreplanAircraftRegister, previousFlight?: Flight, nextFlight?: Flight) =>
+      setStatusBarProps({ mode: 'FREE_SPACE', aircraftRegister, previousFlight, nextFlight }),
     []
   );
   const onNowhereMouseHoverMemoized = useCallback(() => setStatusBarProps({}), []);
@@ -282,15 +210,8 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
       {resourceSchedulerViewModel.loading && <CircularProgress size={48} className={classes.progress} />}
       <Portal container={navBarToolsContainer}>
         <div className={resourceSchedulerViewModel.loading ? classes.disable : ''}>
-          {/* <span>00:01:23</span> */}
-          <IconButton disabled color="inherit" onClick={() => alert('Not implemented.')}>
-            {true ? <MahanIcon type={MahanIconType.CheckBoxEmpty} title="Stop Auto Arrange" /> : <MahanIcon type={MahanIconType.UsingChlorine} title="Start Auto Arrange" />}
-          </IconButton>
           <IconButton disabled={resourceSchedulerViewModel.loading} color="inherit" title="Finilize Preplan">
             <FinilizedIcon />
-          </IconButton>
-          <IconButton disabled color="inherit" onClick={() => alert('Not implemented.')} title={allFlightsFreezed ? 'Unfreeze All Flights' : 'Freeze All Flights'}>
-            {allFlightsFreezed ? <LockOpenIcon /> : <LockIcon />}
           </IconButton>
           <LinkIconButton disabled={resourceSchedulerViewModel.loading} color="inherit" to={`/preplan/${preplan.id}/flight-requirement-list`} title="Flight Requirments">
             <MahanIcon type={MahanIconType.FlightIcon} />
@@ -299,14 +220,6 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
             <MahanIcon type={MahanIconType.Chart} />
           </LinkIconButton>
           <IconButton
-            disabled
-            color="inherit"
-            onClick={() => setSideBarState({ ...sideBarState, sideBar: 'AUTO_ARRANGER_CHANGE_LOG', open: true })}
-            title="Auto Arrange Change Log"
-          >
-            <MahanIcon type={MahanIconType.Change} />
-          </IconButton>
-          <IconButton
             disabled={resourceSchedulerViewModel.loading}
             color="inherit"
             onClick={() => setSideBarState({ ...sideBarState, sideBar: 'SEARCH_FLIGHTS', open: true })}
@@ -314,7 +227,6 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
           >
             <SearchIcon />
           </IconButton>
-
           <IconButton
             disabled={resourceSchedulerViewModel.loading}
             color="inherit"
@@ -325,7 +237,6 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
               <MahanIcon type={MahanIconType.Alert} fontSize="inherit" />
             </Badge>
           </IconButton>
-
           <IconButton
             disabled={resourceSchedulerViewModel.loading}
             color="inherit"
@@ -334,9 +245,9 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
           >
             <MahanIcon type={MahanIconType.Flights} />
           </IconButton>
-          <IconButton disabled color="inherit" onClick={() => setSideBarState({ ...sideBarState, sideBar: 'SETTINGS', open: true })} title="Settings">
+          {/* <IconButton disabled color="inherit" onClick={() => setSideBarState({ ...sideBarState, sideBar: 'SETTINGS', open: true })} title="Settings">
             <SettingsIcon />
-          </IconButton>
+          </IconButton> */}
         </div>
       </Portal>
 
@@ -347,50 +258,41 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
         ModalProps={{ BackdropProps: { classes: { root: classes.sideBarBackdrop } } }}
         classes={{ paper: classes.sideBarPaper }}
       >
-        {sideBarState.sideBar === 'SETTINGS' && <SettingsSideBar autoArrangerOptions={preplan.autoArrangerOptions} onApply={() => alert('TODO: Not implemented.')} />}
+        {/* {sideBarState.sideBar === 'SETTINGS' && <SettingsSideBar autoArrangerOptions={preplan.autoArrangerOptions} onApply={() => alert('TODO: Not implemented.')} />} */}
         {sideBarState.sideBar === 'SELECT_AIRCRAFT_REGISTERS' && (
           <SelectAircraftRegistersSideBar
             initialSearch={sideBarState.initialSearch}
-            aircraftRegisters={preplan.aircraftRegisters}
             loading={sideBarState.loading}
-            errorMessage={sideBarState.errorMessage}
-            onApply={async (dummyAircraftRegisters, aircraftRegisterOptionsDictionary) => {
+            onApply={async (dummyAircraftRegisters, aircraftRegisterOptions) => {
               setSideBarState(sideBarState => ({ ...sideBarState, loading: true, errorMessage: '' }));
-              preplan.stage({ updatingAircraftRegisters: { dummyAircraftRegisters, aircraftRegisterOptionsDictionary } });
-              preplan.commit();
-              const result = await PreplanService.setAircraftRegisters(preplan.id, dummyAircraftRegisters, aircraftRegisterOptionsDictionary);
-              result.message
-                ? setSideBarState(sideBarState => ({ ...sideBarState, loading: false, errorMessage: result.message }))
-                : setSideBarState(sideBarState => ({ ...sideBarState, loading: false, open: false }));
+              try {
+                const newPreplanModel = await PreplanService.setAircraftRegisters(preplan.id, dummyAircraftRegisters, aircraftRegisterOptions);
+                setSideBarState(sideBarState => ({ ...sideBarState, loading: false, open: false }));
+                reloadPreplan(newPreplanModel);
+              } catch (reason) {
+                setSideBarState(sideBarState => ({ ...sideBarState, loading: false, errorMessage: String(reason) }));
+              }
             }}
+            errorMessage={sideBarState.errorMessage}
           />
         )}
         {sideBarState.sideBar === 'SEARCH_FLIGHTS' && (
-          <SearchFlightsSideBar initialSearch={sideBarState.initialSearch} flights={preplan.flights} onClick={() => alert('not implemented.')} />
+          <SearchFlightsSideBar
+            initialSearch={sideBarState.initialSearch}
+            onClick={flightLeg => setResourceSchedulerViewModel({ ...resourceSchedulerViewModel, selectedFlight: flightLeg.flight })}
+          />
         )}
-        {sideBarState.sideBar === 'AUTO_ARRANGER_CHANGE_LOG' && (
-          <AutoArrangerChangeLogSideBar initialSearch={sideBarState.initialSearch} changeLogs={preplan.autoArrangerState.changeLogs} onClick={() => alert('not implemented.')} />
-        )}
-        {sideBarState.sideBar === 'OBJECTIONS' && <ObjectionsSideBar initialSearch={sideBarState.initialSearch} objections={preplan.constraintSystem.objections} />}
+        {sideBarState.sideBar === 'OBJECTIONS' && <ObjectionsSideBar initialSearch={sideBarState.initialSearch} onClick={onObjectionTargetClick} />}
       </Drawer>
 
       <div className={resourceSchedulerViewModel.loading ? classes.disable : ''}>
         <ResourceSchedulerView
-          startDate={preplan.startDate.getDatePart().addDays((preplan.startDate.getUTCDay() + 1) % 7)}
-          readonly={false}
-          flights={preplan.flights}
-          flightPacks={preplan.flightPacks}
-          aircraftRegisters={preplan.aircraftRegisters}
-          changeLogs={preplan.autoArrangerState.changeLogs}
-          selectedFlightPack={resourceSchedulerViewModel.selectedFlightPack}
-          onSelectFlightPack={onSelectFlightPackMemoized}
-          onFreezeFlightPack={onFreezeFlightPackMemoized}
-          onRequireFlightPack={onRequireFlightPackMemoized}
-          onIgnoreFlightPack={onIgnoreFlightPackMemoized}
+          selectedFlight={resourceSchedulerViewModel.selectedFlight}
+          onSelectFlight={onSelectFlightMemoized}
           onOpenFlightModal={onOpenFlightModalMemoized}
-          onOpenFlightPackModal={onOpenFlightPackModalMemoized}
-          onFlightPackDragAndDrop={onFlightPackDragAndDropMemoized}
-          onFlightPackMouseHover={onFlightPackMouseHoverMemoized}
+          onOpenFlightLegModal={onOpenFlightLegModalMemoized}
+          onFlightDragAndDrop={onFlightDragAndDropMemoized}
+          onFlightMouseHover={onFlightMouseHoverMemoized}
           onFreeSpaceMouseHover={onFreeSpaceMouseHoverMemoized}
           onNowhereMouseHover={onNowhereMouseHoverMemoized}
         />
@@ -399,53 +301,7 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
         </div>
       </div>
 
-      <SimpleModal
-        key="ignore-flight-requirment-confirm-modal"
-        title="Ignore flight requirment"
-        open={confirmIgnoreFlightPackModalModel.open}
-        loading={confirmIgnoreFlightPackModalModel.loading}
-        errorMessage={confirmIgnoreFlightPackModalModel.errorMessage}
-        cancelable={true}
-        actions={[
-          { title: 'No' },
-          {
-            title: 'Yes',
-            action: async () => {
-              setConfirmIgnoreFlightPackModalModel({ ...confirmIgnoreFlightPackModalModel, loading: true, errorMessage: undefined });
-
-              const newFlightRequirementsModel = confirmIgnoreFlightPackModalModel!.selectedFlightPack!.flights.map(f => {
-                return f.requirement.extractModel({
-                  ignored: true
-                });
-              });
-
-              //TODO: change included sp, get multi flightRequirments id
-              preplan.stage({ mergingFlightRequirementModels: newFlightRequirementsModel });
-              preplan.commit();
-              const result = await PreplanService.editFlightRequirements(newFlightRequirementsModel);
-
-              if (result.message) {
-                snackbar.enqueueSnackbar(result.message, { variant: 'error' });
-                setConfirmIgnoreFlightPackModalModel(ignoreFlightPackModalModel => ({ ...ignoreFlightPackModalModel, errorMessage: result.message, loading: false }));
-              } else {
-                preplan.mergeFlightRequirements(...result.value!);
-                setConfirmIgnoreFlightPackModalModel(ignoreFlightPackModalModel => ({ ...ignoreFlightPackModalModel, loading: false, open: false }));
-              }
-            }
-          }
-        ]}
-        onClose={() => setConfirmIgnoreFlightPackModalModel(ignoreFlightPackModalModel => ({ ...ignoreFlightPackModalModel, open: false }))}
-      >
-        [//TODO] Are you sure you want to ignore{' '}
-        {resourceSchedulerViewModel.selectedFlightPack &&
-          resourceSchedulerViewModel.selectedFlightPack.flights
-            .map(n => n.label)
-            .distinct()
-            .join(', ')}
-        ?
-      </SimpleModal>
-
-      <SimpleModal
+      {/* <SimpleModal
         key="edit-flight-pack-modal"
         title={'Flight pack ' + (editFlightPackModalModel.selectedFlightPack && editFlightPackModalModel.selectedFlightPack.label)}
         open={editFlightPackModalModel.open}
@@ -594,9 +450,9 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
             />
           </Grid>
         </Grid>
-      </SimpleModal>
+      </SimpleModal> */}
 
-      <SimpleModal
+      {/* <SimpleModal
         key="edit-flight-modal"
         title=""
         complexTitle={
@@ -765,7 +621,7 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ preplan, onEdit
             <TextField fullWidth label="Notes" value={editFlightModalModel.notes} onChange={s => setEditFlightModalModel({ ...editFlightModalModel, notes: s.target.value })} />
           </Grid>
         </Grid>
-      </SimpleModal>
+      </SimpleModal> */}
     </Fragment>
   );
 };

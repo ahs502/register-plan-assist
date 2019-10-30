@@ -1,5 +1,6 @@
 import { Connection, Request as TediousRequest, TYPES, TediousType, ParameterOptions, TediousTypes, ISOLATION_LEVEL } from 'tedious';
 import config from 'src/config';
+import { Xml } from './xml';
 
 function createConnection() {
   return new Connection({
@@ -19,7 +20,7 @@ function createConnection() {
   });
 }
 
-export interface SqlParameter {
+export interface Parameter {
   name: string;
   type: TediousType;
   value: any;
@@ -38,7 +39,7 @@ function getJsonResult(rows: { value: any; metadata: { colName: string } }[][]):
   });
 }
 
-function runQuery<T extends any = any>(connection: Connection, query: string, ...parameters: SqlParameter[]): Promise<T[]> {
+function runQuery<T extends any = any>(connection: Connection, query: string, ...parameters: Parameter[]): Promise<T[]> {
   return new Promise((resolve, reject) => {
     const request = new TediousRequest(query, (error, rowCount, rows) => {
       if (error) return reject(error);
@@ -48,7 +49,7 @@ function runQuery<T extends any = any>(connection: Connection, query: string, ..
     connection.execSql(request);
   });
 }
-function runSp<T extends any = any>(connection: Connection, sp: string, ...parameters: SqlParameter[]): Promise<T[]> {
+function runSp<T extends any = any>(connection: Connection, sp: string, ...parameters: Parameter[]): Promise<T[]> {
   return new Promise((resolve, reject) => {
     const request = new TediousRequest(sp, (error, rowCount, rows) => {
       if (error) return reject(error);
@@ -133,23 +134,23 @@ export enum IsolationLevel {
 }
 
 interface DbAccessQueryParams {
-  param(name: string, type: TediousType, value: any, options?: ParameterOptions): SqlParameter;
-  bitParam(name: string, value: boolean | null): SqlParameter;
-  intParam(name: string, value: string | number | null): SqlParameter;
-  bigIntParam(name: string, value: bigint | string | null): SqlParameter;
-  varCharParam(name: string, value: string | null, length: number | 'max'): SqlParameter;
-  nVarCharParam(name: string, value: string | null, length: number | 'max'): SqlParameter;
-  dateTimeParam(name: string, value: Date | string | null, scale?: number): SqlParameter;
-  xmlParam(name: string, value: string | null): SqlParameter;
-  tableParam(name: string, columns: readonly TableColumn[], rows: readonly any[][]): SqlParameter;
+  param(name: string, type: TediousType, value: any, options?: ParameterOptions): Parameter;
+  bitParam(name: string, value: boolean | null): Parameter;
+  intParam(name: string, value: string | number | null): Parameter;
+  bigIntParam(name: string, value: bigint | string | null): Parameter;
+  varCharParam(name: string, value: string | null, length: number | 'max'): Parameter;
+  nVarCharParam(name: string, value: string | null, length: number | 'max'): Parameter;
+  dateTimeParam(name: string, value: Date | string | null, scale?: number): Parameter;
+  xmlParam(name: string, value: Xml | null): Parameter;
+  tableParam(name: string, columns: readonly TableColumn[], rows: readonly any[][]): Parameter;
 }
 export interface DbAccess {
   types: TediousTypes;
   runQuery: {
-    (query: string, ...parameters: SqlParameter[]): Promise<any[]>;
+    (query: string, ...parameters: Parameter[]): Promise<any[]>;
   } & DbAccessQueryParams;
   runSp: {
-    (sp: string, ...parameters: SqlParameter[]): Promise<any[]>;
+    (sp: string, ...parameters: Parameter[]): Promise<any[]>;
   } & DbAccessQueryParams;
 }
 
@@ -165,31 +166,31 @@ function attachHelperFunctions(f: any): any {
   f.tableParam = tableParam;
   return f;
 
-  function param(name: string, type: TediousType, value: any, options?: ParameterOptions): SqlParameter {
+  function param(name: string, type: TediousType, value: any, options?: ParameterOptions): Parameter {
     return { name, type, value, options };
   }
-  function bitParam(name: string, value: boolean | null): SqlParameter {
+  function bitParam(name: string, value: boolean | null): Parameter {
     return { name, type: TYPES.Bit, value };
   }
-  function intParam(name: string, value: string | number | null): SqlParameter {
+  function intParam(name: string, value: string | number | null): Parameter {
     return { name, type: TYPES.Int, value };
   }
-  function bigIntParam(name: string, value: bigint | string | null): SqlParameter {
+  function bigIntParam(name: string, value: bigint | string | null): Parameter {
     return { name, type: TYPES.BigInt, value };
   }
-  function varCharParam(name: string, value: string | null, length: number | 'max'): SqlParameter {
+  function varCharParam(name: string, value: string | null, length: number | 'max'): Parameter {
     return { name, type: TYPES.VarChar, value, options: { length } };
   }
-  function nVarCharParam(name: string, value: string | null, length: number | 'max'): SqlParameter {
+  function nVarCharParam(name: string, value: string | null, length: number | 'max'): Parameter {
     return { name, type: TYPES.NVarChar, value, options: { length } };
   }
-  function dateTimeParam(name: string, value: Date | string | null, scale?: number): SqlParameter {
+  function dateTimeParam(name: string, value: Date | string | null, scale?: number): Parameter {
     return { name, type: TYPES.VarChar, value: typeof value === 'string' ? value : value.toJSON(), options: { scale } };
   }
-  function xmlParam(name: string, value: string | null): SqlParameter {
+  function xmlParam(name: string, value: Xml | null): Parameter {
     return { name, type: TYPES.Xml, value };
   }
-  function tableParam(name: string, columns: readonly TableColumn[], rows: readonly any[][]): SqlParameter {
+  function tableParam(name: string, columns: readonly TableColumn[], rows: readonly any[][]): Parameter {
     return { name, type: TYPES.TVP, value: { columns, rows } };
   }
 }
@@ -241,6 +242,20 @@ export function withTransactionalDbAccess(task: (dbAccess: DbAccess) => Promise<
       );
     });
   });
+}
+
+export function select<E>(selectors: { [K in keyof E]: string }) {
+  return {
+    from(source: string) {
+      return {
+        where(condition?: string) {
+          return `select ${Object.keys(selectors)
+            .map(property => `${selectors[property]} as [${property}]`)
+            .join(' ')} from ${source}${condition ? `where ${condition};` : ''}`;
+        }
+      };
+    }
+  };
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////

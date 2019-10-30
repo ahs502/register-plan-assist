@@ -29,10 +29,9 @@ export function getOverridedArray<M>(array: readonly ModelConvertable<M>[], over
     overrides = overrides[path.shift()!];
   }
   if (!overrides) return array.map(item => item.extractModel());
-  const overridingKeys = Object.keys(overrides);
-  const keys = Object.keys(array);
+  const overridingIndexes = Object.keys(overrides);
+  const originalIndexes = Object.keys(array);
   const result: M[] = [];
-  keys.forEach(key => (result[key as any] = overridingKeys.includes(key) ? overrides[key] && array[key as any].extractModel(overrides[key]) : array[key as any].extractModel()));
-  overridingKeys.forEach(key => keys.includes(key) || (result[key as any] = overrides[key]));
+  overridingIndexes.forEach(index => (result[index as any] = originalIndexes.includes(index) ? array[index as any].extractModel(overrides[index]) : overrides[index]));
   return result.filter(Boolean);
 }

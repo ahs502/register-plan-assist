@@ -26,12 +26,11 @@ export function parseAirport(value?: string): string | undefined {
   return airport && (airport === 'invalid' ? 'invalid' : airport.id);
 }
 
-export function parseHHMM(value?: string): number {
-  if (!value) return undefined as any;
-  if (value.length !== 4) return NaN;
-  const hour = +value.substr(0, 2);
-  const minutes = +value.substr(2, 2);
-  return hour * 60 + minutes;
+export function parseTime(value: string): number | undefined {
+  if (!value) return undefined;
+  const daytime = new Daytime(value);
+  if (daytime.isValid()) return daytime.minutes;
+  return NaN;
 }
 
 export function parseMinute(value?: number): string {

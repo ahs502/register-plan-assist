@@ -1,21 +1,18 @@
 import React, { Fragment, useState, FC, useEffect } from 'react';
-import { Theme, IconButton, Paper, Tab, Tabs, Table, TableBody, TableCell, TableHead, TableRow, Switch, Grid, TextField, Typography, CircularProgress } from '@material-ui/core';
+import { Theme, IconButton, Paper, Tab, Tabs, Table, TableBody, TableCell, TableHead, TableRow, Grid, TextField, Typography, CircularProgress } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import { DoneAll as FinilizedIcon, Add as AddIcon, Edit as EditIcon, Clear as ClearIcon } from '@material-ui/icons';
 import MahanIcon, { MahanIconType } from 'src/components/MahanIcon';
 import Search, { filterOnProperties } from 'src/components/Search';
-import LinkTypography from 'src/components/LinkTypography';
 import NavBar from 'src/components/NavBar';
-import { PreplanHeader } from 'src/business/Preplan';
-import SimpleModal from 'src/components/SimpleModal';
+import ModalBase from 'src/components/ModalBase';
 import persistant from 'src/utils/persistant';
 import PreplanService from 'src/services/PreplanService';
-import NewPreplanModel, { NewPreplanModelValidation } from '@core/models/NewPreplanModel';
-import EditPreplanModel, { EditPreplanModelValidation } from '@core/models/EditPreplanModel';
 import useRouter from 'src/utils/useRouter';
-import { VariantType, useSnackbar } from 'notistack';
+import { useSnackbar } from 'notistack';
 import ProgressSwitch from 'src/components/ProgressSwitch';
 import classNames from 'classnames';
+import PreplanHeader from 'src/business/preplan/PreplanHeader';
 
 const waitingPaperSize = 250;
 const useStyles = makeStyles((theme: Theme) => ({
@@ -52,10 +49,10 @@ const useStyles = makeStyles((theme: Theme) => ({
     marginLeft: -12
   },
   waitingPaper: {
-    height: `${waitingPaperSize}px`
+    height: waitingPaperSize
   },
   waitingPaperMessage: {
-    lineHeight: `${waitingPaperSize}px`
+    lineHeight: waitingPaperSize
   },
   messagePosition: {
     paddingTop: 40
@@ -91,57 +88,40 @@ interface PublishLoadingStatus {
 
 const PreplanListPage: FC = () => {
   const [preplanHeaders, setPreplanHeaders] = useState<PreplanHeader[]>([]);
-  //const [filterPreplanHeaders, setFilterPreplanHeaders] = useState<PreplanHeader[]>([]);
   const [tab, setTab] = useState<Tab>('USER');
   const [newPreplanModalModel, setNewPreplanModalModel] = useState<PreplanModalModel>({ open: false });
   const [editPreplanModalModel, setEditPreplanModalModel] = useState<PreplanModalModel>({ open: false });
   const [copyPreplanModalModel, setCopyPreplanModalModel] = useState<PreplanModalModel>({ open: false });
-  const [deletePreplanModalModel, setDeletePreplanModalModel] = useState<PreplanModalModel>({ open: false });
+  const [removePreplanModalModel, setRemovePreplanModalModel] = useState<PreplanModalModel>({ open: false });
   const [preplanLoading, setPrePlanLoading] = useState(false);
-  const [publishLoadingStatus, setPublishLoadingStatus] = useState<PublishLoadingStatus>({} as PublishLoadingStatus);
-  const [loadingMessage, setLoadingMessage] = useState();
-  const [query, setQuery] = useState();
+  const [publishLoadingStatus, setPublishLoadingStatus] = useState<PublishLoadingStatus>({ value: false });
+  const [loadingMessage, setLoadingMessage] = useState('');
+  const [query, setQuery] = useState([] as readonly string[]);
 
   const { enqueueSnackbar } = useSnackbar();
 
   useEffect(() => {
     setPrePlanLoading(true);
-    PreplanService.getAllHeaders().then(result => {
-      setPrePlanLoading(false);
-      if (result.message) {
-        setLoadingMessage(result.message);
-        return;
-      }
-
-      setPreplanHeaders(result.value!.map(p => new PreplanHeader(p)));
-    });
+    PreplanService.getAllHeaders().then(
+      preplanHeaderModels => {
+        setPreplanHeaders(preplanHeaderModels.map(p => new PreplanHeader(p)));
+        setPrePlanLoading(false);
+      },
+      reason => setLoadingMessage(String(reason))
+    );
   }, []);
-
-  function filterPreplan(preplanHeaders: PreplanHeader[], query: readonly string[]) {
-    if (!query.length) return preplanHeaders;
-    return preplanHeaders.filter(f => {
-      const values = [f.name].map(s => s.toLowerCase());
-      for (let j = 0; j < query.length; ++j) {
-        if (values.some(s => s.includes(query[j]))) return true;
-      }
-      return false;
-    });
-  }
-
-  function snackbar(message: string, variant: VariantType) {
-    // variant could be success, error, warning, info, or default
-    enqueueSnackbar(message, { variant });
-  }
 
   const { history } = useRouter();
   const classes = useStyles();
-  const filterPreplanHeaders = filterOnProperties(preplanHeaders, [query], 'name', 'simulationName', 'parentPreplanName');
+
+  const filteredPreplanHeaders = filterOnProperties(preplanHeaders, query, 'name');
+
   return (
     <Fragment>
       <NavBar
         navBarLinks={[
           {
-            title: 'Pre Plans',
+            title: 'Preplans',
             link: '/preplan-list'
           }
         ]}
@@ -158,8 +138,8 @@ const PreplanListPage: FC = () => {
         </Tabs>
 
         <Paper>
-          {(tab === 'PUBLIC' && filterPreplanHeaders.some(pn => pn.userId !== persistant.user!.id)) ||
-          (tab === 'USER' && filterPreplanHeaders.some(pn => pn.userId === persistant.user!.id)) ? (
+          {(tab === 'PUBLIC' && filteredPreplanHeaders.some(p => p.user.id !== persistant.user!.id)) ||
+          (tab === 'USER' && filteredPreplanHeaders.some(p => p.user.id === persistant.user!.id)) ? (
             <Table>
               <TableHead>
                 <TableRow>
@@ -171,15 +151,14 @@ const PreplanListPage: FC = () => {
                   <TableCell className={classes.preplanTableCell}>Finalized</TableCell>
                   <TableCell className={classes.preplanTableCell}>Simulation Name</TableCell>
                   {tab === 'USER' && <TableCell className={classNames(classes.preplanTableCell, classes.publicHeader)}>Public</TableCell>}
-
                   <TableCell className={classes.preplanTableCell} align="center">
                     Actions
                   </TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {filterPreplanHeaders
-                  .filter(p => (tab === 'USER' ? p.userId === persistant.user!.id : p.userId !== persistant.user!.id))
+                {filteredPreplanHeaders
+                  .filter(p => (tab === 'USER' ? p.user.id === persistant.user!.id : p.user.id !== persistant.user!.id))
                   .map(preplanHeader => (
                     <TableRow key={preplanHeader.id}>
                       <TableCell
@@ -192,14 +171,14 @@ const PreplanListPage: FC = () => {
                         {preplanHeader.name}
                       </TableCell>
 
-                      {tab === 'PUBLIC' && <TableCell className={classes.preplanTableCell}>{preplanHeader.userDisplayName}</TableCell>}
+                      {tab === 'PUBLIC' && <TableCell className={classes.preplanTableCell}>{preplanHeader.user.displayName}</TableCell>}
                       <TableCell className={classes.preplanTableCell}>{preplanHeader.lastEditDateTime.format('d')}</TableCell>
                       <TableCell className={classes.preplanTableCell}>{preplanHeader.creationDateTime.format('d')}</TableCell>
-                      <TableCell className={classes.preplanTableCell}>{preplanHeader.parentPreplanName}</TableCell>
+                      <TableCell className={classes.preplanTableCell}>{preplanHeader.parentPreplan && preplanHeader.parentPreplan.name}</TableCell>
                       <TableCell className={classes.preplanTableCell} align="center">
                         {preplanHeader.finalized ? <FinilizedIcon /> : ''}
                       </TableCell>
-                      <TableCell className={classes.preplanTableCell}>{preplanHeader.simulationName}</TableCell>
+                      <TableCell className={classes.preplanTableCell}>{preplanHeader.simulation && preplanHeader.simulation.name}</TableCell>
 
                       {tab === 'USER' && (
                         <TableCell className={classes.preplanTableCell} align="center">
@@ -208,17 +187,13 @@ const PreplanListPage: FC = () => {
                             loading={publishLoadingStatus[preplanHeader.id]}
                             onChange={async (event, checked) => {
                               if (publishLoadingStatus[preplanHeader.id]) return;
-
                               setPublishLoadingStatus(state => ({ ...state, [preplanHeader.id]: true }));
-
-                              const result = await PreplanService.setPublished(preplanHeader.id, event.target.checked);
-
-                              if (result.message) {
-                                snackbar(result.message, 'warning');
-                              } else {
-                                setPreplanHeaders(result.value!.map(p => new PreplanHeader(p)));
+                              try {
+                                const preplanHeaderModels = await PreplanService.setPublished(preplanHeader.id, checked);
+                                setPreplanHeaders(preplanHeaderModels.map(p => new PreplanHeader(p)));
+                              } catch (reason) {
+                                enqueueSnackbar(String(reason), { variant: 'warning' });
                               }
-
                               setPublishLoadingStatus(state => {
                                 return { ...state, [preplanHeader.id]: false };
                               });
@@ -259,9 +234,9 @@ const PreplanListPage: FC = () => {
                               <EditIcon />
                             </IconButton>
                             <IconButton
-                              title="Delete Preplan"
+                              title="Remove Preplan"
                               onClick={() => {
-                                setDeletePreplanModalModel({ open: true, name: preplanHeader.name, id: preplanHeader.id });
+                                setRemovePreplanModalModel({ open: true, name: preplanHeader.name, id: preplanHeader.id });
                               }}
                             >
                               <ClearIcon />
@@ -279,7 +254,7 @@ const PreplanListPage: FC = () => {
                 <CircularProgress size={24} className={classes.progress} />
               ) : (
                 <Typography align="center" classes={{ body1: classes.waitingPaperMessage }}>
-                  {loadingMessage ? loadingMessage : 'No Preplan'}
+                  {loadingMessage ? loadingMessage : 'No preplans'}
                 </Typography>
               )}
             </Paper>
@@ -287,237 +262,162 @@ const PreplanListPage: FC = () => {
         </Paper>
       </div>
 
-      <SimpleModal
-        key="delete-preplan"
-        open={deletePreplanModalModel.open}
-        loading={deletePreplanModalModel.loading}
-        title="Would you like to delete your pre plan?"
-        errorMessage={deletePreplanModalModel.errorMessage}
+      <ModalBase
+        key="remove-preplan"
+        open={removePreplanModalModel.open}
+        loading={removePreplanModalModel.loading}
+        title="Would you like to remove your preplan?"
         cancelable={true}
-        onClose={() => setDeletePreplanModalModel({ ...deletePreplanModalModel, open: false })}
+        errorMessage={removePreplanModalModel.errorMessage}
+        onClose={() => setRemovePreplanModalModel({ ...removePreplanModalModel, open: false })}
         actions={[
           {
-            title: 'No'
+            title: 'Cancel'
           },
           {
-            title: 'Yes',
+            title: 'Remove',
             action: async () => {
-              setDeletePreplanModalModel({ ...deletePreplanModalModel, loading: true });
-
-              const result = await PreplanService.remove(deletePreplanModalModel.id!);
-
-              if (result.message) {
-                setDeletePreplanModalModel({ ...deletePreplanModalModel, loading: false, errorMessage: result.message });
-                return;
+              setRemovePreplanModalModel({ ...removePreplanModalModel, loading: true });
+              try {
+                const preplanHeaderModels = await PreplanService.remove(removePreplanModalModel.id!);
+                setPreplanHeaders(preplanHeaderModels.map(p => new PreplanHeader(p)));
+                setRemovePreplanModalModel({ ...removePreplanModalModel, loading: false, open: false });
+              } catch (reason) {
+                setRemovePreplanModalModel({ ...removePreplanModalModel, loading: false, errorMessage: String(reason) });
               }
-              setDeletePreplanModalModel({ ...deletePreplanModalModel, loading: false, open: false });
-              setPreplanHeaders(result.value!.map(p => new PreplanHeader(p)));
             }
           }
         ]}
       >
-        All of data about pre-plan {deletePreplanModalModel.name} will be deleted.
-      </SimpleModal>
+        All of data about preplan {removePreplanModalModel.name} will be removed.
+      </ModalBase>
 
-      <SimpleModal
+      <ModalBase
         key="new-preplan"
         open={newPreplanModalModel.open}
-        title="What is your pre plan's specifications?"
-        errorMessage={newPreplanModalModel.errorMessage}
         loading={newPreplanModalModel.loading}
+        title="What is the specifications of your preplan?"
         cancelable={true}
+        errorMessage={newPreplanModalModel.errorMessage}
+        onClose={() => setNewPreplanModalModel({ ...newPreplanModalModel, open: false })}
         actions={[
           {
-            title: 'cancle'
+            title: 'Cancel'
           },
           {
-            title: 'create',
+            title: 'Create',
             action: async () => {
               setNewPreplanModalModel({ ...newPreplanModalModel, loading: true, errorMessage: undefined });
-              const model: NewPreplanModel = {
-                name: newPreplanModalModel.name!,
-                startDate: Date.toJSON(newPreplanModalModel.startDate),
-                endDate: Date.toJSON(newPreplanModalModel.endDate)
-              };
-
-              const validation = new NewPreplanModelValidation(model, preplanHeaders.filter(s => s.userId === persistant.user!.id).map(p => p.name));
-              if (!validation.ok) {
-                //TODO: Show error messages of form fields.
-                setNewPreplanModalModel({ ...newPreplanModalModel, loading: false });
-                return;
-              }
-
-              const result = await PreplanService.createEmpty(model);
-              if (result.message) {
-                setNewPreplanModalModel({ ...newPreplanModalModel, loading: false, errorMessage: result.message });
-              } else {
+              try {
+                const newPreplanId = await PreplanService.createEmpty({
+                  name: newPreplanModalModel.name!,
+                  startDate: Date.toJSON(newPreplanModalModel.startDate),
+                  endDate: Date.toJSON(newPreplanModalModel.endDate)
+                });
                 setNewPreplanModalModel({ ...newPreplanModalModel, loading: false, open: false });
-                history.push(`/preplan/${result.value}`);
+                history.push(`/preplan/${newPreplanId}`);
+              } catch (reason) {
+                setNewPreplanModalModel({ ...newPreplanModalModel, loading: false, errorMessage: String(reason) });
               }
             }
           }
         ]}
-        onClose={() => {
-          setNewPreplanModalModel({ ...newPreplanModalModel, open: false });
-        }}
       >
         <Grid container spacing={1}>
           <Grid item xs={12}>
-            <TextField
-              label="Name"
-              onChange={e => {
-                setNewPreplanModalModel({ ...newPreplanModalModel, name: e.target.value });
-              }}
-            />
+            <TextField label="Name" onChange={e => setNewPreplanModalModel({ ...newPreplanModalModel, name: e.target.value })} />
           </Grid>
           <Grid item xs={6}>
-            <TextField
-              label="Start Date"
-              onChange={e => {
-                setNewPreplanModalModel({ ...newPreplanModalModel, startDate: e.target.value });
-              }}
-            />
+            <TextField label="Start Date" onChange={e => setNewPreplanModalModel({ ...newPreplanModalModel, startDate: e.target.value })} />
           </Grid>
           <Grid item xs={6}>
-            <TextField
-              label="End Date"
-              onChange={e => {
-                setNewPreplanModalModel({ ...newPreplanModalModel, endDate: e.target.value });
-              }}
-            />
+            <TextField label="End Date" onChange={e => setNewPreplanModalModel({ ...newPreplanModalModel, endDate: e.target.value })} />
           </Grid>
         </Grid>
-      </SimpleModal>
+      </ModalBase>
 
-      <SimpleModal
+      <ModalBase
         key="edit-preplan"
         open={editPreplanModalModel.open}
         loading={editPreplanModalModel.loading}
-        errorMessage={editPreplanModalModel.errorMessage}
-        title="What is this pre-plan's new specifications?"
+        title="What do you want to change?"
         cancelable={true}
+        errorMessage={editPreplanModalModel.errorMessage}
+        onClose={() => setEditPreplanModalModel({ ...editPreplanModalModel, open: false })}
         actions={[
           {
-            title: 'cancle'
+            title: 'Cancel'
           },
           {
-            title: 'apply',
+            title: 'Update',
             action: async () => {
               setEditPreplanModalModel({ ...editPreplanModalModel, loading: true, errorMessage: undefined });
-
-              const model: EditPreplanModel = {
-                id: editPreplanModalModel.id!,
-                name: editPreplanModalModel.name!,
-                startDate: Date.toJSON(editPreplanModalModel.startDate),
-                endDate: Date.toJSON(editPreplanModalModel.endDate)
-              };
-
-              const validation = new EditPreplanModelValidation(model, preplanHeaders.filter(s => s.userId === persistant.user!.id && s.id !== model.id).map(p => p.name));
-
-              if (!validation.ok) {
-                //TODO: Show error messages of form fields.
-                setEditPreplanModalModel({ ...editPreplanModalModel, loading: false });
-                return;
-              }
-
-              const result = await PreplanService.editHeader(model);
-              if (result.message) {
-                setEditPreplanModalModel({ ...editPreplanModalModel, loading: false, errorMessage: result.message });
-              } else {
+              try {
+                const preplanHeaderModels = await PreplanService.editHeader(editPreplanModalModel.id!, {
+                  name: editPreplanModalModel.name!,
+                  startDate: Date.toJSON(editPreplanModalModel.startDate),
+                  endDate: Date.toJSON(editPreplanModalModel.endDate)
+                });
+                setPreplanHeaders(preplanHeaderModels.map(p => new PreplanHeader(p)));
                 setEditPreplanModalModel({ ...editPreplanModalModel, loading: false, open: false });
-                setPreplanHeaders(result.value!.map(p => new PreplanHeader(p)));
+              } catch (reason) {
+                setEditPreplanModalModel({ ...editPreplanModalModel, loading: false, errorMessage: String(reason) });
               }
             }
           }
         ]}
-        onClose={() => {
-          setEditPreplanModalModel({ ...editPreplanModalModel, open: false });
-        }}
       >
         <Grid container spacing={1}>
           <Grid item xs={12}>
-            <TextField
-              label="Name"
-              value={editPreplanModalModel.name}
-              onChange={e => {
-                setEditPreplanModalModel({ ...editPreplanModalModel, name: e.target.value });
-              }}
-            />
+            <TextField label="Name" value={editPreplanModalModel.name} onChange={e => setEditPreplanModalModel({ ...editPreplanModalModel, name: e.target.value })} />
           </Grid>
           <Grid item xs={6}>
             <TextField
               label="Start Date"
               value={editPreplanModalModel.startDate}
-              onChange={e => {
-                setEditPreplanModalModel({ ...editPreplanModalModel, startDate: e.target.value });
-              }}
+              onChange={e => setEditPreplanModalModel({ ...editPreplanModalModel, startDate: e.target.value })}
             />
           </Grid>
           <Grid item xs={6}>
-            <TextField
-              label="End Date"
-              value={editPreplanModalModel.endDate}
-              onChange={e => {
-                setEditPreplanModalModel({ ...editPreplanModalModel, endDate: e.target.value });
-              }}
-            />
+            <TextField label="End Date" value={editPreplanModalModel.endDate} onChange={e => setEditPreplanModalModel({ ...editPreplanModalModel, endDate: e.target.value })} />
           </Grid>
         </Grid>
-      </SimpleModal>
+      </ModalBase>
 
-      <SimpleModal
+      <ModalBase
         key="copy-preplan"
         open={copyPreplanModalModel.open}
-        title="What is the new Pre Plan's name?"
-        errorMessage={copyPreplanModalModel.errorMessage}
         loading={copyPreplanModalModel.loading}
         cancelable={true}
+        title="What is the new Pre Plan's name?"
+        errorMessage={copyPreplanModalModel.errorMessage}
+        onClose={() => setCopyPreplanModalModel({ ...copyPreplanModalModel, open: false })}
         actions={[
           {
-            title: 'cancle'
+            title: 'Cancel'
           },
           {
-            title: 'copy',
+            title: 'Copy',
             action: async () => {
               setCopyPreplanModalModel({ ...copyPreplanModalModel, loading: true, errorMessage: undefined });
-
-              const model: NewPreplanModel = {
-                name: copyPreplanModalModel.name!,
-                startDate: Date.toJSON(copyPreplanModalModel.startDate),
-                endDate: Date.toJSON(copyPreplanModalModel.endDate)
-              };
-
-              const validation = new NewPreplanModelValidation(model, preplanHeaders.filter(s => s.userId === persistant.user!.id).map(p => p.name));
-
-              if (!validation.ok) {
-                //TODO: Show error messages of form fields.
-                setCopyPreplanModalModel({ ...copyPreplanModalModel, loading: false });
-                return;
-              }
-
-              const result = await PreplanService.clone(copyPreplanModalModel.id!, model);
-              if (result.message) {
-                setCopyPreplanModalModel({ ...copyPreplanModalModel, loading: false, open: true, errorMessage: result.message });
-              } else {
+              try {
+                const newPreplanId = await PreplanService.clone(copyPreplanModalModel.id!, {
+                  name: copyPreplanModalModel.name!,
+                  startDate: Date.toJSON(copyPreplanModalModel.startDate),
+                  endDate: Date.toJSON(copyPreplanModalModel.endDate)
+                });
                 setCopyPreplanModalModel({ ...copyPreplanModalModel, loading: false, open: false });
-                history.push(`/preplan/${result.value}`);
+                history.push(`/preplan/${newPreplanId}`);
+              } catch (reason) {
+                setCopyPreplanModalModel({ ...copyPreplanModalModel, loading: false, open: true, errorMessage: String(reason) });
               }
             }
           }
         ]}
-        onClose={() => {
-          setCopyPreplanModalModel({ ...copyPreplanModalModel, open: false });
-        }}
       >
         <Grid container spacing={1}>
           <Grid item xs={12}>
-            <TextField
-              label="Name"
-              value={copyPreplanModalModel.name}
-              onChange={e => {
-                setCopyPreplanModalModel({ ...copyPreplanModalModel, name: e.target.value });
-              }}
-            />
+            <TextField label="Name" value={copyPreplanModalModel.name} onChange={e => setCopyPreplanModalModel({ ...copyPreplanModalModel, name: e.target.value })} />
           </Grid>
           <Grid item xs={6}>
             <TextField
@@ -527,16 +427,10 @@ const PreplanListPage: FC = () => {
             />
           </Grid>
           <Grid item xs={6}>
-            <TextField
-              label="End Date"
-              value={copyPreplanModalModel.endDate}
-              onChange={e => {
-                setCopyPreplanModalModel({ ...copyPreplanModalModel, endDate: e.target.value });
-              }}
-            />
+            <TextField label="End Date" value={copyPreplanModalModel.endDate} onChange={e => setCopyPreplanModalModel({ ...copyPreplanModalModel, endDate: e.target.value })} />
           </Grid>
         </Grid>
-      </SimpleModal>
+      </ModalBase>
     </Fragment>
   );
 };

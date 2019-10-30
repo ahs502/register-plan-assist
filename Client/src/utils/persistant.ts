@@ -1,4 +1,4 @@
-import UserModel from '@core/models/authentication/UserModel';
+import UserModel from '@core/models/UserModel';
 import UserSettingsModel from '@core/models/authentication/UserSettingsModel';
 
 export interface Persistant {

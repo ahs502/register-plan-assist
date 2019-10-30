@@ -1,8 +1,9 @@
-import Preplan from 'src/business/Preplan';
-import Checker from './Checker';
-import Objection from './Objection';
+import Objection, { ObjectionType } from 'src/business/constraints/Objection';
+import FlightLeg from 'src/business/flight/FlightLeg';
+import Checker from 'src/business/constraints/Checker';
+import Preplan from 'src/business/preplan/Preplan';
 import MasterData, { ConstraintTemplate, Constraint } from '@core/master-data';
-import Flight from 'src/business/flights/Flight';
+import Objectionable from 'src/business/constraints/Objectionable';
 
 import NoConflictionOnFlightsChecker from './checkers/NoConflictionOnFlightsChecker';
 import AirportSequenceRestrictionOnFlightsChecker from './checkers/AirportSequenceRestrictionOnFlightsChecker';
@@ -15,41 +16,82 @@ import BlockTimeRestrictionOnAircraftsChecker from './checkers/BlockTimeRestrict
 import RouteSequenceRestrictionOnAirportsChecker from './checkers/RouteSequenceRestrictionOnAirportsChecker';
 import AirportAllocationPriorityForAircraftsChecker from './checkers/AirportAllocationPriorityForAircraftsChecker';
 
-export interface ObjectionDiff {
-  introduced: Objection[];
-  resolved: Objection[];
-  modified: Objection[];
+export type ObjectionStatus = 'NONE' | ObjectionType;
+
+export interface ObjecitonChanges {
+  readonly introduced: readonly Objection[];
+  readonly resolved: readonly Objection[];
+  readonly modified: readonly Objection[];
 }
 
-export interface SuperFlight {
-  flight: Flight;
-  nextRound: boolean;
+export interface SuperFlightLeg {
+  readonly flightLeg: FlightLeg;
+  readonly secondRound: boolean;
 }
-export interface FlightEvent {
-  starting: boolean;
-  time: number;
-  superFlight: SuperFlight;
-}
-export interface FlightEventDictionary {
-  [aircraftRegisterId: string]: readonly FlightEvent[];
+export interface FlightLegEvent {
+  readonly starting: boolean;
+  readonly time: number;
+  readonly superFlightLeg: SuperFlightLeg;
 }
 
 export default class ConstraintSystem {
   readonly checkers: readonly Checker[];
-  readonly objections: readonly Objection[];
-  private stagedObjections: readonly Objection[];
 
-  constructor(readonly preplan: Preplan) {
-    this.checkers = MasterData.all.constraintTemplates.items
-      .filter(t => !t.instantiable)
-      .map(t => this.createCheckerFromNonInstantiableConstraintTemplate(preplan, t))
-      .concat(
-        MasterData.all.constraints.items
-          .filter(c => true /*TODO: See if the scope of this constraint overlaps the intended preplan */)
-          .map(c => this.createCheckerFromConstraint(preplan, c))
+  readonly flightLegEventsByAircraftRegisterId: { readonly [aircraftRegisterId: string]: readonly FlightLegEvent[] };
+
+  readonly objections: readonly Objection[];
+  readonly objectionChanges: ObjecitonChanges;
+  readonly objectionsByTarget: { readonly [targetConstructor: string]: { readonly [targetId: string]: readonly Objection[] } };
+
+  constructor(readonly preplan: Preplan, oldConstraintSystem?: ConstraintSystem) {
+    this.checkers = [
+      ...MasterData.all.constraintTemplates.items.filter(t => !t.instantiable).map(t => this.createCheckerFromNonInstantiableConstraintTemplate(preplan, t)),
+      ...MasterData.all.constraints.items
+        .filter(c => true /*TODO: See if the scope of this constraint overlaps the intended preplan */)
+        .map(c => this.createCheckerFromConstraint(preplan, c))
+    ];
+
+    const flightLegEventsByAircraftRegisterId: { [aircraftRegisterId: string]: FlightLegEvent[] } = (this.flightLegEventsByAircraftRegisterId = {});
+    this.preplan.aircraftRegisters.items
+      .filter(a => a.options.status !== 'IGNORED')
+      .forEach(
+        a =>
+          (flightLegEventsByAircraftRegisterId[a.id] = this.preplan.flightLegsByAircraftRegisterId[a.id]
+            .map<FlightLegEvent[]>(l => {
+              const superFlightLeg = { flightLeg: l, secondRound: false };
+              const secondRoundSuperFlightLeg = { flightLeg: l, secondRound: true };
+              return [
+                { starting: true, time: l.weekStd, superFlightLeg: superFlightLeg },
+                { starting: false, time: l.weekSta, superFlightLeg: superFlightLeg },
+                { starting: true, time: l.weekStd + 7 * 24 * 60, superFlightLeg: secondRoundSuperFlightLeg },
+                { starting: false, time: l.weekSta + 7 * 24 * 60, superFlightLeg: secondRoundSuperFlightLeg }
+              ];
+            })
+            .flatten()
+            .sortBy(e => e.time))
       );
-    this.stagedObjections = this.objections = this.check();
-    this.commit();
+
+    this.objections = Objection.sort(this.checkers.flatMap(checker => checker.makeObjections()));
+
+    const oldObjections = oldConstraintSystem ? oldConstraintSystem.objections : [];
+    const introduced: Objection[] = [];
+    const modified: Objection[] = [];
+    this.objections.forEach(s => {
+      const o = oldObjections.find(objection => objection.derivedId === s.derivedId);
+      if (!o) return introduced.push(s);
+      if (o.message === s.message) return;
+      modified.push(s);
+    });
+    const resolved = oldObjections.filter(o => !this.objections.some(s => o.derivedId === s.derivedId));
+    this.objectionChanges = { introduced, resolved, modified };
+
+    const objectionsByTarget: { [targetConstructor: string]: { [targetId: string]: Objection[] } } = (this.objectionsByTarget = {});
+    this.objections.forEach(objection => {
+      const targetConstructor = (objection.target as Object).constructor.name;
+      targetConstructor in objectionsByTarget || (objectionsByTarget[targetConstructor] = {});
+      objection.targetId in objectionsByTarget[targetConstructor] || (objectionsByTarget[targetConstructor][objection.targetId] = []);
+      objectionsByTarget[targetConstructor][objection.targetId].push(objection);
+    });
   }
 
   private createCheckerFromNonInstantiableConstraintTemplate(preplan: Preplan, constraintTemplate: ConstraintTemplate): Checker {
@@ -85,92 +127,24 @@ export default class ConstraintSystem {
     }
   }
 
-  private check(): Objection[] {
-    delete this._flights;
-    delete this._flightsByRegister;
-    delete this._flightEventsByRegister;
-    return Objection.sort(this.checkers.flatMap(checker => checker.check()));
-  }
-
-  stage(): ObjectionDiff {
-    this.stagedObjections = this.check();
-    const introduced: Objection[] = [];
-    const modified: Objection[] = [];
-    this.stagedObjections.forEach(s => {
-      const o = this.objections.find(objection => objection.derivedId === s.derivedId);
-      if (!o) return introduced.push(s);
-      if (o.message === s.message) return;
-      modified.push(s);
-    });
-    const resolved = this.objections.filter(o => !this.stagedObjections.some(s => o.derivedId === s.derivedId));
-    return { introduced, resolved, modified };
-  }
-  commit(): void {
-    (this as { objections: readonly Objection[] }).objections = this.stagedObjections;
-
-    // Remove already assigned objections
-    this.preplan.flights.forEach(f => delete f.objections);
-    this.preplan.flightRequirements.forEach(r => {
-      delete r.objections;
-      r.days.forEach(d => delete d.objections);
-    });
-    this.preplan.aircraftRegisters.items.forEach(a => delete a.objections);
-
-    // Assign new objections
-    this.objections.forEach(o => {
-      o.target.objections || (o.target.objections = []);
-      o.target.objections.push(o);
+  getObjectionsByTarget(target: Objectionable, skipDependencies?: boolean): readonly Objection[] {
+    return (skipDependencies || !target.objectionStatusDependencies ? [target] : [target, ...target.objectionStatusDependencies]).flatMap(target => {
+      const targetConstructor = (target as Object).constructor.name;
+      if (!(targetConstructor in this.objectionsByTarget)) return [];
+      const targetId = (target.id || target.derivedId)!;
+      if (!(targetId in this.objectionsByTarget[targetConstructor])) return [];
+      return this.objectionsByTarget[targetConstructor][targetId];
     });
   }
-
-  private _flights?: readonly Flight[];
-  /**
-   * Gets the flattened list of this preplan's flights.
-   * It won't be changed by reference until something is changed within.
-   */
-  get flights(): readonly Flight[] {
-    if (this._flights) return this._flights;
-    return (this._flights = this.preplan.stagedFlightRequirements
-      .filter(f => !f.ignored)
-      .map(w => w.days.map(d => d.flight))
-      .flatten()
-      .sortBy(f => f.weekStd));
-  }
-
-  private _flightsByRegister?: { [aircraftRegisterId: string]: readonly Flight[] };
-  /**
-   * Gets the flattened list of this preplan's flights, grouped by their aircraft register id ('???' for not existing aircraft registers).
-   * It won't be changed by reference until something is changed within.
-   */
-  get flightsByRegister(): { [aircraftRegisterId: string]: readonly Flight[] } {
-    if (this._flightsByRegister) return this._flightsByRegister;
-    return (this._flightsByRegister = this.flights.groupBy(f => (f.aircraftRegister ? f.aircraftRegister.id : '???')));
-  }
-
-  private _flightEventsByRegister?: FlightEventDictionary;
-  /**
-   * A dictionary of ascending time sorted flight events by aircraft register id (except for unknown register '???').
-   * It won't be changed by reference until something is changed within.
-   * There are four events per each flight: two for its start and end times and
-   * another two for the same thing for the flight's next week round.
-   */
-  get flightEventsByRegister(): FlightEventDictionary {
-    if (this._flightEventsByRegister) return this._flightEventsByRegister;
-    return (this._flightEventsByRegister = Object.keys(this.flightsByRegister).reduce<FlightEventDictionary>((dictionary, registerId) => {
-      if (registerId === '???') return dictionary;
-      dictionary[registerId] = this.flightsByRegister[registerId]
-        .flatMap<FlightEvent>(f => {
-          const superFlight = { flight: f, nextRound: false };
-          const nextRoundSuperFlight = { flight: f, nextRound: true };
-          return [
-            { starting: true, time: f.weekStd, superFlight },
-            { starting: false, time: f.weekSta, superFlight },
-            { starting: true, time: f.weekStd + 7 * 24 * 60, superFlight: nextRoundSuperFlight },
-            { starting: false, time: f.weekSta + 7 * 24 * 60, superFlight: nextRoundSuperFlight }
-          ];
-        })
-        .sortBy(e => e.time);
-      return dictionary;
-    }, {}));
+  getObjectionStatusByTarget(target: Objectionable, skipDependencies?: boolean): ObjectionStatus {
+    const targets = skipDependencies || !target.objectionStatusDependencies ? [target] : [target, ...target.objectionStatusDependencies];
+    let warning = false;
+    for (const target of targets) {
+      const targetObjections = this.getObjectionsByTarget(target, true);
+      if (targetObjections.length === 0) continue;
+      if (targetObjections.some(o => o.type === 'ERROR')) return 'ERROR';
+      warning = true;
+    }
+    return warning ? 'WARNING' : 'NONE';
   }
 }

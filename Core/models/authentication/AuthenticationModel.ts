@@ -1,4 +1,4 @@
-import UserModel from './UserModel';
+import UserModel from '../UserModel';
 import UserSettingsModel from './UserSettingsModel';
 
 export default interface AuthenticationModel {

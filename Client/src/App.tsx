@@ -1,4 +1,4 @@
-import React, { FC, useState, useEffect } from 'react';
+import React, { FC, useState, useEffect, useCallback } from 'react';
 
 import { CircularProgress, Theme } from '@material-ui/core';
 import { ThemeProvider, makeStyles } from '@material-ui/styles';
@@ -11,6 +11,7 @@ import PreplanListPage from './pages/preplan-list';
 import PreplanPage from './pages/preplan';
 import AppBar from './components/AppBar';
 import { SnackbarProvider } from 'notistack';
+import MasterDataModel from '@core/models/master-data/MasterDataModel';
 
 const useStyles = makeStyles((theme: Theme) => ({
   progress: {
@@ -27,14 +28,19 @@ const App: FC = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    MasterDataService.get('aircraftTypes', 'aircraftRegisters', 'airports', 'seasonTypes', 'seasons', 'stcs', 'aircraftGroups', 'constraints').then(result => {
-      if (result.message) throw result.message;
-      MasterData.recieve(result.value!);
-      setInitializing(false);
-    });
+    MasterDataService.get(...(Object.keys(MasterData.all) as (keyof MasterDataModel)[])).then(
+      masterDataModel => {
+        MasterData.recieve(masterDataModel);
+        setInitializing(false);
+      },
+      reason => {
+        console.error(reason);
+        //TODO: Is there really nothing else to do here?!
+      }
+    );
   }, []);
 
-  RequestManager.onProcessingChanged = processing => setLoading(processing);
+  RequestManager.onProcessingChanged = useCallback(processing => setLoading(processing), []);
 
   const classes = useStyles();
 

@@ -1,8 +1,8 @@
-import AircraftIdentityType from '@core/types/aircraft-identity/AircraftIdentityType';
+import AircraftIdentityType from '@core/types/AircraftIdentityType';
 import MasterDataItem from './MasterDataItem';
 import { AircraftRegisters } from './AircraftRegister';
 import { AircraftTypes } from './AircraftType';
-import { AircraftGroups } from './AircraftGroup';
+import { AircraftRegisterGroups } from './AircraftRegisterGroup';
 import AircraftIdentityModel from '@core/models/AircraftIdentityModel';
 
 /**
@@ -13,7 +13,7 @@ export default class AircraftIdentity {
   readonly type: AircraftIdentityType;
   readonly entity: MasterDataItem;
 
-  constructor(raw: AircraftIdentityModel, aircraftRegisters: AircraftRegisters, aircraftTypes: AircraftTypes, aircraftGroups: AircraftGroups) {
+  constructor(raw: AircraftIdentityModel, aircraftRegisters: AircraftRegisters, aircraftTypes: AircraftTypes, aircraftRegisterGroups: AircraftRegisterGroups) {
     this.type = raw.type;
 
     switch (raw.type) {
@@ -26,7 +26,7 @@ export default class AircraftIdentity {
         this.entity = aircraftTypes.id[raw.entityId];
         break;
       case 'GROUP':
-        this.entity = aircraftGroups.id[raw.entityId];
+        this.entity = aircraftRegisterGroups.id[raw.entityId];
         break;
       default:
         throw 'Invalid aircraft identity type.';

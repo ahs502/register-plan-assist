@@ -1,5 +1,6 @@
 import { Connection, Request as TediousRequest, TYPES, TediousType, ParameterOptions, TediousTypes, ISOLATION_LEVEL } from 'tedious';
 import config from 'src/config';
+import { Xml } from './xml';
 
 function createConnection() {
   return new Connection({
@@ -19,16 +20,15 @@ function createConnection() {
   });
 }
 
-export interface SqlParameter {
+export interface Parameter {
   name: string;
   type: TediousType;
   value: any;
   options?: ParameterOptions;
 }
-export interface TableColumn {
+export interface TableColumn extends ParameterOptions {
   name: string;
   type: TediousType;
-  length?: number;
 }
 
 function getJsonResult(rows: { value: any; metadata: { colName: string } }[][]): any[] {
@@ -39,7 +39,7 @@ function getJsonResult(rows: { value: any; metadata: { colName: string } }[][]):
   });
 }
 
-function runQuery<T extends any = any>(connection: Connection, query: string, ...parameters: SqlParameter[]): Promise<T[]> {
+function runQuery<T extends any = any>(connection: Connection, query: string, ...parameters: Parameter[]): Promise<T[]> {
   return new Promise((resolve, reject) => {
     const request = new TediousRequest(query, (error, rowCount, rows) => {
       if (error) return reject(error);
@@ -49,7 +49,7 @@ function runQuery<T extends any = any>(connection: Connection, query: string, ..
     connection.execSql(request);
   });
 }
-function runSp<T extends any = any>(connection: Connection, sp: string, ...parameters: SqlParameter[]): Promise<T[]> {
+function runSp<T extends any = any>(connection: Connection, sp: string, ...parameters: Parameter[]): Promise<T[]> {
   return new Promise((resolve, reject) => {
     const request = new TediousRequest(sp, (error, rowCount, rows) => {
       if (error) return reject(error);
@@ -134,22 +134,23 @@ export enum IsolationLevel {
 }
 
 interface DbAccessQueryParams {
-  param(name: string, type: TediousType, value: any, options?: ParameterOptions): SqlParameter;
-  bitParam(name: string, value: boolean | null, options?: ParameterOptions): SqlParameter;
-  intParam(name: string, value: string | number | null, options?: ParameterOptions): SqlParameter;
-  bigIntParam(name: string, value: bigint | string | null, options?: ParameterOptions): SqlParameter;
-  varCharParam(name: string, value: string | null, length?: number, options?: ParameterOptions): SqlParameter;
-  nVarCharParam(name: string, value: string | null, length: number, options?: ParameterOptions): SqlParameter;
-  dateTimeParam(name: string, value: string | null, options?: ParameterOptions): SqlParameter;
-  tableParam(name: string, columns: readonly TableColumn[], rows: readonly any[][], options?: ParameterOptions): SqlParameter;
+  param(name: string, type: TediousType, value: any, options?: ParameterOptions): Parameter;
+  bitParam(name: string, value: boolean | null): Parameter;
+  intParam(name: string, value: string | number | null): Parameter;
+  bigIntParam(name: string, value: bigint | string | null): Parameter;
+  varCharParam(name: string, value: string | null, length: number | 'max'): Parameter;
+  nVarCharParam(name: string, value: string | null, length: number | 'max'): Parameter;
+  dateTimeParam(name: string, value: Date | string | null, scale?: number): Parameter;
+  xmlParam(name: string, value: Xml | null): Parameter;
+  tableParam(name: string, columns: readonly TableColumn[], rows: readonly any[][]): Parameter;
 }
 export interface DbAccess {
   types: TediousTypes;
   runQuery: {
-    (query: string, ...parameters: SqlParameter[]): Promise<any[]>;
+    (query: string, ...parameters: Parameter[]): Promise<any[]>;
   } & DbAccessQueryParams;
   runSp: {
-    (sp: string, ...parameters: SqlParameter[]): Promise<any[]>;
+    (sp: string, ...parameters: Parameter[]): Promise<any[]>;
   } & DbAccessQueryParams;
 }
 
@@ -161,32 +162,36 @@ function attachHelperFunctions(f: any): any {
   f.varCharParam = varCharParam;
   f.nVarCharParam = nVarCharParam;
   f.dateTimeParam = dateTimeParam;
+  f.xmlParam = xmlParam;
   f.tableParam = tableParam;
   return f;
 
-  function param(name: string, type: TediousType, value: any, options?: ParameterOptions): SqlParameter {
+  function param(name: string, type: TediousType, value: any, options?: ParameterOptions): Parameter {
     return { name, type, value, options };
   }
-  function bitParam(name: string, value: boolean | null, options?: ParameterOptions): SqlParameter {
-    return { name, type: TYPES.Bit, value, options };
+  function bitParam(name: string, value: boolean | null): Parameter {
+    return { name, type: TYPES.Bit, value };
   }
-  function intParam(name: string, value: string | number | null, options?: ParameterOptions): SqlParameter {
-    return { name, type: TYPES.Int, value, options };
+  function intParam(name: string, value: string | number | null): Parameter {
+    return { name, type: TYPES.Int, value };
   }
-  function bigIntParam(name: string, value: string | null, options?: ParameterOptions): SqlParameter {
-    return { name, type: TYPES.BigInt, value: value, options };
+  function bigIntParam(name: string, value: bigint | string | null): Parameter {
+    return { name, type: TYPES.BigInt, value };
   }
-  function varCharParam(name: string, value: string | null, length: number, options?: ParameterOptions): SqlParameter {
-    return { name, type: TYPES.VarChar, value, options: length ? { length: length } : options };
+  function varCharParam(name: string, value: string | null, length: number | 'max'): Parameter {
+    return { name, type: TYPES.VarChar, value, options: { length } };
   }
-  function nVarCharParam(name: string, value: string | null, length: number, options?: ParameterOptions): SqlParameter {
-    return { name, type: TYPES.NVarChar, value, options: length ? { length: length } : options };
+  function nVarCharParam(name: string, value: string | null, length: number | 'max'): Parameter {
+    return { name, type: TYPES.NVarChar, value, options: { length } };
   }
-  function dateTimeParam(name: string, value: Date | string | null, options?: ParameterOptions): SqlParameter {
-    return { name, type: TYPES.VarChar, value: typeof value === 'string' ? value : value.toJSON(), options: { ...options, length: 15 } };
+  function dateTimeParam(name: string, value: Date | string | null, scale?: number): Parameter {
+    return { name, type: TYPES.VarChar, value: typeof value === 'string' ? value : value.toJSON(), options: { scale } };
   }
-  function tableParam(name: string, columns: readonly TableColumn[], rows: readonly any[][], options?: ParameterOptions): SqlParameter {
-    return { name, type: TYPES.TVP, value: { columns, rows }, options };
+  function xmlParam(name: string, value: Xml | null): Parameter {
+    return { name, type: TYPES.Xml, value };
+  }
+  function tableParam(name: string, columns: readonly TableColumn[], rows: readonly any[][]): Parameter {
+    return { name, type: TYPES.TVP, value: { columns, rows } };
   }
 }
 
@@ -237,6 +242,20 @@ export function withTransactionalDbAccess(task: (dbAccess: DbAccess) => Promise<
       );
     });
   });
+}
+
+export function select<E>(selectors: { [K in keyof E]: string }) {
+  return {
+    from(source: string) {
+      return {
+        where(condition?: string) {
+          return `select ${Object.keys(selectors)
+            .map(property => `${selectors[property]} as [${property}]`)
+            .join(' ')} from ${source}${condition ? `where ${condition};` : ''}`;
+        }
+      };
+    }
+  };
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////
@@ -314,4 +333,5 @@ export function withTransactionalDbAccess(task: (dbAccess: DbAccess) => Promise<
 
 //     connection.execSql(request);
 //   });
+
 // });

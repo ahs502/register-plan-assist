@@ -1,28 +1,27 @@
-import AircraftIdentityType, { AircraftIdentityTypes } from '@core/types/aircraft-identity/AircraftIdentityType';
-import MasterData from '@core/master-data';
-import DummyAircraftRegisterModel from './DummyAircraftRegisterModel';
+import AircraftIdentityType, { AircraftIdentityTypes } from '@core/types/AircraftIdentityType';
+import Id from '@core/types/Id';
 import Validation from '@ahs502/validation';
+import MasterData from '@core/master-data';
 
 export default interface AircraftIdentityModel {
   readonly type: AircraftIdentityType;
-  readonly entityId: string;
+  readonly entityId: Id;
 }
 
-export class AircraftIdentityValidation extends Validation<'TYPE_EXISTS' | 'TYPE_IS_VALID' | 'ENTITY_ID_EXISTS' | 'ENTITY_ID_IS_VALID'> {
-  constructor(aircraftIdentity: AircraftIdentityModel, dummyAircraftRegistersId: readonly string[]) {
+export class AircraftIdentityModelValidation extends Validation {
+  constructor(data: AircraftIdentityModel, dummyAircraftRegisterIds: readonly Id[]) {
     super(validator =>
-      validator.object(aircraftIdentity).do(({ type, entityId }) => {
-        validator.check('TYPE_EXISTS', !!type).check('TYPE_IS_VALID', () => AircraftIdentityTypes.includes(type));
-        validator.check('ENTITY_ID_EXISTS', !!entityId).check('ENTITY_ID_IS_VALID', () => {
+      validator.object(data).then(({ type, entityId }) => {
+        validator.must(AircraftIdentityTypes.includes(type), typeof entityId === 'string', !!entityId).must(() => {
           switch (type) {
             case 'REGISTER':
-              return !!MasterData.all.aircraftRegisters.id[entityId] || dummyAircraftRegistersId.some(r => r === entityId);
+              return entityId in MasterData.all.aircraftRegisters.id || dummyAircraftRegisterIds.includes(entityId);
             case 'TYPE':
             case 'TYPE_EXISTING':
             case 'TYPE_DUMMY':
-              return !!MasterData.all.aircraftTypes.id[entityId];
+              return entityId in MasterData.all.aircraftTypes.id;
             case 'GROUP':
-              return !!MasterData.all.aircraftGroups.id[entityId];
+              return entityId in MasterData.all.aircraftRegisterGroups;
             default:
               return false;
           }

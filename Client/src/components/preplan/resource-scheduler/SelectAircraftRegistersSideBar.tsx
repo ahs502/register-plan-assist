@@ -1,16 +1,17 @@
-import React, { FC, useState, Fragment } from 'react';
+import React, { FC, useState, Fragment as div, Fragment, useContext } from 'react';
 import { Theme, Table, TableHead, TableBody, TableCell, TableRow, Typography, TextField, IconButton, FormControl, Select, Divider, Grow, Collapse } from '@material-ui/core';
 import { Clear as RemoveIcon, Check as CheckIcon } from '@material-ui/icons';
 import { makeStyles } from '@material-ui/styles';
-import SideBarContainer from './SideBarContainer';
 import classNames from 'classnames';
-import AircraftRegisterStatus from '@core/types/aircraft-register-options/AircraftRegisterStatus';
-import DummyAircraftRegisterModel from '@core/models/DummyAircraftRegisterModel';
-import { AircraftRegisterOptionsDictionaryModel } from '@core/models/AircraftRegisterOptionsModel';
-import MasterData, { Airport, AircraftType } from '@core/master-data';
-import { PreplanAircraftRegisters } from 'src/business/PreplanAircraftRegister';
+import MasterData, { AircraftType } from '@core/master-data';
+import { PreplanAircraftRegisters } from 'src/business/preplan/PreplanAircraftRegister';
 import Search, { filterOnProperties } from 'src/components/Search';
 import useProperty from 'src/utils/useProperty';
+import AircraftRegisterOptionsStatus from '@core/types/AircraftRegisterOptionsStatus';
+import DummyAircraftRegisterModel from '@core/models/preplan/DummyAircraftRegisterModel';
+import AircraftRegisterOptionsModel from '@core/models/preplan/AircraftRegisterOptionsModel';
+import { PreplanContext } from 'src/pages/preplan';
+import SideBarContainer from 'src/components/preplan/resource-scheduler/SideBarContainer';
 
 const useStyles = makeStyles((theme: Theme) => ({
   searchWrapper: {
@@ -34,6 +35,17 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
   ignoredRegister: {
     backgroundColor: theme.palette.extraColors.ignoredRegister
+  },
+  content: {
+    height: `calc(100%)`
+  },
+  body: {
+    height: `calc(100% - 82px)`,
+    overflow: 'auto'
+  },
+  bodyWithAddDummy: {
+    height: `calc(100% - 188px)`,
+    overflow: 'auto'
   }
 }));
 
@@ -42,13 +54,13 @@ interface AircraftRegister {
   name: string;
   groups: string[];
   baseAirport: string;
-  status: AircraftRegisterStatus;
+  status: AircraftRegisterOptionsStatus;
 }
 interface DummyAircraftRegister {
   id: string;
   name: string;
   baseAirport: string;
-  status: AircraftRegisterStatus;
+  status: AircraftRegisterOptionsStatus;
 }
 interface AircraftRegistersPerType {
   type: AircraftType;
@@ -62,10 +74,10 @@ interface AddDummyAircraftRegisterForm {
   name: string;
   aircraftType: string;
   baseAirport: string;
-  status: AircraftRegisterStatus;
+  status: AircraftRegisterOptionsStatus;
 }
 
-const aircraftRegisterStatusList: readonly { value: AircraftRegisterStatus; label: string }[] = [
+const aircraftRegisterOptionsStatusList: readonly { value: AircraftRegisterOptionsStatus; label: string }[] = [
   { value: 'IGNORED', label: 'Ignored' },
   { value: 'BACKUP', label: 'Backup' },
   { value: 'INCLUDED', label: 'Included' }
@@ -73,19 +85,20 @@ const aircraftRegisterStatusList: readonly { value: AircraftRegisterStatus; labe
 
 export interface SelectAircraftRegistersSideBarProps {
   initialSearch?: string;
-  aircraftRegisters: PreplanAircraftRegisters;
-  onApply(dummyAircraftRegisters: readonly DummyAircraftRegisterModel[], aircraftRegisterOptionsDictionary: AircraftRegisterOptionsDictionaryModel): void;
+  onApply(dummyAircraftRegisters: readonly DummyAircraftRegisterModel[], aircraftRegisterOptions: AircraftRegisterOptionsModel): void;
   loading?: boolean;
   errorMessage?: string;
 }
 
-const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = ({ initialSearch, aircraftRegisters, onApply, loading, errorMessage }) => {
+const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = ({ initialSearch, onApply, loading, errorMessage }) => {
+  const preplan = useContext(PreplanContext);
+
   const [query, setQuery] = useState<readonly string[]>([]);
 
   const dummyAircraftRegisterIdCounter = useProperty(0);
   const [list, setList] = useState<AircraftRegisters>(() => {
     dummyAircraftRegisterIdCounter(
-      aircraftRegisters.items
+      preplan.aircraftRegisters.items
         .filter(r => r.dummy)
         .map(r => Number(r.id.replace('dummy-', '')))
         .sort()
@@ -93,23 +106,24 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
     );
 
     return MasterData.all.aircraftTypes.items.orderBy('displayOrder').map(t => {
-      const registers = aircraftRegisters.items
+      const registers = preplan.aircraftRegisters.items
         .filter(a => !a.dummy && a.aircraftType.id === t.id)
         .map(a => ({
           id: a.id,
           name: a.name,
-          groups: MasterData.all.aircraftGroups.items.filter(g => g.aircraftRegisters.filter(r => r.id === a.id)).map(g => g.name),
-          baseAirport: a.options.startingAirport ? a.options.startingAirport.name : '',
+          groups: MasterData.all.aircraftRegisterGroups.items.filter(g => g.aircraftRegisters.filter(r => r.id === a.id)).map(g => g.name),
+          baseAirport: a.options.baseAirport ? a.options.baseAirport.name : '',
           status: a.options.status
         }));
-      const dummyRegisters = aircraftRegisters.items
+      const dummyRegisters = preplan.aircraftRegisters.items
         .filter(a => a.dummy && a.aircraftType.id === t.id)
         .map(a => ({
           id: a.id,
           name: a.name,
-          baseAirport: a.options.startingAirport ? a.options.startingAirport.name : '',
+          baseAirport: a.options.baseAirport ? a.options.baseAirport.name : '',
           status: a.options.status
         }));
+
       return {
         type: t,
         registers,
@@ -119,6 +133,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
       };
     });
   });
+
   const [addDummyRegisterFormModel, setAddDummyRegisterFormModel] = useState<AddDummyAircraftRegisterForm>({
     show: false,
     name: '',
@@ -137,25 +152,25 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
         }))
       )
       .reduce((a, l) => a.concat(l), [] as DummyAircraftRegisterModel[]);
-    const aircraftRegisterOptionsDictionary: AircraftRegisterOptionsDictionaryModel = {};
-    list.forEach(t => {
-      t.registers.forEach(r => {
-        const airport = r.baseAirport && MasterData.all.airports.items.find(a => a.name.toUpperCase() === r.baseAirport.toUpperCase());
-        return ((aircraftRegisterOptionsDictionary[r.id] as any) = {
-          status: r.status,
-          startingAirportId: airport && airport.id
-        });
-      });
-      t.dummyRegisters.forEach(r => {
-        const airport = r.baseAirport && MasterData.all.airports.items.find(a => a.name.toUpperCase() === r.baseAirport.toUpperCase());
-        return ((aircraftRegisterOptionsDictionary[r.id] as any) = {
-          status: r.status,
-          startingAirportId: airport && airport.id
-        });
-      });
-    });
+    const aircraftRegisterOptions: AircraftRegisterOptionsModel = { options: [] };
+    // list.forEach(t => {
+    //   t.registers.forEach(r => {
+    //     const airport = r.baseAirport && MasterData.all.airports.items.find(a => a.name.toUpperCase() === r.baseAirport.toUpperCase());
+    //     return ((aircraftRegisterOptionsDictionary[r.id] as any) = {
+    //       status: r.status,
+    //       startingAirportId: airport && airport.id
+    //     });
+    //   });
+    //   t.dummyRegisters.forEach(r => {
+    //     const airport = r.baseAirport && MasterData.all.airports.items.find(a => a.name.toUpperCase() === r.baseAirport.toUpperCase());
+    //     return ((aircraftRegisterOptionsDictionary[r.id] as any) = {
+    //       status: r.status,
+    //       startingAirportId: airport && airport.id
+    //     });
+    //   });
+    // });
     //TODO: Validate those models...
-    onApply(dummyAircraftRegisters, aircraftRegisterOptionsDictionary);
+    onApply(dummyAircraftRegisters, aircraftRegisterOptions);
   }
 
   const classes = useStyles();
@@ -191,27 +206,18 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
             hover={true}
           >
             <TableCell className={classes.nameCell}>
-              <TextField
-                value={addDummyRegisterFormModel.name}
-                onChange={e => {
-                  setAddDummyRegisterFormModel({ ...addDummyRegisterFormModel, name: e.target.value });
-                }}
-              />
+              <TextField value={addDummyRegisterFormModel.name} onChange={event => setAddDummyRegisterFormModel({ ...addDummyRegisterFormModel, name: event.target.value })} />
             </TableCell>
             <TableCell>
               <TextField
                 value={addDummyRegisterFormModel.aircraftType}
-                onChange={e => {
-                  setAddDummyRegisterFormModel({ ...addDummyRegisterFormModel, aircraftType: e.target.value });
-                }}
+                onChange={event => setAddDummyRegisterFormModel({ ...addDummyRegisterFormModel, aircraftType: event.target.value })}
               />
             </TableCell>
             <TableCell className={classes.baseAirportCell}>
               <TextField
                 value={addDummyRegisterFormModel.baseAirport}
-                onChange={e => {
-                  setAddDummyRegisterFormModel({ ...addDummyRegisterFormModel, baseAirport: e.target.value });
-                }}
+                onChange={event => setAddDummyRegisterFormModel({ ...addDummyRegisterFormModel, baseAirport: event.target.value })}
               />
             </TableCell>
             <TableCell className={classes.stateCell}>
@@ -221,11 +227,9 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
                   native
                   variant="outlined"
                   value={addDummyRegisterFormModel.status}
-                  onChange={e => {
-                    setAddDummyRegisterFormModel({ ...addDummyRegisterFormModel, status: e.target.value as AircraftRegisterStatus });
-                  }}
+                  onChange={event => setAddDummyRegisterFormModel({ ...addDummyRegisterFormModel, status: event.target.value as AircraftRegisterOptionsStatus })}
                 >
-                  {aircraftRegisterStatusList.map(a => (
+                  {aircraftRegisterOptionsStatusList.map(a => (
                     <option key={a.value} value={a.value}>
                       {a.label}
                     </option>
@@ -260,6 +264,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
       </Table>
     </Collapse>
   );
+
   const tableHead = (
     <TableHead>
       <TableRow>
@@ -281,6 +286,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
       </TableRow>
     </TableHead>
   );
+
   const aircraftRegisterRow = (t: AircraftRegistersPerType, r: AircraftRegister) => (
     <TableRow key={r.id} hover={true} className={classNames({ [classes.backupRegister]: r.status === 'BACKUP', [classes.ignoredRegister]: r.status === 'IGNORED' })}>
       <TableCell className={classes.nameCell}>
@@ -290,8 +296,8 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
         <TextField
           disabled={loading}
           value={r.baseAirport}
-          onChange={e => {
-            r.baseAirport = e.target.value;
+          onChange={event => {
+            r.baseAirport = event.target.value;
             setList([...list]);
           }}
         />
@@ -304,12 +310,12 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
             variant="outlined"
             disabled={loading}
             value={r.status}
-            onChange={e => {
-              r.status = e.target.value as AircraftRegisterStatus;
+            onChange={event => {
+              r.status = event.target.value as AircraftRegisterOptionsStatus;
               setList([...list]);
             }}
           >
-            {aircraftRegisterStatusList.map(a => (
+            {aircraftRegisterOptionsStatusList.map(a => (
               <option key={a.value} value={a.value}>
                 {a.label}
               </option>
@@ -322,14 +328,15 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
       </TableCell>
     </TableRow>
   );
+
   const dummyAircraftRegisterRow = (t: AircraftRegistersPerType, r: DummyAircraftRegister) => (
     <TableRow key={r.id} hover={true} className={classNames({ [classes.backupRegister]: r.status === 'BACKUP', [classes.ignoredRegister]: r.status === 'IGNORED' })}>
       <TableCell className={classes.nameCell}>
         <TextField
           value={r.name}
           disabled={loading}
-          onChange={e => {
-            r.name = e.target.value;
+          onChange={event => {
+            r.name = event.target.value;
             setList([...list]);
           }}
         />
@@ -338,8 +345,8 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
         <TextField
           value={r.baseAirport}
           disabled={loading}
-          onChange={e => {
-            r.baseAirport = e.target.value;
+          onChange={event => {
+            r.baseAirport = event.target.value;
             setList([...list]);
           }}
         />
@@ -352,12 +359,12 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
             native
             variant="outlined"
             value={r.status}
-            onChange={e => {
-              r.status = e.target.value as AircraftRegisterStatus;
+            onChange={event => {
+              r.status = event.target.value as AircraftRegisterOptionsStatus;
               setList([...list]);
             }}
           >
-            {aircraftRegisterStatusList.map(a => (
+            {aircraftRegisterOptionsStatusList.map(a => (
               <option key={a.value} value={a.value}>
                 {a.label}
               </option>
@@ -388,27 +395,37 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
       loading={loading}
       errorMessage={errorMessage}
     >
-      <div className={classes.searchWrapper}>
-        <Search disabled={loading} onQueryChange={query => setQuery(query)} />
-      </div>
+      <div className={classes.content}>
+        <div className={classes.searchWrapper}>
+          <Search disabled={loading} onQueryChange={query => setQuery(query)} />
+        </div>
 
-      {addDummyRegisterForm}
-      {list.map(t => (
-        <Fragment key={t.type.id}>
-          <br />
-          <br />
-          <Typography variant="h6" display="inline">
-            Type: {t.type.name}
-          </Typography>
-          <Table size="small">
-            {tableHead}
-            <TableBody>
-              {filterOnProperties(t.registers, query, ['name']).map(r => aircraftRegisterRow(t, r))}
-              {filterOnProperties(t.dummyRegisters, query, ['name']).map(r => dummyAircraftRegisterRow(t, r))}
-            </TableBody>
-          </Table>
-        </Fragment>
-      ))}
+        {addDummyRegisterForm}
+        <div className={addDummyRegisterFormModel.show ? classes.bodyWithAddDummy : classes.body}>
+          {list.map((t, index) => (
+            <div key={t.type.id}>
+              <Typography variant="h6" display="inline">
+                Type: {t.type.name}
+              </Typography>
+              <Table size="small">
+                {tableHead}
+                <TableBody>
+                  {filterOnProperties(t.registers, query, 'name').map(r => aircraftRegisterRow(t, r))}
+                  {filterOnProperties(t.dummyRegisters, query, 'name').map(r => dummyAircraftRegisterRow(t, r))}
+                </TableBody>
+              </Table>
+              {index !== list.length - 1 ? (
+                <Fragment>
+                  <br />
+                  <br />
+                </Fragment>
+              ) : (
+                <Fragment></Fragment>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
     </SideBarContainer>
   );
 };

@@ -48,7 +48,7 @@ declare interface Array<T> {
   /**
    * Returns the flattened array of this array.
    */
-  flatten<U>(): T extends (infer U)[] ? U[] : T[];
+  flatten(): T extends readonly (infer U)[] ? U[] : T[];
 
   /**
    * Returns a grouped dictionary of this array.
@@ -99,7 +99,7 @@ declare interface ReadonlyArray<T> {
   /**
    * Returns the flattened array of this array.
    */
-  flatten<U>(): T extends (infer U)[] ? U[] : T[];
+  flatten(): any[]; //TODO: T extends readonly (infer U)[] ? U[] : T[];
 
   /**
    * Returns a grouped dictionary of this array.
@@ -158,6 +158,24 @@ declare interface DateConstructor {
    * @param time The time part of the concatenation.
    */
   concatDateTime(date: Date, time: Date): Date;
+
+  /**
+   * Returns true iff the first interval fully covers the second one.
+   * @param firstStart First interval start.
+   * @param firstEnd First interval end.
+   * @param secondStart Second interval start.
+   * @param secondEnd Second interval end.
+   */
+  intervalCovers<T extends Date | number | string>(firstStart: T, firstEnd: T, secondStart: T, secondEnd: T): boolean;
+
+  /**
+   * Returns true iff the first and second intervals have some overlap.
+   * @param firstStart First interval start.
+   * @param firstEnd First interval end.
+   * @param secondStart Second interval start.
+   * @param secondEnd Second interval end.
+   */
+  intervalOverlaps<T extends Date | number | string>(firstStart: T, firstEnd: T, secondStart: T, secondEnd: T): boolean;
 }
 
 declare interface Date {

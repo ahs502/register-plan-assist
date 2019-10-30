@@ -4,7 +4,7 @@ import AirportModel from './AirportModel';
 import SeasonTypeModel from './SeasonTypeModel';
 import SeasonModel from './SeasonModel';
 import StcModel from './StcModel';
-import AircraftGroupModel from './AircraftGroupModel';
+import AircraftRegisterGroupModel from './AircraftRegisterGroupModel';
 import ConstraintTemplateModel from './ConstraintTemplateModel';
 import ConstraintModel from './ConstraintModel';
 
@@ -15,7 +15,7 @@ export default interface MasterDataModel {
   readonly seasonTypes?: readonly SeasonTypeModel[];
   readonly seasons?: readonly SeasonModel[];
   readonly stcs?: readonly StcModel[];
-  readonly aircraftGroups?: readonly AircraftGroupModel[];
+  readonly aircraftRegisterGroups?: readonly AircraftRegisterGroupModel[];
   readonly constraintTemplates?: readonly ConstraintTemplateModel[];
   readonly constraints?: readonly ConstraintModel[];
 }

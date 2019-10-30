@@ -1,50 +1,52 @@
-import React, { FC, useState } from 'react';
-import { Theme, Typography, FormControl, Select, TextField, InputLabel } from '@material-ui/core';
+import React, { FC } from 'react';
+import { Theme } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
-import SideBarContainer from './SideBarContainer';
-import MinimumGroundTimeMode from '@core/types/auto-arranger-options/MinimumGroundTimeMode';
-import AutoArrangerOptionsModel from '@core/models/AutoArrangerOptionsModel';
-import AutoArrangerOptions from 'src/business/AutoArrangerOptions';
+import SideBarContainer from 'src/components/preplan/resource-scheduler/SideBarContainer';
 
 const useStyles = makeStyles((theme: Theme) => ({
-  formControl: {
-    marginTop: theme.spacing(2)
-  },
-  selectStyle: {
-    paddingLeft: theme.spacing(1),
-    paddingRight: theme.spacing(5)
-  },
-  textFieldStyle: {
-    paddingLeft: theme.spacing(1)
-  }
+  // formControl: {
+  //   marginTop: theme.spacing(2)
+  // },
+  // selectStyle: {
+  //   paddingLeft: theme.spacing(1),
+  //   paddingRight: theme.spacing(5)
+  // },
+  // textFieldStyle: {
+  //   paddingLeft: theme.spacing(1)
+  // }
 }));
 
-const minimumGroundTimeModes: readonly { value: MinimumGroundTimeMode; label: string }[] = [
-  { value: 'MINIMUM', label: 'Minimum' },
-  { value: 'MAXIMUM', label: 'Maximum' },
-  { value: 'AVERAGE', label: 'Average' }
-];
+// const minimumGroundTimeModes: readonly { value: MinimumGroundTimeMode; label: string }[] = [
+//   { value: 'MINIMUM', label: 'Minimum' },
+//   { value: 'MAXIMUM', label: 'Maximum' },
+//   { value: 'AVERAGE', label: 'Average' }
+// ];
 
 export interface SettingsSideBarProps {
-  autoArrangerOptions: AutoArrangerOptions;
-  onApply: (autoArrangerOptions: AutoArrangerOptionsModel) => void;
+  // autoArrangerOptions: AutoArrangerOptions;
+  // onApply: (autoArrangerOptions: AutoArrangerOptionsModel) => void;
 }
 
-const SettingsSideBar: FC<SettingsSideBarProps> = ({ autoArrangerOptions, onApply }) => {
-  const [minimumGroundTimeMode, setMinimumGroundTimeMode] = useState(autoArrangerOptions.minimumGroundTimeMode);
-  const [minimumGroundTimeOffset, setMinimumGroundTimeOffset] = useState(autoArrangerOptions.minimumGroundTimeOffset);
+const SettingsSideBar: FC<SettingsSideBarProps> = (
+  {
+    // autoArrangerOptions,
+    // onApply
+  }
+) => {
+  // const [minimumGroundTimeMode, setMinimumGroundTimeMode] = useState(autoArrangerOptions.minimumGroundTimeMode);
+  // const [minimumGroundTimeOffset, setMinimumGroundTimeOffset] = useState(autoArrangerOptions.minimumGroundTimeOffset);
 
   const classes = useStyles();
 
   return (
     <SideBarContainer
-      label="Auto-Arranger Options"
-      onApply={() => {
-        const autoArrangerOptions: AutoArrangerOptionsModel = { minimumGroundTimeMode, minimumGroundTimeOffset };
-        onApply(autoArrangerOptions);
-      }}
+      label="Settings"
+      // onApply={() => {
+      //   const autoArrangerOptions: AutoArrangerOptionsModel = { minimumGroundTimeMode, minimumGroundTimeOffset };
+      //   onApply(autoArrangerOptions);
+      // }}
     >
-      <Typography variant="body1">Minimum Ground Time</Typography>
+      {/* <Typography variant="body1">Minimum Ground Time</Typography>
       <FormControl fullWidth className={classes.formControl}>
         <InputLabel htmlFor="age-native-simple">Mode</InputLabel>
         <Select
@@ -71,7 +73,8 @@ const SettingsSideBar: FC<SettingsSideBarProps> = ({ autoArrangerOptions, onAppl
             className: classes.textFieldStyle
           }}
         />
-      </FormControl>
+      </FormControl> */}
+      Nothing yet!
     </SideBarContainer>
   );
 };

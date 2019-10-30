@@ -4,10 +4,11 @@ import { Add as AddIcon } from '@material-ui/icons';
 import { makeStyles } from '@material-ui/styles';
 import classNames from 'classnames';
 
-const useStyles = makeStyles((theme: Theme) => ({
+const useStyles = makeStyles<Theme>((theme: Theme) => ({
   root: {
     margin: 0,
-    width: theme.spacing(60)
+    width: theme.spacing(60),
+    height: '100%'
   },
   label: {
     border: 'solid',
@@ -19,11 +20,14 @@ const useStyles = makeStyles((theme: Theme) => ({
     borderColor: theme.palette.grey[400],
     backgroundColor: theme.palette.grey[200],
     margin: 0,
-    padding: theme.spacing(2)
+    padding: theme.spacing(2),
+    height: 70
   },
   contents: {
     margin: 0,
-    padding: theme.spacing(2)
+    padding: theme.spacing(2),
+    height: `calc(100% - 70px)`,
+    overflow: `auto`
   },
   progress: {
     position: 'absolute',

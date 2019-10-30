@@ -7,7 +7,7 @@ export default class Daytime {
 
   /**
    * Creates a new Daytime.
-   * @param value A number specifying minutes from midnight or a string with format 'hh:mm' or a UTC Date or a Daytime object to clone.
+   * @param value A number specifying minutes from midnight or a string with format 'hh:mm' or 'hhmm' (not only 2 digit format for each part) or a UTC Date or a Daytime object to clone.
    * @param baseDate When provided and the value parameter is a Date object, it will be calculated from that base date not its own date.
    */
   constructor(value: any, baseDate?: Date) {
@@ -17,6 +17,9 @@ export default class Daytime {
       const stringValue: string = value,
         separatorIndex = stringValue.indexOf(':');
       this.minutes = Number(stringValue.slice(0, separatorIndex)) * 60 + Number(stringValue.slice(separatorIndex + 1));
+    } else if (typeof value === 'string' && /^\d{3,}$/.test(value)) {
+      const stringValue: string = value;
+      this.minutes = Number(stringValue.slice(0, -2)) * 60 + Number(stringValue.slice(-2));
     } else if (value && value.constructor === Date && (value as Date).isValid()) {
       if (baseDate) {
         const date = new Date(baseDate);
@@ -48,16 +51,25 @@ export default class Daytime {
   }
 
   /**
-   * Returns the string with the format 'H:mm'.
+   * Returns the string with the specified format.
    * @param clip Whether to express the daytime within 24-hours format or not.
    * For example `'2:35'` instead of `'26:35'`.
+   * @param format The format of the output string.
    */
-  toString(clip?: boolean): string {
+  toString(format: 'HH:mm' | 'H:mm' | 'HHmm' | 'Hmm' = 'HH:mm', clip?: boolean): string {
     this.checkValidity();
     const totalMinutes = clip ? this.minutes % (24 * 60) : this.minutes;
     const minutes = totalMinutes % 60,
       hours = (totalMinutes - minutes) / 60;
-    return hours + ':' + String(minutes).padStart(2, '0');
+    return format === 'HH:mm'
+      ? String(hours).padStart(2, '0') + ':' + String(minutes).padStart(2, '0')
+      : format === 'H:mm'
+      ? String(hours) + ':' + String(minutes).padStart(2, '0')
+      : format === 'HHmm'
+      ? String(hours).padStart(2, '0') + String(minutes).padStart(2, '0')
+      : format === 'Hmm'
+      ? String(hours) + String(minutes).padStart(2, '0')
+      : '';
   }
 
   /**

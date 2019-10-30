@@ -1,6 +1,6 @@
 {
   "name": "register-plan-assist",
-  "version": "0.0.3",
+  "version": "1.0.3",
   "private": true,
   "description": "Intelligent Flight Scheduler",
   "scripts": {
@@ -16,6 +16,7 @@
     "version-minor": "npm version --no-git-tag-version minor",
     "version-patch": "npm version --no-git-tag-version patch",
     "postversion": "node ./version.js post",
+    "status": "find . \\( -name '*.ts' -o -name '*.tsx' -o -name '*.js' -o -name '*.json' -o -name '*.html' -o -name '*.css' \\) -not \\( -path '*/node_modules/*' -o -name 'package*' -o -path '*/dist/*' -o -path '*/make/*' -o -path '*/build/*' -o -path '*/temp/*' \\) | xargs wc -l",
     "gulp": "gulp",
     "ncu": "ncu"
   },
@@ -26,13 +27,11 @@
   "author": "Mahan Air",
   "license": "ISC",
   "devDependencies": {
-    "@types/gulp": "^4.0.6"
-  },
-  "dependencies": {
-    "concurrently": "^4.1.1",
-    "del": "^5.0.0",
+    "@types/gulp": "^4.0.6",
+    "concurrently": "^4.1.2",
+    "del": "^5.1.0",
     "gulp": "^4.0.2",
     "gulp-run-command": "0.0.9",
-    "npm-check-updates": "^3.1.20"
+    "npm-check-updates": "^3.1.23"
   }
 }

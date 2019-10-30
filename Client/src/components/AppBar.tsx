@@ -93,7 +93,7 @@ const AppBar: FC<AppBarProps> = ({ loading }) => {
         <IconButton color="inherit" title={fullScreen ? 'Exit Full Screen' : 'Full Screen'} onClick={() => toggleFullScreen()}>
           {fullScreen ? <ExitFullScreenIcon /> : <FullScreenIcon />}
         </IconButton>
-        <i className={classNames('icon-mahan-air-logo', classes.iconSize)} title="Mahan Air" />
+        <i className={classNames('rpa-icon-mahan-air-logo', classes.iconSize)} title="Mahan Air" />
       </Toolbar>
     </MaterialUiAppBar>
   );

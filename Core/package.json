@@ -1,6 +1,6 @@
 {
   "name": "register-plan-assist-core",
-  "version": "0.0.3",
+  "version": "1.0.3",
   "private": true,
   "description": "Intelligent Flight Scheduler - Core",
   "scripts": {
@@ -9,11 +9,10 @@
   "author": "Mahan Air",
   "license": "ISC",
   "dependencies": {
-    "@ahs502/validation": "^2.3.0"
+    "@ahs502/validation": "^4.0.0"
   },
   "devDependencies": {
-    "@types/node": "^12.6.2",
-    "npm-check-updates": "^3.1.20",
-    "typescript": "^3.5.3"
+    "npm-check-updates": "^3.1.23",
+    "typescript": "^3.6.3"
   }
 }

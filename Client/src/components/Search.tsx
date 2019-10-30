@@ -71,7 +71,7 @@ export default Search;
 export function filterOnProperties<K extends string, T extends { [key in K]?: string | undefined | null }>(
   items: readonly T[],
   query: readonly string[],
-  properties: readonly (K | ((item: T) => string | null | undefined))[]
+  ...properties: (K | ((item: T) => string | null | undefined))[]
 ): readonly T[] {
   if (query.length === 0) return items;
   return items.filter(item => {

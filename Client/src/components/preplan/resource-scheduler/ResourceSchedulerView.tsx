@@ -1,19 +1,20 @@
-import React, { FC, useState, Fragment, useRef, useMemo, memo } from 'react';
-import { Theme, Menu, MenuItem, MenuList, ClickAwayListener, Paper, ListItemIcon, Typography, Divider } from '@material-ui/core';
+import React, { FC, useState, Fragment, useRef, useMemo, memo, useContext } from 'react';
+import { Theme, MenuItem, MenuList, ClickAwayListener, Paper, ListItemIcon, Typography, Divider } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import { Check as CheckIcon } from '@material-ui/icons';
-import Flight from 'src/business/flights/Flight';
 import Daytime from '@core/types/Daytime';
-import PreplanAircraftRegister, { PreplanAircraftRegisters } from 'src/business/PreplanAircraftRegister';
-import { ChangeLog } from 'src/business/AutoArrangerState';
-import { DataGroup, DataItem, TimelineOptions, Id, Timeline } from 'vis-timeline';
+import PreplanAircraftRegister, { PreplanAircraftRegisters } from 'src/business/preplan/PreplanAircraftRegister';
+import { DataGroup, DataItem, TimelineOptions, Timeline } from 'vis-timeline';
 import Weekday from '@core/types/Weekday';
 import VisTimeline from 'src/components/preplan/resource-scheduler/VisTimeline';
 import moment from 'moment';
 import useProperty from 'src/utils/useProperty';
-import FlightPack from 'src/business/flights/FlightPack';
-import { AircraftType, AircraftRegister } from '@core/master-data';
+import { AircraftType } from '@core/master-data';
 import persistant from 'src/utils/persistant';
+import chroma from 'chroma-js';
+import Flight from 'src/business/flight/Flight';
+import FlightLeg from 'src/business/flight/FlightLeg';
+import { PreplanContext } from 'src/pages/preplan';
 
 const useStyles = makeStyles((theme: Theme) => ({
   '@global': {
@@ -54,6 +55,38 @@ const useStyles = makeStyles((theme: Theme) => ({
         }
       }
     },
+    '.rpa-group-dummy-mark': {
+      color: 'violet',
+      fontSize: '14px',
+      fontWeight: 800,
+      marginLeft: 4,
+      borderRadius: '6px',
+      padding: '0 1px',
+      cursor: 'pointer',
+      '&:hover': {
+        boxShadow: '0 0 6px 0px violet'
+      }
+    },
+    '.rpa-group-error-mark': {
+      color: theme.palette.extraColors.erroredFlight,
+      margin: 0,
+      borderRadius: '6px',
+      padding: 0,
+      cursor: 'pointer',
+      '&:hover': {
+        boxShadow: `0 0 6px 0px ${theme.palette.extraColors.erroredFlight}`
+      }
+    },
+    '.rpa-group-warning-mark': {
+      color: theme.palette.extraColors.warnedFlight,
+      margin: 0,
+      borderRadius: '6px',
+      padding: 0,
+      cursor: 'pointer',
+      '&:hover': {
+        boxShadow: `0 0 6px 0px ${theme.palette.extraColors.warnedFlight}`
+      }
+    },
     '.rpa-item-header': {
       display: 'flex',
       flexWrap: 'wrap',
@@ -78,11 +111,11 @@ const useStyles = makeStyles((theme: Theme) => ({
       }
     },
     '.rpa-item-body': {
-      display: 'flex',
       position: 'relative',
-      border: '1px solid rgba(0, 20, 110, 0.5)',
-      borderRadius: '3px',
-      backgroundColor: 'rgba(0, 20, 110, 0.15)',
+      border: '1px solid rgba(0, 20, 110, 0.5)', // Will be overridden.
+      borderRadius: '4px',
+      backgroundColor: 'rgba(0, 20, 110, 0.15)', // Will be overridden.
+      height: 27,
       '&.rpa-unknown-aircraft-register': {
         opacity: 0.5
       },
@@ -90,12 +123,20 @@ const useStyles = makeStyles((theme: Theme) => ({
         borderLeftWidth: 4,
         '&.rpa-origin-permission-semi': {
           borderLeftStyle: 'double'
+        },
+        '& .rpa-item-section.rpa-item-section-first': {
+          borderTopLeftRadius: 0,
+          borderBottomLeftRadius: 0
         }
       },
       '&.rpa-destination-permission': {
         borderRightWidth: 4,
         '&.rpa-destination-permission-semi': {
           borderRightStyle: 'double'
+        },
+        '& .rpa-item-section.rpa-item-section-last': {
+          borderTopRightRadius: 0,
+          borderBottomRightRadius: 0
         }
       },
       '&.rpa-changed': {
@@ -108,17 +149,41 @@ const useStyles = makeStyles((theme: Theme) => ({
         position: 'absolute',
         top: 0,
         bottom: 0,
-        backgroundColor: 'rgba(0, 20, 110, 0.15)'
+        backgroundColor: 'rgba(0, 20, 110, 0.15)', // Will be overridden.
+        '&.rpa-item-section-error': {
+          border: `2px solid ${theme.palette.extraColors.erroredFlight}DD`,
+          borderRightWidth: 3,
+          borderLeftWidth: 3,
+          boxShadow: 'inset 0 0 4px 3px white'
+        },
+        '&.rpa-item-section-warning': {
+          border: `2px solid ${theme.palette.extraColors.warnedFlight}`,
+          borderRightWidth: 3,
+          borderLeftWidth: 3,
+          boxShadow: 'inset 0 0 4px 3px white'
+        },
+        '&.rpa-item-section-first': {
+          borderLeftWidth: 2,
+          borderTopLeftRadius: '4px',
+          borderBottomLeftRadius: '4px'
+        },
+        '&.rpa-item-section-last': {
+          borderRightWidth: 2,
+          borderTopRightRadius: '4px',
+          borderBottomRightRadius: '4px'
+        }
       },
       '& .rpa-item-label': {
-        flexGrow: 1,
+        position: 'absolute',
+        width: '100%',
         textAlign: 'center',
         fontSize: '16px',
         lineHeight: '25px',
-        paddingTop: 1,
-        textShadow: '0 0 2px #797979'
+        paddingTop: 0,
+        textShadow:
+          '0 0 1px #777, 1px 0px 1px white, 1px 1px 1px white, 0px 1px 1px white, -1px 1px 1px white, -1px 0px 1px white, -1px -1px 1px white, 0px -1px 1px white, 1px -1px 1px white, 0 3px 4px black'
       },
-      '& .rpa-dot': {
+      '& .rpa-pin': {
         display: 'inline-block',
         height: 5,
         width: 5,
@@ -126,13 +191,10 @@ const useStyles = makeStyles((theme: Theme) => ({
         backgroundColor: 'white',
         border: '1px solid black',
         position: 'absolute',
-        '&.rpa-dot-semi': {
-          opacity: 0.4
-        },
-        '&.rpa-dot-left': { left: 1 },
-        '&.rpa-dot-right': { right: 1 },
-        '&.rpa-dot-top': { top: 1 },
-        '&.rpa-dot-bottom': { bottom: 1 }
+        '&.rpa-pin-left': { left: 1 },
+        '&.rpa-pin-right': { right: 1 },
+        '&.rpa-pin-top': { top: 1 },
+        '&.rpa-pin-bottom': { bottom: 1 }
       }
     },
     '.rpa-item-footer': {
@@ -172,52 +234,27 @@ const useStyles = makeStyles((theme: Theme) => ({
   }
 }));
 
-interface FlightPackContextMenuModel {
+interface FlightContextMenuModel {
   open?: boolean;
-  flightPack?: FlightPack;
+  flight?: Flight;
 }
 
 export interface ResourceSchedulerViewProps {
-  startDate: Date;
-  readonly: boolean;
-  flights: readonly Flight[];
-  flightPacks: readonly FlightPack[];
-  aircraftRegisters: PreplanAircraftRegisters;
-  changeLogs: readonly ChangeLog[];
-  selectedFlightPack?: FlightPack;
-  onSelectFlightPack(flightPack?: FlightPack): void;
-  // onViewChange(start?:Date,end?:Date,)
-  onFreezeFlightPack(flightPack: FlightPack, freezed: boolean): void;
-  onRequireFlightPack(flightPack: FlightPack, required: boolean): void;
-  onIgnoreFlightPack(flightPack: FlightPack): void;
+  selectedFlight?: Flight;
+  onSelectFlight(flight?: Flight): void;
   onOpenFlightModal(flight: Flight): void;
-  onOpenFlightPackModal(flightPack: FlightPack): void;
-  onFlightPackDragAndDrop(flightPack: FlightPack, deltaStd: number, newAircraftRegister?: PreplanAircraftRegister): void;
-  onFlightPackMouseHover(flightPack: FlightPack): void;
-  onFreeSpaceMouseHover(aircraftRegister: PreplanAircraftRegister, previousFlightPack?: FlightPack, nextFlightPack?: FlightPack): void;
+  onOpenFlightLegModal(flightLeg: FlightLeg): void;
+  onFlightDragAndDrop(flight: Flight, deltaStd: number, newAircraftRegister?: PreplanAircraftRegister): void;
+  onFlightMouseHover(flight: Flight): void;
+  onFreeSpaceMouseHover(aircraftRegister: PreplanAircraftRegister, previousFlight?: Flight, nextFlight?: Flight): void;
   onNowhereMouseHover(): void;
 }
 
 const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = memo(
-  ({
-    startDate,
-    readonly,
-    flights,
-    flightPacks,
-    aircraftRegisters,
-    changeLogs,
-    selectedFlightPack,
-    onSelectFlightPack,
-    onFreezeFlightPack,
-    onRequireFlightPack,
-    onIgnoreFlightPack,
-    onOpenFlightModal,
-    onOpenFlightPackModal,
-    onFlightPackDragAndDrop,
-    onFlightPackMouseHover,
-    onFreeSpaceMouseHover,
-    onNowhereMouseHover
-  }) => {
+  ({ selectedFlight, onSelectFlight, onOpenFlightModal, onOpenFlightLegModal, onFlightDragAndDrop, onFlightMouseHover, onFreeSpaceMouseHover, onNowhereMouseHover }) => {
+    const preplan = useContext(PreplanContext);
+    const startDate = preplan.startDate.getDatePart().addDays((preplan.startDate.getUTCDay() + 1) % 7);
+
     const timeline = useProperty<Timeline>(null as any);
     const timelineScrollTop = useProperty<number | undefined>(undefined);
     const timelineOptions = useMemo<TimelineOptions>(() => {
@@ -281,29 +318,20 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = memo(
         // onDragObjectOnItem(objectData, item) {},
         // onInitialDrawComplete() {},
         onMove(item, callback) {
-          const flightPack: FlightPack = item.data;
-          const newAircraftRegister = aircraftRegisters.id[item.group as any];
-          const deltaStd = Math.round((new Date(item.start).getTime() - flightPack.startDateTime(startDate).getTime()) / (5 * 60 * 1000)) * 5;
-          onFlightPackDragAndDrop(flightPack, deltaStd, newAircraftRegister);
+          const flight: Flight = item.data;
+          const newAircraftRegister = preplan.aircraftRegisters.id[item.group as any];
+          const deltaStd = Math.round((new Date(item.start).getTime() - flight.startDateTime(startDate).getTime()) / (5 * 60 * 1000)) * 5;
+          onFlightDragAndDrop(flight, deltaStd, newAircraftRegister);
           callback(item);
         },
         // onMoveGroup(group, callback) {},
         onMoving(item, callback) {
           if ((item.group as string).startsWith('T')) return callback(null);
-          const flightPack: FlightPack = item.data;
-          const originalStart = startDate.getTime() + (flightPack.day * 24 * 60 + flightPack.start.minutes) * 60 * 1000;
-          const originalEnd = startDate.getTime() + (flightPack.day * 24 * 60 + flightPack.end.minutes) * 60 * 1000;
+          const flight: Flight = item.data;
+          const originalStart = flight.startDateTime(startDate).getTime();
+          const originalEnd = flight.endDateTime(startDate).getTime();
           const calclulatedStart = Date.parse(item.start as any);
           const calculatedEnd = Date.parse(item.end as any);
-          // console.log('hi', (originalStart / 300000) % 1000, (originalEnd / 300000) % 1000, (calclulatedStart / 300000) % 1000, (calculatedEnd / 300000) % 1000);
-          // if (originalStart === calclulatedStart && originalEnd !== calculatedEnd) {
-          //   console.log('end');
-          //   item.start = new Date(calculatedEnd + (originalStart - originalEnd));
-          // }
-          // if (originalStart !== calclulatedStart && originalEnd === calculatedEnd) {
-          //   console.log('start');
-          //   item.end = new Date(calclulatedStart + (originalEnd - originalStart));
-          // }
           if (calculatedEnd - calclulatedStart !== originalEnd - originalStart) {
             item.start = new Date(originalStart);
             item.end = new Date(originalEnd);
@@ -354,81 +382,92 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = memo(
               <small>${group.content}</small>
             </div>
           `;
-        return `<div>${group.content}</div>`;
+        if (group.id === '???')
+          return `
+            <div>
+              ${group.content}
+            </div>
+          `;
+        const aircraftRegister: PreplanAircraftRegister = group.data;
+        const aircraftRegisterObjections = preplan.constraintSystem.getObjectionsByTarget(aircraftRegister);
+        const aircraftRegisterObjectionStatus = preplan.constraintSystem.getObjectionStatusByTarget(aircraftRegister);
+        return `
+          <div>
+            ${group.content}
+            ${aircraftRegister.dummy ? '<span class="rpa-group-dummy-mark" title="Dummy Aircraft Register">D</span>' : ''}
+            ${
+              aircraftRegisterObjectionStatus === 'ERROR'
+                ? `
+                    <i class="rpa-icon-cancel-button material-icons rpa-group-error-mark" aria-hidden="true" type="1" title="${
+                      aircraftRegisterObjections!.length === 1 ? '1 Objection' : `${aircraftRegisterObjections!.length} Objections`
+                    }" onclick="alert('Not implemented.');">
+                    </i>
+                  `
+                : aircraftRegisterObjectionStatus === 'WARNING'
+                ? `
+                    <i class="rpa-icon-alert material-icons rpa-group-warning-mark" aria-hidden="true" type="1" title="${
+                      aircraftRegisterObjections!.length === 1 ? '1 Objection' : `${aircraftRegisterObjections!.length} Objections`
+                    }" onclick="alert('Not implemented.');">
+                    </i>
+                  `
+                : ''
+            }
+          </div>
+        `;
       }
 
       function itemTemplate(item: DataItem, element: HTMLElement, data: DataItem): string {
         if (item.className && item.className.startsWith('rpa-group-item-')) return '';
 
-        const flightPack: FlightPack = item.data;
-        const stcColor = persistant.userSettings!.stcColors[flightPack.flights[0].stc.name];
+        const flight: Flight = item.data;
+        const stcColor = chroma(persistant.userSettings!.stcColors[flight.stc.name] || '#000000');
         return `
           <div class="rpa-item-header">
             <div class="rpa-item-time rpa-item-std">
-              ${flightPack.start.toString(true)}
-              ${flightPack.required === false ? '&nbsp;' : ''}
+              ${flight.start.toString('H:mm', true)}
             </div>
-            ${
-              flightPack.required === true
-                ? `<div class="rpa-required-asterisk rpa-required-asterisk-full">&#10045;</div>`
-                : flightPack.required === undefined
-                ? `<div class="rpa-required-asterisk rpa-required-asterisk-semi">&#10045;</div>`
-                : ''
-            }
             <div class="rpa-item-time rpa-item-sta">
-              ${flightPack.required === false ? '&nbsp;' : ''}
-              ${flightPack.end.toString(true)}
+              ${flight.end.toString('H:mm', true)}
             </div>
           </div>
           <div class="rpa-item-body
-          ${flightPack.knownAircraftRegister ? ' rpa-known-aircraft-register' : ' rpa-unknown-aircraft-register'}
+          ${flight.knownAircraftRegister ? ' rpa-known-aircraft-register' : ' rpa-unknown-aircraft-register'}
           ${
-            flightPack.originPermission === true
+            flight.originPermission === true
               ? ' rpa-origin-permission rpa-origin-permission-full'
-              : flightPack.originPermission === undefined
+              : flight.originPermission === undefined
               ? ' rpa-origin-permission rpa-origin-permission-semi'
               : ''
           }
           ${
-            flightPack.destinationPermission === true
+            flight.destinationPermission === true
               ? ' rpa-destination-permission rpa-destination-permission-full'
-              : flightPack.destinationPermission === undefined
+              : flight.destinationPermission === undefined
               ? ' rpa-destination-permission rpa-destination-permission-semi'
               : ''
           }
-          ${flightPack.changed === true ? ' rpa-changed rpa-changed-full' : flightPack.changed === undefined ? ' rpa-changed rpa-changed-semi' : ''}
-          " style="border-color: ${stcColor}80; background-color: ${stcColor}23;">
-            ${flightPack.sections
-              .map(s => `<div class="rpa-item-section" style="left: ${s.start * 100}%; right: ${(1 - s.end) * 100}%; background-color: ${stcColor}23;"></div>`)
+          " style="border-color: ${stcColor}; background-color: ${chroma.mix(stcColor.desaturate(1), '#fff', 0.8)};">
+            ${flight.sections
+              .map((s, index, sections) => {
+                const flightLegObjectionStatus = preplan.constraintSystem.getObjectionStatusByTarget(flight.legs[index]);
+                return `<div class="rpa-item-section${
+                  flightLegObjectionStatus === 'ERROR' ? ' rpa-item-section-error' : flightLegObjectionStatus === 'WARNING' ? ' rpa-item-section-warning' : ''
+                }${index === 0 ? ' rpa-item-section-first' : ''}${index === sections.length - 1 ? ' rpa-item-section-last' : ''}" style="left: ${s.start * 100}%; right: ${(1 -
+                  s.end) *
+                  100}%; background-color: ${chroma.mix(stcColor.saturate(0.4).brighten(1.5), '#fff', 0.25)};"></div>`;
+              })
               .join(' ')}
             <div class="rpa-item-label">
-              ${flightPack.label}
+              ${flight.label}
             </div>
-            ${
-              flightPack.freezed === true
-                ? `
-                  <span class="rpa-dot rpa-dot-full rpa-dot-top rpa-dot-left"></span>
-                  <span class="rpa-dot rpa-dot-full rpa-dot-top rpa-dot-right"></span>
-                  <span class="rpa-dot rpa-dot-full rpa-dot-bottom rpa-dot-left"></span>
-                  <span class="rpa-dot rpa-dot-full rpa-dot-bottom rpa-dot-right"></span>
-                `
-                : flightPack.freezed === undefined
-                ? `
-                  <span class="rpa-dot rpa-dot-semi rpa-dot-top rpa-dot-left"></span>
-                  <span class="rpa-dot rpa-dot-semi rpa-dot-top rpa-dot-right"></span>
-                  <span class="rpa-dot rpa-dot-semi rpa-dot-bottom rpa-dot-left"></span>
-                  <span class="rpa-dot rpa-dot-semi rpa-dot-bottom rpa-dot-right"></span>
-                `
-                : ''
-            }
           </div>
           ${
-            flightPack.icons.length === 0 && !flightPack.notes
+            flight.icons.length === 0 && !flight.notes
               ? ''
               : `
                   <div class="rpa-item-footer">
-                    ${flightPack.icons.map(i => `<span class="rpa-item-icon">${i}</span>`).join(' ')}
-                    ${flightPack.notes
+                    ${flight.icons.map(i => `<span class="rpa-item-icon">${i}</span>`).join(' ')}
+                    ${flight.notes
                       .split('')
                       .map(c => `<div>${c === ' ' ? '&nbsp;' : c}</div>`)
                       .join('')}
@@ -436,11 +475,96 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = memo(
                 `
           }
         `;
+        // return `
+        //   <div class="rpa-item-header">
+        //     <div class="rpa-item-time rpa-item-std">
+        //       ${flight.start.toString(true)}
+        //       ${flight.required === false ? '&nbsp;' : ''}
+        //     </div>
+        //     ${
+        //       flight.required === true
+        //         ? `<div class="rpa-required-asterisk rpa-required-asterisk-full">&#10045;</div>`
+        //         : flight.required === undefined
+        //         ? `<div class="rpa-required-asterisk rpa-required-asterisk-semi">&#10045;</div>`
+        //         : ''
+        //     }
+        //     <div class="rpa-item-time rpa-item-sta">
+        //       ${flight.required === false ? '&nbsp;' : ''}
+        //       ${flight.end.toString(true)}
+        //     </div>
+        //   </div>
+        //   <div class="rpa-item-body
+        //   ${flight.knownAircraftRegister ? ' rpa-known-aircraft-register' : ' rpa-unknown-aircraft-register'}
+        //   ${
+        //     flight.originPermission === true
+        //       ? ' rpa-origin-permission rpa-origin-permission-full'
+        //       : flight.originPermission === undefined
+        //       ? ' rpa-origin-permission rpa-origin-permission-semi'
+        //       : ''
+        //   }
+        //   ${
+        //     flight.destinationPermission === true
+        //       ? ' rpa-destination-permission rpa-destination-permission-full'
+        //       : flight.destinationPermission === undefined
+        //       ? ' rpa-destination-permission rpa-destination-permission-semi'
+        //       : ''
+        //   }
+        //   ${flight.changed === true ? ' rpa-changed rpa-changed-full' : flight.changed === undefined ? ' rpa-changed rpa-changed-semi' : ''}
+        //   " style="border-color: ${stcColor}; background-color: ${chroma.mix(stcColor.desaturate(1), '#fff', 0.8)};">
+        //     ${flight.sections
+        //       .map(
+        //         (s, index, sections) =>
+        //           `<div class="rpa-item-section${
+        //             flight.flights[index].objectionStatus === 'ERROR'
+        //               ? ' rpa-item-section-error'
+        //               : flight.flights[index].objectionStatus === 'WARNING'
+        //               ? ' rpa-item-section-warning'
+        //               : ''
+        //           }${index === 0 ? ' rpa-item-section-first' : ''}${index === sections.length - 1 ? ' rpa-item-section-last' : ''}" style="left: ${s.start * 100}%; right: ${(1 -
+        //             s.end) *
+        //             100}%; background-color: ${chroma.mix(stcColor.saturate(0.4).brighten(1.5), '#fff', 0.25)};"></div>`
+        //       )
+        //       .join(' ')}
+        //     <div class="rpa-item-label">
+        //       ${flight.label}
+        //     </div>
+        //     ${
+        //       flight.freezed === true
+        //         ? `
+        //           <span class="rpa-pin rpa-pin-top rpa-pin-left"></span>
+        //           <span class="rpa-pin rpa-pin-top rpa-pin-right"></span>
+        //           <span class="rpa-pin rpa-pin-bottom rpa-pin-left"></span>
+        //           <span class="rpa-pin rpa-pin-bottom rpa-pin-right"></span>
+        //         `
+        //         : flight.freezed === undefined
+        //         ? `
+        //           <span class="rpa-pin rpa-pin-top rpa-pin-left"></span>
+        //           <!--<span class="rpa-pin rpa-pin-top rpa-pin-right"></span>-->
+        //           <!--<span class="rpa-pin rpa-pin-bottom rpa-pin-left"></span>-->
+        //           <span class="rpa-pin rpa-pin-bottom rpa-pin-right"></span>
+        //         `
+        //         : ''
+        //     }
+        //   </div>
+        //   ${
+        //     flight.icons.length === 0 && !flight.notes
+        //       ? ''
+        //       : `
+        //           <div class="rpa-item-footer">
+        //             ${flight.icons.map(i => `<span class="rpa-item-icon">${i}</span>`).join(' ')}
+        //             ${flight.notes
+        //               .split('')
+        //               .map(c => `<div>${c === ' ' ? '&nbsp;' : c}</div>`)
+        //               .join('')}
+        //           </div>
+        //         `
+        //   }
+        // `;
       }
     }, [startDate.getTime()]);
     const timelineGroups = useMemo<DataGroup[]>(() => {
       // const registers = aircraftRegisters.items.filter(r => flights.some(f => f.aircraftRegister && f.aircraftRegister.id === r.id)).sortBy('name');
-      const registers = aircraftRegisters.items
+      const registers = preplan.aircraftRegisters.items
         .filter(r => r.options.status !== 'IGNORED')
         .sort((a, b) => {
           if (a.options.status === 'BACKUP' && b.options.status === 'INCLUDED') return 1;
@@ -483,11 +607,11 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = memo(
       });
 
       return groups;
-    }, [aircraftRegisters]);
+    }, [preplan.aircraftRegisters]);
     const timelineItems = useMemo<DataItem[]>(() => {
-      const items = flightPacks.map(
+      const items = preplan.flights.map(
         (f): DataItem => ({
-          id: f.derivedId,
+          id: f.id,
           start: new Date(startDate.getTime() + (f.day * 24 * 60 + f.start.minutes) * 60 * 1000),
           end: new Date(startDate.getTime() + (f.day * 24 * 60 + f.end.minutes) * 60 * 1000),
           group: f.aircraftRegister ? f.aircraftRegister.id : '???',
@@ -538,56 +662,56 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = memo(
 
       return items;
 
-      function itemTooltipTemplate(flightPack: FlightPack): string {
+      function itemTooltipTemplate(flight: Flight): string {
         return `
           <div>
             <div>
               <em><small>Flight:</small></em>
-              <strong>${flightPack.label}</strong>
-              ${Weekday[flightPack.day]}s
+              <strong>${flight.label}</strong>
+              ${Weekday[flight.day]}s
             </div>
             <div>
               <em><small>Flights:</small></em>
-              ${flightPack.flights
+              ${flight.legs
                 .map(
-                  f => `
+                  l => `
                     <div>
                       &nbsp;&nbsp;&nbsp;&nbsp;
-                      ${f.flightNumber}:
-                      ${f.departureAirport.name} (${f.std.toString()}) &dash;
-                      ${f.arrivalAirport.name} (${new Daytime(f.std.minutes + f.blockTime).toString()})
+                      ${l.flightNumber}:
+                      ${l.departureAirport.name} (${l.std.toString('HH:mm')}) &dash;
+                      ${l.arrivalAirport.name} (${new Daytime(l.std.minutes + l.blockTime).toString('HH:mm')})
                     </div>
                   `
                 )
                 .join('')}
             </div>
             ${
-              flightPack.icons.length === 0
+              flight.icons.length === 0
                 ? ''
                 : `
                     <div>
                       <em><small>Flags:</small></em>
-                      ${flightPack.icons.map(i => `<strong>${i}</strong>`).join(' | ')}
+                      ${flight.icons.map(i => `<strong>${i}</strong>`).join(' | ')}
                     </div>
                   `
             }
             ${
-              !flightPack.notes
+              !flight.notes
                 ? ''
                 : `
                     <div>
                       <em><small>Notes:</small></em>
-                      ${flightPack.notes}
+                      ${flight.notes}
                     </div>
                   `
             }
           </div>
         `;
       }
-    }, [startDate.getTime(), flightPacks, timelineOptions, timelineGroups]);
+    }, [startDate.getTime(), preplan.flights, timelineOptions, timelineGroups]);
 
-    const [flightPackContextMenuModel, setFlightPackContextMenuModel] = useState<FlightPackContextMenuModel>({});
-    const flightPackContextMenuRef = useRef<HTMLDivElement>(null);
+    const [flightContextMenuModel, setFlightContextMenuModel] = useState<FlightContextMenuModel>({});
+    const flightContextMenuRef = useRef<HTMLDivElement>(null);
 
     const classes = useStyles();
 
@@ -597,7 +721,7 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = memo(
           options={timelineOptions}
           groups={timelineGroups}
           items={timelineItems}
-          selection={selectedFlightPack && selectedFlightPack.derivedId}
+          selection={selectedFlight && selectedFlight.id}
           scrollTop={timelineScrollTop()}
           onScrollY={scrollTop => timelineScrollTop(scrollTop)}
           retrieveTimeline={t => timeline(t)}
@@ -605,44 +729,44 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = memo(
           onRangeChanged={properties => timeline().redraw()}
           onSelect={({ items, event }) => {
             const item = timelineItems.find(item => item.id === items[0]);
-            onSelectFlightPack(item ? item.data : undefined);
+            onSelectFlight(item ? item.data : undefined);
           }}
           onContextMenu={properties => {
             properties.event.preventDefault();
             const item = timelineItems.find(item => item.id === properties.item);
             if (!item) return;
             const { pageX, pageY } = properties;
-            flightPackContextMenuRef.current!.style.top = `${pageY}px`;
-            flightPackContextMenuRef.current!.style.left = `${pageX}px`;
-            setFlightPackContextMenuModel({ open: true, flightPack: item.data });
+            flightContextMenuRef.current!.style.top = `${pageY}px`;
+            flightContextMenuRef.current!.style.left = `${pageX}px`;
+            setFlightContextMenuModel({ open: true, flight: item.data });
           }}
           onMouseOver={properties => {
             switch (properties.what) {
               case 'item':
                 const item = timelineItems.find(item => item.id === properties.item);
                 if (!item) return onNowhereMouseHover();
-                onFlightPackMouseHover(item.data);
+                onFlightMouseHover(item.data);
                 break;
 
               case 'background':
                 if (properties.group === '???') return onNowhereMouseHover();
-                const register = aircraftRegisters.id[properties.group as any];
+                const register = preplan.aircraftRegisters.id[properties.group as any];
                 if (!register) return onNowhereMouseHover();
-                const registerFlightPacks = flightPacks.filter(f => !!f.aircraftRegister && f.aircraftRegister.id === register.id);
-                if (registerFlightPacks.length === 0) return onFreeSpaceMouseHover(register);
-                if (registerFlightPacks.length === 1) return onFreeSpaceMouseHover(register, registerFlightPacks[0], registerFlightPacks[0]);
-                const firstFlightPack = registerFlightPacks[0],
-                  lastFlightPack = registerFlightPacks[registerFlightPacks.length - 1];
-                let previousFlightPack: FlightPack | undefined = undefined,
-                  nextFlightPack: FlightPack | undefined = registerFlightPacks.shift();
+                const registerFlights = [...preplan.flightsByAircraftRegisterId[register.id]];
+                if (registerFlights.length === 0) return onFreeSpaceMouseHover(register);
+                if (registerFlights.length === 1) return onFreeSpaceMouseHover(register, registerFlights[0], registerFlights[0]);
+                const firstFlight = registerFlights[0],
+                  lastFlight = registerFlights[registerFlights.length - 1];
+                let previousFlight: Flight | undefined = undefined,
+                  nextFlight: Flight | undefined = registerFlights.shift();
                 do {
-                  const start = previousFlightPack ? startDate.getTime() + previousFlightPack.day * 24 * 60 * 60 * 1000 + previousFlightPack.end.minutes * 60 * 1000 : -Infinity,
-                    end = nextFlightPack ? startDate.getTime() + nextFlightPack.day * 24 * 60 * 60 * 1000 + nextFlightPack.start.minutes * 60 * 1000 : Infinity;
+                  const start = previousFlight ? startDate.getTime() + previousFlight.day * 24 * 60 * 60 * 1000 + previousFlight.end.minutes * 60 * 1000 : -Infinity,
+                    end = nextFlight ? startDate.getTime() + nextFlight.day * 24 * 60 * 60 * 1000 + nextFlight.start.minutes * 60 * 1000 : Infinity;
                   if (start <= properties.time.getTime() && properties.time.getTime() <= end)
-                    return onFreeSpaceMouseHover(register, previousFlightPack || lastFlightPack, nextFlightPack || firstFlightPack);
-                  previousFlightPack = nextFlightPack;
-                  nextFlightPack = registerFlightPacks.shift();
-                } while (previousFlightPack || nextFlightPack);
+                    return onFreeSpaceMouseHover(register, previousFlight || lastFlight, nextFlight || firstFlight);
+                  previousFlight = nextFlight;
+                  nextFlight = registerFlights.shift();
+                } while (previousFlight || nextFlight);
                 onFreeSpaceMouseHover(register);
                 break;
 
@@ -651,21 +775,21 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = memo(
             }
           }}
         />
-        <ClickAwayListener onClickAway={() => setFlightPackContextMenuModel({ ...flightPackContextMenuModel, open: false })}>
+        <ClickAwayListener onClickAway={() => setFlightContextMenuModel({ ...flightContextMenuModel, open: false })}>
           <div>
-            <Paper ref={flightPackContextMenuRef} className={classes.contextMenu}>
-              {flightPackContextMenuModel.open && (
+            <Paper ref={flightContextMenuRef} className={classes.contextMenu}>
+              {flightContextMenuModel.open && (
                 <MenuList>
-                  <MenuItem
+                  {/* <MenuItem
                     onClick={() => {
-                      setFlightPackContextMenuModel({ ...flightPackContextMenuModel, open: false });
-                      onFreezeFlightPack(flightPackContextMenuModel.flightPack!, flightPackContextMenuModel.flightPack!.freezed !== true);
+                      setFlightContextMenuModel({ ...flightContextMenuModel, open: false });
+                      onFreezeFlightPack(flightContextMenuModel.flightPack!, flightContextMenuModel.flightPack!.freezed !== true);
                     }}
                   >
                     <ListItemIcon>
-                      {flightPackContextMenuModel.flightPack!.freezed === true ? (
+                      {flightContextMenuModel.flightPack!.freezed === true ? (
                         <CheckIcon />
-                      ) : flightPackContextMenuModel.flightPack!.freezed === undefined ? (
+                      ) : flightContextMenuModel.flightPack!.freezed === undefined ? (
                         <CheckIcon classes={{ root: classes.semiCheckIcon }} />
                       ) : (
                         <span />
@@ -675,14 +799,14 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = memo(
                   </MenuItem>
                   <MenuItem
                     onClick={() => {
-                      setFlightPackContextMenuModel({ ...flightPackContextMenuModel, open: false });
-                      onRequireFlightPack(flightPackContextMenuModel.flightPack!, flightPackContextMenuModel.flightPack!.required !== true);
+                      setFlightContextMenuModel({ ...flightContextMenuModel, open: false });
+                      onRequireFlightPack(flightContextMenuModel.flightPack!, flightContextMenuModel.flightPack!.required !== true);
                     }}
                   >
                     <ListItemIcon>
-                      {flightPackContextMenuModel.flightPack!.required === true ? (
+                      {flightContextMenuModel.flightPack!.required === true ? (
                         <CheckIcon />
-                      ) : flightPackContextMenuModel.flightPack!.required === undefined ? (
+                      ) : flightContextMenuModel.flightPack!.required === undefined ? (
                         <CheckIcon classes={{ root: classes.semiCheckIcon }} />
                       ) : (
                         <span />
@@ -693,8 +817,8 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = memo(
                   <Divider />
                   <MenuItem
                     onClick={() => {
-                      setFlightPackContextMenuModel({ ...flightPackContextMenuModel, open: false });
-                      onIgnoreFlightPack(flightPackContextMenuModel.flightPack!);
+                      setFlightContextMenuModel({ ...flightContextMenuModel, open: false });
+                      onIgnoreFlightPack(flightContextMenuModel.flightPack!);
                     }}
                   >
                     <ListItemIcon>
@@ -702,11 +826,11 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = memo(
                     </ListItemIcon>
                     <Typography>Ignore...</Typography>
                   </MenuItem>
-                  <Divider />
-                  <MenuItem
+                  <Divider /> */}
+                  {/* <MenuItem
                     onClick={() => {
-                      setFlightPackContextMenuModel({ ...flightPackContextMenuModel, open: false });
-                      onOpenFlightPackModal(flightPackContextMenuModel.flightPack!);
+                      setFlightContextMenuModel({ ...flightContextMenuModel, open: false });
+                      onOpenFlightPackModal(flightContextMenuModel.flightPack!);
                     }}
                   >
                     <ListItemIcon>
@@ -714,11 +838,11 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = memo(
                     </ListItemIcon>
                     <Typography>Flight Pack...</Typography>
                   </MenuItem>
-                  {flightPackContextMenuModel.flightPack!.flights.map(f => (
+                  {flightContextMenuModel.flightPack!.flights.map(f => (
                     <MenuItem
                       key={f.derivedId}
                       onClick={() => {
-                        setFlightPackContextMenuModel({ ...flightPackContextMenuModel, open: false });
+                        setFlightContextMenuModel({ ...flightContextMenuModel, open: false });
                         onOpenFlightModal(f);
                       }}
                     >
@@ -733,7 +857,7 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = memo(
                         &nbsp;&nbsp;{f.departureAirport.name}&ndash;{f.arrivalAirport.name}...
                       </Typography>
                     </MenuItem>
-                  ))}
+                  ))} */}
                 </MenuList>
               )}
             </Paper>

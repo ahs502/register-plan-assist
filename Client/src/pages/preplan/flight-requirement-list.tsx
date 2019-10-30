@@ -4,17 +4,17 @@ import { makeStyles } from '@material-ui/styles';
 import { NavBarToolsContainerContext, PreplanContext } from 'src/pages/preplan';
 import { fade } from '@material-ui/core/styles';
 import Search from 'src/components/Search';
-import { Add as AddIcon, Edit as EditIcon, Clear as ClearIcon, TrendingFlat as TrendingFlatIcon } from '@material-ui/icons';
+import { DoneAll as FinilizedIcon, Add as AddIcon, Edit as EditIcon, Clear as ClearIcon, Done as DoneIcon, TrendingFlat as TrendingFlatIcon } from '@material-ui/icons';
 import classNames from 'classnames';
 import Weekday from '@core/types/Weekday';
 import TablePagination from '@material-ui/core/TablePagination';
 import PreplanService from 'src/services/PreplanService';
 import ProgressSwitch from 'src/components/ProgressSwitch';
-import { useSnackbar } from 'notistack';
+import { useSnackbar, VariantType } from 'notistack';
+import { parseMinute } from 'src/utils/model-parsers';
 import TargetObjectionStatus from 'src/components/preplan/TargetObjectionStatus';
 import Objectionable from 'src/business/constraints/Objectionable';
 import FlightRequirement from 'src/business/flight-requirement/FlightRequirement';
-import TablePaginationActions from 'src/components/TablePaginationActions';
 
 const useStyles = makeStyles((theme: Theme) => ({
   contentPage: {
@@ -126,6 +126,7 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = React.memo
         <Tab value="ALL" label={'ALL (' + numberOfAllFR + ')'} />
         <Tab value="INCLUDE" label={'INCLUDE (' + (numberOfAllFR - numberOfIgnoreFR) + ')'} />
         <Tab value="IGNORE" label={'IGNORE (' + numberOfIgnoreFR + ')'} />
+
         <Search
           outlined
           onQueryChange={query => {
@@ -176,14 +177,14 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = React.memo
 
                         setIncludeLoadingStatus(state => ({ ...state, [d.id]: true }));
 
-                        // const newFrModel = d.extractModel({ ignored: !e.target.checked });
-                        // const result = await PreplanService.editFlightRequirements([newFrModel]);
+                        const newFrModel = d.extractModel({ ignored: !e.target.checked });
+                        const result = await PreplanService.editFlightRequirements([newFrModel]);
 
-                        // if (result.message) {
-                        //   snackbar(result.message, 'warning');
-                        // } else {
-                        //   preplan.mergeFlightRequirements(...result.value!);
-                        // }
+                        if (result.message) {
+                          snackbar(result.message, 'warning');
+                        } else {
+                          preplan.mergeFlightRequirements(...result.value!);
+                        }
 
                         setIncludeLoadingStatus(state => ({ ...state, [d.id]: false }));
                       }}

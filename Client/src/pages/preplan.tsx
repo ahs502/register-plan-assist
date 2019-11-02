@@ -148,7 +148,8 @@ const PreplanPage: FC = () => {
                   newFlightModels
                 )
               : await FlightRequirementService.add(preplan.id, newFlightRequirementModel, newFlightModels);
-            setPreplan(new Preplan(newPreplanModel, preplan));
+            const newPreplan = new Preplan(newPreplanModel, preplan);
+            setPreplan(newPreplan);
             setFlightRequirementModalModel(flightRequirementModalModel => ({ ...flightRequirementModalModel, loading: false, open: false }));
           } catch (reason) {
             setFlightRequirementModalModel(flightRequirementModalModel => ({ ...flightRequirementModalModel, loading: false, errorMessage: String(reason) }));
@@ -164,7 +165,8 @@ const PreplanPage: FC = () => {
           setRemoveFlightRequirementModalModel({ ...removeFlightRequirementModalModel, loading: true, errorMessage: undefined });
           try {
             const newPreplanModel = await FlightRequirementService.remove(preplan.id, removeFlightRequirementModalModel.flightRequirement!.id);
-            setPreplan(new Preplan(newPreplanModel, preplan));
+            const newPreplan = new Preplan(newPreplanModel, preplan);
+            setPreplan(newPreplan);
             setRemoveFlightRequirementModalModel(removeFlightRequirementModalModel => ({ ...removeFlightRequirementModalModel, loading: false, open: false }));
           } catch (reason) {
             setRemoveFlightRequirementModalModel(removeFlightRequirementModalModel => ({ ...removeFlightRequirementModalModel, loading: false, errorMessage: String(reason) }));

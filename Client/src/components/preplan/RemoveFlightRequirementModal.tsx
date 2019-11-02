@@ -33,7 +33,7 @@ const RemoveFlightRequirementModal: FC<RemoveFlightRequirementModalProps> = ({ o
         }
       ]}
     >
-      If you continue to remove this flight requirement, all its related flights will be removed too.
+      <Typography variant="body1">If you continue to remove this flight requirement, all its related flights will be removed too.</Typography>
     </ModalBase>
   );
 };

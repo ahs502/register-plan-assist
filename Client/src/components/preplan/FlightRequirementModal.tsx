@@ -2,7 +2,7 @@ import React, { FC, useState, useMemo, useContext } from 'react';
 import { Theme, Typography, Grid, TextField, Paper, Tabs, Tab, Checkbox, Button, IconButton, FormControlLabel } from '@material-ui/core';
 import { Clear as ClearIcon, Add as AddIcon, WrapText as WrapTextIcon, ArrowRightAlt as ArrowRightAltIcon } from '@material-ui/icons';
 import { makeStyles } from '@material-ui/styles';
-import ModalBase, { ModalBaseProps, ModalBaseModel } from 'src/components/ModalBase';
+import ModalBase, { ModalBaseProps, ModalBaseModel, useModalViewModel } from 'src/components/ModalBase';
 import FlightRequirement from 'src/business/flight-requirement/FlightRequirement';
 import Weekday, { Weekdays } from '@core/types/Weekday';
 import AutoComplete from 'src/components/AutoComplete';
@@ -16,7 +16,7 @@ import NewFlightRequirementModel from '@core/models/flight-requirement/NewFlight
 import FlightModel from '@core/models/flight/FlightModel';
 import NewFlightModel from '@core/models/flight/NewFlightModel';
 import FlightNumber from '@core/types/FlightNumber';
-import { parseTime } from 'src/utils/model-parsers';
+import { parseTime } from 'src/utils/parsers';
 import PreplanAircraftSelection from 'src/business/preplan/PreplanAircraftSelection';
 import FlightLegModel from '@core/models/flight/FlightLegModel';
 import AircraftIdentityModel from '@core/models/AircraftIdentityModel';
@@ -270,7 +270,7 @@ export interface FlightRequirementModalProps extends ModalBaseProps<FlightRequir
 }
 
 const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ onApply, ...others }) => {
-  const { sourceFlightRequirement, day } = others.model;
+  const { open, sourceFlightRequirement, day } = others.model;
 
   const preplan = useContext(PreplanContext);
 
@@ -313,114 +313,115 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ onApply, ...o
     [preplan]
   );
 
-  const [viewModel, setViewModel] = useState<ViewModel>(() =>
-    sourceFlightRequirement
-      ? {
-          label: sourceFlightRequirement.label,
-          category: sourceFlightRequirement.category,
-          stc: sourceFlightRequirement.stc,
-          tabIndex: day === undefined ? 'ALL' : day,
-          legIndex: 0,
-          default: {
-            rsx: sourceFlightRequirement.rsx,
-            notes: sourceFlightRequirement.notes,
-            allowedAircraftIdentities: sourceFlightRequirement.aircraftSelection.includedIdentities.map(
-              i => aircraftIdentityOptions.find(o => o.type === i.type && o.entityId === i.entity.id)!
-            ),
-            forbiddenAircraftIdentities: sourceFlightRequirement.aircraftSelection.excludedIdentities.map(
-              i => aircraftIdentityOptions.find(o => o.type === i.type && o.entityId === i.entity.id)!
-            ),
-            legs: sourceFlightRequirement.route.map<LegViewModel>(l => ({
-              blockTime: String(l.blockTime),
-              stdLowerBound: l.stdLowerBound.toString('HHmm', true),
-              stdUpperBound: l.stdUpperBound === undefined ? '' : l.stdUpperBound.toString('HHmm', true),
-              originPermission: l.originPermission,
-              destinationPermission: l.destinationPermission
-            }))
-          },
-          route: sourceFlightRequirement.route.map<RouteLegViewModel>((l, index) => ({
-            originalIndex: index,
-            flightNumber: l.flightNumber.standardFormat,
-            departureAirport: l.departureAirport.name,
-            arrivalAirport: l.arrivalAirport.name
-          })),
-          days: Weekdays.map<DayTabViewModel>(d => {
-            const sourceDayFlightRequirement = sourceFlightRequirement.days.find(x => x.day === d);
-            return {
-              selected: !!sourceDayFlightRequirement,
-              rsx: sourceDayFlightRequirement ? sourceDayFlightRequirement.rsx : sourceFlightRequirement.rsx,
-              notes: sourceDayFlightRequirement ? sourceDayFlightRequirement.notes : sourceFlightRequirement.notes,
-              allowedAircraftIdentities: (sourceDayFlightRequirement
-                ? sourceDayFlightRequirement.aircraftSelection
-                : sourceFlightRequirement.aircraftSelection
-              ).includedIdentities.map(i => aircraftIdentityOptions.find(o => o.type === i.type && o.entityId === i.entity.id)!),
-              forbiddenAircraftIdentities: (sourceDayFlightRequirement
-                ? sourceDayFlightRequirement.aircraftSelection
-                : sourceFlightRequirement.aircraftSelection
-              ).excludedIdentities.map(i => aircraftIdentityOptions.find(o => o.type === i.type && o.entityId === i.entity.id)!),
-              legs: sourceDayFlightRequirement
-                ? sourceDayFlightRequirement.route.map<LegViewModel>(l => ({
-                    blockTime: String(l.blockTime),
-                    stdLowerBound: l.stdLowerBound.toString('HHmm', true),
-                    stdUpperBound: l.stdUpperBound === undefined ? '' : l.stdUpperBound.toString('HHmm', true),
-                    originPermission: l.originPermission,
-                    destinationPermission: l.destinationPermission
-                  }))
-                : sourceFlightRequirement.route.map<LegViewModel>(l => ({
-                    blockTime: String(l.blockTime),
-                    stdLowerBound: l.stdLowerBound.toString('HHmm', true),
-                    stdUpperBound: l.stdUpperBound === undefined ? '' : l.stdUpperBound.toString('HHmm', true),
-                    originPermission: l.originPermission,
-                    destinationPermission: l.destinationPermission
-                  }))
-            };
-          })
+  const [viewModel, setViewModel] = useModalViewModel<ViewModel>(
+    open,
+    {
+      label: '',
+      category: '',
+      stc: MasterData.all.stcs.items.find(s => s.name === 'J')!,
+      tabIndex: 'ALL',
+      legIndex: 0,
+      default: {
+        rsx: 'REAL',
+        notes: '',
+        allowedAircraftIdentities: [],
+        forbiddenAircraftIdentities: [],
+        legs: [
+          {
+            blockTime: '',
+            stdLowerBound: '',
+            stdUpperBound: '',
+            originPermission: false,
+            destinationPermission: false
+          }
+        ]
+      },
+      route: [
+        {
+          flightNumber: '',
+          departureAirport: '',
+          arrivalAirport: ''
         }
-      : {
-          label: '',
-          category: '',
-          stc: MasterData.all.stcs.items.find(s => s.name === 'J')!,
-          tabIndex: 'ALL',
-          legIndex: 0,
-          default: {
-            rsx: 'REAL',
-            notes: '',
-            allowedAircraftIdentities: [],
-            forbiddenAircraftIdentities: [],
-            legs: [
-              {
-                blockTime: '',
-                stdLowerBound: '',
-                stdUpperBound: '',
-                originPermission: false,
-                destinationPermission: false
-              }
-            ]
-          },
-          route: [
-            {
-              flightNumber: '',
-              departureAirport: '',
-              arrivalAirport: ''
-            }
-          ],
-          days: Weekdays.map<DayTabViewModel>(d => ({
-            selected: false,
-            rsx: 'REAL',
-            notes: '',
-            allowedAircraftIdentities: [],
-            forbiddenAircraftIdentities: [],
-            legs: [
-              {
-                blockTime: '',
-                stdLowerBound: '',
-                stdUpperBound: '',
-                originPermission: false,
-                destinationPermission: false
-              }
-            ]
+      ],
+      days: Weekdays.map<DayTabViewModel>(d => ({
+        selected: false,
+        rsx: 'REAL',
+        notes: '',
+        allowedAircraftIdentities: [],
+        forbiddenAircraftIdentities: [],
+        legs: [
+          {
+            blockTime: '',
+            stdLowerBound: '',
+            stdUpperBound: '',
+            originPermission: false,
+            destinationPermission: false
+          }
+        ]
+      }))
+    },
+    () =>
+      sourceFlightRequirement && {
+        label: sourceFlightRequirement.label,
+        category: sourceFlightRequirement.category,
+        stc: sourceFlightRequirement.stc,
+        tabIndex: day === undefined ? 'ALL' : day,
+        legIndex: 0,
+        default: {
+          rsx: sourceFlightRequirement.rsx,
+          notes: sourceFlightRequirement.notes,
+          allowedAircraftIdentities: sourceFlightRequirement.aircraftSelection.includedIdentities.map(
+            i => aircraftIdentityOptions.find(o => o.type === i.type && o.entityId === i.entity.id)!
+          ),
+          forbiddenAircraftIdentities: sourceFlightRequirement.aircraftSelection.excludedIdentities.map(
+            i => aircraftIdentityOptions.find(o => o.type === i.type && o.entityId === i.entity.id)!
+          ),
+          legs: sourceFlightRequirement.route.map<LegViewModel>(l => ({
+            blockTime: String(l.blockTime),
+            stdLowerBound: l.stdLowerBound.toString('HHmm', true),
+            stdUpperBound: l.stdUpperBound === undefined ? '' : l.stdUpperBound.toString('HHmm', true),
+            originPermission: l.originPermission,
+            destinationPermission: l.destinationPermission
           }))
-        }
+        },
+        route: sourceFlightRequirement.route.map<RouteLegViewModel>((l, index) => ({
+          originalIndex: index,
+          flightNumber: l.flightNumber.standardFormat,
+          departureAirport: l.departureAirport.name,
+          arrivalAirport: l.arrivalAirport.name
+        })),
+        days: Weekdays.map<DayTabViewModel>(d => {
+          const sourceDayFlightRequirement = sourceFlightRequirement.days.find(x => x.day === d);
+          return {
+            selected: !!sourceDayFlightRequirement,
+            rsx: sourceDayFlightRequirement ? sourceDayFlightRequirement.rsx : sourceFlightRequirement.rsx,
+            notes: sourceDayFlightRequirement ? sourceDayFlightRequirement.notes : sourceFlightRequirement.notes,
+            allowedAircraftIdentities: (sourceDayFlightRequirement
+              ? sourceDayFlightRequirement.aircraftSelection
+              : sourceFlightRequirement.aircraftSelection
+            ).includedIdentities.map(i => aircraftIdentityOptions.find(o => o.type === i.type && o.entityId === i.entity.id)!),
+            forbiddenAircraftIdentities: (sourceDayFlightRequirement
+              ? sourceDayFlightRequirement.aircraftSelection
+              : sourceFlightRequirement.aircraftSelection
+            ).excludedIdentities.map(i => aircraftIdentityOptions.find(o => o.type === i.type && o.entityId === i.entity.id)!),
+            legs: sourceDayFlightRequirement
+              ? sourceDayFlightRequirement.route.map<LegViewModel>(l => ({
+                  blockTime: String(l.blockTime),
+                  stdLowerBound: l.stdLowerBound.toString('HHmm', true),
+                  stdUpperBound: l.stdUpperBound === undefined ? '' : l.stdUpperBound.toString('HHmm', true),
+                  originPermission: l.originPermission,
+                  destinationPermission: l.destinationPermission
+                }))
+              : sourceFlightRequirement.route.map<LegViewModel>(l => ({
+                  blockTime: String(l.blockTime),
+                  stdLowerBound: l.stdLowerBound.toString('HHmm', true),
+                  stdUpperBound: l.stdUpperBound === undefined ? '' : l.stdUpperBound.toString('HHmm', true),
+                  originPermission: l.originPermission,
+                  destinationPermission: l.destinationPermission
+                }))
+          };
+        })
+      }
   );
   const tabViewModel = viewModel.tabIndex === 'ALL' ? viewModel.default : viewModel.days[viewModel.tabIndex];
   const routeLegViewModel = viewModel.route[viewModel.legIndex];

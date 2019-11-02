@@ -4,7 +4,7 @@ import { makeStyles } from '@material-ui/styles';
 import { DoneAll as FinilizedIcon, LockOutlined as LockIcon, LockOpenOutlined as LockOpenIcon, Search as SearchIcon, SettingsOutlined as SettingsIcon } from '@material-ui/icons';
 import MahanIcon, { MahanIconType } from 'src/components/MahanIcon';
 import LinkIconButton from 'src/components/LinkIconButton';
-import { NavBarToolsContainerContext, PreplanContext } from 'src/pages/preplan';
+import { NavBarToolsContainerContext, PreplanContext, ReloadPreplanContext } from 'src/pages/preplan';
 import SearchFlightsSideBar from 'src/components/preplan/resource-scheduler/SearchFlightsSideBar';
 import ObjectionsSideBar from 'src/components/preplan/resource-scheduler/ObjectionsSideBar';
 import SelectAircraftRegistersSideBar from 'src/components/preplan/resource-scheduler/SelectAircraftRegistersSideBar';
@@ -14,7 +14,7 @@ import Preplan from 'src/business/preplan/Preplan';
 import PreplanService from 'src/services/PreplanService';
 import { useSnackbar } from 'notistack';
 import PreplanAircraftRegister from 'src/business/preplan/PreplanAircraftRegister';
-import ModalBase from 'src/components/ModalBase';
+import BaseModal from 'src/components/BaseModal';
 import Weekday from '@core/types/Weekday';
 import { red, blue, green, cyan, indigo, orange, purple } from '@material-ui/core/colors';
 import StatusBar, { StatusBarProps } from 'src/components/preplan/resource-scheduler/StatusBar';
@@ -126,14 +126,14 @@ interface ResourceSchedulerViewModel {
 // }
 
 export interface ResourceSchedulerPageProps {
-  reloadPreplan(newPreplanModel?: PreplanModel): void;
   onObjectionTargetClick(target: Objectionable): void;
   onEditFlightRequirement(flightRequirement: FlightRequirement): void;
   onEditDayFlightRequirement(dayFlightRequirement: DayFlightRequirement): void;
 }
 
-const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ reloadPreplan, onObjectionTargetClick, onEditFlightRequirement, onEditDayFlightRequirement }) => {
+const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ onObjectionTargetClick, onEditFlightRequirement, onEditDayFlightRequirement }) => {
   const preplan = useContext(PreplanContext);
+  const reloadPreplan = useContext(ReloadPreplanContext);
 
   const [sideBarState, setSideBarState] = useState<SideBarState>({ open: false, loading: false, errorMessage: undefined });
   const [resourceSchedulerViewModel, setResourceSchedulerViewModel] = useState<ResourceSchedulerViewModel>({ loading: false });

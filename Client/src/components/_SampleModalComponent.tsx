@@ -1,43 +1,38 @@
-import React, { FC, useState } from 'react';
+import React, { FC } from 'react';
 import { Theme } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
-import ModalBase, { ModalBaseProps, ModalBaseModel, useModalViewModel } from 'src/components/ModalBase';
+import BaseModal, { BaseModalProps, useModalState, useModalViewState } from 'src/components/BaseModal';
 
 const useStyles = makeStyles((theme: Theme) => ({
   // The modal specific styles go here...
 }));
 
-interface ViewModel {
-  someViewVariable: number;
+export interface SampleModalState {
+  modalStateProperty: number;
 }
 
-export interface SampleModalModel extends ModalBaseModel {
-  extraModelProperty?: number; // They should be optional unless it has to be otherwise.
-}
-
-export interface SampleModalProps extends ModalBaseProps<SampleModalModel> {
+export interface SampleModalProps extends BaseModalProps<SampleModalState> {
   onSomeAction(someData: number): void;
+  onSomeAsyncAction(someData: number): Promise<void>;
 }
 
-const SampleModal: FC<SampleModalProps> = ({ onSomeAction, ...others }) => {
-  const { open, extraModelProperty } = others.model;
-
-  const [viewModel, setViewModel] = useModalViewModel<ViewModel>(
+const SampleModal: FC<SampleModalProps> = ({ state: [open, { modalStateProperty }], onSomeAction, onSomeAsyncAction, ...others }) => {
+  const [viewState, setViewState] = useModalViewState<{ someViewStateProperty: number }>(
     open,
     {
-      someViewVariable: 10 // The default view model.
+      someViewStateProperty: 10 // The default view model.
     },
-    () =>
-      extraModelProperty !== undefined && {
-        someViewVariable: extraModelProperty // The initial view model based on props and model.
-      }
+    () => ({
+      someViewStateProperty: modalStateProperty // The initial view model based on props and model.
+    })
   );
 
   const classes = useStyles();
 
   return (
-    <ModalBase
+    <BaseModal
       {...others}
+      open={open}
       title="This is the modal title!"
       actions={[
         {
@@ -46,31 +41,45 @@ const SampleModal: FC<SampleModalProps> = ({ onSomeAction, ...others }) => {
         {
           title: 'Action',
           action: () => {
-            const someData: number = viewModel.someViewVariable;
+            const someData = viewState.someViewStateProperty;
             onSomeAction(someData);
+          }
+        },
+        {
+          title: 'Async Action',
+          action: async () => {
+            const someData = viewState.someViewStateProperty;
+            await onSomeAsyncAction(someData);
           }
         }
       ]}
     >
       The modal body contents go here...
-    </ModalBase>
+      <input value={viewState.someViewStateProperty.toString()} onChange={e => setViewState({ someViewStateProperty: Number(e.target.value) })} />
+      ...
+    </BaseModal>
   );
 };
 
 export default SampleModal;
 
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Usage in another component:
+
 const SomeComponent: FC = () => {
-  const [sampleModalModel, setSampleModalModel] = useState<SampleModalModel>({});
+  const [sampleModalState, openSimpleModal, closeSimpleModal] = useModalState<SampleModalState>();
 
   return (
     <div>
-      <button onClick={e => setSampleModalModel({ ...sampleModalModel, open: true, loading: false, errorMessage: undefined })}></button>
+      <button onClick={e => openSimpleModal({ modalStateProperty: 10 })}>Open</button>
 
       <SampleModal
-        model={sampleModalModel}
-        onClose={() => setSampleModalModel({ ...sampleModalModel, open: false })}
+        state={sampleModalState}
+        onClose={() => closeSimpleModal()}
         onSomeAction={someData => {
+          /* ... */
+        }}
+        onSomeAsyncAction={async someData => {
           /* ... */
         }}
       />

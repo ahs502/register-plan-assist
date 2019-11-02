@@ -1,28 +1,26 @@
 import React, { FC } from 'react';
 import { Theme, Grid, TextField } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
-import ModalBase, { ModalBaseProps, ModalBaseModel, useModalViewModel } from 'src/components/ModalBase';
+import BaseModal, { BaseModalProps, useModalViewState } from 'src/components/BaseModal';
 import NewPreplanModel from '@core/models/preplan/NewPreplanModel';
 import { parseDateUtc } from 'src/utils/parsers';
 
 const useStyles = makeStyles((theme: Theme) => ({}));
 
-interface ViewModel {
+interface ViewState {
   name: string;
   startDate: string;
   endDate: string;
 }
 
-export interface NewPreplanModalModel extends ModalBaseModel {}
+export interface NewPreplanModalState {}
 
-export interface NewPreplanModalProps extends ModalBaseProps<NewPreplanModalModel> {
-  onCreate(newPreplanModel: NewPreplanModel): void;
+export interface NewPreplanModalProps extends BaseModalProps<NewPreplanModalState> {
+  onCreate(newPreplanModel: NewPreplanModel): Promise<void>;
 }
 
-const NewPreplanModal: FC<NewPreplanModalProps> = ({ onCreate, ...others }) => {
-  const { open } = others.model;
-
-  const [viewModel, setViewModel] = useModalViewModel<ViewModel>(open, {
+const NewPreplanModal: FC<NewPreplanModalProps> = ({ state: [open], onCreate, ...others }) => {
+  const [viewState, setViewState] = useModalViewState<ViewState>(open, {
     name: '',
     startDate: '',
     endDate: ''
@@ -31,8 +29,9 @@ const NewPreplanModal: FC<NewPreplanModalProps> = ({ onCreate, ...others }) => {
   const classes = useStyles();
 
   return (
-    <ModalBase
+    <BaseModal
       {...others}
+      open={open}
       title="What are the new preplan specifications?"
       actions={[
         {
@@ -40,32 +39,32 @@ const NewPreplanModal: FC<NewPreplanModalProps> = ({ onCreate, ...others }) => {
         },
         {
           title: 'Create',
-          action: () => {
+          action: async () => {
             //TODO: Validate the view model first...
 
             const newPreplanModel: NewPreplanModel = {
-              name: viewModel.name,
-              startDate: parseDateUtc(viewModel.startDate)!.toJSON(),
-              endDate: parseDateUtc(viewModel.endDate)!.toJSON()
+              name: viewState.name,
+              startDate: parseDateUtc(viewState.startDate)!.toJSON(),
+              endDate: parseDateUtc(viewState.endDate)!.toJSON()
             };
 
-            onCreate(newPreplanModel);
+            await onCreate(newPreplanModel);
           }
         }
       ]}
     >
       <Grid container spacing={1}>
         <Grid item xs={12}>
-          <TextField label="Name" value={viewModel.name} onChange={({ target: { value: name } }) => setViewModel({ ...viewModel, name })} />
+          <TextField label="Name" value={viewState.name} onChange={({ target: { value: name } }) => setViewState({ ...viewState, name })} />
         </Grid>
         <Grid item xs={6}>
-          <TextField label="Start Date" value={viewModel.startDate} onChange={({ target: { value: startDate } }) => setViewModel({ ...viewModel, startDate })} />
+          <TextField label="Start Date" value={viewState.startDate} onChange={({ target: { value: startDate } }) => setViewState({ ...viewState, startDate })} />
         </Grid>
         <Grid item xs={6}>
-          <TextField label="End Date" value={viewModel.endDate} onChange={({ target: { value: endDate } }) => setViewModel({ ...viewModel, endDate })} />
+          <TextField label="End Date" value={viewState.endDate} onChange={({ target: { value: endDate } }) => setViewState({ ...viewState, endDate })} />
         </Grid>
       </Grid>
-    </ModalBase>
+    </BaseModal>
   );
 };
 

@@ -1,28 +1,27 @@
 import React, { FC } from 'react';
 import { Theme, Typography } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
-import ModalBase, { ModalBaseProps, ModalBaseModel } from 'src/components/ModalBase';
+import BaseModal, { BaseModalProps } from 'src/components/BaseModal';
 import PreplanHeader from 'src/business/preplan/PreplanHeader';
 import Id from '@core/types/Id';
 
 const useStyles = makeStyles((theme: Theme) => ({}));
 
-export interface RemovePreplanModalModel extends ModalBaseModel {
-  preplanHeader?: PreplanHeader;
+export interface RemovePreplanModalState {
+  preplanHeader: PreplanHeader;
 }
 
-export interface RemovePreplanModalProps extends ModalBaseProps<RemovePreplanModalModel> {
-  onRemove(): void;
+export interface RemovePreplanModalProps extends BaseModalProps<RemovePreplanModalState> {
+  onRemove(sourcePreplanId: Id): Promise<void>;
 }
 
-const RemovePreplanModal: FC<RemovePreplanModalProps> = ({ onRemove, ...others }) => {
-  const { preplanHeader } = others.model;
-
+const RemovePreplanModal: FC<RemovePreplanModalProps> = ({ state: [open, { preplanHeader }], onRemove, ...others }) => {
   const classes = useStyles();
 
   return (
-    <ModalBase
+    <BaseModal
       {...others}
+      open={open}
       title="Would you like to remove your preplan?"
       actions={[
         {
@@ -30,12 +29,12 @@ const RemovePreplanModal: FC<RemovePreplanModalProps> = ({ onRemove, ...others }
         },
         {
           title: 'Remove',
-          action: onRemove
+          action: async () => await onRemove(preplanHeader.id)
         }
       ]}
     >
       <Typography variant="body1">All of data about preplan {preplanHeader!.name} will be removed.</Typography>
-    </ModalBase>
+    </BaseModal>
   );
 };
 

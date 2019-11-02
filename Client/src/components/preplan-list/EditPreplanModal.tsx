@@ -1,7 +1,7 @@
 import React, { FC } from 'react';
 import { Theme, Grid, TextField } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
-import ModalBase, { ModalBaseProps, ModalBaseModel, useModalViewModel } from 'src/components/ModalBase';
+import BaseModal, { BaseModalProps, useModalViewState } from 'src/components/BaseModal';
 import NewPreplanModel from '@core/models/preplan/NewPreplanModel';
 import { parseDateUtc } from 'src/utils/parsers';
 import PreplanHeader from 'src/business/preplan/PreplanHeader';
@@ -15,70 +15,68 @@ interface ViewModel {
   endDate: string;
 }
 
-export interface EditPreplanModalModel extends ModalBaseModel {
-  preplanHeader?: PreplanHeader;
+export interface EditPreplanModalState {
+  preplanHeader: PreplanHeader;
 }
 
-export interface EditPreplanModalProps extends ModalBaseProps<EditPreplanModalModel> {
-  onApply(newPreplanModel: NewPreplanModel): void;
+export interface EditPreplanModalProps extends BaseModalProps<EditPreplanModalState> {
+  onApply(sourcePreplanId: Id, newPreplanModel: NewPreplanModel): Promise<void>;
 }
 
-const EditPreplanModal: FC<EditPreplanModalProps> = ({ onApply, ...others }) => {
-  const { open, preplanHeader } = others.model;
-
-  const [viewModel, setViewModel] = useModalViewModel<ViewModel>(
+const EditPreplanModal: FC<EditPreplanModalProps> = ({ state: [open, { preplanHeader }], onApply, ...others }) => {
+  const [viewState, setViewState] = useModalViewState<ViewModel>(
     open,
     {
       name: '',
       startDate: '',
       endDate: ''
     },
-    () =>
-      preplanHeader && {
-        name: preplanHeader.name,
-        startDate: preplanHeader.startDate.format('d'),
-        endDate: preplanHeader.endDate.format('d')
-      }
+    () => ({
+      name: preplanHeader.name,
+      startDate: preplanHeader.startDate.format('d'),
+      endDate: preplanHeader.endDate.format('d')
+    })
   );
 
   const classes = useStyles();
 
   return (
-    <ModalBase
+    <BaseModal
       {...others}
+      open={open}
       title="What are your intended modifications?"
       actions={[
         {
           title: 'Cancel'
         },
         {
-          title: 'Apply',
-          action: () => {
+          title: 'Submit',
+          action: async () => {
             //TODO: Validate the view model first...
 
             const newPreplanModel: NewPreplanModel = {
-              name: viewModel.name,
-              startDate: parseDateUtc(viewModel.startDate)!.toJSON(),
-              endDate: parseDateUtc(viewModel.endDate)!.toJSON()
+              name: viewState.name,
+              startDate: parseDateUtc(viewState.startDate)!.toJSON(),
+              endDate: parseDateUtc(viewState.endDate)!.toJSON()
             };
 
-            onApply(newPreplanModel);
+            await onApply(preplanHeader.id, newPreplanModel);
           }
         }
       ]}
     >
       <Grid container spacing={1}>
         <Grid item xs={12}>
-          <TextField label="Name" value={viewModel.name} onChange={({ target: { value: name } }) => setViewModel({ ...viewModel, name })} />
+          <TextField label="Name" value={viewState.name} onChange={({ target: { value: name } }) => setViewState({ ...viewState, name })} />
         </Grid>
         <Grid item xs={6}>
-          <TextField label="Start Date" value={viewModel.startDate} onChange={({ target: { value: startDate } }) => setViewModel({ ...viewModel, startDate })} />
+          <TextField label="Start Date" value={viewState.startDate} onChange={({ target: { value: startDate } }) => setViewState({ ...viewState, startDate })} />
         </Grid>
         <Grid item xs={6}>
-          <TextField label="End Date" value={viewModel.endDate} onChange={({ target: { value: endDate } }) => setViewModel({ ...viewModel, endDate })} />
+          <TextField label="End Date" value={viewState.endDate} onChange={({ target: { value: endDate } }) => setViewState({ ...viewState, endDate })} />
         </Grid>
       </Grid>
-    </ModalBase>
+    </BaseModal>
   );
 };
 

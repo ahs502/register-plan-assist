@@ -1,4 +1,4 @@
-import React, { FC, ReactElement } from 'react';
+import React, { FC, ReactElement, useState, useEffect, Dispatch, SetStateAction } from 'react';
 import { Theme, DialogTitle, DialogContent, DialogActions, Button, CircularProgress, Paper, Typography } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import classNames from 'classnames';
@@ -97,4 +97,21 @@ const ModalBase: FC<ModalBaseProps<ModalBaseModel>> = ({ children, model, title,
     </DraggableDialog>
   );
 };
+
 export default ModalBase;
+
+export function useModalViewModel<ViewModel>(
+  open: boolean | undefined,
+  defaultViewModel: ViewModel,
+  viewModelFactory?: (previousViewModel: ViewModel) => ViewModel | false | undefined | null
+): [ViewModel, Dispatch<SetStateAction<ViewModel>>] {
+  const state = useState<ViewModel>(defaultViewModel);
+  const [viewModel, setViewModel] = state;
+  useEffect(() => {
+    if (!open) return;
+    const newViewModel = viewModelFactory ? viewModelFactory(viewModel) : defaultViewModel;
+    if (!newViewModel) return;
+    setViewModel(newViewModel);
+  }, [open]);
+  return state;
+}

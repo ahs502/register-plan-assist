@@ -116,48 +116,48 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
   let connectionTableExporter: ExcelExport | null;
 
   useEffect(() => {
-    // const result: { [index: number]: ConnectionModel } = {};
-    // weekDay.forEach(w => {
-    //   result[w] = {
-    //     eastAirportArrivalToIranFlight: [],
-    //     eastAirportDepartureFromIranFlight: [],
-    //     westAirportArrivalToIranFlight: [],
-    //     westAirportDepartureFromIranFlight: []
-    //   } as ConnectionModel;
-    //   if (!eastAirport || !westAirport) return;
-    //   result[w].eastAirportArrivalToIranFlight = flights.filter(f => {
-    //     var airportValidation = eastAirport.some(airport => f.weekdayRequirement.definition.departureAirport.id === airport.id);
-    //     if (!airportValidation) return false;
-    //     const departureWeekDay = f.weekdayRequirement.day;
-    //     const sta = f.std.minutes + f.weekdayRequirement.scope.blockTime;
-    //     const arrivalWeekDay = sta <= 1440 ? departureWeekDay : (departureWeekDay + 1) % 7;
-    //     if (arrivalWeekDay !== w) return false;
-    //     return true;
-    //   });
-    //   result[w].eastAirportDepartureFromIranFlight = flights.filter(f => {
-    //     var airportValidation = eastAirport.some(airport => f.weekdayRequirement.definition.arrivalAirport.id === airport.id);
-    //     if (!airportValidation) return false;
-    //     if (f.weekdayRequirement.day !== w) return false;
-    //     return true;
-    //   });
-    //   result[w].westAirportArrivalToIranFlight = flights.filter(f => {
-    //     var airportValidation = westAirport.some(airport => f.weekdayRequirement.definition.departureAirport.id === airport.id);
-    //     if (!airportValidation) return false;
-    //     const departureWeekDay = f.weekdayRequirement.day;
-    //     const sta = f.std.minutes + f.weekdayRequirement.scope.blockTime;
-    //     const arrivalWeekDay = sta <= 1440 ? departureWeekDay : (departureWeekDay + 1) % 7;
-    //     if (arrivalWeekDay !== w) return false;
-    //     return true;
-    //   });
-    //   result[w].westAirportDepartureFromIranFlight = flights.filter(f => {
-    //     var airportValidation = westAirport.some(airport => f.weekdayRequirement.definition.arrivalAirport.id === airport.id);
-    //     if (!airportValidation) return false;
-    //     if (f.weekdayRequirement.day !== w) return false;
-    //     return true;
-    //   });
-    // });
-    // setConnectionNumberDataModel(generateConnectionNumberDataModel(result));
-    // setConnectionTableDataModel(generateConnectionTableDataModel(result));
+    const result: { [index: number]: ConnectionModel } = {};
+    weekDay.forEach(w => {
+      result[w] = {
+        eastAirportArrivalToIranFlight: [],
+        eastAirportDepartureFromIranFlight: [],
+        westAirportArrivalToIranFlight: [],
+        westAirportDepartureFromIranFlight: []
+      } as ConnectionModel;
+      if (!eastAirport || !westAirport) return;
+      result[w].eastAirportArrivalToIranFlight = flights.filter(f => {
+        var airportValidation = eastAirport.some(airport => f.departureAirport.id === airport.id);
+        if (!airportValidation) return false;
+        const departureWeekDay = f.day;
+        const sta = f.actualSta.minutes;
+        const arrivalWeekDay = (departureWeekDay + Math.floor(sta / 1440)) % 7;
+        if (arrivalWeekDay !== w) return false;
+        return true;
+      });
+      result[w].eastAirportDepartureFromIranFlight = flights.filter(f => {
+        var airportValidation = eastAirport.some(airport => f.arrivalAirport.id === airport.id);
+        if (!airportValidation) return false;
+        if (f.day !== w) return false;
+        return true;
+      });
+      result[w].westAirportArrivalToIranFlight = flights.filter(f => {
+        var airportValidation = westAirport.some(airport => f.departureAirport.id === airport.id);
+        if (!airportValidation) return false;
+        const departureWeekDay = f.day;
+        const sta = f.std.minutes + f.blockTime;
+        const arrivalWeekDay = sta <= 1440 ? departureWeekDay : (departureWeekDay + 1) % 7;
+        if (arrivalWeekDay !== w) return false;
+        return true;
+      });
+      result[w].westAirportDepartureFromIranFlight = flights.filter(f => {
+        var airportValidation = westAirport.some(airport => f.arrivalAirport.id === airport.id);
+        if (!airportValidation) return false;
+        if (f.day !== w) return false;
+        return true;
+      });
+    });
+    setConnectionNumberDataModel(generateConnectionNumberDataModel(result));
+    setConnectionTableDataModel(generateConnectionTableDataModel(result));
   }, [eastAirport, westAirport, minConnectionTime, maxConnectionTime, startDate, endDate]);
 
   const classes = useStyles();
@@ -201,65 +201,63 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
   };
 
   const generateConnectionTableDataModel = (connectionModel: { [index: number]: ConnectionModel }): { [index: number]: string | number }[] => {
-    throw 'Not implemented.';
+    const result: { [index: string]: any }[] = [];
+    const baseDate = new Date(new Date((startDate.getTime() + endDate.getTime()) / 2));
 
-    // const result: { [index: string]: any }[] = [];
-    // const baseDate = new Date(new Date((startDate.getTime() + endDate.getTime()) / 2));
+    if (eastAirport && westAirport) {
+      weekDay.forEach(w => {
+        if (!connectionModel[w]) return;
+        const model: any = {};
+        model['day'] = Weekday[w].toUpperCase().substring(0, 3);
 
-    // if (eastAirport && westAirport) {
-    //   weekDay.forEach(w => {
-    //     if (!connectionModel[w]) return;
-    //     const model: any = {};
-    //     model['day'] = Weekday[w].toUpperCase().substring(0, 3);
+        eastAirport.forEach(airport => {
+          const flights = connectionModel[w].eastAirportArrivalToIranFlight.filter(f => f.departureAirport.id === airport.id);
+          if (!flights || flights.length == 0) return;
 
-    //     eastAirport.forEach(airport => {
-    //       const flights = connectionModel[w].eastAirportArrivalToIranFlight.filter(f => f.weekdayRequirement.definition.departureAirport.id === airport.id);
-    //       if (!flights || flights.length == 0) return;
+          const stas = flights
+            .map(flight => {
+              const date = flight.std.toDate(baseDate);
+              date.addMinutes(flight.blockTime);
+              return date;
+            })
+            .sort((a, b) => compareFunction(a.getTime(), b.getTime()));
+          model['from' + airport.name] = stas.map(a => formatUTCDateToLocal(a)).join('\r\n');
+        });
 
-    //       const stas = flights
-    //         .map(flight => {
-    //           const date = flight.std.toDate(baseDate);
-    //           date.addMinutes(flight.weekdayRequirement.scope.blockTime);
-    //           return date;
-    //         })
-    //         .sort((a, b) => compareFunction(a.getTime(), b.getTime()));
-    //       model['from' + airport.name] = stas.map(a => formatUTCDateToLocal(a)).join('\r\n');
-    //     });
+        eastAirport.forEach(airport => {
+          const flights = connectionModel[w].eastAirportDepartureFromIranFlight.filter(f => f.arrivalAirport.id === airport.id);
+          if (!flights || flights.length == 0) return;
 
-    //     eastAirport.forEach(airport => {
-    //       const flights = connectionModel[w].eastAirportDepartureFromIranFlight.filter(f => f.weekdayRequirement.definition.arrivalAirport.id === airport.id);
-    //       if (!flights || flights.length == 0) return;
+          const stds = flights.map(flight => flight.std.toDate(baseDate)).sort((a, b) => compareFunction(a.getTime(), b.getTime()));
+          model['to' + airport.name] = stds.map(a => formatUTCDateToLocal(a)).join('\r\n');
+        });
 
-    //       const stds = flights.map(flight => flight.std.toDate(baseDate)).sort((a, b) => compareFunction(a.getTime(), b.getTime()));
-    //       model['to' + airport.name] = stds.map(a => formatUTCDateToLocal(a)).join('\r\n');
-    //     });
+        westAirport.forEach(airport => {
+          const arrivalToIran = connectionModel[w].westAirportArrivalToIranFlight.filter(f => f.departureAirport.id === airport.id);
+          const departureFromIran = connectionModel[w].westAirportDepartureFromIranFlight.filter(f => f.arrivalAirport.id == airport.id);
 
-    //     westAirport.forEach(airport => {
-    //       const arrivalToIran = connectionModel[w].westAirportArrivalToIranFlight.filter(f => f.weekdayRequirement.definition.departureAirport.id === airport.id);
-    //       const departureFromIran = connectionModel[w].westAirportDepartureFromIranFlight.filter(f => f.weekdayRequirement.definition.arrivalAirport.id == airport.id);
+          const stas = arrivalToIran
+            .map(flight => {
+              const date = flight.std.toDate(baseDate);
+              date.addMinutes(flight.blockTime);
+              return date;
+            })
+            .sort((a, b) => compareFunction(a.getTime(), b.getTime()));
+          const stds = departureFromIran.map(flight => flight.std.toDate(baseDate)).sort((a, b) => compareFunction(a.getTime(), b.getTime()));
 
-    //       const stas = arrivalToIran
-    //         .map(flight => {
-    //           const date = flight.std.toDate(baseDate);
-    //           date.addMinutes(flight.weekdayRequirement.scope.blockTime);
-    //           return date;
-    //         })
-    //         .sort((a, b) => compareFunction(a.getTime(), b.getTime()));
-    //       const stds = departureFromIran.map(flight => flight.std.toDate(baseDate)).sort((a, b) => compareFunction(a.getTime(), b.getTime()));
+          if (stas.length <= 0 && stds.length <= 0) return;
+          model[airport.name] = Array.range(0, Math.max(stas.length, stds.length) - 1)
+            .map(i => {
+              return formatUTCDateToLocal(stds[i]) + '–' + formatUTCDateToLocal(stas[i]);
+            })
+            .join('\r\n');
+        });
 
-    //       if (stas.length <= 0 && stds.length <= 0) return;
-    //       model[airport.name] = Array.range(0, Math.max(stas.length, stds.length) - 1)
-    //         .map(i => {
-    //           return formatUTCDateToLocal(stds[i]) + '–' + formatUTCDateToLocal(stas[i]);
-    //         })
-    //         .join('\r\n');
-    //     });
+        result.push(model);
+      });
+    }
 
-    //     result.push(model);
-    //   });
-    // }
-
-    // return result;
+    return result;
   };
 
   const getNumberOfConnection = (
@@ -274,27 +272,27 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
     let result: number = 0;
 
     weekDay.forEach(w => {
-      // if (!connectionModel[w]) return;
-      // if (direction === 'EasttoWest') {
-      //   firstFligths = connectionModel[w].eastAirportArrivalToIranFlight.filter(f => f.weekdayRequirement.definition.departureAirport.id === departureAirport.id);
-      //   secoundFlights = connectionModel[w].westAirportDepartureFromIranFlight.filter(f => f.weekdayRequirement.definition.arrivalAirport.id === arrivalAriport.id);
-      // } else {
-      //   firstFligths = connectionModel[w].westAirportArrivalToIranFlight.filter(f => f.weekdayRequirement.definition.departureAirport.id === departureAirport.id);
-      //   secoundFlights = connectionModel[w].eastAirportDepartureFromIranFlight.filter(f => f.weekdayRequirement.definition.arrivalAirport.id === arrivalAriport.id);
-      // }
-      // if (
-      //   firstFligths.some(ff => {
-      //     const sta = (ff.std.minutes + ff.weekdayRequirement.scope.blockTime) % 1440;
-      //     return secoundFlights.some(
-      //       sf =>
-      //         sf.std.minutes < sta + converteHHMMtoTotalMinute(maxConnectionTime) &&
-      //         sf.std.minutes >= sta + converteHHMMtoTotalMinute(minConnectionTime) &&
-      //         ff.arrivalAirport.id === sf.departureAirport.id
-      //     );
-      //   })
-      // ) {
-      //   result++;
-      // }
+      if (!connectionModel[w]) return;
+      if (direction === 'EasttoWest') {
+        firstFligths = connectionModel[w].eastAirportArrivalToIranFlight.filter(f => f.departureAirport.id === departureAirport.id);
+        secoundFlights = connectionModel[w].westAirportDepartureFromIranFlight.filter(f => f.arrivalAirport.id === arrivalAriport.id);
+      } else {
+        firstFligths = connectionModel[w].westAirportArrivalToIranFlight.filter(f => f.departureAirport.id === departureAirport.id);
+        secoundFlights = connectionModel[w].eastAirportDepartureFromIranFlight.filter(f => f.arrivalAirport.id === arrivalAriport.id);
+      }
+      if (
+        firstFligths.some(ff => {
+          const sta = (ff.std.minutes + ff.blockTime) % 1440;
+          return secoundFlights.some(
+            sf =>
+              sf.std.minutes < sta + converteHHMMtoTotalMinute(maxConnectionTime) &&
+              sf.std.minutes >= sta + converteHHMMtoTotalMinute(minConnectionTime) &&
+              ff.arrivalAirport.id === sf.departureAirport.id
+          );
+        })
+      ) {
+        result++;
+      }
     });
 
     return result;

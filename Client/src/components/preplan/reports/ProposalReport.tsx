@@ -16,6 +16,8 @@ import PreplanService from 'src/services/PreplanService';
 import FlightRequirement from 'src/business/flight-requirement/FlightRequirement';
 import Rsx from '@core/types/Rsx';
 import PreplanHeader from 'src/business/preplan/PreplanHeader';
+import Flight from 'src/business/flight/Flight';
+import FlightLeg from 'src/business/flight/FlightLeg';
 
 const makeColor = () => ({
   changeStatus: { background: '#FFFFCC' },
@@ -123,7 +125,7 @@ enum FlightType {
 }
 
 interface ProposalReportProps {
-  flightRequirments: readonly FlightRequirement[];
+  flights: readonly Flight[];
   preplanName: string;
   fromDate: Date;
   toDate: Date;
@@ -153,20 +155,20 @@ interface FlattenFlightRequirment {
   route: string;
   parentRoute: string;
   label: string;
-  weekDay0: string;
-  weekDay1: string;
-  weekDay2: string;
-  weekDay3: string;
-  weekDay4: string;
-  weekDay5: string;
-  weekDay6: string;
-  rsxWeekDay0: Rsx;
-  rsxWeekDay1: Rsx;
-  rsxWeekDay2: Rsx;
-  rsxWeekDay3: Rsx;
-  rsxWeekDay4: Rsx;
-  rsxWeekDay5: Rsx;
-  rsxWeekDay6: Rsx;
+  weekDay0?: string;
+  weekDay1?: string;
+  weekDay2?: string;
+  weekDay3?: string;
+  weekDay4?: string;
+  weekDay5?: string;
+  weekDay6?: string;
+  rsxWeekDay0?: Rsx;
+  rsxWeekDay1?: Rsx;
+  rsxWeekDay2?: Rsx;
+  rsxWeekDay3?: Rsx;
+  rsxWeekDay4?: Rsx;
+  rsxWeekDay5?: Rsx;
+  rsxWeekDay6?: Rsx;
   change: boolean;
   aircraftType: string;
   frequency: string;
@@ -177,7 +179,7 @@ interface FlattenFlightRequirment {
   destinationNoPermissions: string;
   originNoPermissionsWeekDay: number[];
   originNoPermissions: string;
-  category: string;
+  category?: string;
   nextFlights: FlattenFlightRequirment[];
   previousFlights: FlattenFlightRequirment[];
   status: FlattenFlightRequirmentStatus;
@@ -261,7 +263,7 @@ interface FliterModel {
   compareMode: boolean;
 }
 
-const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequirments, preplanName, fromDate, toDate }) => {
+const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName, fromDate, toDate }) => {
   const allAirports = MasterData.all.airports.items.orderBy(a => a.name);
   const ika = allAirports.find(a => a.name === 'IKA')!;
   const thr = allAirports.find(a => a.name === 'THR')!;
@@ -327,60 +329,46 @@ const ProposalReport: FC<ProposalReportProps> = ({ flightRequirments: flightRequ
 
   const generateReportDataModel = (
     { baseAirport, startDate, endDate, flightType, showReal, showSTB1, showSTB2, showExtra }: FliterModel,
-    flightRequirments: readonly FlightRequirement[],
+    flights: readonly Flight[],
     generateRealFlight: boolean
   ): FlattenFlightRequirment[] => {
     const result: FlattenFlightRequirment[] = [];
 
     if (!baseAirport || !startDate || !endDate) return [];
 
-    let labels = getLabels(flightRequirments, baseAirport, flightType);
-
     const baseDate = new Date(new Date((startDate.getTime() + endDate.getTime()) / 2));
 
-    labels.forEach(m => {
-      let dailyFlightRequirments = createDailyFlightRequirment(flightRequirments, m);
+    var filterdFlight = flights.filter(
+      f =>
+        f.flightRequirement.route[0].departureAirport.id === baseAirport.id &&
+        f.legs.some(l => l.international === (flightType === FlightType.International)) &&
+        (generateRealFlight ? (showReal && f.rsx === 'REAL') || (showSTB1 && f.rsx === 'STB1') : (showSTB2 && f.rsx === 'STB2') || (showExtra && f.rsx === 'EXT'))
+    );
 
-      // randomize(dailyFlightRequirments); //TODO: remove
+    const flightByflightRequirmentId = filterdFlight.groupBy(f => f.flightRequirement.id);
 
-      dailyFlightRequirments = fliterDailyFlightRequirmentByRSX(
-        dailyFlightRequirments,
-        generateRealFlight && showReal,
-        generateRealFlight && showSTB1,
-        !generateRealFlight && showSTB2,
-        !generateRealFlight && showExtra
-      );
-      const flattenFlightRequirmentList = createFlattenFlightRequirmentsFromDailyFlightRequirment(dailyFlightRequirments, baseAirport, baseDate, m);
-      flattenFlightRequirmentList.sort((a, b) => compareFunction(a.std.minutes, b.std.minutes));
+    for (const key in flightByflightRequirmentId) {
+      if (flightByflightRequirmentId.hasOwnProperty(key)) {
+        const flights = flightByflightRequirmentId[key];
+        const flightRequirement = flights[0].flightRequirement;
 
-      findNextAndPreviousFlightRequirment(flattenFlightRequirmentList);
+        const flattenFlightRequirmentList = createFlattenFlightRequirmentsFromDailyFlightRequirment(flights, baseAirport, baseDate);
+        flattenFlightRequirmentList.sort((a, b) => compareFunction(a.std.minutes, b.std.minutes));
+        const sortedFlattenFlightRequirments = sortFlattenFlightRequirment(flattenFlightRequirmentList, baseAirport);
+        const parentRoute = flightRequirement.route[0].departureAirport.name + '-' + flightRequirement.route.map(r => r.arrivalAirport.name).join('-');
 
-      flattenFlightRequirmentList.sort((a, b) => compareFunction(a.std.minutes, b.std.minutes));
+        geratePermissionMassage(sortedFlattenFlightRequirments, parentRoute, result);
 
-      const sortedFlattenFlightRequirments = sortFlattenFlightRequirment(flattenFlightRequirmentList, baseAirport);
-
-      const parentRoute = sortedFlattenFlightRequirments
-        .map(t => t.route)
-        .reduce(
-          (acc, current) => {
-            if (acc.indexOf(current) === -1) acc.push(current);
-            return acc;
-          },
-          [] as string[]
-        )
-        .join(',');
-
-      geratePermissionMassage(sortedFlattenFlightRequirments, parentRoute, result);
-    });
-
-    calculateFrequency(result);
+        calculateFrequency(result);
+      }
+    }
 
     return result;
   };
 
   useEffect(() => {
-    const realFlatModel = generateReportDataModel(filterModel, flightRequirments, true);
-    const reserveFlatModel = generateReportDataModel(filterModel, flightRequirments, false);
+    const realFlatModel = generateReportDataModel(filterModel, flights, true);
+    const reserveFlatModel = generateReportDataModel(filterModel, flights, false);
 
     setFlattenFlightRequirmentsStatus(realFlatModel);
     setFlattenFlightRequirmentsStatus(reserveFlatModel);
@@ -1639,78 +1627,6 @@ function geratePermissionMassage(sortedFlattenFlightRequirments: FlattenFlightRe
   });
 }
 
-function findNextAndPreviousFlightRequirment(flattenFlightRequirmentList: FlattenFlightRequirment[]) {
-  flattenFlightRequirmentList.forEach(f => {
-    f.nextFlights = [];
-    f.previousFlights = [];
-  });
-
-  flattenFlightRequirmentList.forEach((current, i, self) => {
-    current.utcDays.forEach(d => {
-      const arrivalDay = (d + (current.std.minutes > current.sta.minutes ? 1 : 0)) % 7;
-      let nextOrPreviousFlight = self.find(f => {
-        return f.departureAirport.id === current.arrivalAirport.id && (f.std.minutes > current.sta.minutes && f.utcDays.some(dd => dd === arrivalDay));
-      });
-      let dayDiff = 1;
-      if (!nextOrPreviousFlight) {
-        for (dayDiff = 1; dayDiff < 7; dayDiff++) {
-          nextOrPreviousFlight = self.find(f => {
-            return f.departureAirport.id === current.arrivalAirport.id && f.utcDays.some(dd => dd === (arrivalDay + dayDiff) % 7);
-          });
-          if (nextOrPreviousFlight) {
-            nextOrPreviousFlight.utcDays.remove((arrivalDay + dayDiff) % 7);
-            break;
-          }
-
-          nextOrPreviousFlight = self.find(f => {
-            return f.departureAirport.id === current.arrivalAirport.id && f.utcDays.some(dd => dd === (arrivalDay - dayDiff + 6) % 7);
-          });
-          if (nextOrPreviousFlight) {
-            nextOrPreviousFlight.utcDays.remove((arrivalDay - dayDiff + 6) % 7);
-            break;
-          }
-        }
-      } else {
-        nextOrPreviousFlight.utcDays.remove(arrivalDay);
-      }
-      if (nextOrPreviousFlight) {
-        if (dayDiff <= 3) {
-          if (current.nextFlights.indexOf(nextOrPreviousFlight) === -1) current.nextFlights.push(nextOrPreviousFlight);
-          if (nextOrPreviousFlight.previousFlights.indexOf(current) === -1) nextOrPreviousFlight.previousFlights.push(current);
-        } else {
-          if (current.previousFlights.indexOf(nextOrPreviousFlight) === -1) current.previousFlights.push(nextOrPreviousFlight);
-          if (nextOrPreviousFlight.nextFlights.indexOf(current) === -1) nextOrPreviousFlight.nextFlights.push(current);
-        }
-      }
-    });
-  });
-}
-
-function createDailyFlightRequirment(flightRequirments: readonly FlightRequirement[], m: string): any {
-  // return flightRequirments
-  //   .filter(f => f.definition.label === m)
-  //   .map(f => {
-  //     return f.days.map(
-  //       d =>
-  //         ({
-  //           flightNumber: f.definition.flightNumber,
-  //           arrivalAirport: f.definition.arrivalAirport,
-  //           departureAirport: f.definition.departureAirport,
-  //           blocktime: d.scope.blockTime,
-  //           day: d.day,
-  //           std: d.flight.std,
-  //           note: d.notes,
-  //           aircraftType: d.flight.aircraftRegister && d.flight.aircraftRegister.aircraftType.name,
-  //           category: f.definition.category,
-  //           destinationPermission: d.scope.destinationPermission,
-  //           originPermission: d.scope.originPermission,
-  //           rsx: d.scope.rsx
-  //         } as DailyFlightRequirment)
-  //     );
-  //   })
-  //   .flat();
-}
-
 function sortFlattenFlightRequirment(flattenFlightRequirmentList: FlattenFlightRequirment[], baseAirport: Airport) {
   const temp: FlattenFlightRequirment[] = [];
 
@@ -1741,85 +1657,71 @@ function sortFlattenFlightRequirment(flattenFlightRequirmentList: FlattenFlightR
   return temp;
 }
 
-function createFlattenFlightRequirmentsFromDailyFlightRequirment(dailyFlightRequirments: DailyFlightRequirment[], baseAirport: Airport, baseDate: Date, label: string) {
-  return dailyFlightRequirments.reduce(
-    (acc, current) => {
-      const existFlatten = acc.find(
+function createFlattenFlightRequirmentsFromDailyFlightRequirment(flights: Flight[], baseAirport: Airport, baseDate: Date): FlattenFlightRequirment[] {
+  const result: FlattenFlightRequirment[] = [];
+  for (let flightIndex = 0; flightIndex < flights.length; flightIndex++) {
+    const flight = flights[flightIndex];
+    const legs = flight.legs;
+    for (let legIndex = 0; legIndex < legs.length; legIndex++) {
+      const leg = legs[legIndex];
+
+      const existFlatten = result.find(
         f =>
-          f.arrivalAirport.id === current.arrivalAirport.id &&
-          f.departureAirport.id === current.departureAirport.id &&
-          f.blocktime === current.blocktime &&
-          f.flightNumber === normalizeFlightNumber(current.flightNumber) &&
-          f.std.minutes === current.std.minutes
+          f.arrivalAirport.id === leg.arrivalAirport.id &&
+          f.departureAirport.id === leg.departureAirport.id &&
+          f.blocktime === leg.blockTime &&
+          f.flightNumber === normalizeFlightNumber(leg.flightNumber.standardFormat) &&
+          f.std.minutes === leg.std.minutes
       );
       if (existFlatten) {
-        updateFlattenFlightRequirment(existFlatten, current, baseAirport);
+        updateFlattenFlightRequirment(existFlatten, leg);
       } else {
-        const flatten = createFlattenFlightRequirment(current, baseDate, baseAirport, label);
-
-        acc.push(flatten);
+        const flattentFlightRequirment = createFlattenFlightRequirment(leg, baseDate);
+        result.push(flattentFlightRequirment);
       }
+    }
+  }
 
-      return acc;
-    },
-    [] as FlattenFlightRequirment[]
-  );
+  return result;
 }
 
-function getLabels(flightRequirments: readonly FlightRequirement[], baseAirport: Airport, flightType: FlightType): string[] {
-  throw 'Not implemented.';
-  // return flightRequirments
-  //   .filter(f => {
-  //     return (
-  //       (f.definition.departureAirport.id === baseAirport.id || f.definition.arrivalAirport.id === baseAirport.id) &&
-  //       ((f.definition.departureAirport.id === baseAirport.id && f.definition.arrivalAirport.international === (flightType === FlightType.International)) ||
-  //         (f.definition.arrivalAirport.id === baseAirport.id && f.definition.departureAirport.international === (flightType === FlightType.International)))
-  //     );
-  //   })
-  //   .sort((first, second) => {
-  //     const firstLabel = first.definition.label;
-  //     const secondLabel = second.definition.label;
-  //     return firstLabel > secondLabel ? 1 : firstLabel < secondLabel ? -1 : 0;
-  //   })
-  //   .map(f => f.definition.label)
-  //   .filter((value, index, self) => {
-  //     return self.indexOf(value) === index;
-  //   });
-}
+function createFlattenFlightRequirment(leg: FlightLeg, date: Date): FlattenFlightRequirment {
+  const utcStd = leg.std.toDate(date);
+  const localStd = leg.departureAirport.convertUtcToLocal(utcStd);
+  const utcSta = leg.std.toDate(date);
+  utcSta.addMinutes(leg.blockTime);
+  const localSta = leg.arrivalAirport.convertUtcToLocal(utcSta);
+  let diffLocalStdandUtcStd = utcStd.getUTCDay() - localStd.getUTCDay();
+  let diffLocalStdandUtcSta = utcSta.getUTCDay() - localStd.getUTCDay();
+  let diffLocalStdandLocalSta = localSta.getUTCDay() - localStd.getUTCDay();
 
-function createFlattenFlightRequirment(dailyFlightRequirment: DailyFlightRequirment, date: Date, baseAirport: Airport, label: string) {
-  const utcStd = dailyFlightRequirment.std.toDate(date);
-  const localStd = dailyFlightRequirment.departureAirport.convertUtcToLocal(utcStd);
-  const utcSta = dailyFlightRequirment.std.toDate(date);
-  utcSta.addMinutes(dailyFlightRequirment.blocktime);
-  const localSta = dailyFlightRequirment.arrivalAirport.convertUtcToLocal(utcSta);
-  let diffLocalStdandUtcStd = localStd.getUTCDay() - utcStd.getUTCDay();
-  let diffLocalStdandUtcSta = localStd.getUTCDay() - utcSta.getUTCDay();
-  let diffLocalStdandLocalSta = localStd.getUTCDay() - localSta.getUTCDay();
+  // let diffLocalStdandUtcStd =    localStd.getUTCDay() - utcStd.getUTCDay();
+  // let diffLocalStdandUtcSta = localStd.getUTCDay() - utcSta.getUTCDay()  ;
+  // let diffLocalStdandLocalSta =  localStd.getUTCDay() localSta.getUTCDay() ;
 
-  if (diffLocalStdandUtcStd > 1) diffLocalStdandUtcStd = -1;
-  if (diffLocalStdandUtcStd < -1) diffLocalStdandUtcStd = 1;
+  // if (diffLocalStdandUtcStd > 1) diffLocalStdandUtcStd = -1;
+  // if (diffLocalStdandUtcStd < -1) diffLocalStdandUtcStd = 1;
 
-  if (diffLocalStdandUtcSta > 1) diffLocalStdandUtcSta = -1;
-  if (diffLocalStdandUtcSta < -1) diffLocalStdandUtcSta = 1;
+  // if (diffLocalStdandUtcSta > 1) diffLocalStdandUtcSta = -1;
+  // if (diffLocalStdandUtcSta < -1) diffLocalStdandUtcSta = 1;
 
-  if (diffLocalStdandLocalSta > 1) diffLocalStdandLocalSta = -1;
-  if (diffLocalStdandLocalSta < -1) diffLocalStdandLocalSta = 1;
+  // if (diffLocalStdandLocalSta > 1) diffLocalStdandLocalSta = -1;
+  // if (diffLocalStdandLocalSta < -1) diffLocalStdandLocalSta = 1;
 
-  const flatten = {
+  const flatten: FlattenFlightRequirment = {
     id:
       Math.random()
         .toString(36)
         .substring(2) + Date.now().toString(36),
-    flightNumber: normalizeFlightNumber(dailyFlightRequirment.flightNumber),
-    fullFlightNumber: dailyFlightRequirment.flightNumber,
-    arrivalAirport: dailyFlightRequirment.arrivalAirport,
-    departureAirport: dailyFlightRequirment.departureAirport,
-    blocktime: dailyFlightRequirment.blocktime,
-    formatedBlockTime: parseMinute(dailyFlightRequirment.blocktime),
+    flightNumber: normalizeFlightNumber(leg.flightNumber.standardFormat),
+    fullFlightNumber: leg.flightNumber.toString(),
+    arrivalAirport: leg.arrivalAirport,
+    departureAirport: leg.departureAirport,
+    blocktime: leg.blockTime,
+    formatedBlockTime: parseMinute(leg.blockTime),
     days: [] as number[],
     utcDays: [] as number[],
-    std: dailyFlightRequirment.std,
+    std: leg.std,
     sta: new Daytime(utcSta),
     notes: [] as string[],
     localStd: formatDateToHHMM(localStd),
@@ -1829,42 +1731,54 @@ function createFlattenFlightRequirment(dailyFlightRequirment: DailyFlightRequirm
     diffLocalStdandUtcStd: diffLocalStdandUtcStd,
     diffLocalStdandLocalSta: diffLocalStdandLocalSta,
     diffLocalStdandUtcSta: diffLocalStdandUtcSta,
-    route: dailyFlightRequirment.departureAirport.name + '–' + dailyFlightRequirment.arrivalAirport.name,
-    aircraftType: dailyFlightRequirment.aircraftType,
+    route: leg.departureAirport.name + '–' + leg.arrivalAirport.name,
+    aircraftType: leg.flight.flightRequirement.aircraftSelection.includedIdentities
+      .filter(i => i.type === 'TYPE' || i.type === 'TYPE_EXISTING')
+      .map(t => t.entity.name)
+      .join('/'),
     originNoPermissionsWeekDay: [] as number[],
     destinationNoPermissionsWeekDay: [] as number[],
-    label: label,
-    category: dailyFlightRequirment.category,
+    label: leg.label,
+    category: leg.category,
     realFrequency: 0,
     extraFrequency: 0,
-    standbyFrequency: 0
-  } as FlattenFlightRequirment;
+    standbyFrequency: 0,
+    note: '',
+    change: false,
+    destinationNoPermissions: '',
+    frequency: '',
+    nextFlights: [],
+    originNoPermissions: '',
+    parentRoute: '',
+    previousFlights: [],
+    status: {} as FlattenFlightRequirmentStatus
+  };
 
-  updateFlattenFlightRequirment(flatten, dailyFlightRequirment, baseAirport);
+  updateFlattenFlightRequirment(flatten, leg);
   return flatten;
 }
 
-function updateFlattenFlightRequirment(flattenFlight: FlattenFlightRequirment, dialyFlightRequirment: DailyFlightRequirment, baseAirport: Airport) {
-  const weekDay = (dialyFlightRequirment.day + flattenFlight.diffLocalStdandUtcStd + 7) % 7;
-
+function updateFlattenFlightRequirment(flattenFlight: FlattenFlightRequirment, leg: FlightLeg) {
+  // const weekDay = (leg.day + flattenFlight.diffLocalStdandUtcStd + 7) % 7;
+  const weekDay = (leg.day + Math.floor(leg.actualStd.minutes / 1440) + 7) % 7;
   if (flattenFlight.days.indexOf(weekDay) === -1) {
     flattenFlight.days.push(weekDay);
 
-    if (!dialyFlightRequirment.originPermission) {
+    if (!leg.originPermission) {
       flattenFlight.originNoPermissionsWeekDay.push(weekDay);
     }
 
-    if (!dialyFlightRequirment.destinationPermission) {
+    if (!leg.destinationPermission) {
       const arrivalWeekDay = flattenFlight.diffLocalStdandLocalSta > 0 ? (weekDay + 1) % 7 : weekDay;
       flattenFlight.destinationNoPermissionsWeekDay.push(arrivalWeekDay);
     }
   }
 
-  flattenFlight.utcDays.indexOf(dialyFlightRequirment.day) === -1 && flattenFlight.utcDays.push(dialyFlightRequirment.day);
-  flattenFlight.notes.indexOf(dialyFlightRequirment.note) === -1 && flattenFlight.notes.push(dialyFlightRequirment.note);
+  flattenFlight.utcDays.indexOf(leg.day) === -1 && flattenFlight.utcDays.push(leg.day);
+  flattenFlight.notes.indexOf(leg.notes) === -1 && flattenFlight.notes.push(leg.notes);
   (flattenFlight as any)['weekDay' + weekDay.toString()] = calculateDayCharacter();
-  (flattenFlight as any)['rswWeekDay' + weekDay.toString()] = dialyFlightRequirment.rsx;
-  switch (dialyFlightRequirment.rsx) {
+  (flattenFlight as any)['rswWeekDay' + weekDay.toString()] = leg.rsx;
+  switch (leg.rsx) {
     case 'REAL':
       flattenFlight.realFrequency++;
       break;
@@ -1880,13 +1794,13 @@ function updateFlattenFlightRequirment(flattenFlight: FlattenFlightRequirment, d
   return flattenFlight;
 
   function calculateDayCharacter(): string | number | boolean | Airport | number[] | Daytime | FlattenFlightRequirment[] | string[] {
-    if (dialyFlightRequirment.rsx === 'REAL') {
-      if (dialyFlightRequirment.originPermission && dialyFlightRequirment.destinationPermission) return character.circle;
-      if (!dialyFlightRequirment.originPermission && !dialyFlightRequirment.destinationPermission) return character.emptyCircle;
-      if (!dialyFlightRequirment.originPermission) return character.leftHalfBlackCircle;
+    if (leg.rsx === 'REAL') {
+      if (leg.originPermission && leg.destinationPermission) return character.circle;
+      if (!leg.originPermission && !leg.destinationPermission) return character.emptyCircle;
+      if (!leg.originPermission) return character.leftHalfBlackCircle;
       return character.rightHalfBlackCircle;
     } else {
-      return dialyFlightRequirment.rsx.toString();
+      return leg.rsx.toString();
     }
   }
 }

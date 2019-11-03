@@ -129,14 +129,14 @@ const PreplanPage: FC = () => {
                 <Route exact path={match.path + '/reports/:report?'} component={() => <ReportsPage />} />
                 <Redirect to={match.url} />
               </Switch>
+
+              <ObjectionModal state={objectionModalState} onClose={closeObjectionModal} />
+              <FlightRequirementModal state={flightRequirementModalState} onClose={closeFlightRequirementModal} />
+              <RemoveFlightRequirementModal state={removeFlightRequirementModalState} onClose={closeRemoveFlightRequirementModal} />
             </ReloadPreplanContext.Provider>
           </PreplanContext.Provider>
         </NavBarToolsContainerContext.Provider>
       )}
-
-      <ObjectionModal state={objectionModalState} onClose={closeObjectionModal} />
-      <FlightRequirementModal state={flightRequirementModalState} onClose={closeFlightRequirementModal} />
-      <RemoveFlightRequirementModal state={removeFlightRequirementModalState} onClose={closeRemoveFlightRequirementModal} />
     </Fragment>
   );
 };

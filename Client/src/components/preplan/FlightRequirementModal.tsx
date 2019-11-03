@@ -1,4 +1,4 @@
-import React, { FC, useState, useMemo, useContext } from 'react';
+import React, { FC, useState, useMemo, useContext, Fragment } from 'react';
 import { Theme, Typography, Grid, TextField, Paper, Tabs, Tab, Checkbox, Button, IconButton, FormControlLabel } from '@material-ui/core';
 import { Clear as ClearIcon, Add as AddIcon, WrapText as WrapTextIcon, ArrowRightAlt as ArrowRightAltIcon } from '@material-ui/icons';
 import { makeStyles } from '@material-ui/styles';
@@ -681,13 +681,15 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                               component={React.forwardRef<HTMLDivElement>((props, ref) => (
                                 <div {...props} ref={ref} className={classes.legsTab}>
                                   <div className={classes.legTab}>
-                                    <Typography className={classes.legTabFlightNumber}>{routeLegViewState.flightNumber || '&ndash;&ndash;&ndash;'}</Typography>
+                                    <Typography className={classes.legTabFlightNumber}>
+                                      {viewState.route[legIndex].flightNumber || <Fragment>&ndash; &ndash; &ndash;</Fragment>}
+                                    </Typography>
                                     <Button className={classes.legTabButton}>
-                                      {legIndex === 0 && <Typography variant="caption">{viewState.route[legIndex].departureAirport || '&mdash;'}</Typography>}
+                                      {legIndex === 0 && <Typography variant="caption">{viewState.route[legIndex].departureAirport || <Fragment>&mdash;</Fragment>}</Typography>}
                                       <Typography variant="caption">
                                         <ArrowRightAltIcon className={classes.legTabRightArrow} />
                                       </Typography>
-                                      <Typography variant="caption">{viewState.route[legIndex].arrivalAirport || '&mdash;'}</Typography>
+                                      <Typography variant="caption">{viewState.route[legIndex].arrivalAirport || <Fragment>&mdash;</Fragment>}</Typography>
                                     </Button>
                                   </div>
                                   {legIndex > 0 && viewState.tabIndex === 'ALL' && (
@@ -952,25 +954,25 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
   );
 
   function daysButOne(day: Weekday, dayTabFactory: DayTabViewState | ((day: DayTabViewState) => DayTabViewState)): DayTabViewState[] {
-    return [...viewState.days.slice(0, day - 1), typeof dayTabFactory === 'function' ? dayTabFactory(viewState.days[day]) : dayTabFactory, ...viewState.days.slice(day + 1)];
+    return [...viewState.days.slice(0, day), typeof dayTabFactory === 'function' ? dayTabFactory(viewState.days[day]) : dayTabFactory, ...viewState.days.slice(day + 1)];
   }
   function routeButOne(routeLegFactory: RouteLegViewState | ((routeLeg: RouteLegViewState) => RouteLegViewState)): RouteLegViewState[] {
     return [
-      ...viewState.route.slice(0, viewState.legIndex - 1),
+      ...viewState.route.slice(0, viewState.legIndex),
       typeof routeLegFactory === 'function' ? routeLegFactory(viewState.route[viewState.legIndex]) : routeLegFactory,
       ...viewState.route.slice(viewState.legIndex + 1)
     ];
   }
   function allLegsButOne(legFactory: LegViewState | ((leg: LegViewState) => LegViewState)): LegViewState[] {
     return [
-      ...viewState.default.legs.slice(0, viewState.legIndex - 1),
+      ...viewState.default.legs.slice(0, viewState.legIndex),
       typeof legFactory === 'function' ? legFactory(viewState.default.legs[viewState.legIndex]) : legFactory,
       ...viewState.default.legs.slice(viewState.legIndex + 1)
     ];
   }
   function dayLegsButOne(day: Weekday, legFactory: LegViewState | ((leg: LegViewState) => LegViewState)): LegViewState[] {
     return [
-      ...viewState.days[day].legs.slice(0, viewState.legIndex - 1),
+      ...viewState.days[day].legs.slice(0, viewState.legIndex),
       typeof legFactory === 'function' ? legFactory(viewState.days[day].legs[viewState.legIndex]) : legFactory,
       ...viewState.days[day].legs.slice(viewState.legIndex + 1)
     ];

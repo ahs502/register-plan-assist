@@ -144,8 +144,9 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
         var airportValidation = westAirport.some(airport => f.departureAirport.id === airport.id);
         if (!airportValidation) return false;
         const departureWeekDay = f.day;
-        const sta = f.std.minutes + f.blockTime;
-        const arrivalWeekDay = sta <= 1440 ? departureWeekDay : (departureWeekDay + 1) % 7;
+        //const sta = f.std.minutes + f.blockTime;
+        const sta = f.actualSta.minutes;
+        const arrivalWeekDay = (departureWeekDay + Math.floor(sta / 1440)) % 7;
         if (arrivalWeekDay !== w) return false;
         return true;
       });
@@ -216,9 +217,10 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
 
           const stas = flights
             .map(flight => {
-              const date = flight.std.toDate(baseDate);
-              date.addMinutes(flight.blockTime);
-              return date;
+              // const date = flight.std.toDate(baseDate);
+              // date.addMinutes(flight.blockTime);
+              //return date;
+              return flight.actualSta.toDate(baseDate);
             })
             .sort((a, b) => compareFunction(a.getTime(), b.getTime()));
           model['from' + airport.name] = stas.map(a => formatUTCDateToLocal(a)).join('\r\n');
@@ -238,9 +240,10 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
 
           const stas = arrivalToIran
             .map(flight => {
-              const date = flight.std.toDate(baseDate);
-              date.addMinutes(flight.blockTime);
-              return date;
+              // const date = flight.std.toDate(baseDate);
+              // date.addMinutes(flight.blockTime);
+              //return date;
+              return flight.actualSta.toDate(baseDate);
             })
             .sort((a, b) => compareFunction(a.getTime(), b.getTime()));
           const stds = departureFromIran.map(flight => flight.std.toDate(baseDate)).sort((a, b) => compareFunction(a.getTime(), b.getTime()));
@@ -282,7 +285,8 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
       }
       if (
         firstFligths.some(ff => {
-          const sta = (ff.std.minutes + ff.blockTime) % 1440;
+          //const sta = (ff.std.minutes + ff.blockTime) % 1440;
+          const sta = ff.actualSta.minutes % 1440;
           return secoundFlights.some(
             sf =>
               sf.std.minutes < sta + converteHHMMtoTotalMinute(maxConnectionTime) &&

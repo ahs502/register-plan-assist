@@ -1,4 +1,4 @@
-import React, { FC, Fragment, useState, useEffect } from 'react';
+import React, { FC, Fragment, useState, useEffect, useMemo } from 'react';
 import { Theme, InputLabel, TextField, TableHead, TableCell, Table, TableRow, TableBody, Button, Grid, FormControlLabel, Checkbox } from '@material-ui/core';
 import { red, grey } from '@material-ui/core/colors';
 import { makeStyles } from '@material-ui/styles';
@@ -13,7 +13,6 @@ import Weekday from '@core/types/Weekday';
 import { WorkbookSheetRow } from '@progress/kendo-ooxml';
 import { parseMinute } from 'src/utils/model-parsers';
 import PreplanService from 'src/services/PreplanService';
-import FlightRequirement from 'src/business/flight-requirement/FlightRequirement';
 import Rsx from '@core/types/Rsx';
 import PreplanHeader from 'src/business/preplan/PreplanHeader';
 import Flight from 'src/business/flight/Flight';
@@ -223,21 +222,6 @@ interface NoteStatus {
   isChange: boolean;
 }
 
-interface DailyFlightRequirment {
-  flightNumber: string;
-  arrivalAirport: Airport;
-  departureAirport: Airport;
-  blocktime: number;
-  day: number;
-  std: Daytime;
-  note: string;
-  aircraftType: string;
-  category: string;
-  destinationPermission: boolean;
-  originPermission: boolean;
-  rsx: Rsx;
-}
-
 interface DataProvider {
   field: string;
   items: FlattenFlightRequirment[];
@@ -264,14 +248,14 @@ interface FliterModel {
 }
 
 const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName, fromDate, toDate }) => {
-  const allAirports = MasterData.all.airports.items.orderBy(a => a.name);
-  const ika = allAirports.find(a => a.name === 'IKA')!;
-  const thr = allAirports.find(a => a.name === 'THR')!;
-  const mhd = allAirports.find(a => a.name === 'MHD')!;
-  const ker = allAirports.find(a => a.name === 'KER')!;
+  const ika = MasterData.all.airports.name['IKA'];
+  const thr = MasterData.all.airports.name['THR'];
+  const mhd = MasterData.all.airports.name['MHD'];
+  const ker = MasterData.all.airports.name['KER'];
   const allBaseAirport = [ika, thr, mhd, ker];
   const [dataProvider, setDataProvider] = useState<DataProvider[]>([]);
   const [preplanHeaders, setPreplanHeaders] = useState<ReadonlyArray<Readonly<PreplanHeader>>>([]);
+  const preplanHeaderOptions = useMemo<PreplanHeader[]>(() => [{} as PreplanHeader, ...preplanHeaders], [preplanHeaders]);
   const [flattenFlightRequirments, setFlattenFlightRequirments] = useState<FlattenFlightRequirment[]>([]);
   const [filterModel, setFilterModel] = useState<FliterModel>({
     baseAirport: ika,
@@ -290,17 +274,9 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
     compareMode: false
   } as FliterModel);
 
-  if (!preplanHeaders.length) {
-    PreplanService.getAllHeaders().then(preplanHeaderModels => {
-      const preplanHeader = preplanHeaderModels.map(p => new PreplanHeader(p));
-      preplanHeader.unshift({} as PreplanHeader);
-      setPreplanHeaders(preplanHeader); //TODO: Remove this line later.
-    });
-  }
-
   let proposalExporter: ExcelExport | null;
 
-  const detailCellOption = {
+  const detailCellOption: CellOptions = {
     textAlign: 'center',
     verticalAlign: 'center',
     borderBottom: { color: grey[400], size: 1 },
@@ -310,9 +286,9 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
     fontSize: 10,
     bold: true,
     wrap: true
-  } as CellOptions;
+  };
 
-  const headerCellOptions = {
+  const headerCellOptions: CellOptions = {
     textAlign: 'center',
     verticalAlign: 'center',
     borderBottom: { color: grey[400], size: 1 },
@@ -322,7 +298,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
     fontSize: 10,
     color: '#000000',
     bold: true
-  } as CellOptions;
+  };
 
   const color = makeColor();
   const classes = useStyles();
@@ -338,6 +314,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
 
     const baseDate = new Date(new Date((startDate.getTime() + endDate.getTime()) / 2));
 
+    //TODO: Ask hessam
     var filterdFlight = flights.filter(
       f =>
         f.flightRequirement.route[0].departureAirport.id === baseAirport.id &&
@@ -350,21 +327,26 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
     for (const key in flightByflightRequirmentId) {
       if (flightByflightRequirmentId.hasOwnProperty(key)) {
         const flights = flightByflightRequirmentId[key];
-        const flightRequirement = flights[0].flightRequirement;
-
         const flattenFlightRequirmentList = createFlattenFlightRequirmentsFromDailyFlightRequirment(flights, baseAirport, baseDate);
         flattenFlightRequirmentList.sort((a, b) => compareFunction(a.std.minutes, b.std.minutes));
         const sortedFlattenFlightRequirments = sortFlattenFlightRequirment(flattenFlightRequirmentList, baseAirport);
-        const parentRoute = flightRequirement.route[0].departureAirport.name + '-' + flightRequirement.route.map(r => r.arrivalAirport.name).join('-');
 
-        geratePermissionMassage(sortedFlattenFlightRequirments, parentRoute, result);
+        generatePermissionMassage(sortedFlattenFlightRequirments);
 
-        calculateFrequency(result);
+        calculateFrequency(sortedFlattenFlightRequirments);
+        result.push(...sortedFlattenFlightRequirments);
       }
     }
 
     return result;
   };
+
+  useEffect(() => {
+    PreplanService.getAllHeaders().then(preplanHeaderModels => {
+      const preplanHeaders = preplanHeaderModels.map(p => new PreplanHeader(p));
+      setPreplanHeaders(preplanHeaders);
+    });
+  }, []);
 
   useEffect(() => {
     const realFlatModel = generateReportDataModel(filterModel, flights, true);
@@ -666,7 +648,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
               </InputLabel>
               <AutoComplete
                 id="compare-preplan"
-                options={preplanHeaders}
+                options={preplanHeaderOptions}
                 getOptionLabel={l => l.name}
                 getOptionValue={l => l.id}
                 onSelect={s => {
@@ -1569,8 +1551,8 @@ function setFlattenFlightRequirmentStatus(flattenFlightRequirment: FlattenFlight
   }
 }
 
-function calculateFrequency(result: FlattenFlightRequirment[]) {
-  const parentRoutes = result
+function calculateFrequency(flattenFlightRequirments: FlattenFlightRequirment[]) {
+  const parentRoutes = flattenFlightRequirments
     .map(r => r.parentRoute)
     .reduce(
       (acc, current) => {
@@ -1580,7 +1562,7 @@ function calculateFrequency(result: FlattenFlightRequirment[]) {
       [] as string[]
     );
   parentRoutes.forEach(r => {
-    const flatFlightRequirments = result.filter(f => f.parentRoute === r);
+    const flatFlightRequirments = flattenFlightRequirments.filter(f => f.parentRoute === r);
     const realFrequency = flatFlightRequirments
       .map(f => f.realFrequency)
       .reduce((acc, current) => {
@@ -1607,9 +1589,8 @@ function calculateFrequency(result: FlattenFlightRequirment[]) {
   });
 }
 
-function geratePermissionMassage(sortedFlattenFlightRequirments: FlattenFlightRequirment[], parentRoute: string, result: FlattenFlightRequirment[]) {
+function generatePermissionMassage(sortedFlattenFlightRequirments: FlattenFlightRequirment[]): void {
   sortedFlattenFlightRequirments.forEach(n => {
-    n.parentRoute = parentRoute;
     n.note = n.notes.filter(Boolean).join(',');
     n.destinationNoPermissions =
       n.destinationNoPermissionsWeekDay.length === 0
@@ -1623,38 +1604,37 @@ function geratePermissionMassage(sortedFlattenFlightRequirments: FlattenFlightRe
         : n.originNoPermissionsWeekDay.length === n.days.length
         ? 'NOT OK'
         : 'NOT OK for: ' + n.originNoPermissionsWeekDay.map(w => Weekday[w].substring(0, 3)).join(',');
-    result.push(n);
   });
 }
 
 function sortFlattenFlightRequirment(flattenFlightRequirmentList: FlattenFlightRequirment[], baseAirport: Airport) {
-  const temp: FlattenFlightRequirment[] = [];
+  const result: FlattenFlightRequirment[] = [];
 
   while (flattenFlightRequirmentList.length > 0) {
     let flightRequirment = flattenFlightRequirmentList.find(f => f.departureAirport.id === baseAirport.id);
     let minIndex = flattenFlightRequirmentList.length;
     if (flightRequirment) {
-      const insertedPreviousFlight = temp.filter(f => f.previousFlights.some(n => n === flightRequirment));
+      const insertedPreviousFlight = result.filter(f => f.previousFlights.some(n => n === flightRequirment));
       if (insertedPreviousFlight && insertedPreviousFlight.length > 0) {
-        const x = insertedPreviousFlight.map(f => temp.indexOf(f));
+        const x = insertedPreviousFlight.map(f => result.indexOf(f));
         minIndex = Math.min(...x);
       }
-      temp.splice(minIndex, 0, flightRequirment);
+      result.splice(minIndex, 0, flightRequirment);
 
       flattenFlightRequirmentList.remove(flightRequirment);
 
       flightRequirment.nextFlights.forEach(f => {
-        if (temp.indexOf(f) > 0) return;
+        if (result.indexOf(f) > 0) return;
         minIndex++;
-        temp.splice(minIndex, 0, f);
+        result.splice(minIndex, 0, f);
         flattenFlightRequirmentList.remove(f);
       });
     } else {
-      flattenFlightRequirmentList.forEach(n => temp.push(n));
+      flattenFlightRequirmentList.forEach(n => result.push(n));
       break;
     }
   }
-  return temp;
+  return result;
 }
 
 function createFlattenFlightRequirmentsFromDailyFlightRequirment(flights: Flight[], baseAirport: Airport, baseDate: Date): FlattenFlightRequirment[] {
@@ -1686,10 +1666,13 @@ function createFlattenFlightRequirmentsFromDailyFlightRequirment(flights: Flight
 }
 
 function createFlattenFlightRequirment(leg: FlightLeg, date: Date): FlattenFlightRequirment {
+  const flightRequirement = leg.flightRequirement;
+  const parentRoute = flightRequirement.route[0].departureAirport.name + '-' + flightRequirement.route.map(r => r.arrivalAirport.name).join('-');
   const utcStd = leg.std.toDate(date);
   const localStd = leg.departureAirport.convertUtcToLocal(utcStd);
-  const utcSta = leg.std.toDate(date);
-  utcSta.addMinutes(leg.blockTime);
+  //const utcSta = leg.std.toDate(date);
+  //utcSta.addMinutes(leg.blockTime);
+  const utcSta = leg.actualSta.toDate(date);
   const localSta = leg.arrivalAirport.convertUtcToLocal(utcSta);
   let diffLocalStdandUtcStd = utcStd.getUTCDay() - localStd.getUTCDay();
   let diffLocalStdandUtcSta = utcSta.getUTCDay() - localStd.getUTCDay();
@@ -1749,7 +1732,7 @@ function createFlattenFlightRequirment(leg: FlightLeg, date: Date): FlattenFligh
     frequency: '',
     nextFlights: [],
     originNoPermissions: '',
-    parentRoute: '',
+    parentRoute: parentRoute,
     previousFlights: [],
     status: {} as FlattenFlightRequirmentStatus
   };
@@ -1759,8 +1742,8 @@ function createFlattenFlightRequirment(leg: FlightLeg, date: Date): FlattenFligh
 }
 
 function updateFlattenFlightRequirment(flattenFlight: FlattenFlightRequirment, leg: FlightLeg) {
-  // const weekDay = (leg.day + flattenFlight.diffLocalStdandUtcStd + 7) % 7;
-  const weekDay = (leg.day + Math.floor(leg.actualStd.minutes / 1440) + 7) % 7;
+  const weekDay = (leg.day + flattenFlight.diffLocalStdandUtcStd + 7) % 7;
+
   if (flattenFlight.days.indexOf(weekDay) === -1) {
     flattenFlight.days.push(weekDay);
 
@@ -1803,12 +1786,6 @@ function updateFlattenFlightRequirment(flattenFlight: FlattenFlightRequirment, l
       return leg.rsx.toString();
     }
   }
-}
-
-function fliterDailyFlightRequirmentByRSX(dailyFlightRequirment: readonly DailyFlightRequirment[], showReal: boolean, showSTB1: boolean, showSTB2: boolean, showExtra: boolean) {
-  return dailyFlightRequirment.filter(f => {
-    return (showReal && f.rsx === 'REAL') || (showSTB1 && f.rsx === 'STB1') || (showSTB2 && f.rsx === 'STB2') || (showExtra && f.rsx === 'EXT');
-  });
 }
 
 function normalizeFlightNumber(flightNumber: string) {

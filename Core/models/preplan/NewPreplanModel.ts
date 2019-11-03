@@ -16,7 +16,7 @@ export class NewPreplanModelValidation extends Validation {
           const end = new Date(endDate);
           validator
             .must(start.isValid(), end.isValid())
-            .must(() => start.getTimePart().getTime() === 0, () => end.getTimePart().getTime() === 0)
+            .must(() => start.getDatePart().equals(start), () => end.getDatePart().equals(end))
             .must(() => start.toJSON() === startDate, () => end.toJSON() === endDate)
             .must(() => start <= end);
         });

@@ -30,7 +30,7 @@ export class NewFlightRequirementModelValidation extends Validation<
     super(validator =>
       validator.object(data).then(({ label, category, stcId, aircraftSelection, rsx, notes, ignored, route, days }) => {
         validator.must(typeof label === 'string', !!label).must(() => label === label.trim().toUpperCase());
-        validator.must(typeof category === 'string').must(() => category === category.trim().toUpperCase());
+        validator.must(typeof category === 'string').must(() => category === category.trim());
         validator.must(typeof stcId === 'string').must(() => stcId in MasterData.all.stcs.id);
         validator.put(validator.$.aircraftSelection, new AircraftSelectionModelValidation(aircraftSelection, dummyAircraftRegisterIds));
         validator.must(Rsxes.includes(rsx));

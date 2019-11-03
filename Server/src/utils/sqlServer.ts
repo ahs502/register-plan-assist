@@ -188,7 +188,7 @@ function attachHelperFunctions(f: any): any {
     return { name, type: TYPES.VarChar, value: typeof value === 'string' ? value : value.toJSON(), options: { scale } };
   }
   function xmlParam(name: string, value: Xml | null): Parameter {
-    return { name, type: TYPES.Xml, value };
+    return { name, type: TYPES.Text, value };
   }
   function tableParam(name: string, columns: readonly TableColumn[], rows: readonly any[][]): Parameter {
     return { name, type: TYPES.TVP, value: { columns, rows } };

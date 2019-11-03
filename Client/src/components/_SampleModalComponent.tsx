@@ -56,6 +56,11 @@ const SampleModal: FC<SampleModalProps> = ({ state: [open, { modalStateProperty 
     >
       The modal body contents go here...
       <input value={viewState.someViewStateProperty.toString()} onChange={e => setViewState({ someViewStateProperty: Number(e.target.value) })} />
+      {open && (
+        <div>
+          Render state dependent content {modalStateProperty} conditionally by <code>open</code> trueness.
+        </div>
+      )}
       ...
     </BaseModal>
   );

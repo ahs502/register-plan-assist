@@ -33,7 +33,7 @@ const RemovePreplanModal: FC<RemovePreplanModalProps> = ({ state: [open, { prepl
         }
       ]}
     >
-      <Typography variant="body1">All of data about preplan {preplanHeader!.name} will be removed.</Typography>
+      {open && <Typography variant="body1">All of data about preplan {preplanHeader.name} will be removed.</Typography>}
     </BaseModal>
   );
 };

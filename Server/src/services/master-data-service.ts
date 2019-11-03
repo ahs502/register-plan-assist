@@ -15,6 +15,7 @@ import ConstraintModel from '@core/models/master-data/ConstraintModel';
 import ConstraintTemplateType from '@core/types/ConstraintTemplateType';
 import { xmlParse, xmlArray } from 'src/utils/xml';
 import ConstraintTemplateDataFieldType from '@core/types/ConstraintTemplateDataFieldType';
+import MasterData from '@core/master-data';
 
 const router = Router();
 export default router;
@@ -24,7 +25,7 @@ router.post(
   requestMiddlewareWithDbAccess<{ collections: (keyof MasterDataModel)[] }, MasterDataModel>(async (userId, { collections }, { runQuery }) => {
     //TODO: Check user access here...
 
-    const MasterDataModel: MasterDataModel = {
+    const masterDataModel: MasterDataModel = {
       aircraftTypes: collections.includes('aircraftTypes') ? await getAircraftTypes() : undefined,
       aircraftRegisters: collections.includes('aircraftRegisters') ? await getAircraftRegisters() : undefined,
       airports: collections.includes('airports') ? await getAirports() : undefined,
@@ -36,7 +37,9 @@ router.post(
       constraints: collections.includes('constraints') ? await getConstraints() : undefined
     };
 
-    return MasterDataModel;
+    MasterData.recieve(masterDataModel); //TODO: Make this call to be done at project server startup.
+
+    return masterDataModel;
 
     async function getAircraftTypes(): Promise<readonly AircraftTypeModel[]> {
       const rawAircraftTypes: readonly {

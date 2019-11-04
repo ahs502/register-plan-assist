@@ -1,7 +1,7 @@
 import React, { FC } from 'react';
 import { Theme, Grid, TextField } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
-import BaseModal, { BaseModalProps, useModalViewState } from 'src/components/BaseModal';
+import BaseModal, { BaseModalProps, useModalViewState, useModalState } from 'src/components/BaseModal';
 import NewPreplanModel from '@core/models/preplan/NewPreplanModel';
 import { parseDateUtc } from 'src/utils/parsers';
 
@@ -69,3 +69,7 @@ const NewPreplanModal: FC<NewPreplanModalProps> = ({ state: [open], onCreate, ..
 };
 
 export default NewPreplanModal;
+
+export function useNewPreplanModalState() {
+  return useModalState<NewPreplanModalState>();
+}

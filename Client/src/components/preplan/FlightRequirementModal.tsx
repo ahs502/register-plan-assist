@@ -2,7 +2,7 @@ import React, { FC, useState, useMemo, useContext, Fragment } from 'react';
 import { Theme, Typography, Grid, TextField, Paper, Tabs, Tab, Checkbox, Button, IconButton, FormControlLabel } from '@material-ui/core';
 import { Clear as ClearIcon, Add as AddIcon, WrapText as WrapTextIcon, ArrowRightAlt as ArrowRightAltIcon } from '@material-ui/icons';
 import { makeStyles } from '@material-ui/styles';
-import BaseModal, { BaseModalProps, useModalViewState } from 'src/components/BaseModal';
+import BaseModal, { BaseModalProps, useModalViewState, useModalState } from 'src/components/BaseModal';
 import FlightRequirement from 'src/business/flight-requirement/FlightRequirement';
 import Weekday, { Weekdays } from '@core/types/Weekday';
 import AutoComplete from 'src/components/AutoComplete';
@@ -987,3 +987,7 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
 };
 
 export default FlightRequirementModal;
+
+export function useFlightRequirementModalState() {
+  return useModalState<FlightRequirementModalState>();
+}

@@ -1,7 +1,7 @@
 import React, { FC } from 'react';
 import { Theme, Typography } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
-import BaseModal, { BaseModalProps } from 'src/components/BaseModal';
+import BaseModal, { BaseModalProps, useModalState } from 'src/components/BaseModal';
 import Objectionable from 'src/business/constraints/Objectionable';
 
 const useStyles = makeStyles((theme: Theme) => ({}));
@@ -32,3 +32,7 @@ const ObjectionModal: FC<ObjectionModalProps> = ({ state: [open, { target }], ..
 };
 
 export default ObjectionModal;
+
+export function useObjectionModalState() {
+  return useModalState<ObjectionModalState>();
+}

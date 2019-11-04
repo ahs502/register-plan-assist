@@ -1,7 +1,7 @@
 import React, { FC } from 'react';
 import { Theme, Typography } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
-import BaseModal, { BaseModalProps } from 'src/components/BaseModal';
+import BaseModal, { BaseModalProps, useModalState } from 'src/components/BaseModal';
 import PreplanHeader from 'src/business/preplan/PreplanHeader';
 import Id from '@core/types/Id';
 
@@ -39,3 +39,7 @@ const RemovePreplanModal: FC<RemovePreplanModalProps> = ({ state: [open, { prepl
 };
 
 export default RemovePreplanModal;
+
+export function useRemovePreplanModalState() {
+  return useModalState<RemovePreplanModalState>();
+}

@@ -4,8 +4,7 @@ import { makeStyles } from '@material-ui/styles';
 import MahanIcon, { MahanIconType } from 'src/components/MahanIcon';
 import Objectionable from 'src/business/constraints/Objectionable';
 import { PreplanContext } from 'src/pages/preplan';
-import { useModalState } from 'src/components/BaseModal';
-import ObjectionModal, { ObjectionModalState } from 'src/components/preplan/ObjectionModal';
+import ObjectionModal, { useObjectionModalState } from 'src/components/preplan/ObjectionModal';
 
 const useStyles = makeStyles((theme: Theme) => ({
   root: {
@@ -26,7 +25,7 @@ export interface TargetObjectionStatusProps {
 const TargetObjectionStatus: FC<TargetObjectionStatusProps> = ({ target }) => {
   const preplan = useContext(PreplanContext);
 
-  const [objectionModalState, openObjectionModal, closeObjectionModal] = useModalState<ObjectionModalState>();
+  const [objectionModalState, openObjectionModal, closeObjectionModal] = useObjectionModalState();
 
   const objections = preplan.constraintSystem.getObjectionsByTarget(target);
   const errorsCount = objections.filter(o => o.type === 'ERROR').length;

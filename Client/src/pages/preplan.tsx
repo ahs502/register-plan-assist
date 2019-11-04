@@ -9,11 +9,10 @@ import FlightRequirementListPage from 'src/pages/preplan/flight-requirement-list
 import ReportsPage from 'src/pages/preplan/reports';
 import PreplanService from 'src/services/PreplanService';
 import Preplan from 'src/business/preplan/Preplan';
-import ObjectionModal, { ObjectionModalState } from 'src/components/preplan/ObjectionModal';
-import FlightRequirementModal, { FlightRequirementModalState } from 'src/components/preplan/FlightRequirementModal';
-import RemoveFlightRequirementModal, { RemoveFlightRequirementModalState } from 'src/components/preplan/RemoveFlightRequirementModal';
+import ObjectionModal, { useObjectionModalState } from 'src/components/preplan/ObjectionModal';
+import FlightRequirementModal, { useFlightRequirementModalState } from 'src/components/preplan/FlightRequirementModal';
+import RemoveFlightRequirementModal, { useRemoveFlightRequirementModalState } from 'src/components/preplan/RemoveFlightRequirementModal';
 import PreplanModel from '@core/models/preplan/PreplanModel';
-import { useModalState } from 'src/components/BaseModal';
 
 const useStyles = makeStyles((theme: Theme) => ({}));
 
@@ -23,9 +22,9 @@ export const ReloadPreplanContext = createContext<(newPreplanModel?: PreplanMode
 
 const PreplanPage: FC = () => {
   const [preplan, setPreplan] = useState<Preplan | null>(null);
-  const [objectionModalState, openObjectionModal, closeObjectionModal] = useModalState<ObjectionModalState>();
-  const [flightRequirementModalState, openFlightRequirementModal, closeFlightRequirementModal] = useModalState<FlightRequirementModalState>();
-  const [removeFlightRequirementModalState, openRemoveFlightRequirementModal, closeRemoveFlightRequirementModal] = useModalState<RemoveFlightRequirementModalState>();
+  const [objectionModalState, openObjectionModal, closeObjectionModal] = useObjectionModalState();
+  const [flightRequirementModalState, openFlightRequirementModal, closeFlightRequirementModal] = useFlightRequirementModalState();
+  const [removeFlightRequirementModalState, openRemoveFlightRequirementModal, closeRemoveFlightRequirementModal] = useRemoveFlightRequirementModalState();
 
   const navBarToolsRef = useRef<HTMLDivElement>(null);
 

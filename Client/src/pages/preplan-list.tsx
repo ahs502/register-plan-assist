@@ -12,11 +12,10 @@ import { useSnackbar } from 'notistack';
 import ProgressSwitch from 'src/components/ProgressSwitch';
 import classNames from 'classnames';
 import PreplanHeader from 'src/business/preplan/PreplanHeader';
-import NewPreplanModal, { NewPreplanModalState } from 'src/components/preplan-list/NewPreplanModal';
-import ClonePreplanModal, { ClonePreplanModalState } from 'src/components/preplan-list/ClonePreplanModal';
-import EditPreplanModal, { EditPreplanModalState } from 'src/components/preplan-list/EditPreplanModal';
-import RemovePreplanModal, { RemovePreplanModalState } from 'src/components/preplan-list/RemovePreplanModal';
-import { useModalState } from 'src/components/BaseModal';
+import NewPreplanModal, { useNewPreplanModalState } from 'src/components/preplan-list/NewPreplanModal';
+import ClonePreplanModal, { useClonePreplanModalState } from 'src/components/preplan-list/ClonePreplanModal';
+import EditPreplanModal, { useEditPreplanModalState } from 'src/components/preplan-list/EditPreplanModal';
+import RemovePreplanModal, { useRemovePreplanModalState } from 'src/components/preplan-list/RemovePreplanModal';
 
 const waitingPaperSize = 250;
 const useStyles = makeStyles((theme: Theme) => ({
@@ -85,10 +84,10 @@ const PreplanListPage: FC = () => {
   const [message, setMessage] = useState('');
   const [query, setQuery] = useState<readonly string[]>([]);
 
-  const [newPreplanModalState, openNewPreplanModal, closeNewPreplanModal] = useModalState<NewPreplanModalState>();
-  const [clonePreplanModalState, openClonePreplanModal, closeClonePreplanModal] = useModalState<ClonePreplanModalState>();
-  const [editPreplanModalState, openEditPreplanModal, closeEditPreplanModal] = useModalState<EditPreplanModalState>();
-  const [removePreplanModalState, openRemovePreplanModal, closeRemovePreplanModal] = useModalState<RemovePreplanModalState>();
+  const [newPreplanModalState, openNewPreplanModal, closeNewPreplanModal] = useNewPreplanModalState();
+  const [clonePreplanModalState, openClonePreplanModal, closeClonePreplanModal] = useClonePreplanModalState();
+  const [editPreplanModalState, openEditPreplanModal, closeEditPreplanModal] = useEditPreplanModalState();
+  const [removePreplanModalState, openRemovePreplanModal, closeRemovePreplanModal] = useRemovePreplanModalState();
 
   const { enqueueSnackbar } = useSnackbar();
 

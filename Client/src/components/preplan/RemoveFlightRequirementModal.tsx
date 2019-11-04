@@ -1,7 +1,7 @@
 import React, { FC, useContext } from 'react';
 import { Theme, Typography } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
-import BaseModal, { BaseModalProps } from 'src/components/BaseModal';
+import BaseModal, { BaseModalProps, useModalState } from 'src/components/BaseModal';
 import FlightRequirement from 'src/business/flight-requirement/FlightRequirement';
 import { ReloadPreplanContext, PreplanContext } from 'src/pages/preplan';
 import FlightRequirementService from 'src/services/FlightRequirementService';
@@ -45,3 +45,7 @@ const RemoveFlightRequirementModal: FC<RemoveFlightRequirementModalProps> = ({ s
 };
 
 export default RemoveFlightRequirementModal;
+
+export function useRemoveFlightRequirementModalState() {
+  return useModalState<RemoveFlightRequirementModalState>();
+}

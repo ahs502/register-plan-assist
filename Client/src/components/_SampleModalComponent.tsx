@@ -68,11 +68,15 @@ const SampleModal: FC<SampleModalProps> = ({ state: [open, { modalStateProperty 
 
 export default SampleModal;
 
+export function useSampleModalState() {
+  return useModalState<SampleModalState>();
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Usage in another component:
 
 const SomeComponent: FC = () => {
-  const [sampleModalState, openSimpleModal, closeSimpleModal] = useModalState<SampleModalState>();
+  const [sampleModalState, openSimpleModal, closeSimpleModal] = useSampleModalState();
 
   return (
     <div>

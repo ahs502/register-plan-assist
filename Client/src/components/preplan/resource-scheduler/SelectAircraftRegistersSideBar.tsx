@@ -153,23 +153,24 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
       )
       .reduce((a, l) => a.concat(l), [] as DummyAircraftRegisterModel[]);
     const aircraftRegisterOptions: AircraftRegisterOptionsModel = { options: [] };
-    // list.forEach(t => {
-    //   t.registers.forEach(r => {
-    //     const airport = r.baseAirport && MasterData.all.airports.items.find(a => a.name.toUpperCase() === r.baseAirport.toUpperCase());
-    //     return ((aircraftRegisterOptionsDictionary[r.id] as any) = {
-    //       status: r.status,
-    //       startingAirportId: airport && airport.id
-    //     });
-    //   });
-    //   t.dummyRegisters.forEach(r => {
-    //     const airport = r.baseAirport && MasterData.all.airports.items.find(a => a.name.toUpperCase() === r.baseAirport.toUpperCase());
-    //     return ((aircraftRegisterOptionsDictionary[r.id] as any) = {
-    //       status: r.status,
-    //       startingAirportId: airport && airport.id
-    //     });
-    //   });
-    // });
-    //TODO: Validate those models...
+    list.forEach(t => {
+      t.registers.forEach(r => {
+        const airport = (r.baseAirport && MasterData.all.airports.items.find(a => a.name.toUpperCase() === r.baseAirport.toUpperCase())) || undefined;
+        (aircraftRegisterOptions.options as AircraftRegisterOptionsModel['options'][number][]).push({
+          aircraftRegisterId: r.id,
+          status: r.status,
+          baseAirportId: airport && airport.id
+        });
+      });
+      t.dummyRegisters.forEach(r => {
+        const airport = (r.baseAirport && MasterData.all.airports.items.find(a => a.name.toUpperCase() === r.baseAirport.toUpperCase())) || undefined;
+        (aircraftRegisterOptions.options as AircraftRegisterOptionsModel['options'][number][]).push({
+          aircraftRegisterId: r.id,
+          status: r.status,
+          baseAirportId: airport && airport.id
+        });
+      });
+    });
     onApply(dummyAircraftRegisters, aircraftRegisterOptions);
   }
 

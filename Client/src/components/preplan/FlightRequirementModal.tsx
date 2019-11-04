@@ -25,6 +25,7 @@ import DayFlightRequirementModel from '@core/models/flight-requirement/DayFlight
 import Flight from 'src/business/flight/Flight';
 import DeepWritablePartial from '@core/types/DeepWritablePartial';
 import FlightRequirementService from 'src/services/FlightRequirementService';
+import DayFlightRequirementLegModel from '@core/models/flight-requirement/DayFlightRequirementLegModel';
 
 const useStyles = makeStyles((theme: Theme) => ({
   flightRequirementStyle: {
@@ -443,8 +444,8 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
             //TODO: Validate the view model first.
 
             const newFlightRequirementModel: NewFlightRequirementModel = {
-              label: viewState.label,
-              category: viewState.category,
+              label: viewState.label.trim().toUpperCase(),
+              category: viewState.category.trim(),
               stcId: viewState.stc.id,
               aircraftSelection: {
                 includedIdentities: viewState.default.allowedAircraftIdentities.map<AircraftIdentityModel>(i => ({
@@ -486,7 +487,13 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                     rsx: d.rsx,
                     day: index,
                     notes: d.notes,
-                    route: []
+                    route: d.legs.map<DayFlightRequirementLegModel>(l => ({
+                      blockTime: parseTime(l.blockTime)!,
+                      stdLowerBound: parseTime(l.stdLowerBound)!,
+                      stdUpperBound: parseTime(l.stdUpperBound),
+                      originPermission: l.originPermission,
+                      destinationPermission: l.destinationPermission
+                    }))
                   }
                 }))
                 .filter(x => x.selected)

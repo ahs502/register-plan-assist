@@ -197,7 +197,7 @@ function attachHelperFunctions(f: any): any {
     return { name, type: TYPES.Int, value };
   }
   function bigIntParam(name: string, value: bigint | string | null): Parameter {
-    return { name, type: TYPES.BigInt, value };
+    return { name, type: TYPES.VarChar, value, options: { length: 30 } }; // Do not use TYPES.BigInt, it does not work with large numbers.
   }
   function varCharParam(name: string, value: string | null, length: number | 'max'): Parameter {
     return { name, type: TYPES.VarChar, value, options: { length } };
@@ -209,7 +209,7 @@ function attachHelperFunctions(f: any): any {
     return { name, type: TYPES.VarChar, value: typeof value === 'string' ? value : value.toJSON(), options: { scale } };
   }
   function xmlParam(name: string, value: Xml | null): Parameter {
-    return { name, type: TYPES.Text, value };
+    return { name, type: TYPES.Text, value }; // Do not use TYPES.Xml, tedious does not accept this type for input parameters.
   }
 
   function tableParam(name: string, columns: readonly TableColumn[], rows: readonly any[][]): Parameter {
@@ -226,7 +226,7 @@ function attachHelperFunctions(f: any): any {
     return { name, type: TYPES.Int };
   }
   function bigIntColumn(name: string): TableColumn {
-    return { name, type: TYPES.BigInt };
+    return { name, type: TYPES.VarChar, length: 30 }; // Do not use TYPES.BigInt, it does not work with large numbers.
   }
   function varCharColumn(name: string, length: number | 'max'): TableColumn {
     return { name, type: TYPES.VarChar, length };
@@ -238,7 +238,7 @@ function attachHelperFunctions(f: any): any {
     return { name, type: TYPES.VarChar, scale };
   }
   function xmlColumn(name: string): TableColumn {
-    return { name, type: TYPES.Text };
+    return { name, type: TYPES.NVarChar, length: 'max' }; // Do not use TYPES.Xml or TYPES.Text, tedious does not support them as column types of a TVP.
   }
 }
 

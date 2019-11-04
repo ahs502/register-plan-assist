@@ -29,11 +29,11 @@ router.post(
     const flightEntities = flights.map(convertFlightModelToEntity);
     await runSp(
       '[Rpa].[SP_UpdateFlights]',
-      runSp.varCharParam('userId', userId, 30),
+      runSp.bigIntParam('userId', userId),
       runSp.intParam('flightRequirementId', flights[0].flightRequirementId),
       runSp.tableParam(
         'flights',
-        [runSp.intColumn('id'), runSp.intColumn('flightRequirementId'), runSp.intColumn('day'), runSp.varCharColumn('aircraftRegisterId', 30), runSp.xmlColumn('legsXml')],
+        [runSp.intColumn('id'), runSp.intColumn('flightRequirementId'), runSp.intColumn('day'), runSp.bigIntColumn('aircraftRegisterId'), runSp.xmlColumn('legsXml')],
         flightEntities.map(f => [f.id, f.flightRequirementId, f.day, f.aircraftRegisterId, f.legsXml])
       )
     );

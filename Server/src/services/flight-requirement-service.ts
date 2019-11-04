@@ -35,9 +35,9 @@ router.post(
       new NewFlightModelArrayValidation(newFlights, aircraftRegisterOptions).throw('Invalid API input.');
 
       const newFlightRequirementEntity = convertNewFlightRequirementModelToEntity(newFlightRequirement);
-      const result: Id[] = await runSp(
+      const result: { id: string }[] = await runSp(
         '[Rpa].[SP_InsertFlightRequirement]',
-        runSp.varCharParam('userId', userId, 30),
+        runSp.bigIntParam('userId', userId),
         runSp.intParam('preplanId', preplanId),
         runSp.nVarCharParam('label', newFlightRequirementEntity.label, 100),
         runSp.nVarCharParam('category', newFlightRequirementEntity.category, 100),
@@ -49,20 +49,20 @@ router.post(
         runSp.xmlParam('routeXml', newFlightRequirementEntity.routeXml),
         runSp.xmlParam('daysXml', newFlightRequirementEntity.daysXml)
       );
-      const flightRequirementId = result[0];
+      const flightRequirementId = result[0].id;
 
       const newFlightEntities = newFlights.map(convertNewFlightModelToEntity);
       await runSp(
         '[Rpa].[SP_InsertFlights]',
-        runSp.varCharParam('userId', userId, 30),
+        runSp.bigIntParam('userId', userId),
         runSp.tableParam(
           'flights',
-          [runSp.intColumn('flightRequirementId'), runSp.intColumn('day'), runSp.varCharColumn('aircraftRegisterId', 30), runSp.xmlColumn('legsXml')],
+          [runSp.intColumn('flightRequirementId'), runSp.intColumn('day'), runSp.bigIntColumn('aircraftRegisterId'), runSp.xmlColumn('legsXml')],
           newFlightEntities.map(f => [flightRequirementId, f.day, f.aircraftRegisterId, f.legsXml])
         )
       );
 
-      await runSp('[Rpa].[SP_UpdatePreplanLastEditDateTime]', runSp.varCharParam('userId', userId, 30), runSp.intParam('id', preplanId));
+      await runSp('[Rpa].[SP_UpdatePreplanLastEditDateTime]', runSp.bigIntParam('userId', userId), runSp.intParam('id', preplanId));
 
       return await getPreplanModel(runSp, userId, preplanId);
     }
@@ -75,11 +75,11 @@ router.post(
     const result = await runQuery(`select * from [Rpa].[FlightRequirement] where [Id] = '${id}'`);
     if (result.length === 0) throw 'Flight requirement is not found.';
 
-    await runSp('[Rpa].[SP_DeleteFlights]', runSp.varCharParam('userId', userId, 30), runSp.intParam('flightRequirementId', id));
+    await runSp('[Rpa].[SP_DeleteFlights]', runSp.bigIntParam('userId', userId), runSp.intParam('flightRequirementId', id));
 
-    await runSp('[Rpa].[Sp_DeleteFlightRequirement]', runSp.varCharParam('userId', userId, 30), runSp.intParam('id', id));
+    await runSp('[Rpa].[Sp_DeleteFlightRequirement]', runSp.bigIntParam('userId', userId), runSp.intParam('id', id));
 
-    await runSp('[Rpa].[SP_UpdatePreplanLastEditDateTime]', runSp.varCharParam('userId', userId, 30), runSp.intParam('id', preplanId));
+    await runSp('[Rpa].[SP_UpdatePreplanLastEditDateTime]', runSp.bigIntParam('userId', userId), runSp.intParam('id', preplanId));
 
     return await getPreplanModel(runSp, userId, preplanId);
   })
@@ -100,7 +100,9 @@ router.post(
     const dummyAircraftRegisterIds: Id[] = parsePreplanDummyAircraftRegistersXml(rawDummyAircraftRegistersXml[0].dummyAircraftRegistersXml).map(r => r.id);
     new FlightRequirementModelValidation(flightRequirement, flightRequirementIds, dummyAircraftRegisterIds).throw('Invalid API input.');
 
-    const rawFlightIds: { id: Id }[] = await runQuery(`select f.[Id] as [id] from [Rpa].[Flight] as f join [Rpa].[FlightRequirement] as r where r.[Id_Preplan] = '${preplanId}'`);
+    const rawFlightIds: { id: Id }[] = await runQuery(
+      `select f.[Id] as [id] from [Rpa].[Flight] as f join [Rpa].[FlightRequirement] as r on r.[Id] = f.[Id_FlightRequirement] where r.[Id_Preplan] = '${preplanId}'`
+    );
     const flightIds = rawFlightIds.map(f => f.id);
     const rawAircraftRegisterOptionsXml: { aircraftRegisterOptionsXml: Xml }[] = await runQuery(
       `select [AircraftRegisterOptions] as [aircraftRegisterOptionsXml] from [Rpa].[Preplan] where [Id] = '${preplanId}'`
@@ -116,7 +118,7 @@ router.post(
     const flightRequirementEntity = convertFlightRequirementModelToEntity(flightRequirement);
     await runSp(
       '[Rpa].[SP_UpdateFlightRequirement]',
-      runSp.varCharParam('userId', userId, 30),
+      runSp.bigIntParam('userId', userId),
       runSp.intParam('id', flightRequirementEntity.id),
       runSp.intParam('preplanId', preplanId),
       runSp.nVarCharParam('label', flightRequirementEntity.label, 100),
@@ -134,11 +136,11 @@ router.post(
     const newFlightEntities = newFlights.map(convertNewFlightModelToEntity);
     await runSp(
       '[Rpa].[SP_UpdateFlights]',
-      runSp.varCharParam('userId', userId, 30),
+      runSp.bigIntParam('userId', userId),
       runSp.intParam('flightRequirementId', flightRequirementEntity.id),
       runSp.tableParam(
         'flights',
-        [runSp.intColumn('id'), runSp.intColumn('flightRequirementId'), runSp.intColumn('day'), runSp.varCharColumn('aircraftRegisterId', 30), runSp.xmlColumn('legsXml')],
+        [runSp.intColumn('id'), runSp.intColumn('flightRequirementId'), runSp.intColumn('day'), runSp.bigIntColumn('aircraftRegisterId'), runSp.xmlColumn('legsXml')],
         [
           ...flightEntities.map(f => [f.id, f.flightRequirementId, f.day, f.aircraftRegisterId, f.legsXml]),
           ...newFlightEntities.map(f => ['', flightRequirementEntity.id, f.day, f.aircraftRegisterId, f.legsXml])
@@ -146,7 +148,7 @@ router.post(
       )
     );
 
-    await runSp('[Rpa].[SP_UpdatePreplanLastEditDateTime]', runSp.varCharParam('userId', userId, 30), runSp.intParam('id', preplanId));
+    await runSp('[Rpa].[SP_UpdatePreplanLastEditDateTime]', runSp.bigIntParam('userId', userId), runSp.intParam('id', preplanId));
 
     return await getPreplanModel(runSp, userId, preplanId);
   })

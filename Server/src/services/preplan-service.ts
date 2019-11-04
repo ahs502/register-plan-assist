@@ -162,7 +162,7 @@ router.post(
       )
       .flatten();
     const rawFlightAircraftRegisterIds: { aircraftRegisterId: Id }[] = await runQuery(
-      `select f.[Id_AircraftRegister] as [aircraftRegisterId] from [Rpa].[Flight] as f join [Rpa].[FlightRequirement] as r on r.[Id] = f.[Id_FlightRequirement] where r.[Id_Preplan] = '${id}'`
+      `select convert(varchar(30), f.[Id_AircraftRegister]) as [aircraftRegisterId] from [Rpa].[Flight] as f join [Rpa].[FlightRequirement] as r on r.[Id] = f.[Id_FlightRequirement] where r.[Id_Preplan] = '${id}'`
     );
     const flightAircraftRegisterIds = rawFlightAircraftRegisterIds.map(a => a.aircraftRegisterId);
     if (flightRequirementsAircraftRegisterIds.concat(flightAircraftRegisterIds).some(id => removedDummyAircraftRegisterIds.includes(id)))

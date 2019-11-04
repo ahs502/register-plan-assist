@@ -91,7 +91,7 @@ router.post(
     { preplanId: Id; flightRequirement: FlightRequirementModel; flights: readonly FlightModel[]; newFlights: readonly NewFlightModel[] },
     PreplanModel
   >(async (userId, { preplanId, flightRequirement, flights, newFlights }, { runQuery, runSp, types }) => {
-    const rawFlightRequirementIds: { id: Id }[] = await runQuery(`select [Id] as [id] from [Rpa].[FlightRequirement] where [Id_Preplan] = '${preplanId}'`);
+    const rawFlightRequirementIds: { id: Id }[] = await runQuery(`select convert(varchar(30), [Id]) as [id] from [Rpa].[FlightRequirement] where [Id_Preplan] = '${preplanId}'`);
     const flightRequirementIds = rawFlightRequirementIds.map(item => item.id);
     const rawDummyAircraftRegistersXml: { dummyAircraftRegistersXml: Xml }[] = await runQuery(
       `select [DummyAircraftRegisters] as [dummyAircraftRegistersXml] from [Rpa].[Preplan] where [Id] = '${preplanId}'`
@@ -101,7 +101,7 @@ router.post(
     new FlightRequirementModelValidation(flightRequirement, flightRequirementIds, dummyAircraftRegisterIds).throw('Invalid API input.');
 
     const rawFlightIds: { id: Id }[] = await runQuery(
-      `select f.[Id] as [id] from [Rpa].[Flight] as f join [Rpa].[FlightRequirement] as r on r.[Id] = f.[Id_FlightRequirement] where r.[Id_Preplan] = '${preplanId}'`
+      `select convert(varchar(30), f.[Id]) as [id] from [Rpa].[Flight] as f join [Rpa].[FlightRequirement] as r on r.[Id] = f.[Id_FlightRequirement] where r.[Id_Preplan] = '${preplanId}'`
     );
     const flightIds = rawFlightIds.map(f => f.id);
     const rawAircraftRegisterOptionsXml: { aircraftRegisterOptionsXml: Xml }[] = await runQuery(
@@ -120,7 +120,7 @@ router.post(
       '[Rpa].[SP_UpdateFlightRequirement]',
       runSp.bigIntParam('userId', userId),
       runSp.intParam('id', flightRequirementEntity.id),
-      runSp.intParam('preplanId', preplanId),
+      //runSp.intParam('preplanId', preplanId),
       runSp.nVarCharParam('label', flightRequirementEntity.label, 100),
       runSp.nVarCharParam('category', flightRequirementEntity.category, 100),
       runSp.intParam('stcId', flightRequirementEntity.stcId),

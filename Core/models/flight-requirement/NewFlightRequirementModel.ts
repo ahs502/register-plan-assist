@@ -29,12 +29,18 @@ export class NewFlightRequirementModelValidation extends Validation<
   constructor(data: NewFlightRequirementModel, dummyAircraftRegisterIds: readonly Id[]) {
     super(validator =>
       validator.object(data).then(({ label, category, stcId, aircraftSelection, rsx, notes, ignored, route, days }) => {
-        validator.must(typeof label === 'string', !!label).must(() => label === label.trim().toUpperCase());
-        validator.must(typeof category === 'string').must(() => category === category.trim().toUpperCase());
+        validator
+          .must(typeof label === 'string', !!label)
+          .must(() => label === label.trim().toUpperCase())
+          .must(() => label.length <= 100);
+        validator
+          .must(typeof category === 'string')
+          .must(() => category === category.trim())
+          .must(() => category.length <= 100);
         validator.must(typeof stcId === 'string').must(() => stcId in MasterData.all.stcs.id);
         validator.put(validator.$.aircraftSelection, new AircraftSelectionModelValidation(aircraftSelection, dummyAircraftRegisterIds));
         validator.must(Rsxes.includes(rsx));
-        validator.must(typeof notes === 'string');
+        validator.must(typeof notes === 'string').must(() => notes.length <= 1000);
         validator.must(typeof ignored === 'boolean');
         validator
           .array(route)

@@ -11,7 +11,7 @@ import classNames from 'classnames';
 import AutoComplete from 'src/components/AutoComplete';
 import Weekday from '@core/types/Weekday';
 import { WorkbookSheetRow } from '@progress/kendo-ooxml';
-import { parseMinute } from 'src/utils/model-parsers';
+import { parseMinute } from 'src/utils/parsers';
 import PreplanService from 'src/services/PreplanService';
 import Rsx from '@core/types/Rsx';
 import PreplanHeader from 'src/business/preplan/PreplanHeader';

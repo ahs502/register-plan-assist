@@ -1,25 +1,24 @@
 import React, { FC } from 'react';
 import { Theme, Typography } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
-import ModalBase, { ModalBaseProps, ModalBaseModel } from 'src/components/ModalBase';
+import BaseModal, { BaseModalProps } from 'src/components/BaseModal';
 import Objectionable from 'src/business/constraints/Objectionable';
 
 const useStyles = makeStyles((theme: Theme) => ({}));
 
-export interface ObjectionModalModel extends ModalBaseModel {
-  target?: Objectionable;
+export interface ObjectionModalState {
+  target: Objectionable;
 }
 
-export interface ObjectionModalProps extends ModalBaseProps<ObjectionModalModel> {}
+export interface ObjectionModalProps extends BaseModalProps<ObjectionModalState> {}
 
-const ObjectionModal: FC<ObjectionModalProps> = ({ ...others }) => {
-  const { target } = others.model;
-
+const ObjectionModal: FC<ObjectionModalProps> = ({ state: [open, { target }], ...others }) => {
   const classes = useStyles();
 
   return (
-    <ModalBase
+    <BaseModal
       {...others}
+      open={open}
       title={target ? `The list of objections on ${target.marker}:` : ''}
       actions={[
         {
@@ -28,7 +27,7 @@ const ObjectionModal: FC<ObjectionModalProps> = ({ ...others }) => {
       ]}
     >
       TODO: The list of objections...
-    </ModalBase>
+    </BaseModal>
   );
 };
 

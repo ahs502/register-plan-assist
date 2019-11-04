@@ -1,5 +1,5 @@
 import Id from '@core/types/Id';
-import { Xml, xmlEscape, xmlStringify, xmlParse, xmlArray } from 'src/utils/xml';
+import { Xml, xmlStringify, xmlParse, xmlArray } from 'src/utils/xml';
 import Rsx from '@core/types/Rsx';
 import NewFlightRequirementModel from '@core/models/flight-requirement/NewFlightRequirementModel';
 import { convertAircraftSelectionModelToEntity, convertAircraftSelectionEntityToModel } from '../AircraftSelectionEntity';
@@ -20,8 +20,8 @@ export default interface NewFlightRequirementEntity {
 
 export function convertNewFlightRequirementModelToEntity(data: NewFlightRequirementModel): NewFlightRequirementEntity {
   return {
-    label: xmlEscape(data.label),
-    category: xmlEscape(data.category),
+    label: data.label,
+    category: data.category,
     stcId: data.stcId,
     aircraftSelectionXml: xmlStringify(convertAircraftSelectionModelToEntity(data.aircraftSelection), 'AircraftSelection'),
     rsx: data.rsx,

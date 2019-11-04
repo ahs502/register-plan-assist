@@ -218,6 +218,12 @@ declare interface Date {
   getTimePart(): Date;
 
   /**
+   * Returns true iff the two dates are pointing to the same moment in history.
+   * @param date The other date comparison partner.
+   */
+  equals(date: Date | string | number): boolean;
+
+  /**
    * Returns a clone of this.
    */
   clone(): Date;

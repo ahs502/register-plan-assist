@@ -18,9 +18,6 @@ export function parseDateUtc(value?: string): Date | null {
   return Date.invalidDate;
 }
 
-export function parseDaytime(value?: string): number {
-  return new Daytime(value).minutes;
-}
 export function parseAirport(value?: string): string | undefined {
   const airport = value && (MasterData.all.airports.items.find(f => f.name.toLowerCase() === value.toLowerCase()) || 'invalid');
   return airport && (airport === 'invalid' ? 'invalid' : airport.id);

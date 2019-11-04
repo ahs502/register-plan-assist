@@ -1,8 +1,8 @@
-import React, { FC, useState, useMemo, useContext } from 'react';
+import React, { FC, useState, useMemo, useContext, Fragment } from 'react';
 import { Theme, Typography, Grid, TextField, Paper, Tabs, Tab, Checkbox, Button, IconButton, FormControlLabel } from '@material-ui/core';
 import { Clear as ClearIcon, Add as AddIcon, WrapText as WrapTextIcon, ArrowRightAlt as ArrowRightAltIcon } from '@material-ui/icons';
 import { makeStyles } from '@material-ui/styles';
-import ModalBase, { ModalBaseProps, ModalBaseModel } from 'src/components/ModalBase';
+import BaseModal, { BaseModalProps, useModalViewState } from 'src/components/BaseModal';
 import FlightRequirement from 'src/business/flight-requirement/FlightRequirement';
 import Weekday, { Weekdays } from '@core/types/Weekday';
 import AutoComplete from 'src/components/AutoComplete';
@@ -11,12 +11,12 @@ import MasterData, { Stc } from '@core/master-data';
 import Rsx, { Rsxes } from '@core/types/Rsx';
 import Id from '@core/types/Id';
 import AircraftIdentityType from '@core/types/AircraftIdentityType';
-import { PreplanContext } from 'src/pages/preplan';
+import { PreplanContext, ReloadPreplanContext } from 'src/pages/preplan';
 import NewFlightRequirementModel from '@core/models/flight-requirement/NewFlightRequirementModel';
 import FlightModel from '@core/models/flight/FlightModel';
 import NewFlightModel from '@core/models/flight/NewFlightModel';
 import FlightNumber from '@core/types/FlightNumber';
-import { parseTime } from 'src/utils/model-parsers';
+import { parseTime } from 'src/utils/parsers';
 import PreplanAircraftSelection from 'src/business/preplan/PreplanAircraftSelection';
 import FlightLegModel from '@core/models/flight/FlightLegModel';
 import AircraftIdentityModel from '@core/models/AircraftIdentityModel';
@@ -24,6 +24,8 @@ import FlightRequirementLegModel from '@core/models/flight-requirement/FlightReq
 import DayFlightRequirementModel from '@core/models/flight-requirement/DayFlightRequirementModel';
 import Flight from 'src/business/flight/Flight';
 import DeepWritablePartial from '@core/types/DeepWritablePartial';
+import FlightRequirementService from 'src/services/FlightRequirementService';
+import DayFlightRequirementLegModel from '@core/models/flight-requirement/DayFlightRequirementLegModel';
 
 const useStyles = makeStyles((theme: Theme) => ({
   flightRequirementStyle: {
@@ -220,62 +222,59 @@ const useStyles = makeStyles((theme: Theme) => ({
   }
 }));
 
-interface ViewModel {
+interface ViewState {
   label: string;
   category: string;
   stc: Stc;
   tabIndex: 'ALL' | Weekday;
   legIndex: number;
-  default: TabViewModel;
-  route: RouteLegViewModel[];
-  days: DayTabViewModel[];
+  default: TabViewState;
+  route: RouteLegViewState[];
+  days: DayTabViewState[];
 }
-interface TabViewModel {
+interface TabViewState {
   rsx: Rsx;
   notes: string;
-  allowedAircraftIdentities: readonly AircraftIdentityOptionViewModel[];
-  forbiddenAircraftIdentities: readonly AircraftIdentityOptionViewModel[];
-  legs: LegViewModel[];
+  allowedAircraftIdentities: readonly AircraftIdentityOptionViewState[];
+  forbiddenAircraftIdentities: readonly AircraftIdentityOptionViewState[];
+  legs: LegViewState[];
 }
-interface DayTabViewModel extends TabViewModel {
+interface DayTabViewState extends TabViewState {
   selected: boolean;
 }
-interface RouteLegViewModel {
+interface RouteLegViewState {
   originalIndex?: number;
   flightNumber: string;
   departureAirport: string;
   arrivalAirport: string;
 }
-interface LegViewModel {
+interface LegViewState {
   blockTime: string;
   stdLowerBound: string;
   stdUpperBound: string;
   originPermission: boolean;
   destinationPermission: boolean;
 }
-interface AircraftIdentityOptionViewModel {
+interface AircraftIdentityOptionViewState {
   id: Id;
   name: string;
   type: AircraftIdentityType;
   entityId: Id;
 }
 
-export interface FlightRequirementModalModel extends ModalBaseModel {
-  sourceFlightRequirement?: FlightRequirement;
+export interface FlightRequirementModalState {
+  flightRequirement?: FlightRequirement;
   day?: Weekday;
 }
 
-export interface FlightRequirementModalProps extends ModalBaseProps<FlightRequirementModalModel> {
-  onApply(newFlightRequirementModel: NewFlightRequirementModel, flightModels: readonly FlightModel[], newFlightModels: readonly NewFlightModel[]): void;
-}
+export interface FlightRequirementModalProps extends BaseModalProps<FlightRequirementModalState> {}
 
-const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ onApply, ...others }) => {
-  const { sourceFlightRequirement, day } = others.model;
-
+const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open, { flightRequirement, day }], ...others }) => {
   const preplan = useContext(PreplanContext);
+  const reloadPreplan = useContext(ReloadPreplanContext);
 
   const rsxOptions = useMemo(() => Rsxes.map(r => ({ name: r })), []);
-  const aircraftIdentityOptions = useMemo<AircraftIdentityOptionViewModel[]>(
+  const aircraftIdentityOptions = useMemo<AircraftIdentityOptionViewState[]>(
     () => [
       ...preplan.aircraftRegisters.items.map((a, index) => ({
         id: 'register ' + index,
@@ -313,165 +312,165 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ onApply, ...o
     [preplan]
   );
 
-  const [viewModel, setViewModel] = useState<ViewModel>(() =>
-    sourceFlightRequirement
-      ? {
-          label: sourceFlightRequirement.label,
-          category: sourceFlightRequirement.category,
-          stc: sourceFlightRequirement.stc,
-          tabIndex: day === undefined ? 'ALL' : day,
-          legIndex: 0,
-          default: {
-            rsx: sourceFlightRequirement.rsx,
-            notes: sourceFlightRequirement.notes,
-            allowedAircraftIdentities: sourceFlightRequirement.aircraftSelection.includedIdentities.map(
-              i => aircraftIdentityOptions.find(o => o.type === i.type && o.entityId === i.entity.id)!
-            ),
-            forbiddenAircraftIdentities: sourceFlightRequirement.aircraftSelection.excludedIdentities.map(
-              i => aircraftIdentityOptions.find(o => o.type === i.type && o.entityId === i.entity.id)!
-            ),
-            legs: sourceFlightRequirement.route.map<LegViewModel>(l => ({
-              blockTime: String(l.blockTime),
-              stdLowerBound: l.stdLowerBound.toString('HHmm', true),
-              stdUpperBound: l.stdUpperBound === undefined ? '' : l.stdUpperBound.toString('HHmm', true),
-              originPermission: l.originPermission,
-              destinationPermission: l.destinationPermission
-            }))
-          },
-          route: sourceFlightRequirement.route.map<RouteLegViewModel>((l, index) => ({
-            originalIndex: index,
-            flightNumber: l.flightNumber.standardFormat,
-            departureAirport: l.departureAirport.name,
-            arrivalAirport: l.arrivalAirport.name
-          })),
-          days: Weekdays.map<DayTabViewModel>(d => {
-            const sourceDayFlightRequirement = sourceFlightRequirement.days.find(x => x.day === d);
-            return {
-              selected: !!sourceDayFlightRequirement,
-              rsx: sourceDayFlightRequirement ? sourceDayFlightRequirement.rsx : sourceFlightRequirement.rsx,
-              notes: sourceDayFlightRequirement ? sourceDayFlightRequirement.notes : sourceFlightRequirement.notes,
-              allowedAircraftIdentities: (sourceDayFlightRequirement
-                ? sourceDayFlightRequirement.aircraftSelection
-                : sourceFlightRequirement.aircraftSelection
-              ).includedIdentities.map(i => aircraftIdentityOptions.find(o => o.type === i.type && o.entityId === i.entity.id)!),
-              forbiddenAircraftIdentities: (sourceDayFlightRequirement
-                ? sourceDayFlightRequirement.aircraftSelection
-                : sourceFlightRequirement.aircraftSelection
-              ).excludedIdentities.map(i => aircraftIdentityOptions.find(o => o.type === i.type && o.entityId === i.entity.id)!),
-              legs: sourceDayFlightRequirement
-                ? sourceDayFlightRequirement.route.map<LegViewModel>(l => ({
-                    blockTime: String(l.blockTime),
-                    stdLowerBound: l.stdLowerBound.toString('HHmm', true),
-                    stdUpperBound: l.stdUpperBound === undefined ? '' : l.stdUpperBound.toString('HHmm', true),
-                    originPermission: l.originPermission,
-                    destinationPermission: l.destinationPermission
-                  }))
-                : sourceFlightRequirement.route.map<LegViewModel>(l => ({
-                    blockTime: String(l.blockTime),
-                    stdLowerBound: l.stdLowerBound.toString('HHmm', true),
-                    stdUpperBound: l.stdUpperBound === undefined ? '' : l.stdUpperBound.toString('HHmm', true),
-                    originPermission: l.originPermission,
-                    destinationPermission: l.destinationPermission
-                  }))
-            };
-          })
+  const [viewState, setViewState] = useModalViewState<ViewState>(
+    open,
+    {
+      label: '',
+      category: '',
+      stc: MasterData.all.stcs.items.find(s => s.name === 'J')!,
+      tabIndex: 'ALL',
+      legIndex: 0,
+      default: {
+        rsx: 'REAL',
+        notes: '',
+        allowedAircraftIdentities: [],
+        forbiddenAircraftIdentities: [],
+        legs: [
+          {
+            blockTime: '',
+            stdLowerBound: '',
+            stdUpperBound: '',
+            originPermission: false,
+            destinationPermission: false
+          }
+        ]
+      },
+      route: [
+        {
+          flightNumber: '',
+          departureAirport: '',
+          arrivalAirport: ''
         }
-      : {
-          label: '',
-          category: '',
-          stc: MasterData.all.stcs.items.find(s => s.name === 'J')!,
-          tabIndex: 'ALL',
-          legIndex: 0,
-          default: {
-            rsx: 'REAL',
-            notes: '',
-            allowedAircraftIdentities: [],
-            forbiddenAircraftIdentities: [],
-            legs: [
-              {
-                blockTime: '',
-                stdLowerBound: '',
-                stdUpperBound: '',
-                originPermission: false,
-                destinationPermission: false
-              }
-            ]
-          },
-          route: [
-            {
-              flightNumber: '',
-              departureAirport: '',
-              arrivalAirport: ''
-            }
-          ],
-          days: Weekdays.map<DayTabViewModel>(d => ({
-            selected: false,
-            rsx: 'REAL',
-            notes: '',
-            allowedAircraftIdentities: [],
-            forbiddenAircraftIdentities: [],
-            legs: [
-              {
-                blockTime: '',
-                stdLowerBound: '',
-                stdUpperBound: '',
-                originPermission: false,
-                destinationPermission: false
-              }
-            ]
+      ],
+      days: Weekdays.map<DayTabViewState>(d => ({
+        selected: false,
+        rsx: 'REAL',
+        notes: '',
+        allowedAircraftIdentities: [],
+        forbiddenAircraftIdentities: [],
+        legs: [
+          {
+            blockTime: '',
+            stdLowerBound: '',
+            stdUpperBound: '',
+            originPermission: false,
+            destinationPermission: false
+          }
+        ]
+      }))
+    },
+    () =>
+      flightRequirement && {
+        label: flightRequirement.label,
+        category: flightRequirement.category,
+        stc: flightRequirement.stc,
+        tabIndex: day === undefined ? 'ALL' : day,
+        legIndex: 0,
+        default: {
+          rsx: flightRequirement.rsx,
+          notes: flightRequirement.notes,
+          allowedAircraftIdentities: flightRequirement.aircraftSelection.includedIdentities.map(
+            i => aircraftIdentityOptions.find(o => o.type === i.type && o.entityId === i.entity.id)!
+          ),
+          forbiddenAircraftIdentities: flightRequirement.aircraftSelection.excludedIdentities.map(
+            i => aircraftIdentityOptions.find(o => o.type === i.type && o.entityId === i.entity.id)!
+          ),
+          legs: flightRequirement.route.map<LegViewState>(l => ({
+            blockTime: String(l.blockTime),
+            stdLowerBound: l.stdLowerBound.toString('HHmm', true),
+            stdUpperBound: l.stdUpperBound === undefined ? '' : l.stdUpperBound.toString('HHmm', true),
+            originPermission: l.originPermission,
+            destinationPermission: l.destinationPermission
           }))
-        }
+        },
+        route: flightRequirement.route.map<RouteLegViewState>((l, index) => ({
+          originalIndex: index,
+          flightNumber: l.flightNumber.standardFormat,
+          departureAirport: l.departureAirport.name,
+          arrivalAirport: l.arrivalAirport.name
+        })),
+        days: Weekdays.map<DayTabViewState>(d => {
+          const sourceDayFlightRequirement = flightRequirement.days.find(x => x.day === d);
+          return {
+            selected: !!sourceDayFlightRequirement,
+            rsx: sourceDayFlightRequirement ? sourceDayFlightRequirement.rsx : flightRequirement.rsx,
+            notes: sourceDayFlightRequirement ? sourceDayFlightRequirement.notes : flightRequirement.notes,
+            allowedAircraftIdentities: (sourceDayFlightRequirement ? sourceDayFlightRequirement.aircraftSelection : flightRequirement.aircraftSelection).includedIdentities.map(
+              i => aircraftIdentityOptions.find(o => o.type === i.type && o.entityId === i.entity.id)!
+            ),
+            forbiddenAircraftIdentities: (sourceDayFlightRequirement ? sourceDayFlightRequirement.aircraftSelection : flightRequirement.aircraftSelection).excludedIdentities.map(
+              i => aircraftIdentityOptions.find(o => o.type === i.type && o.entityId === i.entity.id)!
+            ),
+            legs: sourceDayFlightRequirement
+              ? sourceDayFlightRequirement.route.map<LegViewState>(l => ({
+                  blockTime: String(l.blockTime),
+                  stdLowerBound: l.stdLowerBound.toString('HHmm', true),
+                  stdUpperBound: l.stdUpperBound === undefined ? '' : l.stdUpperBound.toString('HHmm', true),
+                  originPermission: l.originPermission,
+                  destinationPermission: l.destinationPermission
+                }))
+              : flightRequirement.route.map<LegViewState>(l => ({
+                  blockTime: String(l.blockTime),
+                  stdLowerBound: l.stdLowerBound.toString('HHmm', true),
+                  stdUpperBound: l.stdUpperBound === undefined ? '' : l.stdUpperBound.toString('HHmm', true),
+                  originPermission: l.originPermission,
+                  destinationPermission: l.destinationPermission
+                }))
+          };
+        })
+      }
   );
-  const tabViewModel = viewModel.tabIndex === 'ALL' ? viewModel.default : viewModel.days[viewModel.tabIndex];
-  const routeLegViewModel = viewModel.route[viewModel.legIndex];
-  const legViewModel = viewModel.tabIndex === 'ALL' ? viewModel.default.legs[viewModel.legIndex] : viewModel.days[viewModel.tabIndex].legs[viewModel.legIndex];
+  const tabViewState = viewState.tabIndex === 'ALL' ? viewState.default : viewState.days[viewState.tabIndex];
+  const routeLegViewState = viewState.route[viewState.legIndex];
+  const legViewState = viewState.tabIndex === 'ALL' ? viewState.default.legs[viewState.legIndex] : viewState.days[viewState.tabIndex].legs[viewState.legIndex];
 
   const classes = useStyles();
 
   return (
-    <ModalBase
+    <BaseModal
       {...others}
+      open={open}
       maxWidth={false}
       PaperProps={{ className: classes.flightRequirementStyle }}
       cancelable={true}
-      title={sourceFlightRequirement ? 'What are your intended changes?' : 'What is the new flight requirement?'}
+      title={flightRequirement ? 'What are your intended changes?' : 'What is the new flight requirement?'}
       actions={[
         {
           title: 'Cancel'
         },
         {
           title: 'Submit',
-          action: () => {
+          action: async () => {
             //TODO: Validate the view model first.
 
             const newFlightRequirementModel: NewFlightRequirementModel = {
-              label: viewModel.label,
-              category: viewModel.category,
-              stcId: viewModel.stc.id,
+              label: viewState.label.trim().toUpperCase(),
+              category: viewState.category.trim(),
+              stcId: viewState.stc.id,
               aircraftSelection: {
-                includedIdentities: viewModel.default.allowedAircraftIdentities.map<AircraftIdentityModel>(i => ({
+                includedIdentities: viewState.default.allowedAircraftIdentities.map<AircraftIdentityModel>(i => ({
                   type: i.type,
                   entityId: i.entityId
                 })),
-                excludedIdentities: viewModel.default.forbiddenAircraftIdentities.map<AircraftIdentityModel>(i => ({
+                excludedIdentities: viewState.default.forbiddenAircraftIdentities.map<AircraftIdentityModel>(i => ({
                   type: i.type,
                   entityId: i.entityId
                 }))
               },
-              rsx: viewModel.default.rsx,
-              notes: viewModel.default.notes,
-              ignored: sourceFlightRequirement ? sourceFlightRequirement.ignored : false,
-              route: viewModel.default.legs.map<FlightRequirementLegModel>((l, index) => ({
-                flightNumber: new FlightNumber(viewModel.route[index].flightNumber).standardFormat,
-                departureAirportId: MasterData.all.airports.name[viewModel.route[index].departureAirport.toUpperCase()].id,
-                arrivalAirportId: MasterData.all.airports.name[viewModel.route[index].arrivalAirport.toUpperCase()].id,
+              rsx: viewState.default.rsx,
+              notes: viewState.default.notes,
+              ignored: flightRequirement ? flightRequirement.ignored : false,
+              route: viewState.default.legs.map<FlightRequirementLegModel>((l, index) => ({
+                flightNumber: new FlightNumber(viewState.route[index].flightNumber).standardFormat,
+                departureAirportId: MasterData.all.airports.name[viewState.route[index].departureAirport.toUpperCase()].id,
+                arrivalAirportId: MasterData.all.airports.name[viewState.route[index].arrivalAirport.toUpperCase()].id,
                 blockTime: parseTime(l.blockTime)!,
                 stdLowerBound: parseTime(l.stdLowerBound)!,
                 stdUpperBound: parseTime(l.stdUpperBound),
                 originPermission: l.originPermission,
                 destinationPermission: l.destinationPermission
               })),
-              days: viewModel.days
+              days: viewState.days
                 .map<{ selected: boolean; model: DayFlightRequirementModel }>((d, index) => ({
                   selected: d.selected,
                   model: {
@@ -488,14 +487,20 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ onApply, ...o
                     rsx: d.rsx,
                     day: index,
                     notes: d.notes,
-                    route: []
+                    route: d.legs.map<DayFlightRequirementLegModel>(l => ({
+                      blockTime: parseTime(l.blockTime)!,
+                      stdLowerBound: parseTime(l.stdLowerBound)!,
+                      stdUpperBound: parseTime(l.stdUpperBound),
+                      originPermission: l.originPermission,
+                      destinationPermission: l.destinationPermission
+                    }))
                   }
                 }))
                 .filter(x => x.selected)
                 .map(x => x.model)
             };
 
-            const flights: Flight[] = sourceFlightRequirement ? preplan.flights.filter(f => f.flightRequirement === sourceFlightRequirement) : [];
+            const flights: Flight[] = flightRequirement ? preplan.flights.filter(f => f.flightRequirement === flightRequirement) : [];
 
             const newFlightModels: NewFlightModel[] = newFlightRequirementModel.days
               .filter(d => !flights.some(f => f.day === d.day))
@@ -514,12 +519,16 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ onApply, ...o
                   legs: newFlightRequirementModel.days
                     .find(d => d.day === f.day)!
                     .route.map<DeepWritablePartial<FlightLegModel>>((l, index) => ({
-                      std: viewModel.route[index].originalIndex === undefined ? l.stdLowerBound : f.legs[viewModel.route[index].originalIndex!].std.minutes
+                      std: viewState.route[index].originalIndex === undefined ? l.stdLowerBound : f.legs[viewState.route[index].originalIndex!].std.minutes
                     }))
                 })
               );
 
-            onApply(newFlightRequirementModel, flightModels, newFlightModels);
+            const newPreplanModel = flightRequirement
+              ? await FlightRequirementService.edit(preplan.id, { id: flightRequirement.id, ...newFlightRequirementModel }, flightModels, newFlightModels)
+              : await FlightRequirementService.add(preplan.id, newFlightRequirementModel, newFlightModels);
+            await reloadPreplan(newPreplanModel);
+            return others.onClose();
           }
         }
       ]}
@@ -531,10 +540,10 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ onApply, ...o
           </Typography>
         </Grid>
         <Grid item xs={5} className={classes.flightRequirementInformationTextField}>
-          <TextField fullWidth label="Label" value={viewModel.label} onChange={e => setViewModel({ ...viewModel, label: e.target.value })} />
+          <TextField fullWidth label="Label" value={viewState.label} onChange={e => setViewState({ ...viewState, label: e.target.value })} />
         </Grid>
         <Grid item xs={5} className={classes.flightRequirementInformationTextField}>
-          <TextField fullWidth label="Category" value={viewModel.category} onChange={e => setViewModel({ ...viewModel, category: e.target.value })} />
+          <TextField fullWidth label="Category" value={viewState.category} onChange={e => setViewState({ ...viewState, category: e.target.value })} />
         </Grid>
         <Grid item xs={2} className={classes.flightRequirementInformationTextField}>
           <AutoComplete
@@ -542,25 +551,25 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ onApply, ...o
             label="Stc"
             getOptionLabel={l => l.name}
             getOptionValue={l => l.id}
-            value={viewModel.stc}
-            onSelect={stc => setViewModel({ ...viewModel, stc })}
+            value={viewState.stc}
+            onSelect={stc => setViewState({ ...viewState, stc })}
           />
         </Grid>
 
         <Grid item xs={12}>
           <Paper className={classes.flightRequirementInformationContainerPaper}>
-            <Tabs className={classes.flightRequirementWeekDaysTab} value={viewModel.tabIndex} onChange={(event, tabIndex) => setViewModel({ ...viewModel, tabIndex })}>
+            <Tabs className={classes.flightRequirementWeekDaysTab} value={viewState.tabIndex} onChange={(event, tabIndex) => setViewState({ ...viewState, tabIndex })}>
               <Tab
                 className={classes.dayTab}
                 value="ALL"
                 component={React.forwardRef<HTMLDivElement>((props, ref) => (
                   <div {...props} ref={ref}>
                     <Checkbox
-                      indeterminate={viewModel.days.some(d => d.selected) && !viewModel.days.every(d => d.selected)}
-                      checked={viewModel.days.every(d => d.selected)}
+                      indeterminate={viewState.days.some(d => d.selected) && !viewState.days.every(d => d.selected)}
+                      checked={viewState.days.every(d => d.selected)}
                       onChange={e => {
-                        const selected = !viewModel.days.every(d => d.selected);
-                        setViewModel({ ...viewModel, days: Weekdays.map(d => ({ ...viewModel.default, selected })) });
+                        const selected = !viewState.days.every(d => d.selected);
+                        setViewState({ ...viewState, days: Weekdays.map(d => ({ ...viewState.default, selected })) });
                       }}
                       color="primary"
                     />
@@ -576,8 +585,8 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ onApply, ...o
                   component={React.forwardRef<HTMLDivElement>((props, ref) => (
                     <div {...props} ref={ref}>
                       <Checkbox
-                        checked={viewModel.days[d].selected}
-                        onChange={e => setViewModel({ ...viewModel, days: daysButOne(d, { ...viewModel.default, selected: e.target.checked }) })}
+                        checked={viewState.days[d].selected}
+                        onChange={e => setViewState({ ...viewState, days: daysButOne(d, { ...viewState.default, selected: e.target.checked }) })}
                       />
                       {Weekday[d].slice(0, 3)}
                     </div>
@@ -594,30 +603,30 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ onApply, ...o
                     options={rsxOptions}
                     getOptionLabel={l => l.name}
                     getOptionValue={v => v.name}
-                    value={rsxOptions.find(o => o.name === tabViewModel.rsx)}
+                    value={rsxOptions.find(o => o.name === tabViewState.rsx)}
                     onSelect={({ name: rsx }) =>
-                      setViewModel(
-                        viewModel.tabIndex === 'ALL'
-                          ? { ...viewModel, default: { ...viewModel.default, rsx }, days: viewModel.days.map(day => ({ ...day, rsx })) }
-                          : { ...viewModel, days: daysButOne(viewModel.tabIndex, day => ({ ...day, rsx })) }
+                      setViewState(
+                        viewState.tabIndex === 'ALL'
+                          ? { ...viewState, default: { ...viewState.default, rsx }, days: viewState.days.map(day => ({ ...day, rsx })) }
+                          : { ...viewState, days: daysButOne(viewState.tabIndex, day => ({ ...day, rsx })) }
                       )
                     }
-                    disabled={viewModel.tabIndex !== 'ALL' && !viewModel.days[viewModel.tabIndex].selected}
+                    disabled={viewState.tabIndex !== 'ALL' && !viewState.days[viewState.tabIndex].selected}
                   />
                 </Grid>
                 <Grid item xs={8} className={classes.flightRequirementDaysTextField}>
                   <TextField
                     fullWidth
                     label="Notes"
-                    value={tabViewModel.notes}
+                    value={tabViewState.notes}
                     onChange={({ target: { value: notes } }) =>
-                      setViewModel(
-                        viewModel.tabIndex === 'ALL'
-                          ? { ...viewModel, default: { ...viewModel.default, notes }, days: viewModel.days.map(day => ({ ...day, notes })) }
-                          : { ...viewModel, days: daysButOne(viewModel.tabIndex, day => ({ ...day, notes })) }
+                      setViewState(
+                        viewState.tabIndex === 'ALL'
+                          ? { ...viewState, default: { ...viewState.default, notes }, days: viewState.days.map(day => ({ ...day, notes })) }
+                          : { ...viewState, days: daysButOne(viewState.tabIndex, day => ({ ...day, notes })) }
                       )
                     }
-                    disabled={viewModel.tabIndex !== 'ALL' && !viewModel.days[viewModel.tabIndex].selected}
+                    disabled={viewState.tabIndex !== 'ALL' && !viewState.days[viewState.tabIndex].selected}
                   />
                 </Grid>
 
@@ -636,15 +645,15 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ onApply, ...o
                     options={aircraftIdentityOptions}
                     getOptionLabel={l => l.name}
                     getOptionValue={l => l.id}
-                    value={tabViewModel.allowedAircraftIdentities}
+                    value={tabViewState.allowedAircraftIdentities}
                     onSelect={allowedAircraftIdentities =>
-                      setViewModel(
-                        viewModel.tabIndex === 'ALL'
-                          ? { ...viewModel, default: { ...viewModel.default, allowedAircraftIdentities }, days: viewModel.days.map(day => ({ ...day, allowedAircraftIdentities })) }
-                          : { ...viewModel, days: daysButOne(viewModel.tabIndex, day => ({ ...day, allowedAircraftIdentities })) }
+                      setViewState(
+                        viewState.tabIndex === 'ALL'
+                          ? { ...viewState, default: { ...viewState.default, allowedAircraftIdentities }, days: viewState.days.map(day => ({ ...day, allowedAircraftIdentities })) }
+                          : { ...viewState, days: daysButOne(viewState.tabIndex, day => ({ ...day, allowedAircraftIdentities })) }
                       )
                     }
-                    isDisabled={viewModel.tabIndex !== 'ALL' && !viewModel.days[viewModel.tabIndex].selected}
+                    isDisabled={viewState.tabIndex !== 'ALL' && !viewState.days[viewState.tabIndex].selected}
                   ></MultiSelect>
                 </Grid>
                 <Grid item xs={6} className={classes.flightRequirementDaysTextField}>
@@ -652,19 +661,19 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ onApply, ...o
                     options={aircraftIdentityOptions}
                     getOptionLabel={l => l.name}
                     getOptionValue={l => l.id}
-                    value={tabViewModel.forbiddenAircraftIdentities}
+                    value={tabViewState.forbiddenAircraftIdentities}
                     onSelect={forbiddenAircraftIdentities =>
-                      setViewModel(
-                        viewModel.tabIndex === 'ALL'
+                      setViewState(
+                        viewState.tabIndex === 'ALL'
                           ? {
-                              ...viewModel,
-                              default: { ...viewModel.default, forbiddenAircraftIdentities },
-                              days: viewModel.days.map(day => ({ ...day, forbiddenAircraftIdentities }))
+                              ...viewState,
+                              default: { ...viewState.default, forbiddenAircraftIdentities },
+                              days: viewState.days.map(day => ({ ...day, forbiddenAircraftIdentities }))
                             }
-                          : { ...viewModel, days: daysButOne(viewModel.tabIndex, day => ({ ...day, forbiddenAircraftIdentities })) }
+                          : { ...viewState, days: daysButOne(viewState.tabIndex, day => ({ ...day, forbiddenAircraftIdentities })) }
                       )
                     }
-                    isDisabled={viewModel.tabIndex !== 'ALL' && !viewModel.days[viewModel.tabIndex].selected}
+                    isDisabled={viewState.tabIndex !== 'ALL' && !viewState.days[viewState.tabIndex].selected}
                   ></MultiSelect>
                 </Grid>
 
@@ -672,36 +681,38 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ onApply, ...o
                   <Grid item xs={12} className={classes.flightRequirementLegContainer}>
                     <Grid container className={classes.flightRequirementLegTabs}>
                       <Grid item xs={11}>
-                        <Tabs variant="scrollable" scrollButtons="auto" value={viewModel.legIndex} onChange={(e, legIndex) => setViewModel({ ...viewModel, legIndex })}>
-                          {tabViewModel.legs.map((leg, legIndex) => (
+                        <Tabs variant="scrollable" scrollButtons="auto" value={viewState.legIndex} onChange={(e, legIndex) => setViewState({ ...viewState, legIndex })}>
+                          {tabViewState.legs.map((leg, legIndex) => (
                             <Tab
                               key={legIndex}
                               component={React.forwardRef<HTMLDivElement>((props, ref) => (
                                 <div {...props} ref={ref} className={classes.legsTab}>
                                   <div className={classes.legTab}>
-                                    <Typography className={classes.legTabFlightNumber}>{routeLegViewModel.flightNumber || '&ndash;&ndash;&ndash;'}</Typography>
+                                    <Typography className={classes.legTabFlightNumber}>
+                                      {viewState.route[legIndex].flightNumber || <Fragment>&ndash; &ndash; &ndash;</Fragment>}
+                                    </Typography>
                                     <Button className={classes.legTabButton}>
-                                      {legIndex === 0 && <Typography variant="caption">{viewModel.route[legIndex].departureAirport || '&mdash;'}</Typography>}
+                                      {legIndex === 0 && <Typography variant="caption">{viewState.route[legIndex].departureAirport || <Fragment>&mdash;</Fragment>}</Typography>}
                                       <Typography variant="caption">
                                         <ArrowRightAltIcon className={classes.legTabRightArrow} />
                                       </Typography>
-                                      <Typography variant="caption">{viewModel.route[legIndex].arrivalAirport || '&mdash;'}</Typography>
+                                      <Typography variant="caption">{viewState.route[legIndex].arrivalAirport || <Fragment>&mdash;</Fragment>}</Typography>
                                     </Button>
                                   </div>
-                                  {legIndex > 0 && viewModel.tabIndex === 'ALL' && (
+                                  {legIndex > 0 && viewState.tabIndex === 'ALL' && (
                                     <IconButton
                                       className={classes.clearButton}
                                       onClick={e => {
                                         e.stopPropagation(); // To prevent unintended click after remove.
-                                        setViewModel({
-                                          ...viewModel,
-                                          legIndex: Math.min(legIndex, viewModel.route.length - 1),
+                                        setViewState({
+                                          ...viewState,
+                                          legIndex: Math.min(legIndex, viewState.route.length - 1),
                                           default: {
-                                            ...viewModel.default,
-                                            legs: [...viewModel.default.legs.slice(0, legIndex - 1), ...viewModel.default.legs.slice(legIndex + 1)]
+                                            ...viewState.default,
+                                            legs: [...viewState.default.legs.slice(0, legIndex - 1), ...viewState.default.legs.slice(legIndex + 1)]
                                           },
-                                          route: [...viewModel.route.slice(0, legIndex - 1), ...viewModel.route.slice(legIndex + 1)],
-                                          days: viewModel.days.map(day => ({ ...day, legs: [...day.legs.slice(0, legIndex - 1), ...day.legs.slice(legIndex + 1)] }))
+                                          route: [...viewState.route.slice(0, legIndex - 1), ...viewState.route.slice(legIndex + 1)],
+                                          days: viewState.days.map(day => ({ ...day, legs: [...day.legs.slice(0, legIndex - 1), ...day.legs.slice(legIndex + 1)] }))
                                         });
                                       }}
                                     >
@@ -712,7 +723,7 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ onApply, ...o
                               ))}
                             />
                           ))}
-                          {viewModel.tabIndex === 'ALL' && (
+                          {viewState.tabIndex === 'ALL' && (
                             <Tab
                               className={classes.addButton}
                               component={React.forwardRef<HTMLButtonElement>((props, ref) => (
@@ -720,21 +731,21 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ onApply, ...o
                                   {...props}
                                   ref={ref}
                                   onClick={e =>
-                                    setViewModel({
-                                      ...viewModel,
-                                      legIndex: viewModel.route.length,
+                                    setViewState({
+                                      ...viewState,
+                                      legIndex: viewState.route.length,
                                       default: {
-                                        ...viewModel.default,
+                                        ...viewState.default,
                                         legs: [
-                                          ...viewModel.default.legs,
+                                          ...viewState.default.legs,
                                           { blockTime: '', stdLowerBound: '', stdUpperBound: '', originPermission: false, destinationPermission: false }
                                         ]
                                       },
                                       route: [
-                                        ...viewModel.route,
-                                        { flightNumber: '', departureAirport: viewModel.route[viewModel.route.length - 1].arrivalAirport, arrivalAirport: '' }
+                                        ...viewState.route,
+                                        { flightNumber: '', departureAirport: viewState.route[viewState.route.length - 1].arrivalAirport, arrivalAirport: '' }
                                       ],
-                                      days: viewModel.days.map(day => ({
+                                      days: viewState.days.map(day => ({
                                         ...day,
                                         legs: [...day.legs, { blockTime: '', stdLowerBound: '', stdUpperBound: '', originPermission: false, destinationPermission: false }]
                                       }))
@@ -749,26 +760,26 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ onApply, ...o
                         </Tabs>
                       </Grid>
                       <Grid item xs={1}>
-                        {viewModel.tabIndex === 'ALL' && (
+                        {viewState.tabIndex === 'ALL' && (
                           <IconButton
                             onClick={e =>
-                              setViewModel({
-                                ...viewModel,
-                                legIndex: viewModel.route.length,
+                              setViewState({
+                                ...viewState,
+                                legIndex: viewState.route.length,
                                 default: {
-                                  ...viewModel.default,
+                                  ...viewState.default,
                                   legs: [
-                                    ...viewModel.default.legs,
-                                    ...[...viewModel.default.legs]
+                                    ...viewState.default.legs,
+                                    ...[...viewState.default.legs]
                                       .reverse()
                                       .map(leg => ({ blockTime: '', stdLowerBound: '', stdUpperBound: '', originPermission: false, destinationPermission: false }))
                                   ]
                                 },
                                 route: [
-                                  ...viewModel.route,
-                                  ...[...viewModel.route].reverse().map(leg => ({ flightNumber: '', departureAirport: leg.arrivalAirport, arrivalAirport: leg.departureAirport }))
+                                  ...viewState.route,
+                                  ...[...viewState.route].reverse().map(leg => ({ flightNumber: '', departureAirport: leg.arrivalAirport, arrivalAirport: leg.departureAirport }))
                                 ],
-                                days: viewModel.days.map(day => ({
+                                days: viewState.days.map(day => ({
                                   ...day,
                                   legs: [
                                     ...day.legs,
@@ -791,93 +802,93 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ onApply, ...o
                         <TextField
                           className={classes.flightRequirementLegInfoTextField}
                           label="Flight Number"
-                          value={routeLegViewModel.flightNumber}
-                          onChange={({ target: { value: flightNumber } }) => setViewModel({ ...viewModel, route: routeButOne(routeLeg => ({ ...routeLeg, flightNumber })) })}
-                          disabled={viewModel.tabIndex !== 'ALL'}
+                          value={routeLegViewState.flightNumber}
+                          onChange={({ target: { value: flightNumber } }) => setViewState({ ...viewState, route: routeButOne(routeLeg => ({ ...routeLeg, flightNumber })) })}
+                          disabled={viewState.tabIndex !== 'ALL'}
                         />
                         <TextField
                           className={classes.flightRequirementLegInfoTextField}
                           label="Departure Airport"
-                          value={routeLegViewModel.departureAirport}
+                          value={routeLegViewState.departureAirport}
                           onChange={({ target: { value: departureAirport } }) =>
-                            setViewModel({ ...viewModel, route: routeButOne(routeLeg => ({ ...routeLeg, departureAirport })) })
+                            setViewState({ ...viewState, route: routeButOne(routeLeg => ({ ...routeLeg, departureAirport })) })
                           }
-                          disabled={viewModel.tabIndex !== 'ALL'}
+                          disabled={viewState.tabIndex !== 'ALL'}
                         />
                         <TextField
                           className={classes.flightRequirementLegInfoTextField}
                           label="Arrival Airport"
-                          value={routeLegViewModel.arrivalAirport}
-                          onChange={({ target: { value: arrivalAirport } }) => setViewModel({ ...viewModel, route: routeButOne(routeLeg => ({ ...routeLeg, arrivalAirport })) })}
-                          disabled={viewModel.tabIndex !== 'ALL'}
+                          value={routeLegViewState.arrivalAirport}
+                          onChange={({ target: { value: arrivalAirport } }) => setViewState({ ...viewState, route: routeButOne(routeLeg => ({ ...routeLeg, arrivalAirport })) })}
+                          disabled={viewState.tabIndex !== 'ALL'}
                         />
                       </Grid>
                       <Grid item xs={12} className={classes.flightRequirementLegInfoTexFields}>
                         <TextField
                           className={classes.flightRequirementLegInfoTextField}
                           label="Block Time"
-                          value={legViewModel.blockTime}
+                          value={legViewState.blockTime}
                           onChange={({ target: { value: blockTime } }) =>
-                            setViewModel(
-                              viewModel.tabIndex === 'ALL'
+                            setViewState(
+                              viewState.tabIndex === 'ALL'
                                 ? {
-                                    ...viewModel,
-                                    default: { ...viewModel.default, legs: allLegsButOne(leg => ({ ...leg, blockTime })) },
-                                    days: Weekdays.map(d => ({ ...viewModel.days[d], legs: dayLegsButOne(d, leg => ({ ...leg, blockTime })) }))
+                                    ...viewState,
+                                    default: { ...viewState.default, legs: allLegsButOne(leg => ({ ...leg, blockTime })) },
+                                    days: Weekdays.map(d => ({ ...viewState.days[d], legs: dayLegsButOne(d, leg => ({ ...leg, blockTime })) }))
                                   }
                                 : {
-                                    ...viewModel,
-                                    days: daysButOne(viewModel.tabIndex, day => ({ ...day, legs: dayLegsButOne(viewModel.tabIndex as Weekday, leg => ({ ...leg, blockTime })) }))
+                                    ...viewState,
+                                    days: daysButOne(viewState.tabIndex, day => ({ ...day, legs: dayLegsButOne(viewState.tabIndex as Weekday, leg => ({ ...leg, blockTime })) }))
                                   }
                             )
                           }
-                          disabled={viewModel.tabIndex !== 'ALL' && !viewModel.days[viewModel.tabIndex].selected}
+                          disabled={viewState.tabIndex !== 'ALL' && !viewState.days[viewState.tabIndex].selected}
                         />
                         <TextField
                           className={classes.flightRequirementLegInfoTextField}
                           label="STD Lower bound"
-                          value={legViewModel.stdLowerBound}
+                          value={legViewState.stdLowerBound}
                           onChange={({ target: { value: stdLowerBound } }) =>
-                            setViewModel(
-                              viewModel.tabIndex === 'ALL'
+                            setViewState(
+                              viewState.tabIndex === 'ALL'
                                 ? {
-                                    ...viewModel,
-                                    default: { ...viewModel.default, legs: allLegsButOne(leg => ({ ...leg, stdLowerBound })) },
-                                    days: Weekdays.map(d => ({ ...viewModel.days[d], legs: dayLegsButOne(d, leg => ({ ...leg, stdLowerBound })) }))
+                                    ...viewState,
+                                    default: { ...viewState.default, legs: allLegsButOne(leg => ({ ...leg, stdLowerBound })) },
+                                    days: Weekdays.map(d => ({ ...viewState.days[d], legs: dayLegsButOne(d, leg => ({ ...leg, stdLowerBound })) }))
                                   }
                                 : {
-                                    ...viewModel,
-                                    days: daysButOne(viewModel.tabIndex, day => ({
+                                    ...viewState,
+                                    days: daysButOne(viewState.tabIndex, day => ({
                                       ...day,
-                                      legs: dayLegsButOne(viewModel.tabIndex as Weekday, leg => ({ ...leg, stdLowerBound }))
+                                      legs: dayLegsButOne(viewState.tabIndex as Weekday, leg => ({ ...leg, stdLowerBound }))
                                     }))
                                   }
                             )
                           }
-                          disabled={viewModel.tabIndex !== 'ALL' && !viewModel.days[viewModel.tabIndex].selected}
+                          disabled={viewState.tabIndex !== 'ALL' && !viewState.days[viewState.tabIndex].selected}
                         />
                         <TextField
                           className={classes.flightRequirementLegInfoTextField}
                           label="STD Upper bound"
-                          value={legViewModel.stdUpperBound}
+                          value={legViewState.stdUpperBound}
                           onChange={({ target: { value: stdUpperBound } }) =>
-                            setViewModel(
-                              viewModel.tabIndex === 'ALL'
+                            setViewState(
+                              viewState.tabIndex === 'ALL'
                                 ? {
-                                    ...viewModel,
-                                    default: { ...viewModel.default, legs: allLegsButOne(leg => ({ ...leg, stdUpperBound })) },
-                                    days: Weekdays.map(d => ({ ...viewModel.days[d], legs: dayLegsButOne(d, leg => ({ ...leg, stdUpperBound })) }))
+                                    ...viewState,
+                                    default: { ...viewState.default, legs: allLegsButOne(leg => ({ ...leg, stdUpperBound })) },
+                                    days: Weekdays.map(d => ({ ...viewState.days[d], legs: dayLegsButOne(d, leg => ({ ...leg, stdUpperBound })) }))
                                   }
                                 : {
-                                    ...viewModel,
-                                    days: daysButOne(viewModel.tabIndex, day => ({
+                                    ...viewState,
+                                    days: daysButOne(viewState.tabIndex, day => ({
                                       ...day,
-                                      legs: dayLegsButOne(viewModel.tabIndex as Weekday, leg => ({ ...leg, stdUpperBound }))
+                                      legs: dayLegsButOne(viewState.tabIndex as Weekday, leg => ({ ...leg, stdUpperBound }))
                                     }))
                                   }
                             )
                           }
-                          disabled={viewModel.tabIndex !== 'ALL' && !viewModel.days[viewModel.tabIndex].selected}
+                          disabled={viewState.tabIndex !== 'ALL' && !viewState.days[viewState.tabIndex].selected}
                         />
                       </Grid>
                       <Grid item xs={12} className={classes.flightRequirementLegInfoCheckBoxes}>
@@ -887,27 +898,27 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ onApply, ...o
                           control={
                             <Checkbox
                               color="primary"
-                              checked={legViewModel.originPermission}
+                              checked={legViewState.originPermission}
                               onChange={(e, originPermission) =>
-                                setViewModel(
-                                  viewModel.tabIndex === 'ALL'
+                                setViewState(
+                                  viewState.tabIndex === 'ALL'
                                     ? {
-                                        ...viewModel,
-                                        default: { ...viewModel.default, legs: allLegsButOne(leg => ({ ...leg, originPermission })) },
-                                        days: Weekdays.map(d => ({ ...viewModel.days[d], legs: dayLegsButOne(d, leg => ({ ...leg, originPermission })) }))
+                                        ...viewState,
+                                        default: { ...viewState.default, legs: allLegsButOne(leg => ({ ...leg, originPermission })) },
+                                        days: Weekdays.map(d => ({ ...viewState.days[d], legs: dayLegsButOne(d, leg => ({ ...leg, originPermission })) }))
                                       }
                                     : {
-                                        ...viewModel,
-                                        days: daysButOne(viewModel.tabIndex, day => ({
+                                        ...viewState,
+                                        days: daysButOne(viewState.tabIndex, day => ({
                                           ...day,
-                                          legs: dayLegsButOne(viewModel.tabIndex as Weekday, leg => ({ ...leg, originPermission }))
+                                          legs: dayLegsButOne(viewState.tabIndex as Weekday, leg => ({ ...leg, originPermission }))
                                         }))
                                       }
                                 )
                               }
                             />
                           }
-                          disabled={viewModel.tabIndex !== 'ALL' && !viewModel.days[viewModel.tabIndex].selected}
+                          disabled={viewState.tabIndex !== 'ALL' && !viewState.days[viewState.tabIndex].selected}
                         />
                         <FormControlLabel
                           className={classes.flightRequirementLegInfoCheckBox}
@@ -915,27 +926,27 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ onApply, ...o
                           control={
                             <Checkbox
                               color="primary"
-                              checked={legViewModel.destinationPermission}
+                              checked={legViewState.destinationPermission}
                               onChange={(e, destinationPermission) =>
-                                setViewModel(
-                                  viewModel.tabIndex === 'ALL'
+                                setViewState(
+                                  viewState.tabIndex === 'ALL'
                                     ? {
-                                        ...viewModel,
-                                        default: { ...viewModel.default, legs: allLegsButOne(leg => ({ ...leg, destinationPermission })) },
-                                        days: Weekdays.map(d => ({ ...viewModel.days[d], legs: dayLegsButOne(d, leg => ({ ...leg, destinationPermission })) }))
+                                        ...viewState,
+                                        default: { ...viewState.default, legs: allLegsButOne(leg => ({ ...leg, destinationPermission })) },
+                                        days: Weekdays.map(d => ({ ...viewState.days[d], legs: dayLegsButOne(d, leg => ({ ...leg, destinationPermission })) }))
                                       }
                                     : {
-                                        ...viewModel,
-                                        days: daysButOne(viewModel.tabIndex, day => ({
+                                        ...viewState,
+                                        days: daysButOne(viewState.tabIndex, day => ({
                                           ...day,
-                                          legs: dayLegsButOne(viewModel.tabIndex as Weekday, leg => ({ ...leg, destinationPermission }))
+                                          legs: dayLegsButOne(viewState.tabIndex as Weekday, leg => ({ ...leg, destinationPermission }))
                                         }))
                                       }
                                 )
                               }
                             />
                           }
-                          disabled={viewModel.tabIndex !== 'ALL' && !viewModel.days[viewModel.tabIndex].selected}
+                          disabled={viewState.tabIndex !== 'ALL' && !viewState.days[viewState.tabIndex].selected}
                         />
                       </Grid>
                     </Grid>
@@ -946,31 +957,31 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ onApply, ...o
           </Paper>
         </Grid>
       </Grid>
-    </ModalBase>
+    </BaseModal>
   );
 
-  function daysButOne(day: Weekday, dayTabFactory: DayTabViewModel | ((day: DayTabViewModel) => DayTabViewModel)): DayTabViewModel[] {
-    return [...viewModel.days.slice(0, day - 1), typeof dayTabFactory === 'function' ? dayTabFactory(viewModel.days[day]) : dayTabFactory, ...viewModel.days.slice(day + 1)];
+  function daysButOne(day: Weekday, dayTabFactory: DayTabViewState | ((day: DayTabViewState) => DayTabViewState)): DayTabViewState[] {
+    return [...viewState.days.slice(0, day), typeof dayTabFactory === 'function' ? dayTabFactory(viewState.days[day]) : dayTabFactory, ...viewState.days.slice(day + 1)];
   }
-  function routeButOne(routeLegFactory: RouteLegViewModel | ((routeLeg: RouteLegViewModel) => RouteLegViewModel)): RouteLegViewModel[] {
+  function routeButOne(routeLegFactory: RouteLegViewState | ((routeLeg: RouteLegViewState) => RouteLegViewState)): RouteLegViewState[] {
     return [
-      ...viewModel.route.slice(0, viewModel.legIndex - 1),
-      typeof routeLegFactory === 'function' ? routeLegFactory(viewModel.route[viewModel.legIndex]) : routeLegFactory,
-      ...viewModel.route.slice(viewModel.legIndex + 1)
+      ...viewState.route.slice(0, viewState.legIndex),
+      typeof routeLegFactory === 'function' ? routeLegFactory(viewState.route[viewState.legIndex]) : routeLegFactory,
+      ...viewState.route.slice(viewState.legIndex + 1)
     ];
   }
-  function allLegsButOne(legFactory: LegViewModel | ((leg: LegViewModel) => LegViewModel)): LegViewModel[] {
+  function allLegsButOne(legFactory: LegViewState | ((leg: LegViewState) => LegViewState)): LegViewState[] {
     return [
-      ...viewModel.default.legs.slice(0, viewModel.legIndex - 1),
-      typeof legFactory === 'function' ? legFactory(viewModel.default.legs[viewModel.legIndex]) : legFactory,
-      ...viewModel.default.legs.slice(viewModel.legIndex + 1)
+      ...viewState.default.legs.slice(0, viewState.legIndex),
+      typeof legFactory === 'function' ? legFactory(viewState.default.legs[viewState.legIndex]) : legFactory,
+      ...viewState.default.legs.slice(viewState.legIndex + 1)
     ];
   }
-  function dayLegsButOne(day: Weekday, legFactory: LegViewModel | ((leg: LegViewModel) => LegViewModel)): LegViewModel[] {
+  function dayLegsButOne(day: Weekday, legFactory: LegViewState | ((leg: LegViewState) => LegViewState)): LegViewState[] {
     return [
-      ...viewModel.days[day].legs.slice(0, viewModel.legIndex - 1),
-      typeof legFactory === 'function' ? legFactory(viewModel.days[day].legs[viewModel.legIndex]) : legFactory,
-      ...viewModel.days[day].legs.slice(viewModel.legIndex + 1)
+      ...viewState.days[day].legs.slice(0, viewState.legIndex),
+      typeof legFactory === 'function' ? legFactory(viewState.days[day].legs[viewState.legIndex]) : legFactory,
+      ...viewState.days[day].legs.slice(viewState.legIndex + 1)
     ];
   }
 };

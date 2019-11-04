@@ -23,10 +23,14 @@ const xmlEscapeMap = {
   '"': '&quot;',
   '&': '&amp;'
 };
-const xmlEscapePattern = /[&"<>']/g;
 export function xmlEscape(value: string): string {
-  if (!value) return value;
-  return value.replace(xmlEscapePattern, (str, item) => xmlEscapeMap[item]);
+  return (
+    value &&
+    value
+      .split('')
+      .map(c => xmlEscapeMap[c] || c)
+      .join('')
+  );
 }
 
 const xmlTrue = 'true';

@@ -12,10 +12,10 @@ export default class AircraftRegisterOptionsDictionary {
   };
 
   constructor(raw: AircraftRegisterOptionsModel) {
-    for (const id in raw.options) {
-      (this as any)[id] = {
-        status: raw.options[id].status,
-        baseAirport: raw.options[id].baseAirportId === undefined ? undefined : MasterData.all.airports.id[raw.options[id].baseAirportId!]
+    for (const option of raw.options) {
+      ((this as unknown) as { [id: string]: AircraftRegisterOptionsDictionary[string] })[option.aircraftRegisterId] = {
+        status: option.status,
+        baseAirport: option.baseAirportId === undefined ? undefined : MasterData.all.airports.id[option.baseAirportId]
       };
     }
   }

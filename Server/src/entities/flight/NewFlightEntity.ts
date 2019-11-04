@@ -20,6 +20,6 @@ export function convertNewFlightEntityToModel(data: NewFlightEntity): NewFlightM
   return {
     day: data.day,
     aircraftRegisterId: data.aircraftRegisterId === null ? undefined : data.aircraftRegisterId,
-    legs: xmlArray(xmlParse(data.legsXml, 'Legs')).map(convertFlightLegEntityToModel)
+    legs: xmlArray(xmlParse(data.legsXml, 'Legs').FlightLeg).map(convertFlightLegEntityToModel)
   };
 }

@@ -33,13 +33,7 @@ router.post(
       runSp.intParam('flightRequirementId', flights[0].flightRequirementId),
       runSp.tableParam(
         'flights',
-        [
-          { name: 'id', type: types.Int },
-          { name: 'flightRequirementId', type: types.Int },
-          { name: 'day', type: types.Int },
-          { name: 'aircraftRegisterId', type: types.Int },
-          { name: 'legsXml', type: types.Xml }
-        ],
+        [runSp.intColumn('id'), runSp.intColumn('flightRequirementId'), runSp.intColumn('day'), runSp.varCharColumn('aircraftRegisterId', 30), runSp.xmlColumn('legsXml')],
         flightEntities.map(f => [f.id, f.flightRequirementId, f.day, f.aircraftRegisterId, f.legsXml])
       )
     );

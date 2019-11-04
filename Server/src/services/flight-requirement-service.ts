@@ -10,7 +10,7 @@ import { convertNewFlightRequirementModelToEntity } from 'src/entities/flight-re
 import NewFlightModel, { NewFlightModelArrayValidation } from '@core/models/flight/NewFlightModel';
 import FlightModel, { FlightModelArrayValidation } from '@core/models/flight/FlightModel';
 import { convertNewFlightModelToEntity } from 'src/entities/flight/NewFlightEntity';
-import FlightEntity, { convertFlightModelToEntity, convertFlightEntityToModel } from 'src/entities/flight/FlightEntity';
+import { convertFlightModelToEntity } from 'src/entities/flight/FlightEntity';
 import PreplanModel from '@core/models/preplan/PreplanModel';
 import { getPreplanModel } from 'src/services/preplan-service';
 
@@ -57,12 +57,7 @@ router.post(
         runSp.varCharParam('userId', userId, 30),
         runSp.tableParam(
           'flights',
-          [
-            { name: 'flightRequirementId', type: types.Int },
-            { name: 'day', type: types.Int },
-            { name: 'aircraftRegisterId', type: types.VarChar, length: 30 },
-            { name: 'legsXml', type: types.Xml }
-          ],
+          [runSp.intColumn('flightRequirementId'), runSp.intColumn('day'), runSp.varCharColumn('aircraftRegisterId', 30), runSp.xmlColumn('legsXml')],
           newFlightEntities.map(f => [flightRequirementId, f.day, f.aircraftRegisterId, f.legsXml])
         )
       );
@@ -127,9 +122,9 @@ router.post(
       runSp.nVarCharParam('label', flightRequirementEntity.label, 100),
       runSp.nVarCharParam('category', flightRequirementEntity.category, 100),
       runSp.intParam('stcId', flightRequirementEntity.stcId),
-      runSp.nVarCharParam('notes', flightRequirementEntity.notes, 1000),
       runSp.xmlParam('aircraftSelectionXml', flightRequirementEntity.aircraftSelectionXml),
       runSp.varCharParam('rsx', flightRequirementEntity.rsx, 10),
+      runSp.nVarCharParam('notes', flightRequirementEntity.notes, 1000),
       runSp.bitParam('ignored', flightRequirementEntity.ignored),
       runSp.xmlParam('routeXml', flightRequirementEntity.routeXml),
       runSp.xmlParam('daysXml', flightRequirementEntity.daysXml)
@@ -143,13 +138,7 @@ router.post(
       runSp.intParam('flightRequirementId', flightRequirementEntity.id),
       runSp.tableParam(
         'flights',
-        [
-          { name: 'id', type: types.Int },
-          { name: 'flightRequirementId', type: types.Int },
-          { name: 'day', type: types.Int },
-          { name: 'aircraftRegisterId', type: types.Int },
-          { name: 'legsXml', type: types.Xml }
-        ],
+        [runSp.intColumn('id'), runSp.intColumn('flightRequirementId'), runSp.intColumn('day'), runSp.varCharColumn('aircraftRegisterId', 30), runSp.xmlColumn('legsXml')],
         [
           ...flightEntities.map(f => [f.id, f.flightRequirementId, f.day, f.aircraftRegisterId, f.legsXml]),
           ...newFlightEntities.map(f => ['', flightRequirementEntity.id, f.day, f.aircraftRegisterId, f.legsXml])

@@ -121,8 +121,8 @@
 
     Date.invalidDate = new Date(NaN);
 
-    Date.parseUtc = function Date_parseUtc(date?: string): Date | null {
-      if (!date) return null;
+    Date.parseUtc = function Date_parseUtc(date: string): Date {
+      if (!date) return Date.invalidDate;
       const parts = date.match(/^(\d\d)([a-zA-Z]{3})(\d\d)$/);
       if (parts) {
         const [date, days, month, years] = parts;

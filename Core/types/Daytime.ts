@@ -20,6 +20,9 @@ export default class Daytime {
     } else if (typeof value === 'string' && /^\d{3,}$/.test(value)) {
       const stringValue: string = value;
       this.minutes = Number(stringValue.slice(0, -2)) * 60 + Number(stringValue.slice(-2));
+    } else if (typeof value === 'string' && /^\d{1,2}$/.test(value)) {
+      const stringValue: string = value;
+      this.minutes = Number(stringValue) * 60;
     } else if (value && value.constructor === Date && (value as Date).isValid()) {
       if (baseDate) {
         const date = new Date(baseDate);

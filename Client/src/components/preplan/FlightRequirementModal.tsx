@@ -1,5 +1,5 @@
-import React, { FC, useState, useMemo, useContext, Fragment } from 'react';
-import { Theme, Typography, Grid, TextField, Paper, Tabs, Tab, Checkbox, Button, IconButton, FormControlLabel } from '@material-ui/core';
+import React, { FC, useMemo, useContext, Fragment } from 'react';
+import { Theme, Typography, Grid, Paper, Tabs, Tab, Checkbox, Button, IconButton, FormControlLabel } from '@material-ui/core';
 import { Clear as ClearIcon, Add as AddIcon, WrapText as WrapTextIcon, ArrowRightAlt as ArrowRightAltIcon } from '@material-ui/icons';
 import { makeStyles } from '@material-ui/styles';
 import BaseModal, { BaseModalProps, useModalViewState, useModalState } from 'src/components/BaseModal';
@@ -15,8 +15,6 @@ import { PreplanContext, ReloadPreplanContext } from 'src/pages/preplan';
 import NewFlightRequirementModel from '@core/models/flight-requirement/NewFlightRequirementModel';
 import FlightModel from '@core/models/flight/FlightModel';
 import NewFlightModel from '@core/models/flight/NewFlightModel';
-import FlightNumber from '@core/types/FlightNumber';
-import { parseTime } from 'src/utils/parsers';
 import PreplanAircraftSelection from 'src/business/preplan/PreplanAircraftSelection';
 import FlightLegModel from '@core/models/flight/FlightLegModel';
 import AircraftIdentityModel from '@core/models/AircraftIdentityModel';
@@ -26,7 +24,10 @@ import Flight from 'src/business/flight/Flight';
 import DeepWritablePartial from '@core/types/DeepWritablePartial';
 import FlightRequirementService from 'src/services/FlightRequirementService';
 import DayFlightRequirementLegModel from '@core/models/flight-requirement/DayFlightRequirementLegModel';
+import { formFields } from 'src/utils/FormField';
+import RefiningTextField from 'src/components/RefiningTextField';
 
+//TODO: What styling is this? Needs to be reviewed:
 const useStyles = makeStyles((theme: Theme) => ({
   flightRequirementStyle: {
     width: '785px',
@@ -361,14 +362,14 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
     },
     () =>
       flightRequirement && {
-        label: flightRequirement.label,
-        category: flightRequirement.category,
+        label: formFields.label.format(flightRequirement.label),
+        category: formFields.name.format(flightRequirement.category),
         stc: flightRequirement.stc,
         tabIndex: day === undefined ? 'ALL' : day,
         legIndex: 0,
         default: {
           rsx: flightRequirement.rsx,
-          notes: flightRequirement.notes,
+          notes: formFields.name.format(flightRequirement.notes),
           allowedAircraftIdentities: flightRequirement.aircraftSelection.includedIdentities.map(
             i => aircraftIdentityOptions.find(o => o.type === i.type && o.entityId === i.entity.id)!
           ),
@@ -376,25 +377,25 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
             i => aircraftIdentityOptions.find(o => o.type === i.type && o.entityId === i.entity.id)!
           ),
           legs: flightRequirement.route.map<LegViewState>(l => ({
-            blockTime: String(l.blockTime),
-            stdLowerBound: l.stdLowerBound.toString('HHmm', true),
-            stdUpperBound: l.stdUpperBound === undefined ? '' : l.stdUpperBound.toString('HHmm', true),
+            blockTime: formFields.daytime.format(l.blockTime),
+            stdLowerBound: formFields.daytime.format(l.stdLowerBound),
+            stdUpperBound: l.stdUpperBound === undefined ? '' : formFields.daytime.format(l.stdUpperBound),
             originPermission: l.originPermission,
             destinationPermission: l.destinationPermission
           }))
         },
         route: flightRequirement.route.map<RouteLegViewState>((l, index) => ({
           originalIndex: index,
-          flightNumber: l.flightNumber.standardFormat,
-          departureAirport: l.departureAirport.name,
-          arrivalAirport: l.arrivalAirport.name
+          flightNumber: formFields.flightNumber.format(l.flightNumber),
+          departureAirport: formFields.airport.format(l.departureAirport),
+          arrivalAirport: formFields.airport.format(l.arrivalAirport)
         })),
         days: Weekdays.map<DayTabViewState>(d => {
           const sourceDayFlightRequirement = flightRequirement.days.find(x => x.day === d);
           return {
             selected: !!sourceDayFlightRequirement,
             rsx: sourceDayFlightRequirement ? sourceDayFlightRequirement.rsx : flightRequirement.rsx,
-            notes: sourceDayFlightRequirement ? sourceDayFlightRequirement.notes : flightRequirement.notes,
+            notes: formFields.name.format(sourceDayFlightRequirement ? sourceDayFlightRequirement.notes : flightRequirement.notes),
             allowedAircraftIdentities: (sourceDayFlightRequirement ? sourceDayFlightRequirement.aircraftSelection : flightRequirement.aircraftSelection).includedIdentities.map(
               i => aircraftIdentityOptions.find(o => o.type === i.type && o.entityId === i.entity.id)!
             ),
@@ -403,16 +404,16 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
             ),
             legs: sourceDayFlightRequirement
               ? sourceDayFlightRequirement.route.map<LegViewState>(l => ({
-                  blockTime: String(l.blockTime),
-                  stdLowerBound: l.stdLowerBound.toString('HHmm', true),
-                  stdUpperBound: l.stdUpperBound === undefined ? '' : l.stdUpperBound.toString('HHmm', true),
+                  blockTime: formFields.daytime.format(l.blockTime),
+                  stdLowerBound: formFields.daytime.format(l.stdLowerBound),
+                  stdUpperBound: l.stdUpperBound === undefined ? '' : formFields.daytime.format(l.stdUpperBound),
                   originPermission: l.originPermission,
                   destinationPermission: l.destinationPermission
                 }))
               : flightRequirement.route.map<LegViewState>(l => ({
-                  blockTime: String(l.blockTime),
-                  stdLowerBound: l.stdLowerBound.toString('HHmm', true),
-                  stdUpperBound: l.stdUpperBound === undefined ? '' : l.stdUpperBound.toString('HHmm', true),
+                  blockTime: formFields.daytime.format(l.blockTime),
+                  stdLowerBound: formFields.daytime.format(l.stdLowerBound),
+                  stdUpperBound: l.stdUpperBound === undefined ? '' : formFields.daytime.format(l.stdUpperBound),
                   originPermission: l.originPermission,
                   destinationPermission: l.destinationPermission
                 }))
@@ -444,8 +445,8 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
             //TODO: Validate the view model first.
 
             const newFlightRequirementModel: NewFlightRequirementModel = {
-              label: viewState.label.trim().toUpperCase(),
-              category: viewState.category.trim(),
+              label: formFields.label.parse(viewState.label),
+              category: formFields.name.parse(viewState.category),
               stcId: viewState.stc.id,
               aircraftSelection: {
                 includedIdentities: viewState.default.allowedAircraftIdentities.map<AircraftIdentityModel>(i => ({
@@ -458,15 +459,15 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                 }))
               },
               rsx: viewState.default.rsx,
-              notes: viewState.default.notes,
+              notes: formFields.name.parse(viewState.default.notes),
               ignored: flightRequirement ? flightRequirement.ignored : false,
               route: viewState.default.legs.map<FlightRequirementLegModel>((l, index) => ({
-                flightNumber: new FlightNumber(viewState.route[index].flightNumber).standardFormat,
-                departureAirportId: MasterData.all.airports.name[viewState.route[index].departureAirport.toUpperCase()].id,
-                arrivalAirportId: MasterData.all.airports.name[viewState.route[index].arrivalAirport.toUpperCase()].id,
-                blockTime: parseTime(l.blockTime)!,
-                stdLowerBound: parseTime(l.stdLowerBound)!,
-                stdUpperBound: parseTime(l.stdUpperBound),
+                flightNumber: formFields.flightNumber.parse(viewState.route[index].flightNumber),
+                departureAirportId: formFields.airport.parse(viewState.route[index].departureAirport),
+                arrivalAirportId: formFields.airport.parse(viewState.route[index].arrivalAirport),
+                blockTime: formFields.daytime.parse(l.blockTime),
+                stdLowerBound: formFields.daytime.parse(l.stdLowerBound),
+                stdUpperBound: l.stdUpperBound === '' ? undefined : formFields.daytime.parse(l.stdUpperBound),
                 originPermission: l.originPermission,
                 destinationPermission: l.destinationPermission
               })),
@@ -486,11 +487,11 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                     },
                     rsx: d.rsx,
                     day: index,
-                    notes: d.notes,
+                    notes: formFields.name.parse(d.notes),
                     route: d.legs.map<DayFlightRequirementLegModel>(l => ({
-                      blockTime: parseTime(l.blockTime)!,
-                      stdLowerBound: parseTime(l.stdLowerBound)!,
-                      stdUpperBound: parseTime(l.stdUpperBound),
+                      blockTime: formFields.daytime.parse(l.blockTime),
+                      stdLowerBound: formFields.daytime.parse(l.stdLowerBound),
+                      stdUpperBound: l.stdUpperBound === '' ? undefined : formFields.daytime.parse(l.stdUpperBound),
                       originPermission: l.originPermission,
                       destinationPermission: l.destinationPermission
                     }))
@@ -540,10 +541,16 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
           </Typography>
         </Grid>
         <Grid item xs={5} className={classes.flightRequirementInformationTextField}>
-          <TextField fullWidth label="Label" value={viewState.label} onChange={e => setViewState({ ...viewState, label: e.target.value })} />
+          <RefiningTextField fullWidth label="Label" formField={formFields.label} value={viewState.label} onChange={e => setViewState({ ...viewState, label: e.target.value })} />
         </Grid>
         <Grid item xs={5} className={classes.flightRequirementInformationTextField}>
-          <TextField fullWidth label="Category" value={viewState.category} onChange={e => setViewState({ ...viewState, category: e.target.value })} />
+          <RefiningTextField
+            fullWidth
+            label="Category"
+            formField={formFields.name}
+            value={viewState.category}
+            onChange={e => setViewState({ ...viewState, category: e.target.value })}
+          />
         </Grid>
         <Grid item xs={2} className={classes.flightRequirementInformationTextField}>
           <AutoComplete
@@ -615,9 +622,10 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                   />
                 </Grid>
                 <Grid item xs={8} className={classes.flightRequirementDaysTextField}>
-                  <TextField
+                  <RefiningTextField
                     fullWidth
                     label="Notes"
+                    formField={formFields.name}
                     value={tabViewState.notes}
                     onChange={({ target: { value: notes } }) =>
                       setViewState(
@@ -799,34 +807,38 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
 
                     <Grid container className={classes.flightRequirementLegInfoContainer}>
                       <Grid item xs={12} className={classes.flightRequirementLegInfoTexFields}>
-                        <TextField
+                        <RefiningTextField
                           className={classes.flightRequirementLegInfoTextField}
                           label="Flight Number"
+                          formField={formFields.flightNumber}
                           value={routeLegViewState.flightNumber}
                           onChange={({ target: { value: flightNumber } }) => setViewState({ ...viewState, route: routeButOne(routeLeg => ({ ...routeLeg, flightNumber })) })}
                           disabled={viewState.tabIndex !== 'ALL'}
                         />
-                        <TextField
+                        <RefiningTextField
                           className={classes.flightRequirementLegInfoTextField}
                           label="Departure Airport"
+                          formField={formFields.airport}
                           value={routeLegViewState.departureAirport}
                           onChange={({ target: { value: departureAirport } }) =>
                             setViewState({ ...viewState, route: routeButOne(routeLeg => ({ ...routeLeg, departureAirport })) })
                           }
                           disabled={viewState.tabIndex !== 'ALL'}
                         />
-                        <TextField
+                        <RefiningTextField
                           className={classes.flightRequirementLegInfoTextField}
                           label="Arrival Airport"
+                          formField={formFields.airport}
                           value={routeLegViewState.arrivalAirport}
                           onChange={({ target: { value: arrivalAirport } }) => setViewState({ ...viewState, route: routeButOne(routeLeg => ({ ...routeLeg, arrivalAirport })) })}
                           disabled={viewState.tabIndex !== 'ALL'}
                         />
                       </Grid>
                       <Grid item xs={12} className={classes.flightRequirementLegInfoTexFields}>
-                        <TextField
+                        <RefiningTextField
                           className={classes.flightRequirementLegInfoTextField}
                           label="Block Time"
+                          formField={formFields.daytime}
                           value={legViewState.blockTime}
                           onChange={({ target: { value: blockTime } }) =>
                             setViewState(
@@ -844,9 +856,10 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                           }
                           disabled={viewState.tabIndex !== 'ALL' && !viewState.days[viewState.tabIndex].selected}
                         />
-                        <TextField
+                        <RefiningTextField
                           className={classes.flightRequirementLegInfoTextField}
                           label="STD Lower bound"
+                          formField={formFields.daytime}
                           value={legViewState.stdLowerBound}
                           onChange={({ target: { value: stdLowerBound } }) =>
                             setViewState(
@@ -867,9 +880,10 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                           }
                           disabled={viewState.tabIndex !== 'ALL' && !viewState.days[viewState.tabIndex].selected}
                         />
-                        <TextField
+                        <RefiningTextField
                           className={classes.flightRequirementLegInfoTextField}
                           label="STD Upper bound"
+                          formField={formFields.daytime}
                           value={legViewState.stdUpperBound}
                           onChange={({ target: { value: stdUpperBound } }) =>
                             setViewState(

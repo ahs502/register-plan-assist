@@ -107,21 +107,20 @@ export default BaseModal;
 
 export function useModalState<ModalState>(): [[boolean, ModalState], (state: ModalState) => void, () => void] {
   const [[open, state], setState] = useState<[boolean, ModalState | undefined]>([false, undefined]);
-  return [[open, (state || {}) as any], state => setState([true, state]), () => setState([false, state])];
+  return [[open, (state || {}) as any], state => setState([true, state]), () => setState(([open, state]) => [false, state])];
 }
 
 export function useModalViewState<ModalViewState>(
   open: boolean,
   defaultViewState: ModalViewState,
-  viewStateFactory?: (previousViewState: ModalViewState) => ModalViewState | false | undefined | null
+  viewStateProvider?: (previousViewState: ModalViewState) => ModalViewState | false | undefined | null
 ): [ModalViewState, Dispatch<SetStateAction<ModalViewState>>] {
   const viewStateModifier = useState<ModalViewState>(defaultViewState);
   const [viewState, setViewState] = viewStateModifier;
   useEffect(() => {
     if (!open) return;
-    const newViewModel = viewStateFactory ? viewStateFactory(viewState) : defaultViewState;
-    if (!newViewModel) return;
-    setViewState(newViewModel);
+    const newViewState = viewStateProvider ? viewStateProvider(viewState) || defaultViewState : defaultViewState;
+    setViewState(newViewState);
   }, [open]);
   return viewStateModifier;
 }

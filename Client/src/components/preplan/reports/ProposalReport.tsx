@@ -11,12 +11,12 @@ import classNames from 'classnames';
 import AutoComplete from 'src/components/AutoComplete';
 import Weekday from '@core/types/Weekday';
 import { WorkbookSheetRow } from '@progress/kendo-ooxml';
-import { parseMinute } from 'src/utils/parsers';
 import PreplanService from 'src/services/PreplanService';
 import Rsx from '@core/types/Rsx';
 import PreplanHeader from 'src/business/preplan/PreplanHeader';
 import Flight from 'src/business/flight/Flight';
 import FlightLeg from 'src/business/flight/FlightLeg';
+import { formFields } from 'src/utils/FormField';
 
 const makeColor = () => ({
   changeStatus: { background: '#FFFFCC' },
@@ -254,8 +254,8 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
   const ker = MasterData.all.airports.name['KER'];
   const allBaseAirport = [ika, thr, mhd, ker];
   const [dataProvider, setDataProvider] = useState<DataProvider[]>([]);
-  const [preplanHeaders, setPreplanHeaders] = useState<ReadonlyArray<Readonly<PreplanHeader>>>([]);
-  const preplanHeaderOptions = useMemo<PreplanHeader[]>(() => [{} as PreplanHeader, ...preplanHeaders], [preplanHeaders]);
+  //const [preplanHeaders, setPreplanHeaders] = useState<ReadonlyArray<Readonly<PreplanHeader>>>([]);
+  //const preplanHeaderOptions = useMemo<PreplanHeader[]>(() => [{} as PreplanHeader, ...preplanHeaders], [preplanHeaders]);
   const [flattenFlightRequirments, setFlattenFlightRequirments] = useState<FlattenFlightRequirment[]>([]);
   const [filterModel, setFilterModel] = useState<FliterModel>({
     baseAirport: ika,
@@ -341,12 +341,13 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
     return result;
   };
 
-  useEffect(() => {
-    PreplanService.getAllHeaders().then(preplanHeaderModels => {
-      const preplanHeaders = preplanHeaderModels.map(p => new PreplanHeader(p));
-      setPreplanHeaders(preplanHeaders);
-    });
-  }, []);
+  // useEffect(() => {
+  //   PreplanService.getAllHeaders().then(preplanHeaderModels => {
+  //     const preplanHeaders = preplanHeaderModels.map(p => new PreplanHeader(p));
+  //     //setPreplanHeaders(preplanHeaders);
+  //     setPreplanHeaderOptions([{} as PreplanHeader, ...preplanHeaders]);
+  //   });
+  // }, []);
 
   useEffect(() => {
     const realFlatModel = generateReportDataModel(filterModel, flights, true);
@@ -642,11 +643,11 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
                 }}
               />
             </Grid>
-            <Grid item xs={3}>
-              <InputLabel htmlFor="compare-preplan" className={classes.marginBottom1}>
+            {/* <Grid item xs={3}> */}
+            {/* <InputLabel htmlFor="compare-preplan" className={classes.marginBottom1}>
                 Compare with:
-              </InputLabel>
-              <AutoComplete
+              </InputLabel> */}
+            {/* <AutoComplete
                 id="compare-preplan"
                 options={preplanHeaderOptions}
                 getOptionLabel={l => l.name}
@@ -654,8 +655,8 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
                 onSelect={s => {
                   setFilterModel({ ...filterModel, preplanHeader: s, compareMode: !!s.id });
                 }}
-              />
-            </Grid>
+              /> */}
+            {/* </Grid> */}
             <Grid item xs={1} className={classes.datePosition}>
               <TextField
                 className={classNames(classes.marginRight1, classes.marginBottom2)}
@@ -1304,7 +1305,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
                       <div className={isRealFlight(f, 6) && f.status.weekDay6.hasHalfPermission ? classes.halfPermission : ''}>{f.weekDay6}</div>
                     </TableCell>
                     <TableCell align="center" className={classes.border}>
-                      {parseMinute(f.blocktime)}
+                      {f.formatedBlockTime}
                     </TableCell>
                     {filterModel.showNote && (
                       <TableCell align="center" className={classes.border}>
@@ -1701,7 +1702,7 @@ function createFlattenFlightRequirment(leg: FlightLeg, date: Date): FlattenFligh
     arrivalAirport: leg.arrivalAirport,
     departureAirport: leg.departureAirport,
     blocktime: leg.blockTime,
-    formatedBlockTime: parseMinute(leg.blockTime),
+    formatedBlockTime: formFields.daytime.format(leg.blockTime),
     days: [] as number[],
     utcDays: [] as number[],
     std: leg.std,

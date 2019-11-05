@@ -1,11 +1,12 @@
 import React, { FC } from 'react';
 import { Theme, Grid, TextField } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
-import BaseModal, { BaseModalProps, useModalViewState } from 'src/components/BaseModal';
+import BaseModal, { BaseModalProps, useModalViewState, useModalState } from 'src/components/BaseModal';
 import NewPreplanModel from '@core/models/preplan/NewPreplanModel';
-import { parseDateUtc } from 'src/utils/parsers';
 import PreplanHeader from 'src/business/preplan/PreplanHeader';
 import Id from '@core/types/Id';
+import RefiningTextField from 'src/components/RefiningTextField';
+import { formFields } from 'src/utils/FormField';
 
 const useStyles = makeStyles((theme: Theme) => ({}));
 
@@ -32,9 +33,9 @@ const EditPreplanModal: FC<EditPreplanModalProps> = ({ state: [open, { preplanHe
       endDate: ''
     },
     () => ({
-      name: preplanHeader.name,
-      startDate: preplanHeader.startDate.format('d'),
-      endDate: preplanHeader.endDate.format('d')
+      name: formFields.name.format(preplanHeader.name),
+      startDate: formFields.utcDate.format(preplanHeader.startDate),
+      endDate: formFields.utcDate.format(preplanHeader.endDate)
     })
   );
 
@@ -55,9 +56,9 @@ const EditPreplanModal: FC<EditPreplanModalProps> = ({ state: [open, { preplanHe
             //TODO: Validate the view model first...
 
             const newPreplanModel: NewPreplanModel = {
-              name: viewState.name,
-              startDate: parseDateUtc(viewState.startDate)!.toJSON(),
-              endDate: parseDateUtc(viewState.endDate)!.toJSON()
+              name: formFields.name.parse(viewState.name),
+              startDate: formFields.utcDate.parse(viewState.startDate),
+              endDate: formFields.utcDate.parse(viewState.endDate)
             };
 
             await onApply(preplanHeader.id, newPreplanModel);
@@ -67,13 +68,23 @@ const EditPreplanModal: FC<EditPreplanModalProps> = ({ state: [open, { preplanHe
     >
       <Grid container spacing={1}>
         <Grid item xs={12}>
-          <TextField label="Name" value={viewState.name} onChange={({ target: { value: name } }) => setViewState({ ...viewState, name })} />
+          <RefiningTextField label="Name" formField={formFields.name} value={viewState.name} onChange={({ target: { value: name } }) => setViewState({ ...viewState, name })} />
         </Grid>
         <Grid item xs={6}>
-          <TextField label="Start Date" value={viewState.startDate} onChange={({ target: { value: startDate } }) => setViewState({ ...viewState, startDate })} />
+          <RefiningTextField
+            label="Start Date"
+            formField={formFields.utcDate}
+            value={viewState.startDate}
+            onChange={({ target: { value: startDate } }) => setViewState({ ...viewState, startDate })}
+          />
         </Grid>
         <Grid item xs={6}>
-          <TextField label="End Date" value={viewState.endDate} onChange={({ target: { value: endDate } }) => setViewState({ ...viewState, endDate })} />
+          <RefiningTextField
+            label="End Date"
+            formField={formFields.utcDate}
+            value={viewState.endDate}
+            onChange={({ target: { value: endDate } }) => setViewState({ ...viewState, endDate })}
+          />
         </Grid>
       </Grid>
     </BaseModal>
@@ -81,3 +92,7 @@ const EditPreplanModal: FC<EditPreplanModalProps> = ({ state: [open, { preplanHe
 };
 
 export default EditPreplanModal;
+
+export function useEditPreplanModalState() {
+  return useModalState<EditPreplanModalState>();
+}

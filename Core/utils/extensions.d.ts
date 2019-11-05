@@ -138,10 +138,10 @@ declare interface DateConstructor {
 
   /**
    * Returns the parsed date object from the given date string as an UTC date.
-   * Returns `null` for empty input.
+   * Returns `Date.invalidDate` for empty input.
    * @param date The string formatted date.
    */
-  parseUtc(date?: string): Date | null;
+  parseUtc(date: string): Date;
 
   /**
    * Returns the JSON formatted date string or

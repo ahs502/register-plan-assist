@@ -253,6 +253,7 @@ const PreplanListPage: FC = () => {
           const preplanHeaderModels = await PreplanService.editHeader(sourcePreplanId, newPreplanModel);
           const preplanHeaders = preplanHeaderModels.map(p => new PreplanHeader(p));
           setPreplanHeaders(preplanHeaders);
+          closeEditPreplanModal();
         }}
       />
 
@@ -263,6 +264,7 @@ const PreplanListPage: FC = () => {
           const preplanHeaderModels = await PreplanService.remove(sourcePreplanId);
           const preplanHeaders = preplanHeaderModels.map(p => new PreplanHeader(p));
           setPreplanHeaders(preplanHeaders);
+          closeRemovePreplanModal();
         }}
       />
     </Fragment>

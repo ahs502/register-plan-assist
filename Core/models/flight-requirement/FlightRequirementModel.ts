@@ -12,10 +12,10 @@ export class FlightRequirementModelValidation extends Validation<
     newFlightRequirement: NewFlightRequirementModelValidation;
   }
 > {
-  constructor(data: FlightRequirementModel, flightRequirementIds: readonly Id[], dummyAircraftRegisterIds: readonly Id[]) {
+  constructor(data: FlightRequirementModel, flightRequirementIds: readonly Id[], otherExistingLabels: readonly string[], dummyAircraftRegisterIds: readonly Id[]) {
     super(validator =>
       validator
-        .put(validator.$.newFlightRequirement, new NewFlightRequirementModelValidation(data, dummyAircraftRegisterIds))
+        .put(validator.$.newFlightRequirement, new NewFlightRequirementModelValidation(data, otherExistingLabels, dummyAircraftRegisterIds))
         .object(data)
         .then(({ id }) => validator.must(() => flightRequirementIds.includes(id)))
     );

@@ -39,7 +39,7 @@ export class FlightModelArrayValidation extends Validation<
         .array(data)
         .each((flight, index) => validator.put(validator.$.flights[index], new FlightModelValidation(flight, flightIds, flightRequirementIds, aircraftRegisterOptions)))
         .must(() => data.map(f => f.day).distinct().length === data.length)
-        .must(() => data.map(f => f.flightRequirementId).distinct().length === 1)
+        .must(() => data.map(f => f.flightRequirementId).distinct().length <= 1)
     );
   }
 }

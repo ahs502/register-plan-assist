@@ -20,13 +20,15 @@ export default router;
 router.post(
   '/add',
   requestMiddlewareWithTransactionalDbAccess<{ preplanId: Id; newFlightRequirement: NewFlightRequirementModel; newFlights: readonly NewFlightModel[] }, PreplanModel>(
-    async (userId, { preplanId, newFlightRequirement, newFlights }, { runQuery, runSp, types }) => {
+    async (userId, { preplanId, newFlightRequirement, newFlights }, { runQuery, runSp }) => {
+      const rawOtherExistingLabels: { label: string }[] = await runQuery(`select [Label] as [label] from [Rpa].[FlightRequirement] where [Id_Preplan] = '${preplanId}'`);
+      const otherExistingLabels = rawOtherExistingLabels.map(l => l.label);
       const rawDummyAircraftRegistersXml: { dummyAircraftRegistersXml: Xml }[] = await runQuery(
         `select [DummyAircraftRegisters] as [dummyAircraftRegistersXml] from [Rpa].[Preplan] where [Id] = '${preplanId}'`
       );
       if (rawDummyAircraftRegistersXml.length === 0) throw 'Preplan is not found.';
       const dummyAircraftRegisterIds: Id[] = parsePreplanDummyAircraftRegistersXml(rawDummyAircraftRegistersXml[0].dummyAircraftRegistersXml).map(r => r.id);
-      new NewFlightRequirementModelValidation(newFlightRequirement, dummyAircraftRegisterIds).throw('Invalid API input.');
+      new NewFlightRequirementModelValidation(newFlightRequirement, otherExistingLabels, dummyAircraftRegisterIds).throw('Invalid API input.');
 
       const rawAircraftRegisterOptionsXml: { aircraftRegisterOptionsXml: Xml }[] = await runQuery(
         `select [AircraftRegisterOptions] as [aircraftRegisterOptionsXml] from [Rpa].[Preplan] where [Id] = '${preplanId}'`
@@ -93,12 +95,16 @@ router.post(
   >(async (userId, { preplanId, flightRequirement, flights, newFlights }, { runQuery, runSp, types }) => {
     const rawFlightRequirementIds: { id: Id }[] = await runQuery(`select convert(varchar(30), [Id]) as [id] from [Rpa].[FlightRequirement] where [Id_Preplan] = '${preplanId}'`);
     const flightRequirementIds = rawFlightRequirementIds.map(item => item.id);
+    const rawOtherExistingLabels: { label: string }[] = await runQuery(
+      `select [Label] as [label] from [Rpa].[FlightRequirement] where [Id_Preplan] = '${preplanId}' and [Id] <> '${flightRequirement.id}'`
+    );
+    const otherExistingLabels = rawOtherExistingLabels.map(l => l.label);
     const rawDummyAircraftRegistersXml: { dummyAircraftRegistersXml: Xml }[] = await runQuery(
       `select [DummyAircraftRegisters] as [dummyAircraftRegistersXml] from [Rpa].[Preplan] where [Id] = '${preplanId}'`
     );
     if (rawDummyAircraftRegistersXml.length === 0) throw 'Preplan is not found.';
     const dummyAircraftRegisterIds: Id[] = parsePreplanDummyAircraftRegistersXml(rawDummyAircraftRegistersXml[0].dummyAircraftRegistersXml).map(r => r.id);
-    new FlightRequirementModelValidation(flightRequirement, flightRequirementIds, dummyAircraftRegisterIds).throw('Invalid API input.');
+    new FlightRequirementModelValidation(flightRequirement, flightRequirementIds, otherExistingLabels, dummyAircraftRegisterIds).throw('Invalid API input.');
 
     const rawFlightIds: { id: Id }[] = await runQuery(
       `select convert(varchar(30), f.[Id]) as [id] from [Rpa].[Flight] as f join [Rpa].[FlightRequirement] as r on r.[Id] = f.[Id_FlightRequirement] where r.[Id_Preplan] = '${preplanId}'`

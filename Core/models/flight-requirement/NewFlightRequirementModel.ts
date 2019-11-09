@@ -26,13 +26,14 @@ export class NewFlightRequirementModelValidation extends Validation<
     days: DayFlightRequirementModelValidation[];
   }
 > {
-  constructor(data: NewFlightRequirementModel, dummyAircraftRegisterIds: readonly Id[]) {
+  constructor(data: NewFlightRequirementModel, otherExistingLabels: readonly string[], dummyAircraftRegisterIds: readonly Id[]) {
     super(validator =>
       validator.object(data).then(({ label, category, stcId, aircraftSelection, rsx, notes, ignored, route, days }) => {
         validator
           .must(typeof label === 'string', !!label)
           .must(() => label === label.trim().toUpperCase())
-          .must(() => label.length <= 100);
+          .must(() => label.length <= 100)
+          .must(() => !otherExistingLabels.includes(label));
         validator
           .must(typeof category === 'string')
           .must(() => category === category.trim())

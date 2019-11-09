@@ -1669,19 +1669,16 @@ function createFlattenFlightRequirmentsFromDailyFlightRequirment(flights: Flight
 function createFlattenFlightRequirment(leg: FlightLeg, date: Date): FlattenFlightRequirment {
   const flightRequirement = leg.flightRequirement;
   const parentRoute = flightRequirement.route[0].departureAirport.name + '-' + flightRequirement.route.map(r => r.arrivalAirport.name).join('-');
-  const utcStd = leg.std.toDate(date);
+  const utcStd = leg.actualStd.toDate(date);
   const localStd = leg.departureAirport.convertUtcToLocal(utcStd);
   //const utcSta = leg.std.toDate(date);
   //utcSta.addMinutes(leg.blockTime);
   const utcSta = leg.actualSta.toDate(date);
   const localSta = leg.arrivalAirport.convertUtcToLocal(utcSta);
-  let diffLocalStdandUtcStd = utcStd.getUTCDay() - localStd.getUTCDay();
-  let diffLocalStdandUtcSta = utcSta.getUTCDay() - localStd.getUTCDay();
-  let diffLocalStdandLocalSta = localSta.getUTCDay() - localStd.getUTCDay();
 
-  // let diffLocalStdandUtcStd =    localStd.getUTCDay() - utcStd.getUTCDay();
-  // let diffLocalStdandUtcSta = localStd.getUTCDay() - utcSta.getUTCDay()  ;
-  // let diffLocalStdandLocalSta =  localStd.getUTCDay() localSta.getUTCDay() ;
+  let diffLocalStdandUtcStd = localStd.getUTCDay() - utcStd.getUTCDay();
+  let diffLocalStdandUtcSta = localStd.getUTCDay() - utcSta.getUTCDay();
+  let diffLocalStdandLocalSta = localStd.getUTCDay() - localSta.getUTCDay();
 
   // if (diffLocalStdandUtcStd > 1) diffLocalStdandUtcStd = -1;
   // if (diffLocalStdandUtcStd < -1) diffLocalStdandUtcStd = 1;
@@ -1743,7 +1740,7 @@ function createFlattenFlightRequirment(leg: FlightLeg, date: Date): FlattenFligh
 }
 
 function updateFlattenFlightRequirment(flattenFlight: FlattenFlightRequirment, leg: FlightLeg) {
-  const weekDay = (leg.day + flattenFlight.diffLocalStdandUtcStd + 7) % 7;
+  const weekDay = (leg.day + Math.floor(leg.actualStd.minutes / 1440) + flattenFlight.diffLocalStdandUtcStd) % 7;
 
   if (flattenFlight.days.indexOf(weekDay) === -1) {
     flattenFlight.days.push(weekDay);

@@ -77,7 +77,7 @@ const SearchFlightsSideBar: FC<SearchFlightsSideBarProps> = ({ initialSearch, on
           {filteredFlightLegs.slice(pageNumber * rowPerPage, (pageNumber + 1) * rowPerPage).map(f => {
             return (
               <TableRow key={f.derivedId} onClick={() => onClick(f)} hover={true}>
-                <TableCell classes={{ root: classes.tableCell }}> {f.flightNumber}</TableCell>
+                <TableCell classes={{ root: classes.tableCell }}> {f.flightNumber.standardFormat}</TableCell>
                 <TableCell classes={{ root: classes.tableCell }}>
                   {f.arrivalAirport.name} &ndash; {f.departureAirport.name}
                 </TableCell>

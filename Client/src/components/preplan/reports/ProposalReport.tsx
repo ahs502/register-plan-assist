@@ -58,7 +58,8 @@ const useStyles = makeStyles((theme: Theme) => {
     border: {
       borderColor: theme.palette.grey[400],
       borderStyle: 'solid',
-      borderWidth: 1
+      borderWidth: 1,
+      padding: theme.spacing(0.5)
     },
     bullet: {
       position: 'relative',

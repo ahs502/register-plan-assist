@@ -20,7 +20,7 @@ export default router;
 router.post(
   '/add',
   requestMiddlewareWithTransactionalDbAccess<{ preplanId: Id; newFlightRequirement: NewFlightRequirementModel; newFlights: readonly NewFlightModel[] }, PreplanModel>(
-    async (userId, { preplanId, newFlightRequirement, newFlights }, { runQuery, runSp, types }) => {
+    async (userId, { preplanId, newFlightRequirement, newFlights }, { runQuery, runSp }) => {
       const rawOtherExistingLabels: { label: string }[] = await runQuery(`select [Label] as [label] from [Rpa].[FlightRequirement] where [Id_Preplan] = '${preplanId}'`);
       const otherExistingLabels = rawOtherExistingLabels.map(l => l.label);
       const rawDummyAircraftRegistersXml: { dummyAircraftRegistersXml: Xml }[] = await runQuery(

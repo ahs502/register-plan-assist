@@ -209,7 +209,7 @@ function attachHelperFunctions(f: any): any {
     return { name, type: TYPES.VarChar, value: typeof value === 'string' ? value : value.toJSON(), options: { scale } };
   }
   function xmlParam(name: string, value: Xml | null): Parameter {
-    return { name, type: TYPES.Text, value }; // Do not use TYPES.Xml, tedious does not accept this type for input parameters.
+    return { name, type: TYPES.VarBinary, options: { length: 'max' }, value: value && Buffer.from(value, 'utf-8') }; // Do not use TYPES.Xml or TYPES.NText, tedious does not accept those type for input parameters.
   }
 
   function tableParam(name: string, columns: readonly TableColumn[], rows: readonly any[][]): Parameter {

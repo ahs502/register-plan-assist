@@ -1,4 +1,4 @@
-import MasterData, { Airport } from '@core/master-data';
+import MasterData, { MasterDataItem, AircraftType, Airport } from '@core/master-data';
 import Id from '@core/types/Id';
 import Daytime from '@core/types/Daytime';
 import FlightNumber from '@core/types/FlightNumber';
@@ -72,18 +72,33 @@ class FlightNumberFormField extends FormField<FlightNumber, string> {
   }
 }
 
-class AirportFormField extends FormField<Airport, Id> {
+class MasterDataFormField<Item extends MasterDataItem> extends FormField<Item, Id> {
+  constructor(private masterDataItemsKey: keyof MasterData) {
+    super();
+  }
+
   refine(viewValue: string): string {
-    const airport = MasterData.all.airports.name[viewValue.toUpperCase()];
-    return airport ? airport.name : viewValue;
+    const item = MasterData.all[this.masterDataItemsKey].name[viewValue.toUpperCase()];
+    return item ? item.name : viewValue;
   }
   parse(viewValue: string): Id {
-    const airport = MasterData.all.airports.name[viewValue];
-    return airport.id;
+    const item = MasterData.all[this.masterDataItemsKey].name[viewValue.toUpperCase()];
+    return item.id;
   }
-  format(modelValue: Airport): string {
-    const airport = modelValue;
-    return airport.name;
+  format(modelValue: Item): string {
+    const item = modelValue;
+    return item.name;
+  }
+}
+
+class AircraftTypeFormField extends MasterDataFormField<AircraftType> {
+  constructor() {
+    super('aircraftTypes');
+  }
+}
+class AirportFormField extends MasterDataFormField<Airport> {
+  constructor() {
+    super('airports');
   }
 }
 
@@ -93,5 +108,8 @@ export const formFields = <const>{
   utcDate: new UtcDateFormField(),
   daytime: new DaytimeFormField(),
   flightNumber: new FlightNumberFormField(),
+
+  // Master data input fields:
+  aircraftType: new AircraftTypeFormField(),
   airport: new AirportFormField()
 };

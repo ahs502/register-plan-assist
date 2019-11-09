@@ -363,7 +363,9 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = memo(
         //type: 'range',
         tooltip: {
           followMouse: true,
-          overflowMethod: 'cap'
+          overflowMethod: 'cap',
+          delay: 400
+          // template: ... //TODO: Replace itemTooltipTemplate function here.
         },
         tooltipOnItemUpdateTime: true, //{ template(itemData: DataItem) { return ''; } },
         verticalScroll: true,

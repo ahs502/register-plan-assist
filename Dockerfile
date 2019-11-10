@@ -1,4 +1,4 @@
-FROM dockerrepo.mahan.aero:5000/centos:7.2.1511
+FROM centos:7.2.1511
 
 ENV NODE_VERSION 13
 RUN curl -sL https://rpm.nodesource.com/setup_$NODE_VERSION.x | bash -

@@ -1,27 +1,29 @@
-import React, { FC } from 'react';
+import React, { FC, useContext } from 'react';
 import { Theme, Typography } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
-import ModalBase, { ModalBaseProps, ModalBaseModel } from 'src/components/ModalBase';
+import BaseModal, { BaseModalProps, useModalState } from 'src/components/BaseModal';
 import FlightRequirement from 'src/business/flight-requirement/FlightRequirement';
+import { ReloadPreplanContext, PreplanContext } from 'src/pages/preplan';
+import FlightRequirementService from 'src/services/FlightRequirementService';
 
 const useStyles = makeStyles((theme: Theme) => ({}));
 
-export interface RemoveFlightRequirementModalModel extends ModalBaseModel {
-  flightRequirement?: FlightRequirement;
+export interface RemoveFlightRequirementModalState {
+  flightRequirement: FlightRequirement;
 }
 
-export interface RemoveFlightRequirementModalProps extends ModalBaseProps<RemoveFlightRequirementModalModel> {
-  onRemove(): void;
-}
+export interface RemoveFlightRequirementModalProps extends BaseModalProps<RemoveFlightRequirementModalState> {}
 
-const RemoveFlightRequirementModal: FC<RemoveFlightRequirementModalProps> = ({ onRemove, ...others }) => {
-  const { flightRequirement } = others.model;
+const RemoveFlightRequirementModal: FC<RemoveFlightRequirementModalProps> = ({ state: [open, { flightRequirement }], ...others }) => {
+  const preplan = useContext(PreplanContext);
+  const reloadPreplan = useContext(ReloadPreplanContext);
 
   const classes = useStyles();
 
   return (
-    <ModalBase
+    <BaseModal
       {...others}
+      open={open}
       title={flightRequirement ? `Are you sure to remove ${flightRequirement.marker}?` : ''}
       actions={[
         {
@@ -29,13 +31,21 @@ const RemoveFlightRequirementModal: FC<RemoveFlightRequirementModalProps> = ({ o
         },
         {
           title: 'Remove',
-          action: onRemove
+          action: async () => {
+            const newPreplanModel = await FlightRequirementService.remove(preplan.id, flightRequirement.id);
+            await reloadPreplan(newPreplanModel);
+            return others.onClose();
+          }
         }
       ]}
     >
-      If you continue to remove this flight requirement, all its related flights will be removed too.
-    </ModalBase>
+      <Typography variant="body1">If you continue to remove this flight requirement, all its related flights will be removed too.</Typography>
+    </BaseModal>
   );
 };
 
 export default RemoveFlightRequirementModal;
+
+export function useRemoveFlightRequirementModalState() {
+  return useModalState<RemoveFlightRequirementModalState>();
+}

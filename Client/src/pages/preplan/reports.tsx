@@ -50,9 +50,7 @@ const ReportsPage: FC<ReportsPageProps> = ({}) => {
         selectedSection={preplanReport}
         onSectionSelect={selectedSection => history.push(`/preplan/${match.params.id}/reports/${(selectedSection as PreplanReport).path}`)}
       >
-        {preplanReport === proposalPreplanReport && (
-          <ProposalReport flightRequirments={preplan.flightRequirements} preplanName={preplan.name} fromDate={preplan.startDate} toDate={preplan.endDate} />
-        )}
+        {preplanReport === proposalPreplanReport && <ProposalReport flights={preplan.flights} preplanName={preplan.name} fromDate={preplan.startDate} toDate={preplan.endDate} />}
         {preplanReport === connectionsPpreplanReport && (
           <ConnectionsReport preplanName={preplan.name} flights={preplan.flightLegs} fromDate={preplan.startDate} toDate={preplan.endDate} />
         )}

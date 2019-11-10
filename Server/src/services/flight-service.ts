@@ -14,9 +14,11 @@ export default router;
 router.post(
   '/edit',
   requestMiddlewareWithDbAccess<{ preplanId: Id; flights: readonly FlightModel[] }, PreplanModel>(async (userId, { preplanId, flights }, { runQuery, runSp, types }) => {
-    const rawFlightIds: { id: Id }[] = await runQuery(`select f.[Id] as [id] from [Rpa].[Flight] as f join [Rpa].[FlightRequirement] as r where r.[Id_Preplan] = '${preplanId}'`);
+    const rawFlightIds: { id: Id }[] = await runQuery(
+      `select convert(varchar(30), f.[Id]) as [id] from [Rpa].[Flight] as f join [Rpa].[FlightRequirement] as r where r.[Id_Preplan] = '${preplanId}'`
+    );
     const flightIds = rawFlightIds.map(f => f.id);
-    const rawFlightRequirementIds: { id: Id }[] = await runQuery(`select [Id] as [id] from [Rpa].[FlightRequirement] where [Id_Preplan] = '${preplanId}'`);
+    const rawFlightRequirementIds: { id: Id }[] = await runQuery(`select convert(varchar(30), [Id]) as [id] from [Rpa].[FlightRequirement] where [Id_Preplan] = '${preplanId}'`);
     const flightRequirementIds = rawFlightRequirementIds.map(item => item.id);
     const rawAircraftRegisterOptionsXml: { aircraftRegisterOptionsXml: Xml }[] = await runQuery(
       `select [AircraftRegisterOptions] as [aircraftRegisterOptionsXml] from [Rpa].[Preplan] where [Id] = '${preplanId}'`
@@ -29,17 +31,11 @@ router.post(
     const flightEntities = flights.map(convertFlightModelToEntity);
     await runSp(
       '[Rpa].[SP_UpdateFlights]',
-      runSp.varCharParam('userId', userId, 30),
+      runSp.bigIntParam('userId', userId),
       runSp.intParam('flightRequirementId', flights[0].flightRequirementId),
       runSp.tableParam(
         'flights',
-        [
-          { name: 'id', type: types.Int },
-          { name: 'flightRequirementId', type: types.Int },
-          { name: 'day', type: types.Int },
-          { name: 'aircraftRegisterId', type: types.Int },
-          { name: 'legsXml', type: types.Xml }
-        ],
+        [runSp.intColumn('id'), runSp.intColumn('flightRequirementId'), runSp.intColumn('day'), runSp.bigIntColumn('aircraftRegisterId'), runSp.xmlColumn('legsXml')],
         flightEntities.map(f => [f.id, f.flightRequirementId, f.day, f.aircraftRegisterId, f.legsXml])
       )
     );

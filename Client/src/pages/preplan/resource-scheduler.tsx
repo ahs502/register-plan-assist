@@ -1,5 +1,5 @@
 import React, { FC, Fragment, useState, useContext, useCallback } from 'react';
-import { Theme, IconButton, Badge, Drawer, Portal, CircularProgress, Grid, TextField, Checkbox, FormControlLabel } from '@material-ui/core';
+import { Theme, IconButton, Badge, Drawer, Portal, CircularProgress } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import { DoneAll as FinilizedIcon, LockOutlined as LockIcon, LockOpenOutlined as LockOpenIcon, Search as SearchIcon, SettingsOutlined as SettingsIcon } from '@material-ui/icons';
 import MahanIcon, { MahanIconType } from 'src/components/MahanIcon';
@@ -8,19 +8,15 @@ import { NavBarToolsContainerContext, PreplanContext, ReloadPreplanContext } fro
 import SearchFlightsSideBar from 'src/components/preplan/resource-scheduler/SearchFlightsSideBar';
 import ObjectionsSideBar from 'src/components/preplan/resource-scheduler/ObjectionsSideBar';
 import SelectAircraftRegistersSideBar from 'src/components/preplan/resource-scheduler/SelectAircraftRegistersSideBar';
-import SettingsSideBar from 'src/components/preplan/resource-scheduler/SettingsSideBar';
 import ResourceSchedulerView from 'src/components/preplan/resource-scheduler/ResourceSchedulerView';
-import Preplan from 'src/business/preplan/Preplan';
 import PreplanService from 'src/services/PreplanService';
 import { useSnackbar } from 'notistack';
 import PreplanAircraftRegister from 'src/business/preplan/PreplanAircraftRegister';
-import Weekday from '@core/types/Weekday';
 import { red, blue, green, cyan, indigo, orange, purple } from '@material-ui/core/colors';
 import StatusBar, { StatusBarProps } from 'src/components/preplan/resource-scheduler/StatusBar';
 import Flight from 'src/business/flight/Flight';
 import FlightRequirement from 'src/business/flight-requirement/FlightRequirement';
 import DayFlightRequirement from 'src/business/flight-requirement/DayFlightRequirement';
-import PreplanModel from '@core/models/preplan/PreplanModel';
 import Objectionable from 'src/business/constraints/Objectionable';
 import FlightLeg from 'src/business/flight/FlightLeg';
 import FlightService from 'src/services/FlightService';

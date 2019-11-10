@@ -45,7 +45,7 @@ const StatusBar: FC<StatusBarProps> = ({ mode, flight, aircraftRegister, previou
             </Typography>
             &nbsp; &#8599; &nbsp;
             <Typography display="inline" variant="caption">
-              {l.flightNumber}
+              {l.flightNumber.standardFormat}
             </Typography>
             &nbsp;
             <Typography display="inline" variant="overline" classes={{ overline: classes.typograghyOverline }}>
@@ -53,7 +53,7 @@ const StatusBar: FC<StatusBarProps> = ({ mode, flight, aircraftRegister, previou
             </Typography>
             &nbsp; &#8600; &nbsp;
             <Typography display="inline" variant="overline" classes={{ overline: classes.typograghyOverline }}>
-              {new Daytime(l.std.minutes + l.blockTime).toString('H:mm', true)}
+              {l.sta.toString('H:mm', true)}
             </Typography>
             &nbsp;
             <Typography display="inline" variant="button">
@@ -91,7 +91,7 @@ const StatusBar: FC<StatusBarProps> = ({ mode, flight, aircraftRegister, previou
         {previousFlight && nextFlight ? (
           <Fragment>
             <Typography display="inline" variant="caption">
-              {previousFlight.legs[previousFlight.legs.length - 1].flightNumber}
+              {previousFlight.legs[previousFlight.legs.length - 1].flightNumber.standardFormat}
             </Typography>
             &nbsp;
             <Typography display="inline" variant="button">
@@ -107,11 +107,13 @@ const StatusBar: FC<StatusBarProps> = ({ mode, flight, aircraftRegister, previou
               </Fragment>
             )}
             <Typography display="inline" variant="overline" classes={{ overline: classes.typograghyOverline }}>
-              {new Daytime(previousFlight.legs[previousFlight.legs.length - 1].std.minutes + previousFlight.legs[previousFlight.legs.length - 1].blockTime).toString('H:mm', true)}
+              {previousFlight.legs[previousFlight.legs.length - 1].sta.toString('H:mm', true)}
             </Typography>
             &nbsp; &#8600; &nbsp;
             <Typography display="inline" variant="overline" classes={{ overline: classes.typograghyOverline }}>
-              {new Daytime((nextFlight.day * 24 * 60 + nextFlight.start.minutes - previousFlight.day * 24 * 60 - previousFlight.end.minutes + 7 * 24 * 60) % (7 * 24 * 60))}
+              {new Daytime(
+                (nextFlight.day * 24 * 60 + nextFlight.start.minutes - previousFlight.day * 24 * 60 - previousFlight.end.minutes + 7 * 24 * 60) % (7 * 24 * 60)
+              ).toString('H:mm')}
             </Typography>
             &nbsp; &#8599; &nbsp;
             <Typography display="inline" variant="overline" classes={{ overline: classes.typograghyOverline }}>
@@ -131,7 +133,7 @@ const StatusBar: FC<StatusBarProps> = ({ mode, flight, aircraftRegister, previou
             </Typography>
             &nbsp;
             <Typography display="inline" variant="caption">
-              {nextFlight.legs[0].flightNumber}
+              {nextFlight.legs[0].flightNumber.standardFormat}
             </Typography>
           </Fragment>
         ) : (

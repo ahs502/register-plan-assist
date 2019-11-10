@@ -54,6 +54,9 @@ const useStyles = makeStyles((theme: Theme) => ({
   divContent: {
     justifyContent: 'center',
     display: 'flex'
+  },
+  disableDaysOpacityStyle: {
+    opacity: 0.25
   }
 }));
 
@@ -126,11 +129,20 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = React.memo
             <Grid item xs={4}>
               <Grid container direction="row" justify="center" alignItems="center" spacing={1}>
                 <Grid item xs={5}>
-                  {Array.range(0, 6).map(n => (
-                    <Typography color="primary" variant="subtitle1" key={n} display="inline">
-                      {Weekday[n][0]}&nbsp;&nbsp;
-                    </Typography>
-                  ))}
+                  {Array.range(0, 6).map(n => {
+                    const dayFlightRequirement = flightRequirement.days.find(d => d.day === n);
+                    return (
+                      <Typography
+                        color={!dayFlightRequirement || dayFlightRequirement.rsx === 'REAL' || dayFlightRequirement.rsx === 'STB1' ? 'primary' : 'secondary'}
+                        className={classNames({ [classes.disableDaysOpacityStyle]: !dayFlightRequirement })}
+                        variant="subtitle1"
+                        key={n}
+                        display="inline"
+                      >
+                        {Weekday[n][0]}&nbsp;&nbsp;
+                      </Typography>
+                    );
+                  })}
                 </Grid>
                 <Grid item>Include</Grid>
                 <Grid item>

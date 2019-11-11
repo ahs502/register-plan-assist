@@ -1681,14 +1681,14 @@ function createFlattenFlightRequirment(leg: FlightLeg, date: Date): FlattenFligh
   let diffLocalStdandUtcSta = localStd.getUTCDay() - utcSta.getUTCDay();
   let diffLocalStdandLocalSta = localStd.getUTCDay() - localSta.getUTCDay();
 
-  // if (diffLocalStdandUtcStd > 1) diffLocalStdandUtcStd = -1;
-  // if (diffLocalStdandUtcStd < -1) diffLocalStdandUtcStd = 1;
+  if (diffLocalStdandUtcStd > 1) diffLocalStdandUtcStd = -1;
+  if (diffLocalStdandUtcStd < -1) diffLocalStdandUtcStd = 1;
 
-  // if (diffLocalStdandUtcSta > 1) diffLocalStdandUtcSta = -1;
-  // if (diffLocalStdandUtcSta < -1) diffLocalStdandUtcSta = 1;
+  if (diffLocalStdandUtcSta > 1) diffLocalStdandUtcSta = -1;
+  if (diffLocalStdandUtcSta < -1) diffLocalStdandUtcSta = 1;
 
-  // if (diffLocalStdandLocalSta > 1) diffLocalStdandLocalSta = -1;
-  // if (diffLocalStdandLocalSta < -1) diffLocalStdandLocalSta = 1;
+  if (diffLocalStdandLocalSta > 1) diffLocalStdandLocalSta = -1;
+  if (diffLocalStdandLocalSta < -1) diffLocalStdandLocalSta = 1;
 
   const flatten: FlattenFlightRequirment = {
     id:
@@ -1741,7 +1741,7 @@ function createFlattenFlightRequirment(leg: FlightLeg, date: Date): FlattenFligh
 }
 
 function updateFlattenFlightRequirment(flattenFlight: FlattenFlightRequirment, leg: FlightLeg) {
-  const weekDay = (leg.day + Math.floor(leg.actualStd.minutes / 1440) + flattenFlight.diffLocalStdandUtcStd) % 7;
+  const weekDay = (leg.day + Math.floor(leg.actualStd.minutes / 1440) + flattenFlight.diffLocalStdandUtcStd + 7) % 7;
 
   if (flattenFlight.days.indexOf(weekDay) === -1) {
     flattenFlight.days.push(weekDay);

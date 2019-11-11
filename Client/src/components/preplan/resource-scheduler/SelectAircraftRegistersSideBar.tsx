@@ -50,26 +50,27 @@ const useStyles = makeStyles((theme: Theme) => ({
   }
 }));
 
-interface AircraftRegister {
+type ViewState = AircraftRegistersPerTypeViewState[];
+interface AircraftRegistersPerTypeViewState {
+  type: AircraftType;
+  registers: AircraftRegisterViewState[];
+  dummyRegisters: DummyAircraftRegisterViewState[];
+}
+interface AircraftRegisterViewState {
   id: string;
   name: string;
   groups: string[];
   baseAirport: string;
   status: AircraftRegisterOptionsStatus;
 }
-interface DummyAircraftRegister {
+interface DummyAircraftRegisterViewState {
   id: string;
   name: string;
   baseAirport: string;
   status: AircraftRegisterOptionsStatus;
 }
-interface AircraftRegistersPerType {
-  type: AircraftType;
-  registers: AircraftRegister[];
-  dummyRegisters: DummyAircraftRegister[];
-}
 
-interface AddDummyAircraftRegisterForm {
+interface AddDummyAircraftRegisterFormState {
   show: boolean;
   name: string;
   aircraftType: string;
@@ -96,12 +97,12 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
   const dummyAircraftRegisterIdCounter = useProperty(() => Math.max(0, ...preplan.aircraftRegisters.items.filter(r => r.dummy).map(r => Number(r.id.replace('dummy-', '')))));
 
   const [query, setQuery] = useState<readonly string[]>([]);
-  const [list, setList] = useState<AircraftRegistersPerType[]>(() =>
-    MasterData.all.aircraftTypes.items.orderBy('displayOrder').map<AircraftRegistersPerType>(t => ({
+  const [list, setList] = useState<ViewState>(() =>
+    MasterData.all.aircraftTypes.items.orderBy('displayOrder').map<AircraftRegistersPerTypeViewState>(t => ({
       type: t,
       registers: preplan.aircraftRegisters.items
         .filter(a => !a.dummy && a.aircraftType.id === t.id)
-        .map<AircraftRegister>(a => ({
+        .map<AircraftRegisterViewState>(a => ({
           id: a.id,
           name: a.name,
           groups: MasterData.all.aircraftRegisterGroups.items.filter(g => g.aircraftRegisters.filter(r => r.id === a.id)).map(g => g.name),
@@ -110,7 +111,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
         })),
       dummyRegisters: preplan.aircraftRegisters.items
         .filter(a => a.dummy && a.aircraftType.id === t.id)
-        .map<DummyAircraftRegister>(a => ({
+        .map<DummyAircraftRegisterViewState>(a => ({
           id: a.id,
           name: a.name,
           baseAirport: a.options.baseAirport === undefined ? '' : formFields.airport.format(a.options.baseAirport),
@@ -118,7 +119,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
         }))
     }))
   );
-  const [addDummyRegisterFormState, setAddDummyRegisterFormState] = useState<AddDummyAircraftRegisterForm>(() => ({
+  const [addDummyRegisterFormState, setAddDummyRegisterFormState] = useState<AddDummyAircraftRegisterFormState>(() => ({
     show: false,
     name: '',
     aircraftType: '',
@@ -247,7 +248,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
     </TableHead>
   );
 
-  const aircraftRegisterRow = (t: AircraftRegistersPerType, r: AircraftRegister) => (
+  const aircraftRegisterRow = (t: AircraftRegistersPerTypeViewState, r: AircraftRegisterViewState) => (
     <TableRow key={r.id} hover={true} className={classNames({ [classes.backupRegister]: r.status === 'BACKUP', [classes.ignoredRegister]: r.status === 'IGNORED' })}>
       <TableCell className={classes.nameCell}>
         <Typography variant="body2">{r.name}</Typography>
@@ -290,7 +291,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
     </TableRow>
   );
 
-  const dummyAircraftRegisterRow = (t: AircraftRegistersPerType, r: DummyAircraftRegister) => (
+  const dummyAircraftRegisterRow = (t: AircraftRegistersPerTypeViewState, r: DummyAircraftRegisterViewState) => (
     <TableRow key={r.id} hover={true} className={classNames({ [classes.backupRegister]: r.status === 'BACKUP', [classes.ignoredRegister]: r.status === 'IGNORED' })}>
       <TableCell className={classes.nameCell}>
         <RefiningTextField

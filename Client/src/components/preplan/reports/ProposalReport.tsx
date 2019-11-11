@@ -11,7 +11,6 @@ import classNames from 'classnames';
 import AutoComplete from 'src/components/AutoComplete';
 import Weekday from '@core/types/Weekday';
 import { WorkbookSheetRow } from '@progress/kendo-ooxml';
-import PreplanService from 'src/services/PreplanService';
 import Rsx from '@core/types/Rsx';
 import PreplanHeader from 'src/business/preplan/PreplanHeader';
 import Flight from 'src/business/flight/Flight';
@@ -363,19 +362,20 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
       const targetReserveFlatModel = generateReportDataModel(filterModel, getPreplanFlightRequirments(targetPreplan.id), false);
 
       compareFlattenFlightRequirment(realFlatModel, targetRealFlatModel);
-      realFlatModel.sort((first, second) => {
-        const firstLabel = first.label;
-        const secondLabel = second.label;
-        return firstLabel > secondLabel ? 1 : firstLabel < secondLabel ? -1 : 0;
-      });
-
       compareFlattenFlightRequirment(reserveFlatModel, targetReserveFlatModel);
-      reserveFlatModel.sort((first, second) => {
-        const firstLabel = first.label;
-        const secondLabel = second.label;
-        return firstLabel > secondLabel ? 1 : firstLabel < secondLabel ? -1 : 0;
-      });
     }
+
+    realFlatModel.sort((first, second) => {
+      const firstLabel = first.label;
+      const secondLabel = second.label;
+      return firstLabel > secondLabel ? 1 : firstLabel < secondLabel ? -1 : 0;
+    });
+
+    reserveFlatModel.sort((first, second) => {
+      const firstLabel = first.label;
+      const secondLabel = second.label;
+      return firstLabel > secondLabel ? 1 : firstLabel < secondLabel ? -1 : 0;
+    });
 
     const realGroup = groupFlattenFlightRequirmentbyCategory(realFlatModel);
     const reserveGroup = groupFlattenFlightRequirmentbyCategory(reserveFlatModel);

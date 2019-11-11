@@ -10,7 +10,7 @@ var config = {
     lang: 'En'
   },
   sqlServer: {
-    server: 'swmhndevappssql',
+    server: 'swMhnDevAppsSQL',
     database: 'FlightApps_vNext_RPA',
     username: 'MahanAppsServiceAccount',
     password: 'a45V6DPQZAHUpXz'

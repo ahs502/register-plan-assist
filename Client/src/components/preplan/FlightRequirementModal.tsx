@@ -618,7 +618,7 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                           : { ...viewState, days: daysButOne(viewState.tabIndex, day => ({ ...day, rsx })) }
                       )
                     }
-                    disabled={viewState.tabIndex !== 'ALL' && !viewState.days[viewState.tabIndex].selected}
+                    isDisabled={viewState.tabIndex !== 'ALL' && !viewState.days[viewState.tabIndex].selected}
                   />
                 </Grid>
                 <Grid item xs={8} className={classes.flightRequirementDaysTextField}>
@@ -657,8 +657,15 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                     onSelect={allowedAircraftIdentities =>
                       setViewState(
                         viewState.tabIndex === 'ALL'
-                          ? { ...viewState, default: { ...viewState.default, allowedAircraftIdentities }, days: viewState.days.map(day => ({ ...day, allowedAircraftIdentities })) }
-                          : { ...viewState, days: daysButOne(viewState.tabIndex, day => ({ ...day, allowedAircraftIdentities })) }
+                          ? {
+                              ...viewState,
+                              default: { ...viewState.default, allowedAircraftIdentities: allowedAircraftIdentities ? allowedAircraftIdentities : [] },
+                              days: viewState.days.map(day => ({ ...day, allowedAircraftIdentities: allowedAircraftIdentities ? allowedAircraftIdentities : [] }))
+                            }
+                          : {
+                              ...viewState,
+                              days: daysButOne(viewState.tabIndex, day => ({ ...day, allowedAircraftIdentities: allowedAircraftIdentities ? allowedAircraftIdentities : [] }))
+                            }
                       )
                     }
                     isDisabled={viewState.tabIndex !== 'ALL' && !viewState.days[viewState.tabIndex].selected}
@@ -675,10 +682,13 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                         viewState.tabIndex === 'ALL'
                           ? {
                               ...viewState,
-                              default: { ...viewState.default, forbiddenAircraftIdentities },
-                              days: viewState.days.map(day => ({ ...day, forbiddenAircraftIdentities }))
+                              default: { ...viewState.default, forbiddenAircraftIdentities: forbiddenAircraftIdentities ? forbiddenAircraftIdentities : [] },
+                              days: viewState.days.map(day => ({ ...day, forbiddenAircraftIdentities: forbiddenAircraftIdentities ? forbiddenAircraftIdentities : [] }))
                             }
-                          : { ...viewState, days: daysButOne(viewState.tabIndex, day => ({ ...day, forbiddenAircraftIdentities })) }
+                          : {
+                              ...viewState,
+                              days: daysButOne(viewState.tabIndex, day => ({ ...day, forbiddenAircraftIdentities: forbiddenAircraftIdentities ? forbiddenAircraftIdentities : [] }))
+                            }
                       )
                     }
                     isDisabled={viewState.tabIndex !== 'ALL' && !viewState.days[viewState.tabIndex].selected}
@@ -714,13 +724,13 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                                         e.stopPropagation(); // To prevent unintended click after remove.
                                         setViewState({
                                           ...viewState,
-                                          legIndex: Math.min(legIndex, viewState.route.length - 1),
+                                          legIndex: Math.min(legIndex, viewState.route.length - 2),
                                           default: {
                                             ...viewState.default,
-                                            legs: [...viewState.default.legs.slice(0, legIndex - 1), ...viewState.default.legs.slice(legIndex + 1)]
+                                            legs: [...viewState.default.legs.slice(0, legIndex), ...viewState.default.legs.slice(legIndex + 1)]
                                           },
-                                          route: [...viewState.route.slice(0, legIndex - 1), ...viewState.route.slice(legIndex + 1)],
-                                          days: viewState.days.map(day => ({ ...day, legs: [...day.legs.slice(0, legIndex - 1), ...day.legs.slice(legIndex + 1)] }))
+                                          route: [...viewState.route.slice(0, legIndex), ...viewState.route.slice(legIndex + 1)],
+                                          days: viewState.days.map(day => ({ ...day, legs: [...day.legs.slice(0, legIndex), ...day.legs.slice(legIndex + 1)] }))
                                         });
                                       }}
                                     >

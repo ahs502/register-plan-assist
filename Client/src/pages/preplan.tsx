@@ -94,7 +94,9 @@ const PreplanPage: FC = () => {
             <ReloadPreplanContext.Provider
               value={async newPreplanModel => {
                 try {
-                  setPreplan(new Preplan(newPreplanModel || (await PreplanService.get(match.params.id)), preplan));
+                  const preplanModel = newPreplanModel || (await PreplanService.get(match.params.id));
+                  const newPreplan = new Preplan(preplanModel, preplan);
+                  setPreplan(newPreplan);
                 } catch (reason) {
                   console.error(reason);
                   // history.push('/preplan-list');

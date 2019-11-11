@@ -1,6 +1,6 @@
 {
   "name": "register-plan-assist-core",
-  "version": "2.0.0",
+  "version": "2.0.3",
   "private": true,
   "description": "Intelligent Flight Scheduler - Core",
   "scripts": {
@@ -12,7 +12,7 @@
     "@ahs502/validation": "^4.0.0"
   },
   "devDependencies": {
-    "npm-check-updates": "^3.1.23",
-    "typescript": "^3.6.3"
+    "npm-check-updates": "^3.2.1",
+    "typescript": "^3.7.2"
   }
 }

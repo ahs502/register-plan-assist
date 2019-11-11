@@ -116,9 +116,12 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = React.memo
                 <Grid item xs={10}>
                   <Typography display="inline" variant="h6">
                     {flightRequirement.label}
-                    <Typography display="inline" variant="body2">
-                      {flightRequirement.category}
-                    </Typography>
+                    {!!flightRequirement.category && (
+                      <Typography display="inline" variant="body2">
+                        &nbsp;&nbsp;&nbsp;
+                        {flightRequirement.category}
+                      </Typography>
+                    )}
                   </Typography>
                 </Grid>
                 <Grid item xs={2}>
@@ -194,18 +197,23 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = React.memo
           </Grid>
 
           <Divider variant="middle" />
+
           <Grid container direction="row" alignItems="center" className={classes.flightDefinitionStyle}>
             <Typography display="inline">{flightRequirement.route[0].departureAirport.name}</Typography>
             {flightRequirement.route.map(routeLeg => (
               <Fragment key={routeLeg.index}>
-                <TrendingFlatIcon></TrendingFlatIcon>
+                &nbsp;&nbsp;&nbsp;
+                <TrendingFlatIcon />
+                &nbsp;&nbsp;&nbsp;
                 <Typography display="inline">{routeLeg.arrivalAirport.name}</Typography>
               </Fragment>
             ))}
           </Grid>
         </Paper>
       ))}
-      <div />
+
+      <br />
+
       <TablePagination
         classes={{ root: classes.divContent }}
         rowsPerPageOptions={[10, 20, 50]}

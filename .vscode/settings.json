@@ -8,6 +8,8 @@
   },
   "editor.formatOnSave": true,
   "editor.formatOnSaveTimeout": 3000,
+  "typescript.preferences.importModuleSpecifier": "non-relative",
+  "typescript.tsdk": "node_modules/typescript/lib",
   "prettier.singleQuote": true,
   "prettier.printWidth": 180,
   "prettier.tabWidth": 2,
@@ -19,6 +21,5 @@
   "prettier.arrowParens": "avoid",
   "prettier.jsxSingleQuote": false,
   "prettier.endOfLine": "crlf",
-  "prettier.quoteProps": "as-needed",
-  "typescript.preferences.importModuleSpecifier": "non-relative"
+  "prettier.quoteProps": "as-needed"
 }

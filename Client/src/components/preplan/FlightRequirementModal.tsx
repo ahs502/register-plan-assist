@@ -638,29 +638,6 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                       <Grid item xs={4}>
                         <RefiningTextField
                           fullWidth
-                          label="Block Time"
-                          formField={formFields.daytime}
-                          value={legViewState.blockTime}
-                          onChange={({ target: { value: blockTime } }) =>
-                            setViewState(
-                              viewState.tabIndex === 'ALL'
-                                ? {
-                                    ...viewState,
-                                    default: { ...viewState.default, legs: allLegsButOne(leg => ({ ...leg, blockTime })) },
-                                    days: Weekdays.map(d => ({ ...viewState.days[d], legs: dayLegsButOne(d, leg => ({ ...leg, blockTime })) }))
-                                  }
-                                : {
-                                    ...viewState,
-                                    days: daysButOne(viewState.tabIndex, day => ({ ...day, legs: dayLegsButOne(viewState.tabIndex as Weekday, leg => ({ ...leg, blockTime })) }))
-                                  }
-                            )
-                          }
-                          disabled={viewState.tabIndex !== 'ALL' && !viewState.days[viewState.tabIndex].selected}
-                        />
-                      </Grid>
-                      <Grid item xs={4}>
-                        <RefiningTextField
-                          fullWidth
                           label="STD Lower bound"
                           formField={formFields.daytime}
                           value={legViewState.stdLowerBound}
@@ -704,6 +681,29 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                                       ...day,
                                       legs: dayLegsButOne(viewState.tabIndex as Weekday, leg => ({ ...leg, stdUpperBound }))
                                     }))
+                                  }
+                            )
+                          }
+                          disabled={viewState.tabIndex !== 'ALL' && !viewState.days[viewState.tabIndex].selected}
+                        />
+                      </Grid>
+                      <Grid item xs={4}>
+                        <RefiningTextField
+                          fullWidth
+                          label="Block Time"
+                          formField={formFields.daytime}
+                          value={legViewState.blockTime}
+                          onChange={({ target: { value: blockTime } }) =>
+                            setViewState(
+                              viewState.tabIndex === 'ALL'
+                                ? {
+                                    ...viewState,
+                                    default: { ...viewState.default, legs: allLegsButOne(leg => ({ ...leg, blockTime })) },
+                                    days: Weekdays.map(d => ({ ...viewState.days[d], legs: dayLegsButOne(d, leg => ({ ...leg, blockTime })) }))
+                                  }
+                                : {
+                                    ...viewState,
+                                    days: daysButOne(viewState.tabIndex, day => ({ ...day, legs: dayLegsButOne(viewState.tabIndex as Weekday, leg => ({ ...leg, blockTime })) }))
                                   }
                             )
                           }

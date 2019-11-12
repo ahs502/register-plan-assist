@@ -87,7 +87,7 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = React.memo
       .orderBy(n => n.label);
     setFilteredFlightRequirments(filteredFlightRequirements);
     setPageNumber(0);
-  }, [tab, query]);
+  }, [preplan, tab, query]);
 
   const numberOfFlightRequirements = preplan.flightRequirements.length;
   const numberOfIncludedFlightRequirements = preplan.flightRequirements.filter(f => !f.ignored).length;

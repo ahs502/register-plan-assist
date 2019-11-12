@@ -1,6 +1,6 @@
 import React, { FC, useMemo, useContext, Fragment } from 'react';
-import { Theme, Typography, Grid, Paper, Tabs, Tab, Checkbox, Button, IconButton, FormControlLabel } from '@material-ui/core';
-import { Clear as ClearIcon, Add as AddIcon, WrapText as WrapTextIcon, ArrowRightAlt as ArrowRightAltIcon } from '@material-ui/icons';
+import { Theme, Typography, Grid, Paper, Tabs, Tab, Checkbox, IconButton, FormControlLabel } from '@material-ui/core';
+import { Clear as ClearIcon, Add as AddIcon, WrapText as WrapTextIcon, ArrowRightAlt as ArrowRightIcon } from '@material-ui/icons';
 import { makeStyles } from '@material-ui/styles';
 import BaseModal, { BaseModalProps, useModalViewState, useModalState } from 'src/components/BaseModal';
 import FlightRequirement from 'src/business/flight-requirement/FlightRequirement';
@@ -27,199 +27,21 @@ import DayFlightRequirementLegModel from '@core/models/flight-requirement/DayFli
 import { formFields } from 'src/utils/FormField';
 import RefiningTextField from 'src/components/RefiningTextField';
 
-//TODO: What styling is this? Needs to be reviewed:
 const useStyles = makeStyles((theme: Theme) => ({
-  flightRequirementStyle: {
-    width: '785px',
-    height: '775px',
-    padding: '4px',
-    margin: '0px',
-    '& div.MuiDialogContent-root': {
-      padding: '4px 4px'
-    },
-    '& div.MuiDialogTitle-root': {
-      padding: '16px 16px'
-    },
-    '& div.MuiDialogActions-root': {
-      padding: '5px'
-    }
-  },
   dayTab: {
-    minWidth: 70,
-    maxWidth: 70
+    minWidth: 'unset'
   },
-  captionTextColor: {
-    color: theme.palette.grey[500]
+  tabPaper: {
+    padding: theme.spacing(2)
   },
-  flightRequirementLegContainer: {
-    // borderBottom: '3px solid gray',
-    marginTop: '15px',
-    paddingTop: '5px'
+  flex: {
+    display: 'flex'
   },
-  flightRequirementLegContainerPaper: {
-    padding: '5px',
-    margin: '10px 5px 5px 5px',
-    width: '730px',
-    maxWidth: '730px'
+  grow: {
+    flexGrow: 1
   },
-  flightRequirementLegTabs: {
-    padding: '0px 5px',
-    margin: '0px 5px'
-  },
-  flightRequirementLegInfoTextField: {
-    // marginTop: '5px'
-  },
-  flightRequirementLegInfoCheckBox: {
-    padding: '5px 0px 0px 5px',
-    margin: '0px 20px 0px 0px'
-  },
-  flightRequirementLegInfoCheckBoxes: {
-    display: 'flex',
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-    margin: '5px 0px 0px 0px'
-  },
-  flightRequirementDaysTextField: {
-    padding: '0px 15px 0px 15px',
-    margin: '5px 0px 0px 0px'
-  },
-  flightRequirementInformationTitle: {
-    padding: '0px 0px 0px 15px',
-    fontSize: '16px'
-  },
-  flightRequirementInformationTextField: {
-    padding: '0px 15px 0px 15px',
-    margin: '5px 0px 0px 0px'
-  },
-  flightRequirementInformationButton: {
-    padding: '5px 0px 0px 15px'
-  },
-  flightRequirementWeekDaysTab: {
-    padding: '0px 15px 0px 15px',
-    margin: '5px 0px 0px 0px',
-    '& > div > div': {
-      display: 'flex',
-      flexDirection: 'row',
-      justifyContent: 'space-evenly',
-      alignItems: 'center'
-    }
-  },
-  flightRequirementWeekDaySelectionTab: {
-    padding: '5px 15px 0px 15px',
-    margin: '5px 0px',
-    '& h6': {
-      padding: '10px 0px 0px 40px',
-      margin: '5px 0px'
-    },
-    '& div ~ div': {
-      display: 'flex',
-      flexDirection: 'row',
-      justifyContent: 'space-between'
-    }
-    // '& button': {
-    //   marginRight: '25px'
-    // }
-  },
-  flightRequirementInformationContainer: {
-    marginTop: '5px'
-  },
-  flightRequirementInformationContainerPaper: {
-    margin: '10px',
-    padding: '5px 5px',
-    width: '750px',
-    maxWidth: '750px'
-  },
-  // flightRequirementLegItems: {
-  //   '& span': {
-
-  //   }
-  // }
-  legsTab: {
-    display: 'flex',
-    flexDirection: 'row',
-    justifyItems: 'center',
-    alignContent: 'center',
-    alignItems: 'center',
-    justifyContent: 'center',
-    // height: '50px',
-    width: '100px',
-    minWidth: '90px',
-    maxWidth: '100px',
-    '&:hover': {
-      backgroundColor: '#D3D3D3',
-      cursor: 'pointer'
-    },
-    '&:active': {
-      backgroundColor: '#848689'
-    }
-    // marginRight: '5px'
-  },
-  legTab: {
-    display: 'flex',
-    flexDirection: 'column',
-    justifyItems: 'center',
-    alignContent: 'center',
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  legTabButton: {
-    display: 'flex',
-    margin: '-5px',
-    padding: '0px',
-    '&:hover': {
-      backgroundColor: 'transparent'
-    }
-  },
-  legTabFlightNumber: {
-    color: 'grey',
-    fontSize: '10px'
-  },
-  legTabRightArrow: {
-    marginTop: '5px'
-  },
-  flightRequirementLegInfoContainer: {
-    display: 'flex',
-    flexDirection: 'column',
-    marginTop: '5px'
-  },
-  flightRequirementLegInfoTexFields: {
-    display: 'flex',
-    flexDirection: 'row',
-    justifyContent: 'space-evenly',
-    '& div > div': {
-      width: '215px'
-    }
-  },
-  addButton: {
-    width: '35px',
-    height: '35px',
-    minWidth: '20px',
-    minHeight: '20px',
-    margin: '5px 5px 5px 5px'
-  },
-  addIcon: {
-    minHeight: '10px',
-    minWidth: '10px'
-  },
-  clearButton: {
-    height: '25px',
-    width: '25px',
-    color: '#EEEEEE',
-    marginLeft: '5px',
-    padding: '1px 10px 0px 10px',
-    '&:active': {
-      backgroundColor: 'transparent'
-    },
-    '&:focus': {
-      backgroundColor: 'transparent'
-    },
-    '&:target': {
-      backgroundColor: 'transparent'
-    }
-  },
-  clearIcon: {
-    width: '16px',
-    height: '16px'
+  checkboxContainer: {
+    height: 48
   }
 }));
 
@@ -431,8 +253,7 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
     <BaseModal
       {...others}
       open={open}
-      maxWidth={false}
-      PaperProps={{ className: classes.flightRequirementStyle }}
+      maxWidth="md"
       cancelable={true}
       title={flightRequirement ? 'What are your intended changes?' : 'What is the new flight requirement?'}
       actions={[
@@ -534,16 +355,12 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
         }
       ]}
     >
-      <Grid container>
-        <Grid item xs={12}>
-          <Typography variant="caption" className={classes.flightRequirementInformationTitle}>
-            Flight Information
-          </Typography>
-        </Grid>
-        <Grid item xs={5} className={classes.flightRequirementInformationTextField}>
+      <Grid container spacing={2}>
+        {/* General */}
+        <Grid item xs={5}>
           <RefiningTextField fullWidth label="Label" formField={formFields.label} value={viewState.label} onChange={e => setViewState({ ...viewState, label: e.target.value })} />
         </Grid>
-        <Grid item xs={5} className={classes.flightRequirementInformationTextField}>
+        <Grid item xs={5}>
           <RefiningTextField
             fullWidth
             label="Category"
@@ -552,7 +369,7 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
             onChange={e => setViewState({ ...viewState, category: e.target.value })}
           />
         </Grid>
-        <Grid item xs={2} className={classes.flightRequirementInformationTextField}>
+        <Grid item xs={2}>
           <AutoComplete
             options={MasterData.all.stcs.items}
             label="Stc"
@@ -563,48 +380,47 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
           />
         </Grid>
 
-        <Grid item xs={12}>
-          <Paper className={classes.flightRequirementInformationContainerPaper}>
-            <Tabs className={classes.flightRequirementWeekDaysTab} value={viewState.tabIndex} onChange={(event, tabIndex) => setViewState({ ...viewState, tabIndex })}>
-              <Tab
-                className={classes.dayTab}
-                value="ALL"
-                component={React.forwardRef<HTMLDivElement>((props, ref) => (
-                  <div {...props} ref={ref}>
-                    <Checkbox
-                      indeterminate={viewState.days.some(d => d.selected) && !viewState.days.every(d => d.selected)}
-                      checked={viewState.days.every(d => d.selected)}
-                      onChange={e => {
-                        const selected = !viewState.days.every(d => d.selected);
-                        setViewState({ ...viewState, days: Weekdays.map(d => ({ ...viewState.default, selected })) });
-                      }}
-                      color="primary"
-                    />
-                    All
-                  </div>
-                ))}
+        {/* Day selection */}
+        <Grid item xs={12} container>
+          {/* Include/exclude days */}
+          <Grid item xs={1}>
+            <div className={classes.checkboxContainer}>
+              <Checkbox
+                indeterminate={viewState.days.some(d => d.selected) && !viewState.days.every(d => d.selected)}
+                checked={viewState.days.every(d => d.selected)}
+                onChange={e => {
+                  const selected = !viewState.days.every(d => d.selected);
+                  setViewState({ ...viewState, days: Weekdays.map(d => ({ ...viewState.default, selected })) });
+                }}
+                color="primary"
               />
-              {Weekdays.map(d => (
-                <Tab
-                  key={d}
-                  className={classes.dayTab}
-                  value={d}
-                  component={React.forwardRef<HTMLDivElement>((props, ref) => (
-                    <div {...props} ref={ref}>
-                      <Checkbox
-                        checked={viewState.days[d].selected}
-                        onChange={e => setViewState({ ...viewState, days: daysButOne(d, { ...viewState.default, selected: e.target.checked }) })}
-                      />
-                      {Weekday[d].slice(0, 3)}
-                    </div>
-                  ))}
+            </div>
+            {Weekdays.map(d => (
+              <div className={classes.checkboxContainer} key={d}>
+                <Checkbox
+                  checked={viewState.days[d].selected}
+                  onChange={e => setViewState({ ...viewState, days: daysButOne(d, { ...viewState.default, selected: e.target.checked }) })}
                 />
+              </div>
+            ))}
+          </Grid>
+
+          {/* Day tabs */}
+          <Grid item xs={1}>
+            <Tabs value={viewState.tabIndex} onChange={(e, tabIndex) => setViewState({ ...viewState, tabIndex })} variant="fullWidth" orientation="vertical">
+              <Tab classes={{ root: classes.dayTab }} value="ALL" label="(All)" />
+              {Weekdays.map(d => (
+                <Tab key={d} classes={{ root: classes.dayTab }} value={d} label={Weekday[d].slice(0, 3)} />
               ))}
             </Tabs>
+          </Grid>
 
-            <Grid item xs={12} className={classes.flightRequirementInformationContainer}>
-              <Grid container>
-                <Grid item xs={2} className={classes.flightRequirementDaysTextField}>
+          {/* Day content */}
+          <Grid item xs={10}>
+            <Paper classes={{ root: classes.tabPaper }}>
+              <Grid container spacing={2}>
+                {/* Day general */}
+                <Grid item xs={2}>
                   <AutoComplete
                     label="RSX"
                     options={rsxOptions}
@@ -621,7 +437,7 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                     isDisabled={viewState.tabIndex !== 'ALL' && !viewState.days[viewState.tabIndex].selected}
                   />
                 </Grid>
-                <Grid item xs={8} className={classes.flightRequirementDaysTextField}>
+                <Grid item xs={10}>
                   <RefiningTextField
                     fullWidth
                     label="Notes"
@@ -637,18 +453,13 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                     disabled={viewState.tabIndex !== 'ALL' && !viewState.days[viewState.tabIndex].selected}
                   />
                 </Grid>
-
-                <Grid item xs={6} className={classes.flightRequirementDaysTextField}>
-                  <Typography variant="caption" className={classes.captionTextColor}>
-                    Allowed Aircrafts
-                  </Typography>
+                <Grid item xs={6}>
+                  <Typography variant="caption">Allowed Aircrafts</Typography>
                 </Grid>
-                <Grid item xs={6} className={classes.flightRequirementDaysTextField}>
-                  <Typography variant="caption" className={classes.captionTextColor}>
-                    Forbidden Aircrafts
-                  </Typography>
+                <Grid item xs={6}>
+                  <Typography variant="caption">Forbidden Aircrafts</Typography>
                 </Grid>
-                <Grid item xs={6} className={classes.flightRequirementDaysTextField}>
+                <Grid item xs={6}>
                   <MultiSelect
                     options={aircraftIdentityOptions}
                     getOptionLabel={l => l.name}
@@ -671,7 +482,7 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                     isDisabled={viewState.tabIndex !== 'ALL' && !viewState.days[viewState.tabIndex].selected}
                   ></MultiSelect>
                 </Grid>
-                <Grid item xs={6} className={classes.flightRequirementDaysTextField}>
+                <Grid item xs={6}>
                   <MultiSelect
                     options={aircraftIdentityOptions}
                     getOptionLabel={l => l.name}
@@ -695,138 +506,116 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                   ></MultiSelect>
                 </Grid>
 
-                <Paper className={classes.flightRequirementLegContainerPaper}>
-                  <Grid item xs={12} className={classes.flightRequirementLegContainer}>
-                    <Grid container className={classes.flightRequirementLegTabs}>
-                      <Grid item xs={11}>
-                        <Tabs variant="scrollable" scrollButtons="auto" value={viewState.legIndex} onChange={(e, legIndex) => setViewState({ ...viewState, legIndex })}>
-                          {tabViewState.legs.map((leg, legIndex) => (
-                            <Tab
-                              key={legIndex}
-                              component={React.forwardRef<HTMLDivElement>((props, ref) => (
-                                <div {...props} ref={ref} className={classes.legsTab}>
-                                  <div className={classes.legTab}>
-                                    <Typography className={classes.legTabFlightNumber}>
-                                      {viewState.route[legIndex].flightNumber || <Fragment>&ndash; &ndash; &ndash;</Fragment>}
-                                    </Typography>
-                                    <Button className={classes.legTabButton}>
-                                      {legIndex === 0 && <Typography variant="caption">{viewState.route[legIndex].departureAirport || <Fragment>&mdash;</Fragment>}</Typography>}
-                                      <Typography variant="caption">
-                                        <ArrowRightAltIcon className={classes.legTabRightArrow} />
-                                      </Typography>
-                                      <Typography variant="caption">{viewState.route[legIndex].arrivalAirport || <Fragment>&mdash;</Fragment>}</Typography>
-                                    </Button>
-                                  </div>
-                                  {legIndex > 0 && viewState.tabIndex === 'ALL' && (
-                                    <IconButton
-                                      className={classes.clearButton}
-                                      onClick={e => {
-                                        e.stopPropagation(); // To prevent unintended click after remove.
-                                        setViewState({
-                                          ...viewState,
-                                          legIndex: Math.min(legIndex, viewState.route.length - 2),
-                                          default: {
-                                            ...viewState.default,
-                                            legs: [...viewState.default.legs.slice(0, legIndex), ...viewState.default.legs.slice(legIndex + 1)]
-                                          },
-                                          route: [...viewState.route.slice(0, legIndex), ...viewState.route.slice(legIndex + 1)],
-                                          days: viewState.days.map(day => ({ ...day, legs: [...day.legs.slice(0, legIndex), ...day.legs.slice(legIndex + 1)] }))
-                                        });
-                                      }}
-                                    >
-                                      <ClearIcon className={classes.clearIcon} />
-                                    </IconButton>
-                                  )}
-                                </div>
-                              ))}
-                            />
-                          ))}
-                          {viewState.tabIndex === 'ALL' && (
-                            <Tab
-                              className={classes.addButton}
-                              component={React.forwardRef<HTMLButtonElement>((props, ref) => (
-                                <IconButton
-                                  {...props}
-                                  ref={ref}
-                                  onClick={e =>
-                                    setViewState({
-                                      ...viewState,
-                                      legIndex: viewState.route.length,
-                                      default: {
-                                        ...viewState.default,
-                                        legs: [
-                                          ...viewState.default.legs,
-                                          { blockTime: '', stdLowerBound: '', stdUpperBound: '', originPermission: false, destinationPermission: false }
-                                        ]
-                                      },
-                                      route: [
-                                        ...viewState.route,
-                                        { flightNumber: '', departureAirport: viewState.route[viewState.route.length - 1].arrivalAirport, arrivalAirport: '' }
-                                      ],
-                                      days: viewState.days.map(day => ({
-                                        ...day,
-                                        legs: [...day.legs, { blockTime: '', stdLowerBound: '', stdUpperBound: '', originPermission: false, destinationPermission: false }]
-                                      }))
-                                    })
-                                  }
-                                >
-                                  <AddIcon className={classes.addIcon} />
-                                </IconButton>
-                              ))}
-                            ></Tab>
-                          )}
-                        </Tabs>
-                      </Grid>
-                      <Grid item xs={1}>
-                        {viewState.tabIndex === 'ALL' && (
+                {/* Leg tabs */}
+                <Grid item xs={12} classes={{ root: classes.flex }}>
+                  <Tabs variant="scrollable" scrollButtons="auto" value={viewState.legIndex} onChange={(e, legIndex) => setViewState({ ...viewState, legIndex })}>
+                    {tabViewState.legs.map((leg, legIndex) => (
+                      <Tab
+                        key={legIndex}
+                        label={
+                          <pre>{`${viewState.route[legIndex].flightNumber}\n${viewState.route[legIndex].departureAirport} - ${viewState.route[legIndex].arrivalAirport}`}</pre>
+                        }
+                        icon={
                           <IconButton
-                            onClick={e =>
+                            onClick={e => {
+                              e.stopPropagation(); // To prevent unintended click after remove.
                               setViewState({
                                 ...viewState,
-                                legIndex: viewState.route.length,
+                                legIndex: Math.min(legIndex, viewState.route.length - 2),
                                 default: {
                                   ...viewState.default,
-                                  legs: [
-                                    ...viewState.default.legs,
-                                    ...[...viewState.default.legs]
-                                      .reverse()
-                                      .map(leg => ({ blockTime: '', stdLowerBound: '', stdUpperBound: '', originPermission: false, destinationPermission: false }))
-                                  ]
+                                  legs: [...viewState.default.legs.slice(0, legIndex), ...viewState.default.legs.slice(legIndex + 1)]
                                 },
-                                route: [
-                                  ...viewState.route,
-                                  ...[...viewState.route].reverse().map(leg => ({ flightNumber: '', departureAirport: leg.arrivalAirport, arrivalAirport: leg.departureAirport }))
-                                ],
-                                days: viewState.days.map(day => ({
-                                  ...day,
-                                  legs: [
-                                    ...day.legs,
-                                    ...[...day.legs]
-                                      .reverse()
-                                      .map(leg => ({ blockTime: '', stdLowerBound: '', stdUpperBound: '', originPermission: false, destinationPermission: false }))
-                                  ]
-                                }))
-                              })
-                            }
+                                route: [...viewState.route.slice(0, legIndex), ...viewState.route.slice(legIndex + 1)],
+                                days: viewState.days.map(day => ({ ...day, legs: [...day.legs.slice(0, legIndex), ...day.legs.slice(legIndex + 1)] }))
+                              });
+                            }}
                           >
-                            <WrapTextIcon />
+                            <ClearIcon />
                           </IconButton>
-                        )}
-                      </Grid>
-                    </Grid>
+                        }
+                      />
+                    ))}
+                  </Tabs>
 
-                    <Grid container className={classes.flightRequirementLegInfoContainer}>
-                      <Grid item xs={12} className={classes.flightRequirementLegInfoTexFields}>
+                  {/* Add and return buttons */}
+                  {viewState.tabIndex === 'ALL' && (
+                    <Fragment>
+                      <IconButton
+                        onClick={e =>
+                          setViewState({
+                            ...viewState,
+                            legIndex: viewState.route.length,
+                            default: {
+                              ...viewState.default,
+                              legs: [...viewState.default.legs, { blockTime: '', stdLowerBound: '', stdUpperBound: '', originPermission: false, destinationPermission: false }]
+                            },
+                            route: [...viewState.route, { flightNumber: '', departureAirport: viewState.route[viewState.route.length - 1].arrivalAirport, arrivalAirport: '' }],
+                            days: viewState.days.map(day => ({
+                              ...day,
+                              legs: [...day.legs, { blockTime: '', stdLowerBound: '', stdUpperBound: '', originPermission: false, destinationPermission: false }]
+                            }))
+                          })
+                        }
+                      >
+                        <AddIcon />
+                      </IconButton>
+
+                      <div className={classes.grow} />
+
+                      <IconButton
+                        onClick={e =>
+                          setViewState({
+                            ...viewState,
+                            legIndex: viewState.route.length,
+                            default: {
+                              ...viewState.default,
+                              legs: [
+                                ...viewState.default.legs,
+                                ...[...viewState.default.legs]
+                                  .reverse()
+                                  .map(leg => ({ blockTime: '', stdLowerBound: '', stdUpperBound: '', originPermission: false, destinationPermission: false }))
+                              ]
+                            },
+                            route: [
+                              ...viewState.route,
+                              ...[...viewState.route].reverse().map(leg => ({ flightNumber: '', departureAirport: leg.arrivalAirport, arrivalAirport: leg.departureAirport }))
+                            ],
+                            days: viewState.days.map(day => ({
+                              ...day,
+                              legs: [
+                                ...day.legs,
+                                ...[...day.legs]
+                                  .reverse()
+                                  .map(leg => ({ blockTime: '', stdLowerBound: '', stdUpperBound: '', originPermission: false, destinationPermission: false }))
+                              ]
+                            }))
+                          })
+                        }
+                      >
+                        <WrapTextIcon />
+                      </IconButton>
+                    </Fragment>
+                  )}
+                </Grid>
+
+                {/* Leg content */}
+                <Grid item xs={12}>
+                  <Paper classes={{ root: classes.tabPaper }}>
+                    <Grid container spacing={2}>
+                      <Grid item xs={4}>
                         <RefiningTextField
-                          className={classes.flightRequirementLegInfoTextField}
+                          fullWidth
                           label="Flight Number"
                           formField={formFields.flightNumber}
                           value={routeLegViewState.flightNumber}
                           onChange={({ target: { value: flightNumber } }) => setViewState({ ...viewState, route: routeButOne(routeLeg => ({ ...routeLeg, flightNumber })) })}
                           disabled={viewState.tabIndex !== 'ALL'}
                         />
+                      </Grid>
+                      <Grid item xs={4}>
                         <RefiningTextField
-                          className={classes.flightRequirementLegInfoTextField}
+                          fullWidth
                           label="Departure Airport"
                           formField={formFields.airport}
                           value={routeLegViewState.departureAirport}
@@ -835,8 +624,10 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                           }
                           disabled={viewState.tabIndex !== 'ALL'}
                         />
+                      </Grid>
+                      <Grid item xs={4}>
                         <RefiningTextField
-                          className={classes.flightRequirementLegInfoTextField}
+                          fullWidth
                           label="Arrival Airport"
                           formField={formFields.airport}
                           value={routeLegViewState.arrivalAirport}
@@ -844,9 +635,9 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                           disabled={viewState.tabIndex !== 'ALL'}
                         />
                       </Grid>
-                      <Grid item xs={12} className={classes.flightRequirementLegInfoTexFields}>
+                      <Grid item xs={4}>
                         <RefiningTextField
-                          className={classes.flightRequirementLegInfoTextField}
+                          fullWidth
                           label="Block Time"
                           formField={formFields.daytime}
                           value={legViewState.blockTime}
@@ -866,8 +657,10 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                           }
                           disabled={viewState.tabIndex !== 'ALL' && !viewState.days[viewState.tabIndex].selected}
                         />
+                      </Grid>
+                      <Grid item xs={4}>
                         <RefiningTextField
-                          className={classes.flightRequirementLegInfoTextField}
+                          fullWidth
                           label="STD Lower bound"
                           formField={formFields.daytime}
                           value={legViewState.stdLowerBound}
@@ -890,8 +683,10 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                           }
                           disabled={viewState.tabIndex !== 'ALL' && !viewState.days[viewState.tabIndex].selected}
                         />
+                      </Grid>
+                      <Grid item xs={4}>
                         <RefiningTextField
-                          className={classes.flightRequirementLegInfoTextField}
+                          fullWidth
                           label="STD Upper bound"
                           formField={formFields.daytime}
                           value={legViewState.stdUpperBound}
@@ -915,9 +710,8 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                           disabled={viewState.tabIndex !== 'ALL' && !viewState.days[viewState.tabIndex].selected}
                         />
                       </Grid>
-                      <Grid item xs={12} className={classes.flightRequirementLegInfoCheckBoxes}>
+                      <Grid item xs={4}>
                         <FormControlLabel
-                          className={classes.flightRequirementLegInfoCheckBox}
                           label="Origin Permission"
                           control={
                             <Checkbox
@@ -944,8 +738,9 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                           }
                           disabled={viewState.tabIndex !== 'ALL' && !viewState.days[viewState.tabIndex].selected}
                         />
+                      </Grid>
+                      <Grid item xs={4}>
                         <FormControlLabel
-                          className={classes.flightRequirementLegInfoCheckBox}
                           label="Destination Permission"
                           control={
                             <Checkbox
@@ -974,11 +769,11 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                         />
                       </Grid>
                     </Grid>
-                  </Grid>
-                </Paper>
+                  </Paper>
+                </Grid>
               </Grid>
-            </Grid>
-          </Paper>
+            </Paper>
+          </Grid>
         </Grid>
       </Grid>
     </BaseModal>

@@ -10,16 +10,19 @@
   "editor.formatOnSaveTimeout": 3000,
   "typescript.preferences.importModuleSpecifier": "non-relative",
   "typescript.tsdk": "node_modules/typescript/lib",
-  "prettier.singleQuote": true,
-  "prettier.printWidth": 180,
-  "prettier.tabWidth": 2,
-  "prettier.useTabs": false,
-  "prettier.trailingComma": "none",
-  "prettier.bracketSpacing": true,
-  "prettier.jsxBracketSameLine": false,
-  "prettier.semi": true,
-  "prettier.arrowParens": "avoid",
-  "prettier.jsxSingleQuote": false,
-  "prettier.endOfLine": "crlf",
-  "prettier.quoteProps": "as-needed"
+  "telemetry.enableTelemetry": false,
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/bower_components": true,
+    "**/env": true,
+    "**/venv": true
+  },
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/node_modules/**": true,
+    "**/env/**": true,
+    "**/venv/**": true,
+    "env-*": true
+  }
 }

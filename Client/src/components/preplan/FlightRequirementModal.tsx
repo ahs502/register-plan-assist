@@ -1,6 +1,6 @@
 import React, { FC, useMemo, useContext, Fragment } from 'react';
 import { Theme, Typography, Grid, Paper, Tabs, Tab, Checkbox, IconButton, FormControlLabel } from '@material-ui/core';
-import { Clear as ClearIcon, Add as AddIcon, WrapText as WrapTextIcon, ArrowRightAlt as ArrowRightIcon } from '@material-ui/icons';
+import { Clear as ClearIcon, Add as AddIcon, WrapText as WrapTextIcon } from '@material-ui/icons';
 import { makeStyles } from '@material-ui/styles';
 import BaseModal, { BaseModalProps, useModalViewState, useModalState } from 'src/components/BaseModal';
 import FlightRequirement from 'src/business/flight-requirement/FlightRequirement';
@@ -380,9 +380,9 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
           />
         </Grid>
 
-        {/* Day selection */}
+        {/* Days */}
         <Grid item xs={12} container>
-          {/* Include/exclude days */}
+          {/* Day tabs */}
           <Grid item xs={1}>
             <div className={classes.checkboxContainer}>
               <Checkbox
@@ -404,8 +404,6 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
               </div>
             ))}
           </Grid>
-
-          {/* Day tabs */}
           <Grid item xs={1}>
             <Tabs value={viewState.tabIndex} onChange={(e, tabIndex) => setViewState({ ...viewState, tabIndex })} variant="fullWidth" orientation="vertical">
               <Tab classes={{ root: classes.dayTab }} value="ALL" label="(All)" />
@@ -506,101 +504,121 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                   ></MultiSelect>
                 </Grid>
 
-                {/* Leg tabs */}
-                <Grid item xs={12} classes={{ root: classes.flex }}>
-                  <Tabs variant="scrollable" scrollButtons="auto" value={viewState.legIndex} onChange={(e, legIndex) => setViewState({ ...viewState, legIndex })}>
-                    {tabViewState.legs.map((leg, legIndex) => (
-                      <Tab
-                        key={legIndex}
-                        label={
-                          <pre>{`${viewState.route[legIndex].flightNumber}\n${viewState.route[legIndex].departureAirport} - ${viewState.route[legIndex].arrivalAirport}`}</pre>
-                        }
-                        icon={
+                {/* Legs */}
+                <Grid item xs={12}>
+                  {/* Leg tabs */}
+                  <div className={classes.flex}>
+                    <Tabs variant="scrollable" scrollButtons="auto" value={viewState.legIndex} onChange={(e, legIndex) => setViewState({ ...viewState, legIndex })}>
+                      {tabViewState.legs.map((leg, legIndex) => (
+                        <Tab
+                          key={legIndex}
+                          label={
+                            <div className={classes.flex}>
+                              <div className={classes.grow}>
+                                <Typography variant="caption" display="block">
+                                  {viewState.route[legIndex].flightNumber || <Fragment>&mdash;</Fragment>}
+                                </Typography>
+                                {legIndex === 0 && (
+                                  <Typography variant="button" display="inline">
+                                    {viewState.route[legIndex].departureAirport || <Fragment>&mdash;&nbsp;</Fragment>}&nbsp;
+                                  </Typography>
+                                )}
+                                <Typography variant="button" display="inline">
+                                  &rarr;&nbsp;{viewState.route[legIndex].arrivalAirport || <Fragment>&nbsp;&mdash;</Fragment>}
+                                </Typography>
+                              </div>
+                              {viewState.tabIndex === 'ALL' && viewState.route.length > 1 && (
+                                <Fragment>
+                                  &nbsp;&nbsp;&nbsp;&nbsp;
+                                  <IconButton
+                                    onClick={e => {
+                                      e.stopPropagation(); // To prevent unintended click after remove.
+                                      setViewState({
+                                        ...viewState,
+                                        legIndex: Math.min(legIndex, viewState.route.length - 2),
+                                        default: {
+                                          ...viewState.default,
+                                          legs: [...viewState.default.legs.slice(0, legIndex), ...viewState.default.legs.slice(legIndex + 1)]
+                                        },
+                                        route: [...viewState.route.slice(0, legIndex), ...viewState.route.slice(legIndex + 1)],
+                                        days: viewState.days.map(day => ({ ...day, legs: [...day.legs.slice(0, legIndex), ...day.legs.slice(legIndex + 1)] }))
+                                      });
+                                    }}
+                                  >
+                                    <ClearIcon />
+                                  </IconButton>
+                                </Fragment>
+                              )}
+                            </div>
+                          }
+                        />
+                      ))}
+                    </Tabs>
+
+                    {/* Add and return buttons */}
+                    {viewState.tabIndex === 'ALL' && (
+                      <Fragment>
+                        <div>
                           <IconButton
-                            onClick={e => {
-                              e.stopPropagation(); // To prevent unintended click after remove.
+                            onClick={e =>
                               setViewState({
                                 ...viewState,
-                                legIndex: Math.min(legIndex, viewState.route.length - 2),
+                                legIndex: viewState.route.length,
                                 default: {
                                   ...viewState.default,
-                                  legs: [...viewState.default.legs.slice(0, legIndex), ...viewState.default.legs.slice(legIndex + 1)]
+                                  legs: [...viewState.default.legs, { blockTime: '', stdLowerBound: '', stdUpperBound: '', originPermission: false, destinationPermission: false }]
                                 },
-                                route: [...viewState.route.slice(0, legIndex), ...viewState.route.slice(legIndex + 1)],
-                                days: viewState.days.map(day => ({ ...day, legs: [...day.legs.slice(0, legIndex), ...day.legs.slice(legIndex + 1)] }))
-                              });
-                            }}
+                                route: [...viewState.route, { flightNumber: '', departureAirport: viewState.route[viewState.route.length - 1].arrivalAirport, arrivalAirport: '' }],
+                                days: viewState.days.map(day => ({
+                                  ...day,
+                                  legs: [...day.legs, { blockTime: '', stdLowerBound: '', stdUpperBound: '', originPermission: false, destinationPermission: false }]
+                                }))
+                              })
+                            }
                           >
-                            <ClearIcon />
+                            <AddIcon />
                           </IconButton>
-                        }
-                      />
-                    ))}
-                  </Tabs>
+                        </div>
+                        <div className={classes.grow} />
+                        <div>
+                          <IconButton
+                            onClick={e =>
+                              setViewState({
+                                ...viewState,
+                                legIndex: viewState.route.length,
+                                default: {
+                                  ...viewState.default,
+                                  legs: [
+                                    ...viewState.default.legs,
+                                    ...[...viewState.default.legs]
+                                      .reverse()
+                                      .map(leg => ({ blockTime: '', stdLowerBound: '', stdUpperBound: '', originPermission: false, destinationPermission: false }))
+                                  ]
+                                },
+                                route: [
+                                  ...viewState.route,
+                                  ...[...viewState.route].reverse().map(leg => ({ flightNumber: '', departureAirport: leg.arrivalAirport, arrivalAirport: leg.departureAirport }))
+                                ],
+                                days: viewState.days.map(day => ({
+                                  ...day,
+                                  legs: [
+                                    ...day.legs,
+                                    ...[...day.legs]
+                                      .reverse()
+                                      .map(leg => ({ blockTime: '', stdLowerBound: '', stdUpperBound: '', originPermission: false, destinationPermission: false }))
+                                  ]
+                                }))
+                              })
+                            }
+                          >
+                            <WrapTextIcon />
+                          </IconButton>
+                        </div>
+                      </Fragment>
+                    )}
+                  </div>
 
-                  {/* Add and return buttons */}
-                  {viewState.tabIndex === 'ALL' && (
-                    <Fragment>
-                      <IconButton
-                        onClick={e =>
-                          setViewState({
-                            ...viewState,
-                            legIndex: viewState.route.length,
-                            default: {
-                              ...viewState.default,
-                              legs: [...viewState.default.legs, { blockTime: '', stdLowerBound: '', stdUpperBound: '', originPermission: false, destinationPermission: false }]
-                            },
-                            route: [...viewState.route, { flightNumber: '', departureAirport: viewState.route[viewState.route.length - 1].arrivalAirport, arrivalAirport: '' }],
-                            days: viewState.days.map(day => ({
-                              ...day,
-                              legs: [...day.legs, { blockTime: '', stdLowerBound: '', stdUpperBound: '', originPermission: false, destinationPermission: false }]
-                            }))
-                          })
-                        }
-                      >
-                        <AddIcon />
-                      </IconButton>
-
-                      <div className={classes.grow} />
-
-                      <IconButton
-                        onClick={e =>
-                          setViewState({
-                            ...viewState,
-                            legIndex: viewState.route.length,
-                            default: {
-                              ...viewState.default,
-                              legs: [
-                                ...viewState.default.legs,
-                                ...[...viewState.default.legs]
-                                  .reverse()
-                                  .map(leg => ({ blockTime: '', stdLowerBound: '', stdUpperBound: '', originPermission: false, destinationPermission: false }))
-                              ]
-                            },
-                            route: [
-                              ...viewState.route,
-                              ...[...viewState.route].reverse().map(leg => ({ flightNumber: '', departureAirport: leg.arrivalAirport, arrivalAirport: leg.departureAirport }))
-                            ],
-                            days: viewState.days.map(day => ({
-                              ...day,
-                              legs: [
-                                ...day.legs,
-                                ...[...day.legs]
-                                  .reverse()
-                                  .map(leg => ({ blockTime: '', stdLowerBound: '', stdUpperBound: '', originPermission: false, destinationPermission: false }))
-                              ]
-                            }))
-                          })
-                        }
-                      >
-                        <WrapTextIcon />
-                      </IconButton>
-                    </Fragment>
-                  )}
-                </Grid>
-
-                {/* Leg content */}
-                <Grid item xs={12}>
+                  {/* Leg content */}
                   <Paper classes={{ root: classes.tabPaper }}>
                     <Grid container spacing={2}>
                       <Grid item xs={4}>

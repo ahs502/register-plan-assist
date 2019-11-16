@@ -5,12 +5,15 @@ import CssBaseline from '@material-ui/core/CssBaseline';
 import * as serviceWorker from './serviceWorker';
 import '@core/utils/extensions.implementation';
 import '@core/utils/validation-init';
+import { HashRouter as Router } from 'react-router-dom';
 import App from './App';
 
 ReactDOM.render(
   <Fragment>
     <CssBaseline />
-    <App />
+    <Router>
+      <App />
+    </Router>
   </Fragment>,
   document.getElementById('root')
 );

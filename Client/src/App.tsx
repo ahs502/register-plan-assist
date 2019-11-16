@@ -1,17 +1,17 @@
-import React, { FC, useState, useEffect, useCallback } from 'react';
-
+import React, { FC, useState, useEffect, useCallback, Fragment } from 'react';
 import { CircularProgress, Theme } from '@material-ui/core';
 import { ThemeProvider, makeStyles } from '@material-ui/styles';
 import theme from './theme';
 import RequestManager from './utils/RequestManager';
 import MasterDataService from './services/MasterDataService';
 import MasterData from '@core/master-data';
-import { HashRouter as Router, Switch, Route, Redirect } from 'react-router-dom';
+import { Switch, Route, Redirect } from 'react-router-dom';
 import PreplanListPage from './pages/preplan-list';
 import PreplanPage from './pages/preplan';
 import AppBar from './components/AppBar';
 import { SnackbarProvider } from 'notistack';
 import MasterDataModel from '@core/models/master-data/MasterDataModel';
+import ErrorPage, { useThrowApplicationError } from 'src/pages/error';
 
 const useStyles = makeStyles((theme: Theme) => ({
   progress: {
@@ -27,17 +27,12 @@ const App: FC = () => {
   const [initializing, setInitializing] = useState(true);
   const [loading, setLoading] = useState(false);
 
+  const throwApplicationError = useThrowApplicationError();
+
   useEffect(() => {
-    MasterDataService.get(...(Object.keys(MasterData.all) as (keyof MasterDataModel)[])).then(
-      masterDataModel => {
-        MasterData.recieve(masterDataModel);
-        setInitializing(false);
-      },
-      reason => {
-        console.error(reason);
-        //TODO: Is there really nothing else to do here?!
-      }
-    );
+    MasterDataService.get(...(Object.keys(MasterData.all) as (keyof MasterDataModel)[]))
+      .then(MasterData.recieve, throwApplicationError.withTitle('Unable to fetch master data.'))
+      .then(() => setInitializing(false));
   }, []);
 
   RequestManager.onProcessingChanged = useCallback(processing => setLoading(processing), []);
@@ -49,15 +44,16 @@ const App: FC = () => {
       <SnackbarProvider maxSnack={5}>
         {initializing && <CircularProgress size={48} className={classes.progress} />}
         {!initializing && (
-          <Router>
+          <Fragment>
             <AppBar loading={loading} />
             <Switch>
               <Redirect exact from="/" to="/preplan-list" />
               <Route exact path="/preplan-list" component={PreplanListPage} />
               <Route path="/preplan/:id" component={PreplanPage} />
+              <Route exact path="/error" component={ErrorPage} />
               <Redirect to="/" />
             </Switch>
-          </Router>
+          </Fragment>
         )}
       </SnackbarProvider>
     </ThemeProvider>

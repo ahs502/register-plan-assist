@@ -4,7 +4,7 @@ import { makeStyles } from '@material-ui/styles';
 import { NavigateNext as NavigateNextIcon, KeyboardBackspace as BackIcon } from '@material-ui/icons';
 import LinkTypography from './LinkTypography';
 import LinkIconButton from './LinkIconButton';
-import useRouter from 'src/utils/useRouter';
+import { useHistory } from 'react-router-dom';
 
 const useStyles = makeStyles((theme: Theme) => ({
   root: {
@@ -40,8 +40,8 @@ export interface NavBarProps {
 }
 
 const NavBar: FC<NavBarProps> = ({ children, backLink, navBarLinks, backTitle }) => {
+  const history = useHistory();
   const classes = useStyles();
-  const { history } = useRouter();
 
   return (
     <Toolbar className={classes.root} variant="dense">

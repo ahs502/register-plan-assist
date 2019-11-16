@@ -1,8 +1,7 @@
 import React, { FC, Fragment, useState, useEffect, useRef, createContext } from 'react';
 import { Theme } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
-import { Switch, Redirect, Route } from 'react-router-dom';
-import useRouter from 'src/utils/useRouter';
+import { Switch, Redirect, Route, useRouteMatch } from 'react-router-dom';
 import NavBar from 'src/components/NavBar';
 import ResourceSchedulerPage from 'src/pages/preplan/resource-scheduler';
 import FlightRequirementListPage from 'src/pages/preplan/flight-requirement-list';
@@ -28,29 +27,29 @@ const PreplanPage: FC = () => {
 
   const navBarToolsRef = useRef<HTMLDivElement>(null);
 
-  const { match } = useRouter<{ id: string }>();
+  const routeMatch = useRouteMatch<{ id: string }>()!;
   const classes = useStyles();
 
   useEffect(() => {
-    PreplanService.get(match.params.id).then(
+    PreplanService.get(routeMatch.params.id).then(
       preplanModel => setPreplan(new Preplan(preplanModel)),
       reason => {
         console.error(reason);
         // history.push('/preplan-list');
       }
     );
-  }, [match.params.id]);
+  }, [routeMatch.params.id]);
 
-  const resourceSchedulerPageSelected = window.location.href.startsWith(`${window.location.origin}/#${match.url}/resource-scheduler`);
-  const flightRequirementListPageSelected = window.location.href.startsWith(`${window.location.origin}/#${match.url}/flight-requirement-list`);
-  const reportsPageSelected = window.location.href.startsWith(`${window.location.origin}/#${match.url}/reports`);
+  const resourceSchedulerPageSelected = window.location.href.startsWith(`${window.location.origin}/#${routeMatch.url}/resource-scheduler`);
+  const flightRequirementListPageSelected = window.location.href.startsWith(`${window.location.origin}/#${routeMatch.url}/flight-requirement-list`);
+  const reportsPageSelected = window.location.href.startsWith(`${window.location.origin}/#${routeMatch.url}/reports`);
   const reportsProposalPageSelected = reportsPageSelected && window.location.hash.endsWith('/proposal');
   const reportsConnectionsPageSelected = reportsPageSelected && window.location.hash.endsWith('/connections');
 
   return (
     <Fragment>
       <NavBar
-        backLink={resourceSchedulerPageSelected ? '/preplan-list' : reportsProposalPageSelected || reportsConnectionsPageSelected ? `${match.url}/reports` : match.url}
+        backLink={resourceSchedulerPageSelected ? '/preplan-list' : reportsProposalPageSelected || reportsConnectionsPageSelected ? `${routeMatch.url}/reports` : routeMatch.url}
         backTitle={
           resourceSchedulerPageSelected
             ? 'Back to Preplan List'
@@ -65,23 +64,23 @@ const PreplanPage: FC = () => {
           },
           preplan && {
             title: preplan.name,
-            link: match.url
+            link: routeMatch.url
           },
           flightRequirementListPageSelected && {
             title: 'Flight Requirements',
-            link: `${match.url}/flight-requirement-list`
+            link: `${routeMatch.url}/flight-requirement-list`
           },
           reportsPageSelected && {
             title: 'Reports',
-            link: `${match.url}/reports`
+            link: `${routeMatch.url}/reports`
           },
           reportsProposalPageSelected && {
             title: 'Proposal Report',
-            link: `${match.url}/reports/proposal`
+            link: `${routeMatch.url}/reports/proposal`
           },
           reportsConnectionsPageSelected && {
             title: 'Connections Report',
-            link: `${match.url}/reports/connections`
+            link: `${routeMatch.url}/reports/connections`
           }
         ]}
       >
@@ -94,7 +93,7 @@ const PreplanPage: FC = () => {
             <ReloadPreplanContext.Provider
               value={async newPreplanModel => {
                 try {
-                  const preplanModel = newPreplanModel || (await PreplanService.get(match.params.id));
+                  const preplanModel = newPreplanModel || (await PreplanService.get(routeMatch.params.id));
                   const newPreplan = new Preplan(preplanModel, preplan);
                   setPreplan(newPreplan);
                 } catch (reason) {
@@ -104,10 +103,10 @@ const PreplanPage: FC = () => {
               }}
             >
               <Switch>
-                <Redirect exact from={match.url} to={match.url + '/resource-scheduler'} />
+                <Redirect exact from={routeMatch.url} to={routeMatch.url + '/resource-scheduler'} />
                 <Route
                   exact
-                  path={match.path + '/resource-scheduler'}
+                  path={routeMatch.path + '/resource-scheduler'}
                   render={() => (
                     <ResourceSchedulerPage
                       onObjectionTargetClick={target => openObjectionModal({ target })}
@@ -118,7 +117,7 @@ const PreplanPage: FC = () => {
                 />
                 <Route
                   exact
-                  path={match.path + '/flight-requirement-list'}
+                  path={routeMatch.path + '/flight-requirement-list'}
                   render={() => (
                     <FlightRequirementListPage
                       onAddFlightRequirement={() => openFlightRequirementModal({})}
@@ -127,8 +126,8 @@ const PreplanPage: FC = () => {
                     />
                   )}
                 />
-                <Route exact path={match.path + '/reports/:report?'} component={() => <ReportsPage />} />
-                <Redirect to={match.url} />
+                <Route exact path={routeMatch.path + '/reports/:report?'} component={() => <ReportsPage />} />
+                <Redirect to={routeMatch.url} />
               </Switch>
 
               <ObjectionModal state={objectionModalState} onClose={closeObjectionModal} />

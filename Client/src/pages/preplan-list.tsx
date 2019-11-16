@@ -7,7 +7,6 @@ import Search, { filterOnProperties } from 'src/components/Search';
 import NavBar from 'src/components/NavBar';
 import persistant from 'src/utils/persistant';
 import PreplanService from 'src/services/PreplanService';
-import useRouter from 'src/utils/useRouter';
 import { useSnackbar } from 'notistack';
 import ProgressSwitch from 'src/components/ProgressSwitch';
 import classNames from 'classnames';
@@ -16,6 +15,7 @@ import NewPreplanModal, { useNewPreplanModalState } from 'src/components/preplan
 import ClonePreplanModal, { useClonePreplanModalState } from 'src/components/preplan-list/ClonePreplanModal';
 import EditPreplanModal, { useEditPreplanModalState } from 'src/components/preplan-list/EditPreplanModal';
 import RemovePreplanModal, { useRemovePreplanModalState } from 'src/components/preplan-list/RemovePreplanModal';
+import { useHistory } from 'react-router-dom';
 
 const waitingPaperSize = 250;
 const useStyles = makeStyles((theme: Theme) => ({
@@ -103,7 +103,7 @@ const PreplanListPage: FC = () => {
     );
   }, []);
 
-  const { history } = useRouter();
+  const history = useHistory();
   const classes = useStyles();
 
   const filteredPreplanHeaders = filterOnProperties(preplanHeaders, query, 'name');

@@ -31,13 +31,10 @@ export default class PreplanAircraftSelection implements ModelConvertable<Aircra
     let included = new Set<PreplanAircraftRegister>();
     this.includedIdentities.forEach(i => i.aircraftRegisters.forEach(r => included.add(r)));
     this.excludedIdentities.forEach(i => i.aircraftRegisters.forEach(r => included.delete(r)));
-    this.aircraftRegisters = Array.from(included).filter(r => r.options.status === 'INCLUDED');
-
-    const all = new Set<PreplanAircraftRegister>();
-    this.includedIdentities.forEach(i => i.aircraftRegisters.forEach(r => all.add(r)));
-    included = new Set(all);
-    this.excludedIdentities.forEach(i => i.aircraftRegisters.forEach(r => included.delete(r)));
-    this.backupAircraftRegister = included.size ? included.values().next().value : all.size ? all.values().next().value : undefined;
+    const includedAircraftRegisters = Array.from(included);
+    this.aircraftRegisters = includedAircraftRegisters.filter(r => r.options.status === 'INCLUDED');
+    this.backupAircraftRegister =
+      includedAircraftRegisters.find(r => r.options.status === 'INCLUDED') || includedAircraftRegisters.find(r => r.options.status === 'BACKUP') || undefined;
   }
 
   extractModel(overrides?: DeepWritablePartial<AircraftSelectionModel>): AircraftSelectionModel {

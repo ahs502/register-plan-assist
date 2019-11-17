@@ -16,6 +16,10 @@ import TablePaginationActions from 'src/components/TablePaginationActions';
 import FlightRequirementService from 'src/services/FlightRequirementService';
 import NewFlightModel from '@core/models/flight/NewFlightModel';
 import FlightLegModel from '@core/models/flight/FlightLegModel';
+import AircraftIdentityModel from '@core/models/AircraftIdentityModel';
+import FlightRequirementLegModel from '@core/models/flight-requirement/FlightRequirementLegModel';
+import DayFlightRequirementModel from '@core/models/flight-requirement/DayFlightRequirementModel';
+import DayFlightRequirementLegModel from '@core/models/flight-requirement/DayFlightRequirementLegModel';
 
 const useStyles = makeStyles((theme: Theme) => ({
   contentPage: {
@@ -158,13 +162,65 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = React.memo
                       try {
                         const newPreplanModel = await FlightRequirementService.edit(
                           preplan.id,
-                          flightRequirement.extractModel({ ignored: !flightRequirement.ignored }),
+                          {
+                            id: flightRequirement.id,
+                            label: flightRequirement.label,
+                            category: flightRequirement.category,
+                            stcId: flightRequirement.stc.id,
+                            aircraftSelection: {
+                              includedIdentities: flightRequirement.aircraftSelection.includedIdentities.map<AircraftIdentityModel>(i => ({
+                                type: i.type,
+                                entityId: i.entity.id
+                              })),
+                              excludedIdentities: flightRequirement.aircraftSelection.excludedIdentities.map<AircraftIdentityModel>(i => ({
+                                type: i.type,
+                                entityId: i.entity.id
+                              }))
+                            },
+                            rsx: flightRequirement.rsx,
+                            notes: flightRequirement.notes,
+                            ignored: !flightRequirement.ignored, // The only place to change.
+                            route: flightRequirement.route.map<FlightRequirementLegModel>(l => ({
+                              flightNumber: l.flightNumber.standardFormat,
+                              departureAirportId: l.departureAirport.id,
+                              arrivalAirportId: l.arrivalAirport.id,
+                              blockTime: l.blockTime,
+                              stdLowerBound: l.stdLowerBound.minutes,
+                              stdUpperBound: l.stdUpperBound === undefined ? undefined : l.stdUpperBound.minutes,
+                              originPermission: l.originPermission,
+                              destinationPermission: l.destinationPermission
+                            })),
+                            days: flightRequirement.days.map<DayFlightRequirementModel>((d, index) => ({
+                              aircraftSelection: {
+                                includedIdentities: d.aircraftSelection.includedIdentities.map(i => ({
+                                  type: i.type,
+                                  entityId: i.entity.id
+                                })),
+                                excludedIdentities: d.aircraftSelection.excludedIdentities.map(i => ({
+                                  type: i.type,
+                                  entityId: i.entity.id
+                                }))
+                              },
+                              rsx: d.rsx,
+                              day: index,
+                              notes: d.notes,
+                              route: d.route.map<DayFlightRequirementLegModel>(l => ({
+                                blockTime: l.blockTime,
+                                stdLowerBound: l.stdLowerBound.minutes,
+                                stdUpperBound: l.stdUpperBound === undefined ? undefined : l.stdUpperBound.minutes,
+                                originPermission: l.originPermission,
+                                destinationPermission: l.destinationPermission
+                              }))
+                            }))
+                          },
                           [],
                           flightRequirement.ignored
                             ? flightRequirement.days.map<NewFlightModel>(d => ({
                                 day: d.day,
                                 aircraftRegisterId: d.aircraftSelection.backupAircraftRegister && d.aircraftSelection.backupAircraftRegister.id,
-                                legs: d.route.map<FlightLegModel>(l => ({ std: l.stdLowerBound.minutes }))
+                                legs: d.route.map<FlightLegModel>(l => ({
+                                  std: l.stdLowerBound.minutes
+                                }))
                               }))
                             : []
                         );

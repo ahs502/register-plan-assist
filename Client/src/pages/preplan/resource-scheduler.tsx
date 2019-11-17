@@ -21,6 +21,7 @@ import Objectionable from 'src/business/constraints/Objectionable';
 import FlightLeg from 'src/business/flight/FlightLeg';
 import FlightService from 'src/services/FlightService';
 import FlightModal, { useFlightModalState } from 'src/components/preplan/resource-scheduler/FlightModal';
+import FlightLegModel from '@core/models/flight/FlightLegModel';
 
 const useStyles = makeStyles((theme: Theme) => ({
   sideBarBackdrop: {
@@ -119,10 +120,15 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ onObjectionTarg
   const onFlightDragAndDropMemoized = useCallback(async (flight: Flight, deltaStd: number, newAircraftRegister?: PreplanAircraftRegister) => {
     setResourceSchedulerViewModel(resourceSchedulerViewModel => ({ ...resourceSchedulerViewModel, loading: true }));
     try {
-      const newPreplanModel = await FlightService.edit(
-        preplan.id,
-        flight.extractModel({ aircraftRegisterId: newAircraftRegister ? newAircraftRegister.id : undefined, legs: flight.legs.map(l => ({ std: l.std.minutes + deltaStd })) })
-      );
+      const newPreplanModel = await FlightService.edit(preplan.id, {
+        id: flight.id,
+        flightRequirementId: flight.flightRequirement.id,
+        day: flight.day,
+        aircraftRegisterId: newAircraftRegister ? newAircraftRegister.id : undefined,
+        legs: flight.legs.map<FlightLegModel>(l => ({
+          std: l.std.minutes + deltaStd
+        }))
+      });
       reloadPreplan(newPreplanModel);
     } catch (reason) {
       snackbar.enqueueSnackbar(String(reason), { variant: 'error' });

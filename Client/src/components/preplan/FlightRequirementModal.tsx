@@ -7,9 +7,8 @@ import FlightRequirement from 'src/business/flight-requirement/FlightRequirement
 import Weekday, { Weekdays } from '@core/types/Weekday';
 import AutoComplete from 'src/components/AutoComplete';
 import MultiSelect from 'src/components/MultiSelect';
-import MasterData, { Stc } from '@core/master-data';
-import Rsx, { Rsxes } from '@core/types/Rsx';
-import Id from '@core/types/Id';
+import MasterData from '@core/master-data';
+import { Rsxes } from '@core/types/Rsx';
 import AircraftIdentityType from '@core/types/AircraftIdentityType';
 import { PreplanContext, ReloadPreplanContext } from 'src/pages/preplan';
 import NewFlightRequirementModel from '@core/models/flight-requirement/NewFlightRequirementModel';
@@ -25,6 +24,7 @@ import FlightRequirementService from 'src/services/FlightRequirementService';
 import DayFlightRequirementLegModel from '@core/models/flight-requirement/DayFlightRequirementLegModel';
 import { formFields } from 'src/utils/FormField';
 import RefiningTextField from 'src/components/RefiningTextField';
+import { ViewState, AircraftIdentityOptionViewState, RouteLegViewState, DayTabViewState, LegViewState } from 'src/components/preplan/FlightRequirementModal.types';
 
 const useStyles = makeStyles((theme: Theme) => ({
   dayTab: {
@@ -43,46 +43,6 @@ const useStyles = makeStyles((theme: Theme) => ({
     height: 48
   }
 }));
-
-interface ViewState {
-  label: string;
-  category: string;
-  stc: Stc;
-  tabIndex: 'ALL' | Weekday;
-  legIndex: number;
-  default: TabViewState;
-  route: RouteLegViewState[];
-  days: DayTabViewState[];
-}
-interface TabViewState {
-  rsx: Rsx;
-  notes: string;
-  allowedAircraftIdentities: readonly AircraftIdentityOptionViewState[];
-  forbiddenAircraftIdentities: readonly AircraftIdentityOptionViewState[];
-  legs: LegViewState[];
-}
-interface DayTabViewState extends TabViewState {
-  selected: boolean;
-}
-interface RouteLegViewState {
-  originalIndex?: number;
-  flightNumber: string;
-  departureAirport: string;
-  arrivalAirport: string;
-}
-interface LegViewState {
-  blockTime: string;
-  stdLowerBound: string;
-  stdUpperBound: string;
-  originPermission: boolean;
-  destinationPermission: boolean;
-}
-interface AircraftIdentityOptionViewState {
-  id: Id;
-  name: string;
-  type: AircraftIdentityType;
-  entityId: Id;
-}
 
 export interface FlightRequirementModalState {
   flightRequirement?: FlightRequirement;

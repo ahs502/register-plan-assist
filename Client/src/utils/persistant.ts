@@ -61,7 +61,7 @@ function get<T extends keyof Persistant>(cache: Persistant, status: PersistantSt
 }
 function set<T extends keyof Persistant>(cache: Persistant, status: PersistantStatus, key: T, value: Persistant[T] | undefined): void {
   cache[key] = value;
-  (status[key] = value === undefined) ? localStorage.removeItem(key) : localStorage.setItem(key, JSON.stringify(value));
+  (status[key] = value !== undefined) ? localStorage.setItem(key, JSON.stringify(value)) : localStorage.removeItem(key);
 }
 
 export default persistant;

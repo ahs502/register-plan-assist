@@ -10,7 +10,7 @@
   "editor.formatOnSave": true,
   "editor.formatOnSaveTimeout": 3000,
   "typescript.preferences.importModuleSpecifier": "non-relative",
-  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.tsdk": "Core/node_modules/typescript/lib",
   "telemetry.enableTelemetry": false,
   "search.exclude": {
     "**/node_modules": true,

@@ -1,18 +1,16 @@
-import ModelConvertable, { getOverridedObject, getOverrided, getOverridedArray } from '../ModelConvertable';
 import DayFlightRequirementModel from '@core/models/flight-requirement/DayFlightRequirementModel';
-import PreplanAircraftSelection from '../preplan/PreplanAircraftSelection';
-import { PreplanAircraftRegisters } from '../preplan/PreplanAircraftRegister';
-import DayFlightRequirementLeg from './DayFlightRequirementLeg';
 import Rsx from '@core/types/Rsx';
-import DeepWritablePartial from '@core/types/DeepWritablePartial';
 import Objectionable from 'src/business/constraints/Objectionable';
 import Objection, { ObjectionType } from 'src/business/constraints/Objection';
 import FlightRequirement from 'src/business/flight-requirement/FlightRequirement';
 import Weekday from '@core/types/Weekday';
 import Checker from 'src/business/constraints/Checker';
 import Id from '@core/types/Id';
+import PreplanAircraftSelection from 'src/business/preplan/PreplanAircraftSelection';
+import DayFlightRequirementLeg from 'src/business/flight-requirement/DayFlightRequirementLeg';
+import { PreplanAircraftRegisters } from 'src/business/preplan/PreplanAircraftRegister';
 
-export default class DayFlightRequirement implements ModelConvertable<DayFlightRequirementModel>, Objectionable {
+export default class DayFlightRequirement implements Objectionable {
   readonly derivedId: Id;
   readonly aircraftSelection: PreplanAircraftSelection;
   readonly rsx: Rsx;
@@ -44,16 +42,6 @@ export default class DayFlightRequirement implements ModelConvertable<DayFlightR
       route.push(new DayFlightRequirementLeg(leg, index, dayOffset, flightRequirement, flightRequirement.route[index], this));
       previousStaLowerBound = stdLowerBound + leg.blockTime;
     });
-  }
-
-  extractModel(overrides?: DeepWritablePartial<DayFlightRequirementModel>): DayFlightRequirementModel {
-    return {
-      aircraftSelection: getOverridedObject(this.aircraftSelection, overrides, 'aircraftSelection'),
-      rsx: getOverrided(this.rsx, overrides, 'rsx'),
-      day: getOverrided(this.day, overrides, 'day'),
-      notes: getOverrided(this.notes, overrides, 'notes'),
-      route: getOverridedArray(this.route, overrides, 'route')
-    };
   }
 
   get marker(): string {

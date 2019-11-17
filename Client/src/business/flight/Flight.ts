@@ -1,4 +1,3 @@
-import ModelConvertable, { getOverrided, getOverridedArray } from 'src/business/ModelConvertable';
 import FlightModel from '@core/models/flight/FlightModel';
 import DayFlightRequirement from 'src/business/flight-requirement/DayFlightRequirement';
 import FlightRequirement from 'src/business/flight-requirement/FlightRequirement';
@@ -7,11 +6,10 @@ import Daytime from '@core/types/Daytime';
 import PreplanAircraftRegister, { PreplanAircraftRegisters } from 'src/business/preplan/PreplanAircraftRegister';
 import { Stc } from '@core/master-data';
 import Rsx from '@core/types/Rsx';
-import DeepWritablePartial from '@core/types/DeepWritablePartial';
 import Weekday from '@core/types/Weekday';
 import Id from '@core/types/Id';
 
-export default class Flight implements ModelConvertable<FlightModel> {
+export default class Flight {
   // Original:
   readonly id: Id;
   readonly aircraftRegister?: PreplanAircraftRegister;
@@ -86,16 +84,6 @@ export default class Flight implements ModelConvertable<FlightModel> {
     }));
     this.knownAircraftRegister = !!this.aircraftRegister && !this.aircraftRegister.dummy;
     this.icons = [];
-  }
-
-  extractModel(overrides?: DeepWritablePartial<FlightModel>): FlightModel {
-    return {
-      id: getOverrided(this.id, overrides, 'id'),
-      flightRequirementId: getOverrided(this.flightRequirement.id, overrides, 'flightRequirementId'),
-      day: getOverrided(this.day, overrides, 'day'),
-      aircraftRegisterId: getOverrided(this.aircraftRegister === undefined ? undefined : this.aircraftRegister.id, overrides, 'aircraftRegisterId'),
-      legs: getOverridedArray(this.legs, overrides, 'legs')
-    };
   }
 
   startDateTime(startDate: Date): Date {

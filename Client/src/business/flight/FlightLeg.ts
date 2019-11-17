@@ -9,15 +9,13 @@ import Rsx from '@core/types/Rsx';
 import Flight from 'src/business/flight/Flight';
 import Objection, { ObjectionType } from 'src/business/constraints/Objection';
 import FlightLegModel from '@core/models/flight/FlightLegModel';
-import DeepWritablePartial from '@core/types/DeepWritablePartial';
-import ModelConvertable, { getOverrided } from 'src/business/ModelConvertable';
 import Weekday from '@core/types/Weekday';
 import Objectionable from 'src/business/constraints/Objectionable';
 import Checker from 'src/business/constraints/Checker';
 import FlightNumber from '@core/types/FlightNumber';
 import Id from '@core/types/Id';
 
-export default class FlightLeg implements ModelConvertable<FlightLegModel>, Objectionable {
+export default class FlightLeg implements Objectionable {
   // Original:
   readonly std: Daytime;
 
@@ -99,12 +97,6 @@ export default class FlightLeg implements ModelConvertable<FlightLegModel>, Obje
     this.weekSta = this.day * 24 * 60 + this.actualSta.minutes;
 
     this.objectionStatusDependencies = [this.flightRequirement, this.dayFlightRequirement];
-  }
-
-  extractModel(overrides?: DeepWritablePartial<FlightLegModel>): FlightLegModel {
-    return {
-      std: getOverrided(this.std.minutes, overrides, 'std')
-    };
   }
 
   get marker(): string {

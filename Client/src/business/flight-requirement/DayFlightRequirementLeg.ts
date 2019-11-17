@@ -1,13 +1,11 @@
-import ModelConvertable, { getOverrided } from 'src/business/ModelConvertable';
 import Daytime from '@core/types/Daytime';
 import DayFlightRequirementLegModel from '@core/models/flight-requirement/DayFlightRequirementLegModel';
-import DeepWritablePartial from '@core/types/DeepWritablePartial';
 import FlightRequirement from 'src/business/flight-requirement/FlightRequirement';
 import DayFlightRequirement from 'src/business/flight-requirement/DayFlightRequirement';
 import Id from '@core/types/Id';
 import FlightRequirementLeg from 'src/business/flight-requirement/FlightRequirementLeg';
 
-export default class DayFlightRequirementLeg implements ModelConvertable<DayFlightRequirementLegModel> {
+export default class DayFlightRequirementLeg {
   readonly derivedId: Id;
   readonly blockTime: number;
   readonly stdLowerBound: Daytime;
@@ -37,15 +35,5 @@ export default class DayFlightRequirementLeg implements ModelConvertable<DayFlig
     this.actualStdUpperBound = new Daytime(actualStdUpperBoundMinutes);
     this.originPermission = raw.originPermission;
     this.destinationPermission = raw.destinationPermission;
-  }
-
-  extractModel(overrides?: DeepWritablePartial<DayFlightRequirementLegModel>): DayFlightRequirementLegModel {
-    return {
-      blockTime: getOverrided(this.blockTime, overrides, 'blockTime'),
-      stdLowerBound: getOverrided(this.stdLowerBound.minutes, overrides, 'stdLowerBound'),
-      stdUpperBound: getOverrided(this.stdUpperBound === undefined ? undefined : this.stdUpperBound.minutes, overrides, 'stdUpperBound'),
-      originPermission: getOverrided(this.originPermission, overrides, 'originPermission'),
-      destinationPermission: getOverrided(this.destinationPermission, overrides, 'destinationPermission')
-    };
   }
 }

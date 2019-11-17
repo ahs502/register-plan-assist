@@ -4,6 +4,9 @@ import Daytime from '@core/types/Daytime';
 import FlightNumber from '@core/types/FlightNumber';
 
 export default abstract class FormField<BusinessModelValue = any, ModelValue = BusinessModelValue> {
+  check(viewValue: string): boolean {
+    return true;
+  }
   refine(viewValue: string): string {
     return viewValue;
   }
@@ -28,6 +31,10 @@ class LabelFormField extends FormField<string> {
 }
 
 class UtcDateFormField extends FormField<Date, string> {
+  check(viewValue: string): boolean {
+    const utcDate = Date.parseUtc(viewValue);
+    return utcDate.isValid();
+  }
   refine(viewValue: string): string {
     const utcDate = Date.parseUtc(viewValue);
     return utcDate.isValid() ? utcDate.format('d') : viewValue;
@@ -43,6 +50,10 @@ class UtcDateFormField extends FormField<Date, string> {
 }
 
 class DaytimeFormField extends FormField<Daytime | number, number> {
+  check(viewValue: string): boolean {
+    const daytime = new Daytime(viewValue);
+    return daytime.isValid();
+  }
   refine(viewValue: string): string {
     const daytime = new Daytime(viewValue);
     return daytime.isValid() ? daytime.toString('HHmm') : viewValue;
@@ -58,6 +69,10 @@ class DaytimeFormField extends FormField<Daytime | number, number> {
 }
 
 class FlightNumberFormField extends FormField<FlightNumber, string> {
+  check(viewValue: string): boolean {
+    const flightNumber = new FlightNumber(viewValue);
+    return flightNumber.isValid;
+  }
   refine(viewValue: string): string {
     const flightNumber = new FlightNumber(viewValue);
     return flightNumber.isValid ? flightNumber.standardFormat : viewValue;
@@ -77,6 +92,10 @@ class MasterDataFormField<Item extends MasterDataItem> extends FormField<Item, I
     super();
   }
 
+  check(viewValue: string): boolean {
+    const item = MasterData.all[this.masterDataItemsKey].name[viewValue.toUpperCase()];
+    return !!item;
+  }
   refine(viewValue: string): string {
     const item = MasterData.all[this.masterDataItemsKey].name[viewValue.toUpperCase()];
     return item ? item.name : viewValue;

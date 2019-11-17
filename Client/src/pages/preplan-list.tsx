@@ -16,6 +16,8 @@ import ClonePreplanModal, { useClonePreplanModalState } from 'src/components/pre
 import EditPreplanModal, { useEditPreplanModalState } from 'src/components/preplan-list/EditPreplanModal';
 import RemovePreplanModal, { useRemovePreplanModalState } from 'src/components/preplan-list/RemovePreplanModal';
 import { useHistory } from 'react-router-dom';
+import { useThrowApplicationError } from 'src/pages/error';
+import MasterData from '@core/master-data';
 
 const waitingPaperSize = 250;
 const useStyles = makeStyles((theme: Theme) => ({
@@ -81,7 +83,6 @@ const PreplanListPage: FC = () => {
   const [tab, setTab] = useState<'USER' | 'PUBLIC'>('USER');
   const [preplanLoading, setPrePlanLoading] = useState(false);
   const [preplanPublishSwitchLoadingStatus, setPreplanPublishSwitchLoadingStatus] = useState<PreplanPublishSwitchLoadingStatus>({});
-  const [message, setMessage] = useState('');
   const [query, setQuery] = useState<readonly string[]>([]);
 
   const [newPreplanModalState, openNewPreplanModal, closeNewPreplanModal] = useNewPreplanModalState();
@@ -90,21 +91,22 @@ const PreplanListPage: FC = () => {
   const [removePreplanModalState, openRemovePreplanModal, closeRemovePreplanModal] = useRemovePreplanModalState();
 
   const { enqueueSnackbar } = useSnackbar();
+  const throwApplicationError = useThrowApplicationError();
 
   useEffect(() => {
     setPrePlanLoading(true);
-    PreplanService.getAllHeaders().then(
-      preplanHeaderModels => {
+    PreplanService.getAllHeaders()
+      .then(preplanHeaderModels => {
         const preplanHeaders = preplanHeaderModels.map(p => new PreplanHeader(p));
         setPreplanHeaders(preplanHeaders);
-        setPrePlanLoading(false);
-      },
-      reason => setMessage(String(reason))
-    );
+      }, throwApplicationError.withTitle('Unable to fetch the list of preplans.'))
+      .then(() => setPrePlanLoading(false));
   }, []);
 
   const history = useHistory();
   const classes = useStyles();
+
+  if (!MasterData.initialized) return <Fragment />;
 
   const filteredPreplanHeaders = filterOnProperties(preplanHeaders, query, 'name');
 
@@ -219,8 +221,8 @@ const PreplanListPage: FC = () => {
               {preplanLoading ? (
                 <CircularProgress size={24} className={classes.progress} />
               ) : (
-                <Typography align="center" classes={{ body1: classes.waitingPaperMessage }}>
-                  {message ? message : 'No preplans'}
+                <Typography align="center" classes={{ root: classes.waitingPaperMessage }}>
+                  No preplans
                 </Typography>
               )}
             </Paper>

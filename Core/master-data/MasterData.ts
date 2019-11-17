@@ -80,7 +80,13 @@ export default class MasterData {
       Constraints.parse(constraintTemplates, airports, aircraftRegisters, aircraftTypes, aircraftRegisterGroups, seasonTypes, raw.constraints) || MasterData.all.constraints;
 
     MasterData.all = new MasterData(aircraftTypes, aircraftRegisters, airports, seasonTypes, seasons, stcs, aircraftRegisterGroups, constraintTemplates, constraints);
+    MasterData.initialized = true;
   }
+
+  /**
+   * Indicates whether MasterData.recieve() has been called or not.
+   */
+  static initialized: boolean = false;
 
   /**
    * The singleton object containing all master data collections data.

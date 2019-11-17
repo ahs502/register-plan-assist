@@ -2,18 +2,28 @@ import UserModel from '@core/models/UserModel';
 import UserSettingsModel from '@core/models/authentication/UserSettingsModel';
 
 export interface Persistant {
+  /** The provided code from ADFS server when redirecting from the login page. */
   oauthCode?: string;
+
+  /** The provided refresh token for this login. */
   refreshToken?: string;
+
+  /** The current user. */
   user?: UserModel;
+
+  /** The current user settings. */
   userSettings?: UserSettingsModel;
+
+  /** The content of Authentication header for restricted requests to /api provided by the server. */
   encodedAuthenticationHeader?: string;
 }
+
 type PersistantStatus = { [key in keyof Persistant]?: boolean };
 
 /**
- * The standard way to access localStorage in this application.
+ * The *only standard* way to access **localStorage** in this application.
  *
- * The supported actions are:
+ * The supported actions for any valid `key` are:
  *
  * + **`persistant.key`** in order to read `key` from `localStorage` _(returns `undefined` for non existing `key`s)_,
  * + **`persistant.key = value`** in order to write `value` for `key` in `localStorage`,
@@ -51,7 +61,7 @@ function get<T extends keyof Persistant>(cache: Persistant, status: PersistantSt
 }
 function set<T extends keyof Persistant>(cache: Persistant, status: PersistantStatus, key: T, value: Persistant[T] | undefined): void {
   cache[key] = value;
-  (status[key] = value === undefined) ? localStorage.removeItem(key) : localStorage.setItem(key, JSON.stringify(value));
+  (status[key] = value !== undefined) ? localStorage.setItem(key, JSON.stringify(value)) : localStorage.removeItem(key);
 }
 
 export default persistant;

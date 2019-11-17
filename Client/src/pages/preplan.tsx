@@ -12,6 +12,8 @@ import ObjectionModal, { useObjectionModalState } from 'src/components/preplan/O
 import FlightRequirementModal, { useFlightRequirementModalState } from 'src/components/preplan/FlightRequirementModal';
 import RemoveFlightRequirementModal, { useRemoveFlightRequirementModalState } from 'src/components/preplan/RemoveFlightRequirementModal';
 import PreplanModel from '@core/models/preplan/PreplanModel';
+import { useThrowApplicationError } from 'src/pages/error';
+import MasterData from '@core/master-data';
 
 const useStyles = makeStyles((theme: Theme) => ({}));
 
@@ -28,17 +30,14 @@ const PreplanPage: FC = () => {
   const navBarToolsRef = useRef<HTMLDivElement>(null);
 
   const routeMatch = useRouteMatch<{ id: string }>()!;
+  const throwApplicationError = useThrowApplicationError();
   const classes = useStyles();
 
   useEffect(() => {
-    PreplanService.get(routeMatch.params.id).then(
-      preplanModel => setPreplan(new Preplan(preplanModel)),
-      reason => {
-        console.error(reason);
-        // history.push('/preplan-list');
-      }
-    );
+    PreplanService.get(routeMatch.params.id).then(preplanModel => setPreplan(new Preplan(preplanModel)), throwApplicationError.withTitle('Unable to load the preplan.'));
   }, [routeMatch.params.id]);
+
+  if (!MasterData.initialized) return <Fragment />;
 
   const resourceSchedulerPageSelected = window.location.href.startsWith(`${window.location.origin}/#${routeMatch.url}/resource-scheduler`);
   const flightRequirementListPageSelected = window.location.href.startsWith(`${window.location.origin}/#${routeMatch.url}/flight-requirement-list`);

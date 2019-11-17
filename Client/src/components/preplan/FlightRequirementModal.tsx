@@ -21,7 +21,6 @@ import AircraftIdentityModel from '@core/models/AircraftIdentityModel';
 import FlightRequirementLegModel from '@core/models/flight-requirement/FlightRequirementLegModel';
 import DayFlightRequirementModel from '@core/models/flight-requirement/DayFlightRequirementModel';
 import Flight from 'src/business/flight/Flight';
-import DeepWritablePartial from '@core/types/DeepWritablePartial';
 import FlightRequirementService from 'src/services/FlightRequirementService';
 import DayFlightRequirementLegModel from '@core/models/flight-requirement/DayFlightRequirementLegModel';
 import { formFields } from 'src/utils/FormField';
@@ -336,15 +335,17 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
 
             const flightModels: FlightModel[] = flights
               .filter(f => newFlightRequirementModel.days.some(d => d.day === f.day))
-              .map(f =>
-                f.extractModel({
-                  legs: newFlightRequirementModel.days
-                    .find(d => d.day === f.day)!
-                    .route.map<DeepWritablePartial<FlightLegModel>>((l, index) => ({
-                      std: viewState.route[index].originalIndex === undefined ? l.stdLowerBound : f.legs[viewState.route[index].originalIndex!].std.minutes
-                    }))
-                })
-              );
+              .map<FlightModel>(f => ({
+                id: f.id,
+                flightRequirementId: f.flightRequirement.id,
+                day: f.day,
+                aircraftRegisterId: f.aircraftRegister === undefined ? undefined : f.aircraftRegister.id,
+                legs: newFlightRequirementModel.days
+                  .find(d => d.day === f.day)!
+                  .route.map<FlightLegModel>((l, index) => ({
+                    std: viewState.route[index].originalIndex === undefined ? l.stdLowerBound : f.legs[viewState.route[index].originalIndex!].std.minutes
+                  }))
+              }));
 
             const newPreplanModel = flightRequirement
               ? await FlightRequirementService.edit(preplan.id, { id: flightRequirement.id, ...newFlightRequirementModel }, flightModels, newFlightModels)

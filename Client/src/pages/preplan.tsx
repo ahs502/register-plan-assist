@@ -11,6 +11,7 @@ import Preplan from 'src/business/preplan/Preplan';
 import ObjectionModal, { useObjectionModalState } from 'src/components/preplan/ObjectionModal';
 import FlightRequirementModal, { useFlightRequirementModalState } from 'src/components/preplan/FlightRequirementModal';
 import RemoveFlightRequirementModal, { useRemoveFlightRequirementModalState } from 'src/components/preplan/RemoveFlightRequirementModal';
+import FlightModal, { useFlightModalState } from 'src/components/preplan/FlightModal';
 import PreplanModel from '@core/models/preplan/PreplanModel';
 import { useThrowApplicationError } from 'src/pages/error';
 import MasterData from '@core/master-data';
@@ -23,9 +24,11 @@ export const ReloadPreplanContext = createContext<(newPreplanModel?: PreplanMode
 
 const PreplanPage: FC = () => {
   const [preplan, setPreplan] = useState<Preplan | null>(null);
+
   const [objectionModalState, openObjectionModal, closeObjectionModal] = useObjectionModalState();
   const [flightRequirementModalState, openFlightRequirementModal, closeFlightRequirementModal] = useFlightRequirementModalState();
   const [removeFlightRequirementModalState, openRemoveFlightRequirementModal, closeRemoveFlightRequirementModal] = useRemoveFlightRequirementModalState();
+  const [flightModalState, openFlightModal, closeFlightModal] = useFlightModalState();
 
   const navBarToolsRef = useRef<HTMLDivElement>(null);
 
@@ -111,6 +114,7 @@ const PreplanPage: FC = () => {
                       onObjectionTargetClick={target => openObjectionModal({ target })}
                       onEditFlightRequirement={flightRequirement => openFlightRequirementModal({ flightRequirement })}
                       onEditDayFlightRequirement={({ flightRequirement, day }) => openFlightRequirementModal({ flightRequirement, day })}
+                      onEditFlight={flight => openFlightModal({ flight })}
                     />
                   )}
                 />
@@ -129,9 +133,15 @@ const PreplanPage: FC = () => {
                 <Redirect to={routeMatch.url} />
               </Switch>
 
+              {/* Modals */}
               <ObjectionModal state={objectionModalState} onClose={closeObjectionModal} />
               <FlightRequirementModal state={flightRequirementModalState} onClose={closeFlightRequirementModal} />
               <RemoveFlightRequirementModal state={removeFlightRequirementModalState} onClose={closeRemoveFlightRequirementModal} />
+              <FlightModal
+                state={flightModalState}
+                onClose={closeFlightModal}
+                onOpenFlightRequirementModal={(flightRequirement, day) => openFlightRequirementModal({ flightRequirement, day })}
+              />
             </ReloadPreplanContext.Provider>
           </PreplanContext.Provider>
         </NavBarToolsContainerContext.Provider>

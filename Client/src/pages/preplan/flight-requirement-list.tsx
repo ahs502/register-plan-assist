@@ -46,13 +46,13 @@ const useStyles = makeStyles((theme: Theme) => ({
     borderBottom: '1px solid ',
     borderBottomColor: theme.palette.grey[300]
   },
-  STDStyle: {
+  stdStyle: {
     '& div:not(last-child)': {
       borderBottom: '1px solid ',
       borderBottomColor: theme.palette.grey[300]
     }
   },
-  STDpadding: {
+  stdPadding: {
     padding: theme.spacing(0)
   },
   divContent: {

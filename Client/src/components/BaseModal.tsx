@@ -33,18 +33,20 @@ const useStyles = makeStyles((theme: Theme) => ({
 export interface ModalAction {
   title: string;
   action?(): void | Promise<void>;
+  invisible?: boolean;
+  disable?: boolean;
 }
 
 export interface BaseModalProps<ModalState extends any> extends Omit<DraggableDialogProps, 'open'> {
   state: [boolean, ModalState];
-  complexTitle?: ReactElement;
+  complexTitle?: ReactElement | undefined | null | false;
   cancelable?: boolean;
   onClose(): void | Promise<void>;
   actions?: ModalAction[];
   // discardingConfirmation?: boolean;
 }
 
-const BaseModal: FC<Omit<BaseModalProps<any>, 'state'> & { open: boolean }> = ({ children, open, title, complexTitle, cancelable, onClose, actions, ...others }) => {
+const BaseModal: FC<Omit<BaseModalProps<any>, 'state'> & { open: boolean }> = ({ children, open, title, complexTitle, cancelable, onClose, actions: modalActions, ...others }) => {
   const [{ loading, errorMessage }, setViewModel] = useState<{ loading: boolean; errorMessage: string }>({ loading: false, errorMessage: '' });
 
   useEffect(() => {
@@ -77,17 +79,32 @@ const BaseModal: FC<Omit<BaseModalProps<any>, 'state'> & { open: boolean }> = ({
           </Paper>
         )}
       </DialogContent>
-      {actions && (
+      {modalActions && (
         <DialogActions>
-          {actions.map((action, index) => (
-            <Button key={index} onClick={handleLoader(action.action || onClose)} disabled={loading} color="primary">
-              {action.title}
-            </Button>
-          ))}
+          {modalActions
+            .filter(action => !action.invisible)
+            .map((modalAction, index) => (
+              <Button key={index} color="primary" disabled={modalAction.disable || loading} onClick={handleLoader(fullAction(modalAction))}>
+                {modalAction.title}
+              </Button>
+            ))}
         </DialogActions>
       )}
     </DraggableDialog>
   );
+
+  function fullAction(modalAction: ModalAction): () => Promise<void> {
+    return async () => {
+      if (!modalAction.action) return onClose();
+      try {
+        await modalAction.action();
+        return onClose();
+      } catch (reason) {
+        console.error(reason);
+        // No need to close the modal when some exception occurs in the action.
+      }
+    };
+  }
 
   function handleLoader(action: () => void | Promise<void>): () => void {
     return () => {
@@ -98,7 +115,10 @@ const BaseModal: FC<Omit<BaseModalProps<any>, 'state'> & { open: boolean }> = ({
         return;
       }
       setViewModel({ loading: true, errorMessage: '' });
-      result.then(() => setViewModel({ loading: false, errorMessage: '' }), reason => setViewModel({ loading: false, errorMessage: String(reason) }));
+      result.then(
+        () => setViewModel({ loading: false, errorMessage: '' }),
+        reason => setViewModel({ loading: false, errorMessage: String(reason) })
+      );
     };
   }
 };
@@ -114,13 +134,36 @@ export function useModalViewState<ModalViewState>(
   open: boolean,
   defaultViewState: ModalViewState,
   viewStateProvider?: (previousViewState: ModalViewState) => ModalViewState | false | undefined | null
-): [ModalViewState, Dispatch<SetStateAction<ModalViewState>>] {
-  const viewStateModifier = useState<ModalViewState>(defaultViewState);
-  const [viewState, setViewState] = viewStateModifier;
+): [ModalViewState, Dispatch<SetStateAction<ModalViewState>>, boolean] {
+  interface ViewStateAndRender {
+    viewState: ModalViewState;
+    render: boolean;
+  }
+  const [{ viewState, render }, setViewStateAndRender] = useState<ViewStateAndRender>({
+    viewState: defaultViewState,
+    render: false
+  });
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      setViewStateAndRender({
+        viewState,
+        render: false
+      });
+      return;
+    }
     const newViewState = viewStateProvider ? viewStateProvider(viewState) || defaultViewState : defaultViewState;
-    setViewState(newViewState);
+    setViewStateAndRender({
+      viewState: newViewState,
+      render: true
+    });
   }, [open]);
-  return viewStateModifier;
+  return [
+    viewState,
+    setViewStateAction =>
+      setViewStateAndRender({
+        viewState: typeof setViewStateAction === 'function' ? (setViewStateAction as (previousViewState: ModalViewState) => ModalViewState)(viewState) : setViewStateAction,
+        render
+      }),
+    render
+  ];
 }

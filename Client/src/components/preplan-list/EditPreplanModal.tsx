@@ -25,7 +25,7 @@ export interface EditPreplanModalProps extends BaseModalProps<EditPreplanModalSt
 }
 
 const EditPreplanModal: FC<EditPreplanModalProps> = ({ state: [open, { preplanHeader }], onApply, ...others }) => {
-  const [viewState, setViewState] = useModalViewState<ViewModel>(
+  const [viewState, setViewState, render] = useModalViewState<ViewModel>(
     open,
     {
       name: '',

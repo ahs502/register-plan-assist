@@ -25,7 +25,7 @@ export interface ClonePreplanModalProps extends BaseModalProps<ClonePreplanModal
 }
 
 const ClonePreplanModal: FC<ClonePreplanModalProps> = ({ state: [open, { preplanHeader }], onClone, ...others }) => {
-  const [viewState, setViewState] = useModalViewState<ViewState>(
+  const [viewState, setViewState, render] = useModalViewState<ViewState>(
     open,
     {
       name: '',

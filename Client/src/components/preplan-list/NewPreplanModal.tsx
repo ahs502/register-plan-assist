@@ -21,7 +21,7 @@ export interface NewPreplanModalProps extends BaseModalProps<NewPreplanModalStat
 }
 
 const NewPreplanModal: FC<NewPreplanModalProps> = ({ state: [open], onCreate, ...others }) => {
-  const [viewState, setViewState] = useModalViewState<ViewState>(open, {
+  const [viewState, setViewState, render] = useModalViewState<ViewState>(open, {
     name: '',
     startDate: '',
     endDate: ''

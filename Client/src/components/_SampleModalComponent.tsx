@@ -17,7 +17,7 @@ export interface SampleModalProps extends BaseModalProps<SampleModalState> {
 }
 
 const SampleModal: FC<SampleModalProps> = ({ state: [open, { modalStateProperty }], onSomeAction, onSomeAsyncAction, ...others }) => {
-  const [viewState, setViewState] = useModalViewState<{ someViewStateProperty: number }>(
+  const [viewState, setViewState, render] = useModalViewState<{ someViewStateProperty: number }>(
     open,
     {
       someViewStateProperty: 10 // The default view model.
@@ -56,9 +56,9 @@ const SampleModal: FC<SampleModalProps> = ({ state: [open, { modalStateProperty 
     >
       The modal body contents go here...
       <input value={viewState.someViewStateProperty.toString()} onChange={e => setViewState({ someViewStateProperty: Number(e.target.value) })} />
-      {open && (
+      {render && (
         <div>
-          Render state dependent content {modalStateProperty} conditionally by <code>open</code> trueness.
+          Render state dependent content {modalStateProperty} conditionally by <code>render</code> trueness.
         </div>
       )}
       ...

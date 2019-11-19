@@ -94,7 +94,7 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
     [preplan]
   );
 
-  const [viewState, setViewState] = useModalViewState<ViewState>(
+  const [viewState, setViewState, render] = useModalViewState<ViewState>(
     open,
     {
       label: '',

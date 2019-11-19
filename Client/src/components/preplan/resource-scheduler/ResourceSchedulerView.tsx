@@ -242,8 +242,7 @@ interface FlightContextMenuModel {
 export interface ResourceSchedulerViewProps {
   selectedFlight?: Flight;
   onSelectFlight(flight?: Flight): void;
-  onOpenFlightModal(flight: Flight): void;
-  onOpenFlightLegModal(flightLeg: FlightLeg): void;
+  onEditFlight(flight: Flight): void;
   onFlightDragAndDrop(flight: Flight, deltaStd: number, newAircraftRegister?: PreplanAircraftRegister): void;
   onFlightMouseHover(flight: Flight): void;
   onFreeSpaceMouseHover(aircraftRegister: PreplanAircraftRegister, previousFlight?: Flight, nextFlight?: Flight): void;
@@ -251,7 +250,7 @@ export interface ResourceSchedulerViewProps {
 }
 
 const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = memo(
-  ({ selectedFlight, onSelectFlight, onOpenFlightModal, onOpenFlightLegModal, onFlightDragAndDrop, onFlightMouseHover, onFreeSpaceMouseHover, onNowhereMouseHover }) => {
+  ({ selectedFlight, onSelectFlight, onEditFlight, onFlightDragAndDrop, onFlightMouseHover, onFreeSpaceMouseHover, onNowhereMouseHover }) => {
     const preplan = useContext(PreplanContext);
     const startDate = preplan.startDate.getDatePart().addDays((preplan.startDate.getUTCDay() + 1) % 7);
 
@@ -782,6 +781,17 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = memo(
             <Paper ref={flightContextMenuRef} className={classes.contextMenu}>
               {flightContextMenuModel.open && (
                 <MenuList>
+                  <MenuItem
+                    onClick={() => {
+                      setFlightContextMenuModel({ ...flightContextMenuModel, open: false });
+                      onEditFlight(flightContextMenuModel.flight!);
+                    }}
+                  >
+                    {/* <ListItemIcon>
+                      <span />
+                    </ListItemIcon> */}
+                    <Typography>Edit...</Typography>
+                  </MenuItem>
                   {/* <MenuItem
                     onClick={() => {
                       setFlightContextMenuModel({ ...flightContextMenuModel, open: false });

@@ -2,6 +2,7 @@ import MasterData, { MasterDataItem, AircraftType, Airport } from '@core/master-
 import Id from '@core/types/Id';
 import Daytime from '@core/types/Daytime';
 import FlightNumber from '@core/types/FlightNumber';
+import PreplanAircraftRegister, { PreplanAircraftRegisters } from 'src/business/preplan/PreplanAircraftRegister';
 
 export default abstract class FormField<BusinessModelValue = any, ModelValue = BusinessModelValue> {
   check(viewValue: string): boolean {
@@ -121,6 +122,29 @@ class AirportFormField extends MasterDataFormField<Airport> {
   }
 }
 
+class PreplanAircraftRegisterFormField extends FormField<PreplanAircraftRegister, Id> {
+  constructor(private aircraftRegisters: PreplanAircraftRegisters) {
+    super();
+  }
+
+  check(viewValue: string): boolean {
+    const item = this.aircraftRegisters.name[viewValue.toUpperCase()];
+    return !!item;
+  }
+  refine(viewValue: string): string {
+    const item = this.aircraftRegisters.name[viewValue.toUpperCase()];
+    return item ? item.name : viewValue;
+  }
+  parse(viewValue: string): Id {
+    const item = this.aircraftRegisters.name[viewValue.toUpperCase()];
+    return item.id;
+  }
+  format(modelValue: PreplanAircraftRegister): string {
+    const item = modelValue;
+    return item.name;
+  }
+}
+
 export const formFields = <const>{
   name: new NameFormField(),
   label: new LabelFormField(),
@@ -130,5 +154,9 @@ export const formFields = <const>{
 
   // Master data input fields:
   aircraftType: new AircraftTypeFormField(),
-  airport: new AirportFormField()
+  airport: new AirportFormField(),
+
+  preplanAircraftRegister(aircraftRegisters: PreplanAircraftRegisters): PreplanAircraftRegisterFormField {
+    return new PreplanAircraftRegisterFormField(aircraftRegisters);
+  }
 };

@@ -42,7 +42,7 @@ const PreplanPage: FC = () => {
 
   if (!MasterData.initialized) return <Fragment />;
 
-  const resourceSchedulerPageSelected = window.location.href.startsWith(`${window.location.origin}/#${routeMatch.url}/resource-scheduler`);
+  const timelinePageSelected = window.location.href.startsWith(`${window.location.origin}/#${routeMatch.url}/timeline`);
   const flightRequirementListPageSelected = window.location.href.startsWith(`${window.location.origin}/#${routeMatch.url}/flight-requirement-list`);
   const reportsPageSelected = window.location.href.startsWith(`${window.location.origin}/#${routeMatch.url}/reports`);
   const reportsProposalPageSelected = reportsPageSelected && window.location.hash.endsWith('/proposal');
@@ -51,9 +51,9 @@ const PreplanPage: FC = () => {
   return (
     <Fragment>
       <NavBar
-        backLink={resourceSchedulerPageSelected ? '/preplan-list' : reportsProposalPageSelected || reportsConnectionsPageSelected ? `${routeMatch.url}/reports` : routeMatch.url}
+        backLink={timelinePageSelected ? '/preplan-list' : reportsProposalPageSelected || reportsConnectionsPageSelected ? `${routeMatch.url}/reports` : routeMatch.url}
         backTitle={
-          resourceSchedulerPageSelected
+          timelinePageSelected
             ? 'Back to Preplan List'
             : reportsProposalPageSelected || reportsConnectionsPageSelected
             ? `Back to Preplan ${preplan && preplan.name} Reports`

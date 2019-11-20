@@ -3,7 +3,7 @@ import { Theme, Typography } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import Search, { filterOnProperties } from 'src/components/Search';
 import { PreplanContext } from 'src/pages/preplan';
-import SideBarContainer from 'src/components/preplan/resource-scheduler/SideBarContainer';
+import SideBarContainer from 'src/components/preplan/timeline/SideBarContainer';
 import ObjectionStatus from 'src/components/preplan/ObjectionStatus';
 import ObjectionList from 'src/components/preplan/ObjectionList';
 import Objectionable from 'src/business/constraints/Objectionable';

@@ -10,7 +10,7 @@ import AircraftRegisterOptionsStatus from '@core/types/AircraftRegisterOptionsSt
 import DummyAircraftRegisterModel from '@core/models/preplan/DummyAircraftRegisterModel';
 import AircraftRegisterOptionsModel from '@core/models/preplan/AircraftRegisterOptionsModel';
 import { PreplanContext } from 'src/pages/preplan';
-import SideBarContainer from 'src/components/preplan/resource-scheduler/SideBarContainer';
+import SideBarContainer from 'src/components/preplan/timeline/SideBarContainer';
 import { formFields } from 'src/utils/FormField';
 import RefiningTextField from 'src/components/RefiningTextField';
 

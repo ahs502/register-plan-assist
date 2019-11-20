@@ -1,18 +1,18 @@
 import React, { FC, Fragment, useState, useContext, useCallback } from 'react';
 import { Theme, IconButton, Badge, Drawer, Portal, CircularProgress } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
-import { DoneAll as FinilizedIcon, LockOutlined as LockIcon, LockOpenOutlined as LockOpenIcon, Search as SearchIcon, SettingsOutlined as SettingsIcon } from '@material-ui/icons';
+import { DoneAll as FinilizedIcon, Search as SearchIcon, SettingsOutlined as SettingsIcon } from '@material-ui/icons';
 import MahanIcon, { MahanIconType } from 'src/components/MahanIcon';
 import LinkIconButton from 'src/components/LinkIconButton';
 import { NavBarToolsContainerContext, PreplanContext, ReloadPreplanContext } from 'src/pages/preplan';
-import SearchFlightsSideBar from 'src/components/preplan/resource-scheduler/SearchFlightsSideBar';
-import ObjectionsSideBar from 'src/components/preplan/resource-scheduler/ObjectionsSideBar';
-import SelectAircraftRegistersSideBar from 'src/components/preplan/resource-scheduler/SelectAircraftRegistersSideBar';
-import ResourceSchedulerView from 'src/components/preplan/resource-scheduler/ResourceSchedulerView';
+import SearchFlightsSideBar from 'src/components/preplan/timeline/SearchFlightsSideBar';
+import ObjectionsSideBar from 'src/components/preplan/timeline/ObjectionsSideBar';
+import SelectAircraftRegistersSideBar from 'src/components/preplan/timeline/SelectAircraftRegistersSideBar';
+import TimelineView from 'src/components/preplan/timeline/TimelineView';
 import PreplanService from 'src/services/PreplanService';
 import { useSnackbar } from 'notistack';
 import PreplanAircraftRegister from 'src/business/preplan/PreplanAircraftRegister';
-import StatusBar, { StatusBarProps } from 'src/components/preplan/resource-scheduler/StatusBar';
+import StatusBar, { StatusBarProps } from 'src/components/preplan/timeline/StatusBar';
 import Flight from 'src/business/flight/Flight';
 import FlightRequirement from 'src/business/flight-requirement/FlightRequirement';
 import DayFlightRequirement from 'src/business/flight-requirement/DayFlightRequirement';
@@ -58,35 +58,32 @@ interface SideBarState {
   initialSearch?: string;
 }
 
-interface ResourceSchedulerViewState {
+interface TimelineViewState {
   selectedFlight?: Flight;
   loading?: boolean;
 }
 
-export interface ResourceSchedulerPageProps {
+export interface TimelinePageProps {
   onObjectionTargetClick(target: Objectionable): void;
   onEditFlightRequirement(flightRequirement: FlightRequirement): void;
   onEditDayFlightRequirement(dayFlightRequirement: DayFlightRequirement): void;
   onEditFlight(flight: Flight): void;
 }
 
-const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ onObjectionTargetClick, onEditFlightRequirement, onEditDayFlightRequirement, onEditFlight }) => {
+const TimelinePage: FC<TimelinePageProps> = ({ onObjectionTargetClick, onEditFlightRequirement, onEditDayFlightRequirement, onEditFlight }) => {
   const preplan = useContext(PreplanContext);
   const reloadPreplan = useContext(ReloadPreplanContext);
 
   const [sideBarState, setSideBarState] = useState<SideBarState>({ open: false, loading: false, errorMessage: undefined });
-  const [resourceSchedulerViewState, setResourceSchedulerViewState] = useState<ResourceSchedulerViewState>({ loading: false });
+  const [timelineViewState, setTimelineViewState] = useState<TimelineViewState>({ loading: false });
   const [statusBarProps, setStatusBarProps] = useState<StatusBarProps>({});
 
   const snackbar = useSnackbar();
 
-  const onSelectFlightMemoized = useCallback(
-    (flight: Flight) => setResourceSchedulerViewState(resourceSchedulerViewModel => ({ ...resourceSchedulerViewModel, selectedFlight: flight })),
-    []
-  );
+  const onSelectFlightMemoized = useCallback((flight: Flight) => setTimelineViewState(timelineViewModel => ({ ...timelineViewModel, selectedFlight: flight })), []);
   const onEditFlightMemoized = useCallback(onEditFlight, []);
   const onFlightDragAndDropMemoized = useCallback(async (flight: Flight, deltaStd: number, newAircraftRegister?: PreplanAircraftRegister) => {
-    setResourceSchedulerViewState(resourceSchedulerViewModel => ({ ...resourceSchedulerViewModel, loading: true }));
+    setTimelineViewState(timelineViewModel => ({ ...timelineViewModel, loading: true }));
     try {
       const newPreplanModel = await FlightService.edit(preplan.id, {
         id: flight.id,
@@ -101,7 +98,7 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ onObjectionTarg
     } catch (reason) {
       snackbar.enqueueSnackbar(String(reason), { variant: 'error' });
     }
-    setResourceSchedulerViewState(resourceSchedulerViewModel => ({ ...resourceSchedulerViewModel, loading: false }));
+    setTimelineViewState(timelineViewModel => ({ ...timelineViewModel, loading: false }));
   }, []);
   const onFlightMouseHoverMemoized = useCallback((flight: Flight) => setStatusBarProps({ mode: 'FLIGHT', flight }), []);
   const onFreeSpaceMouseHoverMemoized = useCallback(
@@ -117,21 +114,21 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ onObjectionTarg
 
   return (
     <Fragment>
-      {resourceSchedulerViewState.loading && <CircularProgress size={48} className={classes.progress} />}
+      {timelineViewState.loading && <CircularProgress size={48} className={classes.progress} />}
 
       <Portal container={navBarToolsContainer}>
-        <div className={resourceSchedulerViewState.loading ? classes.disable : ''}>
-          <IconButton disabled={resourceSchedulerViewState.loading} color="inherit" title="Finilize Preplan">
+        <div className={timelineViewState.loading ? classes.disable : ''}>
+          <IconButton disabled={timelineViewState.loading} color="inherit" title="Finilize Preplan">
             <FinilizedIcon />
           </IconButton>
-          <LinkIconButton disabled={resourceSchedulerViewState.loading} color="inherit" to={`/preplan/${preplan.id}/flight-requirement-list`} title="Flight Requirments">
+          <LinkIconButton disabled={timelineViewState.loading} color="inherit" to={`/preplan/${preplan.id}/flight-requirement-list`} title="Flight Requirments">
             <MahanIcon type={MahanIconType.FlightIcon} />
           </LinkIconButton>
-          <LinkIconButton disabled={resourceSchedulerViewState.loading} color="inherit" title="Reports" to={`/preplan/${preplan.id}/reports`}>
+          <LinkIconButton disabled={timelineViewState.loading} color="inherit" title="Reports" to={`/preplan/${preplan.id}/reports`}>
             <MahanIcon type={MahanIconType.Chart} />
           </LinkIconButton>
           <IconButton
-            disabled={resourceSchedulerViewState.loading}
+            disabled={timelineViewState.loading}
             color="inherit"
             onClick={() => setSideBarState({ ...sideBarState, sideBar: 'SEARCH_FLIGHTS', open: true })}
             title="Search Flights"
@@ -139,7 +136,7 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ onObjectionTarg
             <SearchIcon />
           </IconButton>
           <IconButton
-            disabled={resourceSchedulerViewState.loading}
+            disabled={timelineViewState.loading}
             color="inherit"
             onClick={() => setSideBarState({ ...sideBarState, sideBar: 'OBJECTIONS', open: true })}
             title="Errors and Warnings"
@@ -149,7 +146,7 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ onObjectionTarg
             </Badge>
           </IconButton>
           <IconButton
-            disabled={resourceSchedulerViewState.loading}
+            disabled={timelineViewState.loading}
             color="inherit"
             onClick={() => setSideBarState({ ...sideBarState, sideBar: 'SELECT_AIRCRAFT_REGISTERS', open: true })}
             title="Select Aircraft Register"
@@ -190,15 +187,15 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ onObjectionTarg
         {sideBarState.sideBar === 'SEARCH_FLIGHTS' && (
           <SearchFlightsSideBar
             initialSearch={sideBarState.initialSearch}
-            onClick={flightLeg => setResourceSchedulerViewState({ ...resourceSchedulerViewState, selectedFlight: flightLeg.flight })}
+            onClick={flightLeg => setTimelineViewState({ ...timelineViewState, selectedFlight: flightLeg.flight })}
           />
         )}
         {sideBarState.sideBar === 'OBJECTIONS' && <ObjectionsSideBar initialSearch={sideBarState.initialSearch} onClick={onObjectionTargetClick} />}
       </Drawer>
 
-      <div className={resourceSchedulerViewState.loading ? classes.disable : ''}>
-        <ResourceSchedulerView
-          selectedFlight={resourceSchedulerViewState.selectedFlight}
+      <div className={timelineViewState.loading ? classes.disable : ''}>
+        <TimelineView
+          selectedFlight={timelineViewState.selectedFlight}
           onSelectFlight={onSelectFlightMemoized}
           onEditFlight={onEditFlightMemoized}
           onFlightDragAndDrop={onFlightDragAndDropMemoized}
@@ -214,4 +211,4 @@ const ResourceSchedulerPage: FC<ResourceSchedulerPageProps> = ({ onObjectionTarg
   );
 };
 
-export default ResourceSchedulerPage;
+export default TimelinePage;

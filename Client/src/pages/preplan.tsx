@@ -3,7 +3,7 @@ import { Theme } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import { Switch, Redirect, Route, useRouteMatch } from 'react-router-dom';
 import NavBar from 'src/components/NavBar';
-import ResourceSchedulerPage from 'src/pages/preplan/resource-scheduler';
+import TimelinePage from 'src/pages/preplan/timeline';
 import FlightRequirementListPage from 'src/pages/preplan/flight-requirement-list';
 import ReportsPage from 'src/pages/preplan/reports';
 import PreplanService from 'src/services/PreplanService';
@@ -105,12 +105,12 @@ const PreplanPage: FC = () => {
               }}
             >
               <Switch>
-                <Redirect exact from={routeMatch.url} to={routeMatch.url + '/resource-scheduler'} />
+                <Redirect exact from={routeMatch.url} to={routeMatch.url + '/timeline'} />
                 <Route
                   exact
-                  path={routeMatch.path + '/resource-scheduler'}
+                  path={routeMatch.path + '/timeline'}
                   render={() => (
-                    <ResourceSchedulerPage
+                    <TimelinePage
                       onObjectionTargetClick={target => openObjectionModal({ target })}
                       onEditFlightRequirement={flightRequirement => openFlightRequirementModal({ flightRequirement })}
                       onEditDayFlightRequirement={({ flightRequirement, day }) => openFlightRequirementModal({ flightRequirement, day })}

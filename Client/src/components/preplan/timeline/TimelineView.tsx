@@ -6,7 +6,7 @@ import Daytime from '@core/types/Daytime';
 import PreplanAircraftRegister, { PreplanAircraftRegisters } from 'src/business/preplan/PreplanAircraftRegister';
 import { DataGroup, DataItem, TimelineOptions, Timeline } from 'vis-timeline';
 import Weekday from '@core/types/Weekday';
-import VisTimeline from 'src/components/preplan/resource-scheduler/VisTimeline';
+import VisTimeline from 'src/components/preplan/timeline/VisTimeline';
 import moment from 'moment';
 import useProperty from 'src/utils/useProperty';
 import { AircraftType } from '@core/master-data';
@@ -239,7 +239,7 @@ interface FlightContextMenuModel {
   flight?: Flight;
 }
 
-export interface ResourceSchedulerViewProps {
+export interface TimelineViewProps {
   selectedFlight?: Flight;
   onSelectFlight(flight?: Flight): void;
   onEditFlight(flight: Flight): void;
@@ -249,7 +249,7 @@ export interface ResourceSchedulerViewProps {
   onNowhereMouseHover(): void;
 }
 
-const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = memo(
+const TimelineView: FC<TimelineViewProps> = memo(
   ({ selectedFlight, onSelectFlight, onEditFlight, onFlightDragAndDrop, onFlightMouseHover, onFreeSpaceMouseHover, onNowhereMouseHover }) => {
     const preplan = useContext(PreplanContext);
     const startDate = preplan.startDate.getDatePart().addDays((preplan.startDate.getUTCDay() + 1) % 7);
@@ -880,4 +880,4 @@ const ResourceSchedulerView: FC<ResourceSchedulerViewProps> = memo(
   }
 );
 
-export default ResourceSchedulerView;
+export default TimelineView;

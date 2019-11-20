@@ -610,18 +610,20 @@ const TimelineView: FC<TimelineViewProps> = memo(
       return groups;
     }, [preplan.aircraftRegisters]);
     const timelineItems = useMemo<DataItem[]>(() => {
-      const items = preplan.flights.map(
-        (f): DataItem => ({
-          id: f.id,
-          start: new Date(startDate.getTime() + (f.day * 24 * 60 + f.start.minutes) * 60 * 1000),
-          end: new Date(startDate.getTime() + (f.day * 24 * 60 + f.end.minutes) * 60 * 1000),
-          group: f.aircraftRegister ? f.aircraftRegister.id : '???',
-          content: f.label,
-          title: itemTooltipTemplate(f),
-          type: 'range',
-          data: f
-        })
-      );
+      const items = preplan.flights
+        .filter(f => ['REAL', 'STB1'].includes(f.rsx))
+        .map(
+          (f): DataItem => ({
+            id: f.id,
+            start: new Date(startDate.getTime() + (f.day * 24 * 60 + f.start.minutes) * 60 * 1000),
+            end: new Date(startDate.getTime() + (f.day * 24 * 60 + f.end.minutes) * 60 * 1000),
+            group: f.aircraftRegister ? f.aircraftRegister.id : '???',
+            content: f.label,
+            title: itemTooltipTemplate(f),
+            type: 'range',
+            data: f
+          })
+        );
 
       timelineGroups.forEach(group => {
         if ((group.id as string).startsWith('T')) {

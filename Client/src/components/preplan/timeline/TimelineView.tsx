@@ -320,7 +320,7 @@ const TimelineView: FC<TimelineViewProps> = memo(
           const flight: Flight = item.data;
           const newAircraftRegister = preplan.aircraftRegisters.id[item.group as any];
           const deltaStd = Math.round((new Date(item.start).getTime() - flight.startDateTime(startDate).getTime()) / (5 * 60 * 1000)) * 5;
-          onFlightDragAndDrop(flight, deltaStd, newAircraftRegister);
+          onFlightDragAndDrop(flight, newAircraftRegister === flight.aircraftRegister ? deltaStd : 0, newAircraftRegister);
           callback(item);
         },
         // onMoveGroup(group, callback) {},

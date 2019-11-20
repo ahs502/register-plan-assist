@@ -13,7 +13,6 @@ import { PreplanAircraftRegisters } from 'src/business/preplan/PreplanAircraftRe
 import FlightService from 'src/services/FlightService';
 import FlightModel from '@core/models/flight/FlightModel';
 import FlightLegModel from '@core/models/flight/FlightLegModel';
-import Preplan from 'src/business/preplan/Preplan';
 
 const useStyles = makeStyles((theme: Theme) => ({}));
 
@@ -127,7 +126,22 @@ const FlightModal: FC<FlightModalProps> = ({ state: [open, { flight }], onOpenFl
               }))
             };
 
-            const newPreplanModel = await FlightService.edit(preplan.id, flightModel);
+            const otherFlightModels: FlightModel[] = preplan.flights
+              .filter(f => f.flightRequirement.id === flight.flightRequirement.id && f.id !== flight.id)
+              .map<FlightModel>(f => ({
+                id: f.id,
+                flightRequirementId: f.flightRequirement.id,
+                day: f.day,
+                aircraftRegisterId:
+                  f.aircraftRegister === undefined
+                    ? undefined
+                    : formFields.preplanAircraftRegister(preplan.aircraftRegisters).parse(formFields.preplanAircraftRegister(preplan.aircraftRegisters).format(f.aircraftRegister)),
+                legs: f.legs.map<FlightLegModel>(l => ({
+                  std: formFields.daytime.parse(formFields.daytime.format(l.std))
+                }))
+              }));
+
+            const newPreplanModel = await FlightService.edit(preplan.id, flightModel, ...otherFlightModels);
             await reloadPreplan(newPreplanModel);
           },
           disable: !validation.ok

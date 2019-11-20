@@ -19,6 +19,8 @@ import DayFlightRequirement from 'src/business/flight-requirement/DayFlightRequi
 import Objectionable from 'src/business/constraints/Objectionable';
 import FlightService from 'src/services/FlightService';
 import FlightLegModel from '@core/models/flight/FlightLegModel';
+import FlightModel from '@core/models/flight/FlightModel';
+import { formFields } from 'src/utils/FormField';
 
 const useStyles = makeStyles((theme: Theme) => ({
   sideBarBackdrop: {
@@ -82,24 +84,45 @@ const TimelinePage: FC<TimelinePageProps> = ({ onObjectionTargetClick, onEditFli
 
   const onSelectFlightMemoized = useCallback((flight: Flight) => setTimelineViewState(timelineViewModel => ({ ...timelineViewModel, selectedFlight: flight })), []);
   const onEditFlightMemoized = useCallback(onEditFlight, []);
-  const onFlightDragAndDropMemoized = useCallback(async (flight: Flight, deltaStd: number, newAircraftRegister?: PreplanAircraftRegister) => {
-    setTimelineViewState(timelineViewModel => ({ ...timelineViewModel, loading: true }));
-    try {
-      const newPreplanModel = await FlightService.edit(preplan.id, {
-        id: flight.id,
-        flightRequirementId: flight.flightRequirement.id,
-        day: flight.day,
-        aircraftRegisterId: newAircraftRegister ? newAircraftRegister.id : undefined,
-        legs: flight.legs.map<FlightLegModel>(l => ({
-          std: l.std.minutes + deltaStd
-        }))
-      });
-      reloadPreplan(newPreplanModel);
-    } catch (reason) {
-      snackbar.enqueueSnackbar(String(reason), { variant: 'error' });
-    }
-    setTimelineViewState(timelineViewModel => ({ ...timelineViewModel, loading: false }));
-  }, []);
+  const onFlightDragAndDropMemoized = useCallback(
+    async (flight: Flight, deltaStd: number, newAircraftRegister?: PreplanAircraftRegister) => {
+      setTimelineViewState(timelineViewModel => ({ ...timelineViewModel, loading: true }));
+      try {
+        const flightModel: FlightModel = {
+          id: flight.id,
+          flightRequirementId: flight.flightRequirement.id,
+          day: flight.day,
+          aircraftRegisterId: newAircraftRegister ? newAircraftRegister.id : undefined,
+          legs: flight.legs.map<FlightLegModel>(l => ({
+            std: l.std.minutes + deltaStd
+          }))
+        };
+
+        const otherFlightModels: FlightModel[] = preplan.flights
+          .filter(f => f.flightRequirement.id === flight.flightRequirement.id && f.id !== flight.id)
+          .map<FlightModel>(f => ({
+            id: f.id,
+            flightRequirementId: f.flightRequirement.id,
+            day: f.day,
+            aircraftRegisterId:
+              f.aircraftRegister === undefined
+                ? undefined
+                : formFields.preplanAircraftRegister(preplan.aircraftRegisters).parse(formFields.preplanAircraftRegister(preplan.aircraftRegisters).format(f.aircraftRegister)),
+            legs: f.legs.map<FlightLegModel>(l => ({
+              std: formFields.daytime.parse(formFields.daytime.format(l.std))
+            }))
+          }));
+
+        const newPreplanModel = await FlightService.edit(preplan.id, flightModel, ...otherFlightModels);
+        await reloadPreplan(newPreplanModel);
+      } catch (reason) {
+        snackbar.enqueueSnackbar(String(reason), { variant: 'error' });
+        await reloadPreplan();
+      }
+      setTimelineViewState(timelineViewModel => ({ ...timelineViewModel, loading: false }));
+    },
+    [preplan]
+  );
   const onFlightMouseHoverMemoized = useCallback((flight: Flight) => setStatusBarProps({ mode: 'FLIGHT', flight }), []);
   const onFreeSpaceMouseHoverMemoized = useCallback(
     (aircraftRegister: PreplanAircraftRegister, previousFlight?: Flight, nextFlight?: Flight) =>

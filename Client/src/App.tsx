@@ -33,34 +33,36 @@ const App: FC = () => {
   const throwApplicationError = useThrowApplicationError();
 
   useEffect(() => {
-    checkUserAuthentication().then(userIsAuthenticated => {
-      // Fetch master data (only if user authentication passes):
-      userIsAuthenticated &&
-        MasterDataService.get(...(Object.keys(MasterData.all) as (keyof MasterDataModel)[]))
-          .then(MasterData.recieve, throwApplicationError.withTitle('Unable to fetch master data.'))
-          .then(() => setInitializing(false));
-    });
+    Promise.resolve()
+      .then(removeQueryStringFromUrl)
+      .then(processUserAuthentication)
+      .then(fetchMasterData)
+      .then(() => setInitializing(false));
 
-    async function checkUserAuthentication(): Promise<boolean> {
-      if (persistant.oauthCode && persistant.refreshToken && persistant.user && persistant.userSettings && persistant.encodedAuthenticationHeader) return true;
-
+    function removeQueryStringFromUrl(): URL {
       const url = new URL(window.location.href);
-
-      const error = url.searchParams.get('error');
-      if (error) {
-        removeQueryFromUrl();
-        throwApplicationError.withTitle('User authentication failed.')(error);
-        return false;
+      const uri = window.location.toString();
+      if (uri.includes('?')) {
+        const clean_uri = uri.substring(0, uri.indexOf('?'));
+        window.history.replaceState({}, document.title, clean_uri);
       }
+      return url;
+    }
 
-      const code = url.searchParams.get('code');
-      if (!code) {
-        const loginUrl = `${config.oauth.serverIssuer}?client_id=${config.oauth.clientId}&redirect_uri=${config.oauth.clientUrl}&response_type=code&lang=${config.oauth.lang}&resource=${config.oauth.resourceName}`;
-        window.location.href = loginUrl;
-        return false;
-      }
+    async function processUserAuthentication(url: URL): Promise<void> {
+      if (isUserAuthenticated()) return;
 
       try {
+        const error = url.searchParams.get('error');
+        if (error) throw error;
+
+        const code = url.searchParams.get('code');
+        if (!code) {
+          const loginUrl = `${config.oauth.serverIssuer}?client_id=${config.oauth.clientId}&redirect_uri=${config.oauth.clientUrl}&response_type=code&lang=${config.oauth.lang}&resource=${config.oauth.resourceName}`;
+          window.location.href = loginUrl;
+          return;
+        }
+
         const response = await fetch('/api/oauth/get-authentication', {
           method: 'POST',
           cache: 'no-cache',
@@ -82,22 +84,24 @@ const App: FC = () => {
         persistant.user = authentication!.user;
         persistant.userSettings = authentication!.userSettings;
         persistant.encodedAuthenticationHeader = encodedAuthenticationHeader;
-
-        removeQueryFromUrl();
-        return true;
       } catch (error) {
-        removeQueryFromUrl();
         throwApplicationError.withTitle('User authentication failed.')(error);
-        return false;
       }
+    }
 
-      function removeQueryFromUrl() {
-        const uri = window.location.toString();
-        if (uri.includes('?')) {
-          const clean_uri = uri.substring(0, uri.indexOf('?'));
-          window.history.replaceState({}, document.title, clean_uri);
-        }
+    async function fetchMasterData(): Promise<void> {
+      if (!isUserAuthenticated()) return;
+
+      try {
+        const masterDataModel = await MasterDataService.get(...(Object.keys(MasterData.all) as (keyof MasterDataModel)[]));
+        MasterData.recieve(masterDataModel);
+      } catch (error) {
+        throwApplicationError.withTitle('Unable to fetch master data.')(error);
       }
+    }
+
+    function isUserAuthenticated(): boolean {
+      return !!persistant.oauthCode && !!persistant.refreshToken && !!persistant.user && !!persistant.userSettings && !!persistant.encodedAuthenticationHeader;
     }
   }, []);
 

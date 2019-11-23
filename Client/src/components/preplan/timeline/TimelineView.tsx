@@ -1,9 +1,9 @@
-import React, { FC, useState, Fragment, useRef, useMemo, memo, useContext } from 'react';
+import React, { FC, useState, Fragment, useRef, useMemo, useContext } from 'react';
 import { Theme, MenuItem, MenuList, ClickAwayListener, Paper, ListItemIcon, Typography, Divider } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import { Check as CheckIcon } from '@material-ui/icons';
 import Daytime from '@core/types/Daytime';
-import PreplanAircraftRegister, { PreplanAircraftRegisters } from 'src/business/preplan/PreplanAircraftRegister';
+import PreplanAircraftRegister from 'src/business/preplan/PreplanAircraftRegister';
 import { DataGroup, DataItem, TimelineOptions, Timeline } from 'vis-timeline';
 import Weekday from '@core/types/Weekday';
 import VisTimeline from 'src/components/preplan/timeline/VisTimeline';
@@ -13,7 +13,6 @@ import { AircraftType } from '@core/master-data';
 import persistant from 'src/utils/persistant';
 import chroma from 'chroma-js';
 import Flight from 'src/business/flight/Flight';
-import FlightLeg from 'src/business/flight/FlightLeg';
 import { PreplanContext } from 'src/pages/preplan';
 
 const useStyles = makeStyles((theme: Theme) => ({
@@ -249,150 +248,157 @@ export interface TimelineViewProps {
   onNowhereMouseHover(): void;
 }
 
-const TimelineView: FC<TimelineViewProps> = memo(
-  ({ selectedFlight, onSelectFlight, onEditFlight, onFlightDragAndDrop, onFlightMouseHover, onFreeSpaceMouseHover, onNowhereMouseHover }) => {
-    const preplan = useContext(PreplanContext);
-    const startDate = preplan.startDate.getDatePart().addDays((preplan.startDate.getUTCDay() + 1) % 7);
+const TimelineView: FC<TimelineViewProps> = ({
+  selectedFlight,
+  onSelectFlight,
+  onEditFlight,
+  onFlightDragAndDrop,
+  onFlightMouseHover,
+  onFreeSpaceMouseHover,
+  onNowhereMouseHover
+}) => {
+  const preplan = useContext(PreplanContext);
+  const startDate = preplan.startDate.getDatePart().addDays((preplan.startDate.getUTCDay() + 1) % 7);
 
-    const timeline = useProperty<Timeline>(null as any);
-    const timelineScrollTop = useProperty<number | undefined>(undefined);
-    const timelineOptions = useMemo<TimelineOptions>(() => {
-      return {
-        align: 'center',
-        autoResize: true,
-        clickToUse: false,
-        // configure: false,
-        dataAttributes: [],
-        editable: {
-          add: false,
-          remove: false,
-          updateGroup: true,
-          updateTime: true,
-          overrideItems: false
+  const timeline = useProperty<Timeline>(null as any);
+  const timelineScrollTop = useProperty<number | undefined>(undefined);
+  const timelineOptions = useMemo<TimelineOptions>(() => {
+    return {
+      align: 'center',
+      autoResize: true,
+      clickToUse: false,
+      // configure: false,
+      dataAttributes: [],
+      editable: {
+        add: false,
+        remove: false,
+        updateGroup: true,
+        updateTime: true,
+        overrideItems: false
+      },
+      end: startDate.clone().addDays(7),
+      format: {
+        majorLabels(date, scale, step) {
+          return Weekday[((new Date(date).setUTCHours(0, 0, 0, 0) - startDate.getTime()) / (24 * 60 * 60 * 1000) + 7) % 7].slice(0, 3);
         },
-        end: startDate.clone().addDays(7),
-        format: {
-          majorLabels(date, scale, step) {
-            return Weekday[((new Date(date).setUTCHours(0, 0, 0, 0) - startDate.getTime()) / (24 * 60 * 60 * 1000) + 7) % 7].slice(0, 3);
-          },
-          minorLabels: {
-            millisecond: 'HH:mm:ss',
-            second: 'HH:mm',
-            minute: 'HH:mm',
-            hour: 'HH',
-            weekday: 'H',
-            day: 'H',
-            week: 'H',
-            month: 'H',
-            year: 'H'
-          }
-        },
-        groupEditable: false,
-        groupTemplate,
-        // height: 0,
-        horizontalScroll: false,
-        itemsAlwaysDraggable: true,
-        // locale: '',
-        // locales: {},
-        moment(date) {
-          return moment(date).utc();
-        },
-        margin: {
-          axis: 6,
-          item: {
-            horizontal: 6,
-            vertical: 6
-          }
-        },
-        max: startDate.clone().addDays(8),
-        maxHeight: 'calc(100vh - 159px)',
-        maxMinorChars: 5,
-        min: startDate,
-        minHeight: 'calc(100vh - 160px)',
-        moveable: true,
-        multiselect: false,
-        multiselectPerGroup: false,
-        // onAdd(item, callback) {},
-        // onAddGroup(group, callback) {},
-        // onDragObjectOnItem(objectData, item) {},
-        // onInitialDrawComplete() {},
-        onMove(item, callback) {
-          const flight: Flight = item.data;
-          const newAircraftRegister = preplan.aircraftRegisters.id[item.group as any];
-          const deltaStd = Math.round((new Date(item.start).getTime() - flight.startDateTime(startDate).getTime()) / (5 * 60 * 1000)) * 5;
-          onFlightDragAndDrop(flight, newAircraftRegister === flight.aircraftRegister ? deltaStd : 0, newAircraftRegister);
-          callback(item);
-        },
-        // onMoveGroup(group, callback) {},
-        onMoving(item, callback) {
-          if ((item.group as string).startsWith('T')) return callback(null);
-          const flight: Flight = item.data;
-          const originalStart = flight.startDateTime(startDate).getTime();
-          const originalEnd = flight.endDateTime(startDate).getTime();
-          const calclulatedStart = Date.parse(item.start as any);
-          const calculatedEnd = Date.parse(item.end as any);
-          if (calculatedEnd - calclulatedStart !== originalEnd - originalStart) {
-            item.start = new Date(originalStart);
-            item.end = new Date(originalEnd);
-          }
-          callback(item);
-        },
-        // onRemove(item, callback) {},
-        // onRemoveGroup(group, callback) {},
-        // onUpdate(item, callback) {},
-        orientation: 'top',
-        rtl: false,
-        selectable: true,
-        showCurrentTime: false,
-        showMajorLabels: true,
-        showMinorLabels: true,
-        showTooltips: true,
-        stack: true,
-        stackSubgroups: true,
-        snap(date, scale, step) {
-          const ticks = date.getTime(),
-            timeStep = 5 * 60 * 1000,
-            fraction = ticks % timeStep,
-            rounded = Math.round(fraction / timeStep) * timeStep;
-          return new Date(ticks - fraction + rounded);
-        },
-        start: startDate,
-        template: itemTemplate,
-        // timeAxis: {},
-        //type: 'range',
-        tooltip: {
-          followMouse: true,
-          overflowMethod: 'cap',
-          delay: 400
-          // template: ... //TODO: Replace itemTooltipTemplate function here.
-        },
-        tooltipOnItemUpdateTime: true, //{ template(itemData: DataItem) { return ''; } },
-        verticalScroll: true,
-        width: '100%',
-        zoomable: true,
-        zoomKey: 'ctrlKey',
-        zoomMax: 315360000000000,
-        zoomMin: 12 * 60 * 60 * 1000
-      };
+        minorLabels: {
+          millisecond: 'HH:mm:ss',
+          second: 'HH:mm',
+          minute: 'HH:mm',
+          hour: 'HH',
+          weekday: 'H',
+          day: 'H',
+          week: 'H',
+          month: 'H',
+          year: 'H'
+        }
+      },
+      groupEditable: false,
+      groupTemplate,
+      // height: 0,
+      horizontalScroll: false,
+      itemsAlwaysDraggable: true,
+      // locale: '',
+      // locales: {},
+      moment(date) {
+        return moment(date).utc();
+      },
+      margin: {
+        axis: 6,
+        item: {
+          horizontal: 6,
+          vertical: 6
+        }
+      },
+      max: startDate.clone().addDays(8),
+      maxHeight: 'calc(100vh - 159px)',
+      maxMinorChars: 5,
+      min: startDate,
+      minHeight: 'calc(100vh - 160px)',
+      moveable: true,
+      multiselect: false,
+      multiselectPerGroup: false,
+      // onAdd(item, callback) {},
+      // onAddGroup(group, callback) {},
+      // onDragObjectOnItem(objectData, item) {},
+      // onInitialDrawComplete() {},
+      onMove(item, callback) {
+        const flight: Flight = item.data;
+        const newAircraftRegister = preplan.aircraftRegisters.id[item.group as any];
+        const deltaStd = Math.round((new Date(item.start).getTime() - flight.startDateTime(startDate).getTime()) / (5 * 60 * 1000)) * 5;
+        onFlightDragAndDrop(flight, newAircraftRegister === flight.aircraftRegister ? deltaStd : 0, newAircraftRegister);
+        callback(item);
+      },
+      // onMoveGroup(group, callback) {},
+      onMoving(item, callback) {
+        if ((item.group as string).startsWith('T')) return callback(null);
+        const flight: Flight = item.data;
+        const originalStart = flight.startDateTime(startDate).getTime();
+        const originalEnd = flight.endDateTime(startDate).getTime();
+        const calclulatedStart = Date.parse(item.start as any);
+        const calculatedEnd = Date.parse(item.end as any);
+        if (calculatedEnd - calclulatedStart !== originalEnd - originalStart) {
+          item.start = new Date(originalStart);
+          item.end = new Date(originalEnd);
+        }
+        callback(item);
+      },
+      // onRemove(item, callback) {},
+      // onRemoveGroup(group, callback) {},
+      // onUpdate(item, callback) {},
+      orientation: 'top',
+      rtl: false,
+      selectable: true,
+      showCurrentTime: false,
+      showMajorLabels: true,
+      showMinorLabels: true,
+      showTooltips: true,
+      stack: true,
+      stackSubgroups: true,
+      snap(date, scale, step) {
+        const ticks = date.getTime(),
+          timeStep = 5 * 60 * 1000,
+          fraction = ticks % timeStep,
+          rounded = Math.round(fraction / timeStep) * timeStep;
+        return new Date(ticks - fraction + rounded);
+      },
+      start: startDate,
+      template: itemTemplate,
+      // timeAxis: {},
+      //type: 'range',
+      tooltip: {
+        followMouse: true,
+        overflowMethod: 'cap',
+        delay: 400
+        // template: ... //TODO: Replace itemTooltipTemplate function here.
+      },
+      tooltipOnItemUpdateTime: true, //{ template(itemData: DataItem) { return ''; } },
+      verticalScroll: true,
+      width: '100%',
+      zoomable: true,
+      zoomKey: 'ctrlKey',
+      zoomMax: 315360000000000,
+      zoomMin: 12 * 60 * 60 * 1000
+    };
 
-      function groupTemplate(group: DataGroup, element: HTMLElement, data: DataGroup): string {
-        if (!group) return '';
-        if ((group.id as string).startsWith('T'))
-          return `
+    function groupTemplate(group: DataGroup, element: HTMLElement, data: DataGroup): string {
+      if (!group) return '';
+      if ((group.id as string).startsWith('T'))
+        return `
             <div>
               <small>${group.content}</small>
             </div>
           `;
-        if (group.id === '???')
-          return `
+      if (group.id === '???')
+        return `
             <div>
               ${group.content}
             </div>
           `;
-        const aircraftRegister: PreplanAircraftRegister = group.data;
-        const aircraftRegisterObjections = preplan.constraintSystem.getObjectionsByTarget(aircraftRegister);
-        const aircraftRegisterObjectionStatus = preplan.constraintSystem.getObjectionStatusByTarget(aircraftRegister);
-        return `
+      const aircraftRegister: PreplanAircraftRegister = group.data;
+      const aircraftRegisterObjections = preplan.constraintSystem.getObjectionsByTarget(aircraftRegister);
+      const aircraftRegisterObjectionStatus = preplan.constraintSystem.getObjectionStatusByTarget(aircraftRegister);
+      return `
           <div>
             ${group.content}
             ${aircraftRegister.dummy ? '<span class="rpa-group-dummy-mark" title="Dummy Aircraft Register">D</span>' : ''}
@@ -415,14 +421,14 @@ const TimelineView: FC<TimelineViewProps> = memo(
             }
           </div>
         `;
-      }
+    }
 
-      function itemTemplate(item: DataItem, element: HTMLElement, data: DataItem): string {
-        if (item.className && item.className.startsWith('rpa-group-item-')) return '';
+    function itemTemplate(item: DataItem, element: HTMLElement, data: DataItem): string {
+      if (item.className && item.className.startsWith('rpa-group-item-')) return '';
 
-        const flight: Flight = item.data;
-        const stcColor = chroma(persistant.userSettings!.stcColors[flight.stc.name] || '#000000');
-        return `
+      const flight: Flight = item.data;
+      const stcColor = chroma(persistant.userSettings!.stcColors[flight.stc.name] || '#000000');
+      return `
           <div class="rpa-item-header">
             <div class="rpa-item-time rpa-item-std">
               ${flight.start.toString('H:mm', true)}
@@ -476,197 +482,197 @@ const TimelineView: FC<TimelineViewProps> = memo(
                 `
           }
         `;
-        // return `
-        //   <div class="rpa-item-header">
-        //     <div class="rpa-item-time rpa-item-std">
-        //       ${flight.start.toString(true)}
-        //       ${flight.required === false ? '&nbsp;' : ''}
-        //     </div>
-        //     ${
-        //       flight.required === true
-        //         ? `<div class="rpa-required-asterisk rpa-required-asterisk-full">&#10045;</div>`
-        //         : flight.required === undefined
-        //         ? `<div class="rpa-required-asterisk rpa-required-asterisk-semi">&#10045;</div>`
-        //         : ''
-        //     }
-        //     <div class="rpa-item-time rpa-item-sta">
-        //       ${flight.required === false ? '&nbsp;' : ''}
-        //       ${flight.end.toString(true)}
-        //     </div>
-        //   </div>
-        //   <div class="rpa-item-body
-        //   ${flight.knownAircraftRegister ? ' rpa-known-aircraft-register' : ' rpa-unknown-aircraft-register'}
-        //   ${
-        //     flight.originPermission === true
-        //       ? ' rpa-origin-permission rpa-origin-permission-full'
-        //       : flight.originPermission === undefined
-        //       ? ' rpa-origin-permission rpa-origin-permission-semi'
-        //       : ''
-        //   }
-        //   ${
-        //     flight.destinationPermission === true
-        //       ? ' rpa-destination-permission rpa-destination-permission-full'
-        //       : flight.destinationPermission === undefined
-        //       ? ' rpa-destination-permission rpa-destination-permission-semi'
-        //       : ''
-        //   }
-        //   ${flight.changed === true ? ' rpa-changed rpa-changed-full' : flight.changed === undefined ? ' rpa-changed rpa-changed-semi' : ''}
-        //   " style="border-color: ${stcColor}; background-color: ${chroma.mix(stcColor.desaturate(1), '#fff', 0.8)};">
-        //     ${flight.sections
-        //       .map(
-        //         (s, index, sections) =>
-        //           `<div class="rpa-item-section${
-        //             flight.flights[index].objectionStatus === 'ERROR'
-        //               ? ' rpa-item-section-error'
-        //               : flight.flights[index].objectionStatus === 'WARNING'
-        //               ? ' rpa-item-section-warning'
-        //               : ''
-        //           }${index === 0 ? ' rpa-item-section-first' : ''}${index === sections.length - 1 ? ' rpa-item-section-last' : ''}" style="left: ${s.start * 100}%; right: ${(1 -
-        //             s.end) *
-        //             100}%; background-color: ${chroma.mix(stcColor.saturate(0.4).brighten(1.5), '#fff', 0.25)};"></div>`
-        //       )
-        //       .join(' ')}
-        //     <div class="rpa-item-label">
-        //       ${flight.label}
-        //     </div>
-        //     ${
-        //       flight.freezed === true
-        //         ? `
-        //           <span class="rpa-pin rpa-pin-top rpa-pin-left"></span>
-        //           <span class="rpa-pin rpa-pin-top rpa-pin-right"></span>
-        //           <span class="rpa-pin rpa-pin-bottom rpa-pin-left"></span>
-        //           <span class="rpa-pin rpa-pin-bottom rpa-pin-right"></span>
-        //         `
-        //         : flight.freezed === undefined
-        //         ? `
-        //           <span class="rpa-pin rpa-pin-top rpa-pin-left"></span>
-        //           <!--<span class="rpa-pin rpa-pin-top rpa-pin-right"></span>-->
-        //           <!--<span class="rpa-pin rpa-pin-bottom rpa-pin-left"></span>-->
-        //           <span class="rpa-pin rpa-pin-bottom rpa-pin-right"></span>
-        //         `
-        //         : ''
-        //     }
-        //   </div>
-        //   ${
-        //     flight.icons.length === 0 && !flight.notes
-        //       ? ''
-        //       : `
-        //           <div class="rpa-item-footer">
-        //             ${flight.icons.map(i => `<span class="rpa-item-icon">${i}</span>`).join(' ')}
-        //             ${flight.notes
-        //               .split('')
-        //               .map(c => `<div>${c === ' ' ? '&nbsp;' : c}</div>`)
-        //               .join('')}
-        //           </div>
-        //         `
-        //   }
-        // `;
-      }
-    }, [startDate.getTime()]);
-    const timelineGroups = useMemo<DataGroup[]>(() => {
-      // const registers = aircraftRegisters.items.filter(r => flights.some(f => f.aircraftRegister && f.aircraftRegister.id === r.id)).sortBy('name');
-      const registers = preplan.aircraftRegisters.items
-        .filter(r => r.options.status !== 'IGNORED')
-        .sort((a, b) => {
-          if (a.options.status === 'BACKUP' && b.options.status === 'INCLUDED') return 1;
-          if (a.options.status === 'INCLUDED' && b.options.status === 'BACKUP') return -1;
-          if (a.dummy && !b.dummy) return 1;
-          if (!a.dummy && b.dummy) return -1;
-          if (a.name > b.name) return 1;
-          if (a.name < b.name) return -1;
-          return 0;
-        });
-
-      const types = registers
-        .map(r => r.aircraftType)
-        .distinct()
-        .sortBy('displayOrder');
-
-      const registerGroups = registers.map(
-        (r): DataGroup => ({
-          id: r.id,
-          content: r.name,
-          title: r.name,
-          data: r
-        })
-      );
-
-      const typeGroups = types.map(
-        (t): DataGroup => ({
-          id: 'T' + t.id,
-          content: t.name,
-          title: t.name,
-          nestedGroups: registers.filter(r => r.aircraftType.id === t.id).map(r => r.id),
-          data: t
-        })
-      );
-
-      const groups = registerGroups.concat(typeGroups).concat({
-        id: '???',
-        content: '???',
-        title: 'Flights without known allocated aircraft registers'
+      // return `
+      //   <div class="rpa-item-header">
+      //     <div class="rpa-item-time rpa-item-std">
+      //       ${flight.start.toString(true)}
+      //       ${flight.required === false ? '&nbsp;' : ''}
+      //     </div>
+      //     ${
+      //       flight.required === true
+      //         ? `<div class="rpa-required-asterisk rpa-required-asterisk-full">&#10045;</div>`
+      //         : flight.required === undefined
+      //         ? `<div class="rpa-required-asterisk rpa-required-asterisk-semi">&#10045;</div>`
+      //         : ''
+      //     }
+      //     <div class="rpa-item-time rpa-item-sta">
+      //       ${flight.required === false ? '&nbsp;' : ''}
+      //       ${flight.end.toString(true)}
+      //     </div>
+      //   </div>
+      //   <div class="rpa-item-body
+      //   ${flight.knownAircraftRegister ? ' rpa-known-aircraft-register' : ' rpa-unknown-aircraft-register'}
+      //   ${
+      //     flight.originPermission === true
+      //       ? ' rpa-origin-permission rpa-origin-permission-full'
+      //       : flight.originPermission === undefined
+      //       ? ' rpa-origin-permission rpa-origin-permission-semi'
+      //       : ''
+      //   }
+      //   ${
+      //     flight.destinationPermission === true
+      //       ? ' rpa-destination-permission rpa-destination-permission-full'
+      //       : flight.destinationPermission === undefined
+      //       ? ' rpa-destination-permission rpa-destination-permission-semi'
+      //       : ''
+      //   }
+      //   ${flight.changed === true ? ' rpa-changed rpa-changed-full' : flight.changed === undefined ? ' rpa-changed rpa-changed-semi' : ''}
+      //   " style="border-color: ${stcColor}; background-color: ${chroma.mix(stcColor.desaturate(1), '#fff', 0.8)};">
+      //     ${flight.sections
+      //       .map(
+      //         (s, index, sections) =>
+      //           `<div class="rpa-item-section${
+      //             flight.flights[index].objectionStatus === 'ERROR'
+      //               ? ' rpa-item-section-error'
+      //               : flight.flights[index].objectionStatus === 'WARNING'
+      //               ? ' rpa-item-section-warning'
+      //               : ''
+      //           }${index === 0 ? ' rpa-item-section-first' : ''}${index === sections.length - 1 ? ' rpa-item-section-last' : ''}" style="left: ${s.start * 100}%; right: ${(1 -
+      //             s.end) *
+      //             100}%; background-color: ${chroma.mix(stcColor.saturate(0.4).brighten(1.5), '#fff', 0.25)};"></div>`
+      //       )
+      //       .join(' ')}
+      //     <div class="rpa-item-label">
+      //       ${flight.label}
+      //     </div>
+      //     ${
+      //       flight.freezed === true
+      //         ? `
+      //           <span class="rpa-pin rpa-pin-top rpa-pin-left"></span>
+      //           <span class="rpa-pin rpa-pin-top rpa-pin-right"></span>
+      //           <span class="rpa-pin rpa-pin-bottom rpa-pin-left"></span>
+      //           <span class="rpa-pin rpa-pin-bottom rpa-pin-right"></span>
+      //         `
+      //         : flight.freezed === undefined
+      //         ? `
+      //           <span class="rpa-pin rpa-pin-top rpa-pin-left"></span>
+      //           <!--<span class="rpa-pin rpa-pin-top rpa-pin-right"></span>-->
+      //           <!--<span class="rpa-pin rpa-pin-bottom rpa-pin-left"></span>-->
+      //           <span class="rpa-pin rpa-pin-bottom rpa-pin-right"></span>
+      //         `
+      //         : ''
+      //     }
+      //   </div>
+      //   ${
+      //     flight.icons.length === 0 && !flight.notes
+      //       ? ''
+      //       : `
+      //           <div class="rpa-item-footer">
+      //             ${flight.icons.map(i => `<span class="rpa-item-icon">${i}</span>`).join(' ')}
+      //             ${flight.notes
+      //               .split('')
+      //               .map(c => `<div>${c === ' ' ? '&nbsp;' : c}</div>`)
+      //               .join('')}
+      //           </div>
+      //         `
+      //   }
+      // `;
+    }
+  }, [startDate.getTime(), preplan /* Because we have used onFlightDragAndDrop() in options */]);
+  const timelineGroups = useMemo<DataGroup[]>(() => {
+    // const registers = aircraftRegisters.items.filter(r => flights.some(f => f.aircraftRegister && f.aircraftRegister.id === r.id)).sortBy('name');
+    const registers = preplan.aircraftRegisters.items
+      .filter(r => r.options.status !== 'IGNORED')
+      .sort((a, b) => {
+        if (a.options.status === 'BACKUP' && b.options.status === 'INCLUDED') return 1;
+        if (a.options.status === 'INCLUDED' && b.options.status === 'BACKUP') return -1;
+        if (a.dummy && !b.dummy) return 1;
+        if (!a.dummy && b.dummy) return -1;
+        if (a.name > b.name) return 1;
+        if (a.name < b.name) return -1;
+        return 0;
       });
 
-      return groups;
-    }, [preplan.aircraftRegisters]);
-    const timelineItems = useMemo<DataItem[]>(() => {
-      const items = preplan.flights
-        .filter(f => ['REAL', 'STB1'].includes(f.rsx))
-        .map(
-          (f): DataItem => ({
-            id: f.id,
-            start: new Date(startDate.getTime() + (f.day * 24 * 60 + f.start.minutes) * 60 * 1000),
-            end: new Date(startDate.getTime() + (f.day * 24 * 60 + f.end.minutes) * 60 * 1000),
-            group: f.aircraftRegister ? f.aircraftRegister.id : '???',
-            content: f.label,
-            title: itemTooltipTemplate(f),
-            type: 'range',
-            data: f
-          })
-        );
+    const types = registers
+      .map(r => r.aircraftType)
+      .distinct()
+      .sortBy('displayOrder');
 
-      timelineGroups.forEach(group => {
-        if ((group.id as string).startsWith('T')) {
-          const aircraftType: AircraftType = group.data;
-          return items.push({
-            className: 'rpa-group-item-aircraft-type',
-            id: group.id,
-            start: timelineOptions.min!,
-            end: timelineOptions.max,
-            group: group.id,
-            content: '',
-            type: 'background',
-            data: aircraftType
-          });
-        }
-        if (group.id === '???')
-          return items.push({
-            className: 'rpa-group-item-unknown-aircraft-register',
-            id: group.id,
-            start: timelineOptions.min!,
-            end: timelineOptions.max,
-            group: group.id,
-            content: '',
-            type: 'background'
-          });
-        const aircraftRegister: PreplanAircraftRegister = group.data;
-        if (aircraftRegister.options.status !== 'BACKUP') return;
-        items.push({
-          className: 'rpa-group-item-backup-aircraft-register',
+    const registerGroups = registers.map(
+      (r): DataGroup => ({
+        id: r.id,
+        content: r.name,
+        title: r.name,
+        data: r
+      })
+    );
+
+    const typeGroups = types.map(
+      (t): DataGroup => ({
+        id: 'T' + t.id,
+        content: t.name,
+        title: t.name,
+        nestedGroups: registers.filter(r => r.aircraftType.id === t.id).map(r => r.id),
+        data: t
+      })
+    );
+
+    const groups = registerGroups.concat(typeGroups).concat({
+      id: '???',
+      content: '???',
+      title: 'Flights without known allocated aircraft registers'
+    });
+
+    return groups;
+  }, [preplan.aircraftRegisters]);
+  const timelineItems = useMemo<DataItem[]>(() => {
+    const items = preplan.flights
+      .filter(f => ['REAL', 'STB1'].includes(f.rsx))
+      .map(
+        (f): DataItem => ({
+          id: f.id,
+          start: new Date(startDate.getTime() + (f.day * 24 * 60 + f.start.minutes) * 60 * 1000),
+          end: new Date(startDate.getTime() + (f.day * 24 * 60 + f.end.minutes) * 60 * 1000),
+          group: f.aircraftRegister ? f.aircraftRegister.id : '???',
+          content: f.label,
+          title: itemTooltipTemplate(f),
+          type: 'range',
+          data: f
+        })
+      );
+
+    timelineGroups.forEach(group => {
+      if ((group.id as string).startsWith('T')) {
+        const aircraftType: AircraftType = group.data;
+        return items.push({
+          className: 'rpa-group-item-aircraft-type',
           id: group.id,
           start: timelineOptions.min!,
           end: timelineOptions.max,
           group: group.id,
           content: '',
           type: 'background',
-          data: aircraftRegister
+          data: aircraftType
         });
+      }
+      if (group.id === '???')
+        return items.push({
+          className: 'rpa-group-item-unknown-aircraft-register',
+          id: group.id,
+          start: timelineOptions.min!,
+          end: timelineOptions.max,
+          group: group.id,
+          content: '',
+          type: 'background'
+        });
+      const aircraftRegister: PreplanAircraftRegister = group.data;
+      if (aircraftRegister.options.status !== 'BACKUP') return;
+      items.push({
+        className: 'rpa-group-item-backup-aircraft-register',
+        id: group.id,
+        start: timelineOptions.min!,
+        end: timelineOptions.max,
+        group: group.id,
+        content: '',
+        type: 'background',
+        data: aircraftRegister
       });
+    });
 
-      return items;
+    return items;
 
-      function itemTooltipTemplate(flight: Flight): string {
-        return `
+    function itemTooltipTemplate(flight: Flight): string {
+      return `
           <div>
             <div>
               <em><small>Flight:</small></em>
@@ -710,91 +716,91 @@ const TimelineView: FC<TimelineViewProps> = memo(
             }
           </div>
         `;
-      }
-    }, [startDate.getTime(), preplan.flights, timelineOptions, timelineGroups]);
+    }
+  }, [startDate.getTime(), preplan.flights, timelineOptions, timelineGroups]);
 
-    const [flightContextMenuModel, setFlightContextMenuModel] = useState<FlightContextMenuModel>({});
-    const flightContextMenuRef = useRef<HTMLDivElement>(null);
+  const [flightContextMenuModel, setFlightContextMenuModel] = useState<FlightContextMenuModel>({});
+  const flightContextMenuRef = useRef<HTMLDivElement>(null);
 
-    const classes = useStyles();
+  const classes = useStyles();
 
-    return (
-      <Fragment>
-        <VisTimeline
-          options={timelineOptions}
-          groups={timelineGroups}
-          items={timelineItems}
-          selection={selectedFlight && selectedFlight.id}
-          scrollTop={timelineScrollTop()}
-          onScrollY={scrollTop => timelineScrollTop(scrollTop)}
-          retrieveTimeline={t => timeline(t)}
-          // onChanged={() => console.log('Timeline is rendered.')}
-          onRangeChanged={properties => timeline().redraw()}
-          onSelect={({ items, event }) => {
-            const item = timelineItems.find(item => item.id === items[0]);
-            onSelectFlight(item ? item.data : undefined);
-          }}
-          onContextMenu={properties => {
-            properties.event.preventDefault();
-            const item = timelineItems.find(item => item.id === properties.item);
-            if (!item) return;
-            const { pageX, pageY } = properties;
-            flightContextMenuRef.current!.style.top = `${pageY}px`;
-            flightContextMenuRef.current!.style.left = `${pageX}px`;
-            setFlightContextMenuModel({ open: true, flight: item.data });
-          }}
-          onMouseOver={properties => {
-            switch (properties.what) {
-              case 'item':
-                const item = timelineItems.find(item => item.id === properties.item);
-                if (!item) return onNowhereMouseHover();
-                onFlightMouseHover(item.data);
-                break;
+  return (
+    <Fragment>
+      <VisTimeline
+        options={timelineOptions}
+        groups={timelineGroups}
+        items={timelineItems}
+        selection={selectedFlight && selectedFlight.id}
+        scrollTop={timelineScrollTop()}
+        onScrollY={scrollTop => timelineScrollTop(scrollTop)}
+        retrieveTimeline={t => timeline(t)}
+        // onChanged={() => console.log('Timeline is rendered.')}
+        onRangeChanged={properties => timeline().redraw()}
+        onSelect={({ items, event }) => {
+          const item = timelineItems.find(item => item.id === items[0]);
+          onSelectFlight(item ? item.data : undefined);
+        }}
+        onContextMenu={properties => {
+          properties.event.preventDefault();
+          const item = timelineItems.find(item => item.id === properties.item);
+          if (!item) return;
+          const { pageX, pageY } = properties;
+          flightContextMenuRef.current!.style.top = `${pageY}px`;
+          flightContextMenuRef.current!.style.left = `${pageX}px`;
+          setFlightContextMenuModel({ open: true, flight: item.data });
+        }}
+        onMouseOver={properties => {
+          switch (properties.what) {
+            case 'item':
+              const item = timelineItems.find(item => item.id === properties.item);
+              if (!item) return onNowhereMouseHover();
+              onFlightMouseHover(item.data);
+              break;
 
-              case 'background':
-                if (properties.group === '???') return onNowhereMouseHover();
-                const register = preplan.aircraftRegisters.id[properties.group as any];
-                if (!register) return onNowhereMouseHover();
-                const registerFlights = [...preplan.flightsByAircraftRegisterId[register.id]];
-                if (registerFlights.length === 0) return onFreeSpaceMouseHover(register);
-                if (registerFlights.length === 1) return onFreeSpaceMouseHover(register, registerFlights[0], registerFlights[0]);
-                const firstFlight = registerFlights[0],
-                  lastFlight = registerFlights[registerFlights.length - 1];
-                let previousFlight: Flight | undefined = undefined,
-                  nextFlight: Flight | undefined = registerFlights.shift();
-                do {
-                  const start = previousFlight ? startDate.getTime() + previousFlight.day * 24 * 60 * 60 * 1000 + previousFlight.end.minutes * 60 * 1000 : -Infinity,
-                    end = nextFlight ? startDate.getTime() + nextFlight.day * 24 * 60 * 60 * 1000 + nextFlight.start.minutes * 60 * 1000 : Infinity;
-                  if (start <= properties.time.getTime() && properties.time.getTime() <= end)
-                    return onFreeSpaceMouseHover(register, previousFlight || lastFlight, nextFlight || firstFlight);
-                  previousFlight = nextFlight;
-                  nextFlight = registerFlights.shift();
-                } while (previousFlight || nextFlight);
-                onFreeSpaceMouseHover(register);
-                break;
+            case 'background':
+              if (properties.group === '???') return onNowhereMouseHover();
+              const register = preplan.aircraftRegisters.id[properties.group as any];
+              if (!register) return onNowhereMouseHover();
+              const registerFlights = [...preplan.flightsByAircraftRegisterId[register.id]];
+              if (registerFlights.length === 0) return onFreeSpaceMouseHover(register);
+              if (registerFlights.length === 1) return onFreeSpaceMouseHover(register, registerFlights[0], registerFlights[0]);
+              const firstFlight = registerFlights[0],
+                lastFlight = registerFlights[registerFlights.length - 1];
+              let previousFlight: Flight | undefined = undefined,
+                nextFlight: Flight | undefined = registerFlights.shift();
+              do {
+                const start = previousFlight ? startDate.getTime() + previousFlight.day * 24 * 60 * 60 * 1000 + previousFlight.end.minutes * 60 * 1000 : -Infinity,
+                  end = nextFlight ? startDate.getTime() + nextFlight.day * 24 * 60 * 60 * 1000 + nextFlight.start.minutes * 60 * 1000 : Infinity;
+                if (start <= properties.time.getTime() && properties.time.getTime() <= end)
+                  return onFreeSpaceMouseHover(register, previousFlight || lastFlight, nextFlight || firstFlight);
+                previousFlight = nextFlight;
+                nextFlight = registerFlights.shift();
+              } while (previousFlight || nextFlight);
+              onFreeSpaceMouseHover(register);
+              break;
 
-              default:
-                onNowhereMouseHover();
-            }
-          }}
-        />
-        <ClickAwayListener onClickAway={() => setFlightContextMenuModel({ ...flightContextMenuModel, open: false })}>
-          <div>
-            <Paper ref={flightContextMenuRef} className={classes.contextMenu}>
-              {flightContextMenuModel.open && (
-                <MenuList>
-                  <MenuItem
-                    onClick={() => {
-                      setFlightContextMenuModel({ ...flightContextMenuModel, open: false });
-                      onEditFlight(flightContextMenuModel.flight!);
-                    }}
-                  >
-                    {/* <ListItemIcon>
+            default:
+              onNowhereMouseHover();
+          }
+        }}
+      />
+      <ClickAwayListener onClickAway={() => setFlightContextMenuModel({ ...flightContextMenuModel, open: false })}>
+        <div>
+          <Paper ref={flightContextMenuRef} className={classes.contextMenu}>
+            {flightContextMenuModel.open && (
+              <MenuList>
+                <MenuItem
+                  onClick={() => {
+                    setFlightContextMenuModel({ ...flightContextMenuModel, open: false });
+                    onEditFlight(flightContextMenuModel.flight!);
+                  }}
+                >
+                  {/* <ListItemIcon>
                       <span />
                     </ListItemIcon> */}
-                    <Typography>Edit...</Typography>
-                  </MenuItem>
-                  {/* <MenuItem
+                  <Typography>Edit...</Typography>
+                </MenuItem>
+                {/* <MenuItem
                     onClick={() => {
                       setFlightContextMenuModel({ ...flightContextMenuModel, open: false });
                       onFreezeFlightPack(flightContextMenuModel.flightPack!, flightContextMenuModel.flightPack!.freezed !== true);
@@ -841,7 +847,7 @@ const TimelineView: FC<TimelineViewProps> = memo(
                     <Typography>Ignore...</Typography>
                   </MenuItem>
                   <Divider /> */}
-                  {/* <MenuItem
+                {/* <MenuItem
                     onClick={() => {
                       setFlightContextMenuModel({ ...flightContextMenuModel, open: false });
                       onOpenFlightPackModal(flightContextMenuModel.flightPack!);
@@ -872,14 +878,13 @@ const TimelineView: FC<TimelineViewProps> = memo(
                       </Typography>
                     </MenuItem>
                   ))} */}
-                </MenuList>
-              )}
-            </Paper>
-          </div>
-        </ClickAwayListener>
-      </Fragment>
-    );
-  }
-);
+              </MenuList>
+            )}
+          </Paper>
+        </div>
+      </ClickAwayListener>
+    </Fragment>
+  );
+};
 
 export default TimelineView;

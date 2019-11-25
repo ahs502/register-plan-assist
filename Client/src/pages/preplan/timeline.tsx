@@ -19,7 +19,7 @@ import Objectionable from 'src/business/constraints/Objectionable';
 import FlightService from 'src/services/FlightService';
 import FlightLegModel from '@core/models/flight/FlightLegModel';
 import FlightModel from '@core/models/flight/FlightModel';
-import { formFields } from 'src/utils/FormField';
+import { dataTypes } from 'src/utils/DataType';
 
 const useStyles = makeStyles((theme: Theme) => ({
   sideBarBackdrop: {
@@ -170,37 +170,24 @@ const TimelinePage: FC<TimelinePageProps> = ({ onObjectionTargetClick, onEditFli
           selectedFlight={timelineViewState.selectedFlight}
           onSelectFlight={flight => setTimelineViewState({ ...timelineViewState, selectedFlight: flight })}
           onEditFlight={onEditFlight}
-          onFlightDragAndDrop={async (flight, deltaStd, newAircraftRegister) => {
+          onFlightDragAndDrop={async (flight, deltaStd, newAircraftRegister, allWeekdays) => {
             setTimelineViewState({ ...timelineViewState, loading: true });
             try {
-              const flightModel: FlightModel = {
-                id: flight.id,
-                flightRequirementId: flight.flightRequirement.id,
-                day: flight.day,
-                aircraftRegisterId: newAircraftRegister ? newAircraftRegister.id : undefined,
-                legs: flight.legs.map<FlightLegModel>(l => ({
-                  std: l.std.minutes + deltaStd
-                }))
-              };
-
-              const otherFlightModels: FlightModel[] = preplan.flights
-                .filter(f => f.flightRequirement.id === flight.flightRequirement.id && f.id !== flight.id)
-                .map<FlightModel>(f => ({
-                  id: f.id,
-                  flightRequirementId: f.flightRequirement.id,
-                  day: f.day,
-                  aircraftRegisterId:
-                    f.aircraftRegister === undefined
-                      ? undefined
-                      : formFields
-                          .preplanAircraftRegister(preplan.aircraftRegisters)
-                          .parse(formFields.preplanAircraftRegister(preplan.aircraftRegisters).format(f.aircraftRegister)),
-                  legs: f.legs.map<FlightLegModel>(l => ({
-                    std: formFields.daytime.parse(formFields.daytime.format(l.std))
-                  }))
-                }));
-
-              const newPreplanModel = await FlightService.edit(preplan.id, flightModel, ...otherFlightModels);
+              const flightModels: FlightModel[] = preplan.flights
+                .filter(f => f.flightRequirement.id === flight.flightRequirement.id)
+                .map(f =>
+                  f.id === flight.id || allWeekdays
+                    ? f.extractModel(flightModel => ({
+                        ...flightModel,
+                        aircraftRegisterId: dataTypes.preplanAircraftRegister(preplan.aircraftRegisters).convertBusinessToModelOptional(newAircraftRegister),
+                        legs: flightModel.legs.map<FlightLegModel>(l => ({
+                          ...l,
+                          std: l.std + deltaStd
+                        }))
+                      }))
+                    : f.extractModel()
+                );
+              const newPreplanModel = await FlightService.edit(preplan.id, ...flightModels);
               await reloadPreplan(newPreplanModel);
             } catch (reason) {
               snackbar.enqueueSnackbar(String(reason), { variant: 'error' });

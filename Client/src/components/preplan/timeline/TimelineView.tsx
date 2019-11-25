@@ -14,6 +14,7 @@ import persistant from 'src/utils/persistant';
 import chroma from 'chroma-js';
 import Flight from 'src/business/flight/Flight';
 import { PreplanContext } from 'src/pages/preplan';
+import KeyboardHandler from 'src/utils/KeyboardHandler';
 
 const useStyles = makeStyles((theme: Theme) => ({
   '@global': {
@@ -242,7 +243,7 @@ export interface TimelineViewProps {
   selectedFlight?: Flight;
   onSelectFlight(flight?: Flight): void;
   onEditFlight(flight: Flight): void;
-  onFlightDragAndDrop(flight: Flight, deltaStd: number, newAircraftRegister?: PreplanAircraftRegister): void;
+  onFlightDragAndDrop(flight: Flight, deltaStd: number, newAircraftRegister: PreplanAircraftRegister | undefined, allWeekdays: boolean): void;
   onFlightMouseHover(flight: Flight): void;
   onFreeSpaceMouseHover(aircraftRegister: PreplanAircraftRegister, previousFlight?: Flight, nextFlight?: Flight): void;
   onNowhereMouseHover(): void;
@@ -326,12 +327,15 @@ const TimelineView: FC<TimelineViewProps> = ({
         const flight: Flight = item.data;
         const newAircraftRegister = preplan.aircraftRegisters.id[item.group as any];
         const deltaStd = Math.round((new Date(item.start).getTime() - flight.startDateTime(startDate).getTime()) / (5 * 60 * 1000)) * 5;
-        onFlightDragAndDrop(flight, newAircraftRegister === flight.aircraftRegister ? deltaStd : 0, newAircraftRegister);
+        const allWeekdays = KeyboardHandler.status.ctrl;
+        onFlightDragAndDrop(flight, newAircraftRegister === flight.aircraftRegister ? deltaStd : 0, newAircraftRegister, allWeekdays);
         callback(item);
       },
       // onMoveGroup(group, callback) {},
       onMoving(item, callback) {
         if ((item.group as string).startsWith('T')) return callback(null);
+
+        // To convert item resize to item move:
         const flight: Flight = item.data;
         const originalStart = flight.startDateTime(startDate).getTime();
         const originalEnd = flight.endDateTime(startDate).getTime();
@@ -341,6 +345,14 @@ const TimelineView: FC<TimelineViewProps> = ({
           item.start = new Date(originalStart);
           item.end = new Date(originalEnd);
         }
+
+        // To prevent time change when register changes:
+        const newAircraftRegister = preplan.aircraftRegisters.id[item.group as any];
+        if (newAircraftRegister !== flight.aircraftRegister) {
+          item.start = flight.startDateTime(startDate);
+          item.end = flight.endDateTime(startDate);
+        }
+
         callback(item);
       },
       // onRemove(item, callback) {},
@@ -688,7 +700,7 @@ const TimelineView: FC<TimelineViewProps> = ({
                       &nbsp;&nbsp;&nbsp;&nbsp;
                       ${l.flightNumber}:
                       ${l.departureAirport.name} (${l.std.toString('HH:mm')}) &dash;
-                      ${l.arrivalAirport.name} (${new Daytime(l.std.minutes + l.blockTime).toString('HH:mm')})
+                      ${l.arrivalAirport.name} (${new Daytime(l.std.minutes + l.blockTime.minutes).toString('HH:mm')})
                     </div>
                   `
                 )

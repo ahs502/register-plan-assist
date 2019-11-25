@@ -15,7 +15,7 @@ import Rsx from '@core/types/Rsx';
 import PreplanHeader from 'src/business/preplan/PreplanHeader';
 import Flight from 'src/business/flight/Flight';
 import FlightLeg from 'src/business/flight/FlightLeg';
-import { formFields } from 'src/utils/FormField';
+import { dataTypes } from 'src/utils/DataType';
 
 const makeColor = () => ({
   changeStatus: { background: '#FFFFCC' },
@@ -108,7 +108,10 @@ const useStyles = makeStyles((theme: Theme) => {
   };
 });
 
-const flightType = [{ label: 'International', value: 'International' }, { label: 'Domestic', value: 'Domestic' }];
+const flightType = [
+  { label: 'International', value: 'International' },
+  { label: 'Domestic', value: 'Domestic' }
+];
 const group = [{ field: 'category' }];
 
 const character = {
@@ -1350,15 +1353,12 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
 export default ProposalReport;
 
 function groupFlattenFlightRequirmentbyCategory(realFlatModel: FlattenFlightRequirment[]) {
-  const groupObject = realFlatModel.reduce(
-    (acc, current) => {
-      const category = current.category || '';
-      acc[category] = acc[category] || [];
-      acc[category].push(current);
-      return acc;
-    },
-    {} as any
-  );
+  const groupObject = realFlatModel.reduce((acc, current) => {
+    const category = current.category || '';
+    acc[category] = acc[category] || [];
+    acc[category].push(current);
+    return acc;
+  }, {} as any);
   const result = Object.keys(groupObject)
     .sort()
     .map(function(k) {
@@ -1376,30 +1376,57 @@ function compareFlattenFlightRequirment(sources: FlattenFlightRequirment[], targ
     const source = sources.filter(s => s.fullFlightNumber === f);
     const target = targets.filter(s => s.fullFlightNumber === f);
     source.forEach(s => {
-      const checkDay = checkDayChangeBaseOnTimes(s, target.filter(t => t.route === s.route));
+      const checkDay = checkDayChangeBaseOnTimes(
+        s,
+        target.filter(t => t.route === s.route)
+      );
     });
 
     source.forEach(s => {
-      checkTimeChange(s, target.filter(t => t.route === s.route));
-      checkDayChange(s, target.filter(t => t.route === s.route));
+      checkTimeChange(
+        s,
+        target.filter(t => t.route === s.route)
+      );
+      checkDayChange(
+        s,
+        target.filter(t => t.route === s.route)
+      );
     });
 
     source.forEach(s => {
-      checkDayChangeBaseOnTarget(s, target.filter(t => t.route === s.route));
+      checkDayChangeBaseOnTarget(
+        s,
+        target.filter(t => t.route === s.route)
+      );
     });
 
     source.forEach(s => {
-      checkRouteChange(s, target.filter(t => t.route !== s.route));
-      checkDayChangeBaseOnTimes(s, target.filter(t => t.route !== s.route));
+      checkRouteChange(
+        s,
+        target.filter(t => t.route !== s.route)
+      );
+      checkDayChangeBaseOnTimes(
+        s,
+        target.filter(t => t.route !== s.route)
+      );
     });
 
     source.forEach(s => {
-      checkTimeChange(s, target.filter(t => t.route !== s.route));
-      checkDayChange(s, target.filter(t => t.route !== s.route));
+      checkTimeChange(
+        s,
+        target.filter(t => t.route !== s.route)
+      );
+      checkDayChange(
+        s,
+        target.filter(t => t.route !== s.route)
+      );
     });
 
     source.forEach(s => {
-      checkDayChangeBaseOnTarget(s, target.filter(t => t.route !== s.route));
+      checkDayChangeBaseOnTarget(
+        s,
+        target.filter(t => t.route !== s.route)
+      );
     });
   });
 
@@ -1556,13 +1583,10 @@ function setFlattenFlightRequirmentStatus(flattenFlightRequirment: FlattenFlight
 function calculateFrequency(flattenFlightRequirments: FlattenFlightRequirment[]) {
   const parentRoutes = flattenFlightRequirments
     .map(r => r.parentRoute)
-    .reduce(
-      (acc, current) => {
-        if (acc.indexOf(current) === -1) acc.push(current);
-        return acc;
-      },
-      [] as string[]
-    );
+    .reduce((acc, current) => {
+      if (acc.indexOf(current) === -1) acc.push(current);
+      return acc;
+    }, [] as string[]);
   parentRoutes.forEach(r => {
     const flatFlightRequirments = flattenFlightRequirments.filter(f => f.parentRoute === r);
     const realFrequency = flatFlightRequirments
@@ -1651,7 +1675,7 @@ function createFlattenFlightRequirmentsFromDailyFlightRequirment(flights: Flight
         f =>
           f.arrivalAirport.id === leg.arrivalAirport.id &&
           f.departureAirport.id === leg.departureAirport.id &&
-          f.blocktime === leg.blockTime &&
+          f.blocktime === leg.blockTime.minutes &&
           f.flightNumber === normalizeFlightNumber(leg.flightNumber.standardFormat) &&
           f.std.minutes === leg.std.minutes
       );
@@ -1699,8 +1723,8 @@ function createFlattenFlightRequirment(leg: FlightLeg, date: Date): FlattenFligh
     fullFlightNumber: leg.flightNumber.toString(),
     arrivalAirport: leg.arrivalAirport,
     departureAirport: leg.departureAirport,
-    blocktime: leg.blockTime,
-    formatedBlockTime: formFields.daytime.format(leg.blockTime),
+    blocktime: leg.blockTime.minutes,
+    formatedBlockTime: dataTypes.daytime.convertBusinessToView(leg.blockTime),
     days: [] as number[],
     utcDays: [] as number[],
     std: leg.std,

@@ -2,12 +2,13 @@ import AircraftIdentityType from '@core/types/AircraftIdentityType';
 import MasterData, { MasterDataItem, AircraftIdentity } from '@core/master-data';
 import PreplanAircraftRegister, { PreplanAircraftRegisters } from './PreplanAircraftRegister';
 import AircraftIdentityModel from '@core/models/AircraftIdentityModel';
+import ModelConvertable from 'src/business/ModelConvertable';
 
 /**
  * A representive object identifying one or more aircraft registers
  * by pointing to a specific item in master data.
  */
-export default abstract class PreplanAircraftIdentity {
+export default abstract class PreplanAircraftIdentity implements ModelConvertable<AircraftIdentityModel> {
   readonly type: AircraftIdentityType;
   readonly entity: MasterDataItem;
 
@@ -23,6 +24,14 @@ export default abstract class PreplanAircraftIdentity {
     this.type = raw.type;
     this.entity = entity;
     this.aircraftRegisters = new Set(aircraftRegisters);
+  }
+
+  extractModel(override?: (aircraftIdentityModel: AircraftIdentityModel) => AircraftIdentityModel): AircraftIdentityModel {
+    const aircraftIdentityModel: AircraftIdentityModel = {
+      type: this.type,
+      entityId: this.entity.id
+    };
+    return override?.(aircraftIdentityModel) ?? aircraftIdentityModel;
   }
 
   static parse(raw: AircraftIdentityModel | AircraftIdentity, aircraftRegisters: PreplanAircraftRegisters): PreplanAircraftIdentity {

@@ -8,8 +8,10 @@ import { Stc } from '@core/master-data';
 import Rsx from '@core/types/Rsx';
 import Weekday from '@core/types/Weekday';
 import Id from '@core/types/Id';
+import ModelConvertable from 'src/business/ModelConvertable';
+import { dataTypes } from 'src/utils/DataType';
 
-export default class Flight {
+export default class Flight implements ModelConvertable<FlightModel> {
   // Original:
   readonly id: Id;
   readonly aircraftRegister?: PreplanAircraftRegister;
@@ -28,6 +30,7 @@ export default class Flight {
   // References:
   readonly flightRequirement: FlightRequirement;
   readonly dayFlightRequirement: DayFlightRequirement;
+  readonly aircraftRegisters: PreplanAircraftRegisters;
   readonly legs: readonly FlightLeg[];
 
   // Computational:
@@ -60,6 +63,7 @@ export default class Flight {
 
     this.flightRequirement = dayFlightRequirement.flightRequirement;
     this.dayFlightRequirement = dayFlightRequirement;
+    this.aircraftRegisters = aircraftRegisters;
 
     let dayOffset = 0;
     let previousSta = Number.NEGATIVE_INFINITY;
@@ -71,7 +75,7 @@ export default class Flight {
         std += 24 * 60;
       }
       legs.push(new FlightLeg(leg, dayOffset, this, dayFlightRequirement.route[index]));
-      previousSta = std + dayFlightRequirement.route[index].blockTime;
+      previousSta = std + dayFlightRequirement.route[index].blockTime.minutes;
     });
 
     this.start = this.legs[0].std;
@@ -84,6 +88,17 @@ export default class Flight {
     }));
     this.knownAircraftRegister = !!this.aircraftRegister && !this.aircraftRegister.dummy;
     this.icons = [];
+  }
+
+  extractModel(override?: (flightModel: FlightModel) => FlightModel): FlightModel {
+    const flightModel: FlightModel = {
+      id: this.id,
+      flightRequirementId: this.flightRequirement.id,
+      day: this.day,
+      aircraftRegisterId: dataTypes.preplanAircraftRegister(this.aircraftRegisters).convertBusinessToModelOptional(this.aircraftRegister),
+      legs: this.legs.map(l => l.extractModel())
+    };
+    return override?.(flightModel) ?? flightModel;
   }
 
   startDateTime(startDate: Date): Date {

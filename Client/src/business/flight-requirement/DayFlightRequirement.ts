@@ -9,8 +9,10 @@ import Id from '@core/types/Id';
 import PreplanAircraftSelection from 'src/business/preplan/PreplanAircraftSelection';
 import DayFlightRequirementLeg from 'src/business/flight-requirement/DayFlightRequirementLeg';
 import { PreplanAircraftRegisters } from 'src/business/preplan/PreplanAircraftRegister';
+import ModelConvertable from 'src/business/ModelConvertable';
+import { dataTypes } from 'src/utils/DataType';
 
-export default class DayFlightRequirement implements Objectionable {
+export default class DayFlightRequirement implements ModelConvertable<DayFlightRequirementModel>, Objectionable {
   readonly derivedId: Id;
   readonly aircraftSelection: PreplanAircraftSelection;
   readonly rsx: Rsx;
@@ -23,7 +25,7 @@ export default class DayFlightRequirement implements Objectionable {
     this.aircraftSelection = new PreplanAircraftSelection(raw.aircraftSelection, aircraftRegisters);
     this.rsx = raw.rsx;
     this.day = raw.day;
-    this.notes = raw.notes;
+    this.notes = dataTypes.name.convertModelToBusiness(raw.notes);
 
     let dayOffset = 0;
     let previousStaLowerBound = Number.NEGATIVE_INFINITY;
@@ -42,6 +44,17 @@ export default class DayFlightRequirement implements Objectionable {
       route.push(new DayFlightRequirementLeg(leg, index, dayOffset, flightRequirement, flightRequirement.route[index], this));
       previousStaLowerBound = stdLowerBound + leg.blockTime;
     });
+  }
+
+  extractModel(override?: (dayFlightRequirementModel: DayFlightRequirementModel) => DayFlightRequirementModel): DayFlightRequirementModel {
+    const dayFlightRequirementModel: DayFlightRequirementModel = {
+      aircraftSelection: this.aircraftSelection.extractModel(),
+      rsx: this.rsx,
+      day: this.day,
+      notes: dataTypes.name.convertBusinessToModel(this.notes),
+      route: this.route.map(l => l.extractModel())
+    };
+    return override?.(dayFlightRequirementModel) ?? dayFlightRequirementModel;
   }
 
   get marker(): string {

@@ -6,7 +6,7 @@ import Flight from 'src/business/flight/Flight';
 import FlightRequirement from 'src/business/flight-requirement/FlightRequirement';
 import Weekday from '@core/types/Weekday';
 import RefiningTextField from 'src/components/RefiningTextField';
-import { formFields } from 'src/utils/FormField';
+import { dataTypes } from 'src/utils/DataType';
 import { PreplanContext, ReloadPreplanContext } from 'src/pages/preplan';
 import Validation from '@ahs502/validation';
 import { PreplanAircraftRegisters } from 'src/business/preplan/PreplanAircraftRegister';
@@ -28,7 +28,7 @@ class ViewStateValidation extends Validation<
 > {
   constructor({ aircraftRegister, legs }: ViewState, aircraftRegisters: PreplanAircraftRegisters) {
     super(validator => {
-      validator.if(!aircraftRegister).check('AIRCRAFT_REGISTER_IS_VALID', () => formFields.preplanAircraftRegister(aircraftRegisters).check(aircraftRegister));
+      validator.if(!aircraftRegister).check('AIRCRAFT_REGISTER_IS_VALID', () => dataTypes.preplanAircraftRegister(aircraftRegisters).checkView(aircraftRegister));
       validator.array(legs).each((leg, index) => validator.put(validator.$.legValidations[index], new LegViewStateValidation(leg)));
     });
   }
@@ -39,7 +39,7 @@ interface LegViewState {
 }
 class LegViewStateValidation extends Validation<'STD_EXISTS' | 'STD_FORMAT_IS_VALID'> {
   constructor({ std }: LegViewState) {
-    super(validator => validator.check('STD_EXISTS', !!std).check('STD_FORMAT_IS_VALID', () => formFields.daytime.check(std)));
+    super(validator => validator.check('STD_EXISTS', !!std).check('STD_FORMAT_IS_VALID', () => dataTypes.daytime.checkView(std)));
   }
 }
 
@@ -62,9 +62,9 @@ const FlightModal: FC<FlightModalProps> = ({ state: [open, { flight }], onOpenFl
       legs: []
     },
     () => ({
-      aircraftRegister: flight.aircraftRegister === undefined ? '' : formFields.preplanAircraftRegister(preplan.aircraftRegisters).format(flight.aircraftRegister),
+      aircraftRegister: dataTypes.preplanAircraftRegister(preplan.aircraftRegisters).convertBusinessToViewOptional(flight.aircraftRegister),
       legs: flight.legs.map<LegViewState>(l => ({
-        std: formFields.daytime.format(l.std)
+        std: dataTypes.daytime.convertBusinessToView(l.std)
       }))
     })
   );
@@ -116,30 +116,18 @@ const FlightModal: FC<FlightModalProps> = ({ state: [open, { flight }], onOpenFl
           action: async () => {
             if (!validation.ok) throw 'Invalid form fields.';
 
-            const flightModel: FlightModel = {
-              id: flight.id,
-              flightRequirementId: flight.flightRequirement.id,
-              day: flight.day,
-              aircraftRegisterId: viewState.aircraftRegister === '' ? undefined : formFields.preplanAircraftRegister(preplan.aircraftRegisters).parse(viewState.aircraftRegister),
+            const flightModel: FlightModel = flight.extractModel(flightModel => ({
+              ...flightModel,
+              aircraftRegisterId: dataTypes.preplanAircraftRegister(preplan.aircraftRegisters).convertViewToModelOptional(viewState.aircraftRegister),
               legs: viewState.legs.map<FlightLegModel>(l => ({
-                std: formFields.daytime.parse(l.std)
+                ...l,
+                std: dataTypes.daytime.convertViewToModel(l.std)
               }))
-            };
+            }));
 
             const otherFlightModels: FlightModel[] = preplan.flights
               .filter(f => f.flightRequirement.id === flight.flightRequirement.id && f.id !== flight.id)
-              .map<FlightModel>(f => ({
-                id: f.id,
-                flightRequirementId: f.flightRequirement.id,
-                day: f.day,
-                aircraftRegisterId:
-                  f.aircraftRegister === undefined
-                    ? undefined
-                    : formFields.preplanAircraftRegister(preplan.aircraftRegisters).parse(formFields.preplanAircraftRegister(preplan.aircraftRegisters).format(f.aircraftRegister)),
-                legs: f.legs.map<FlightLegModel>(l => ({
-                  std: formFields.daytime.parse(formFields.daytime.format(l.std))
-                }))
-              }));
+              .map<FlightModel>(f => f.extractModel());
 
             const newPreplanModel = await FlightService.edit(preplan.id, flightModel, ...otherFlightModels);
             await reloadPreplan(newPreplanModel);
@@ -154,7 +142,7 @@ const FlightModal: FC<FlightModalProps> = ({ state: [open, { flight }], onOpenFl
             <RefiningTextField
               fullWidth
               label="Aircraft Register"
-              formField={formFields.preplanAircraftRegister(preplan.aircraftRegisters)}
+              dataType={dataTypes.preplanAircraftRegister(preplan.aircraftRegisters)}
               value={viewState.aircraftRegister}
               onChange={({ target: { value: aircraftRegister } }) => setViewState({ ...viewState, aircraftRegister })}
             />
@@ -176,13 +164,13 @@ const FlightModal: FC<FlightModalProps> = ({ state: [open, { flight }], onOpenFl
                 {flight.legs.map((l, index) => (
                   <TableRow key={index}>
                     <TableCell align="center">{index + 1}</TableCell>
-                    <TableCell align="center">{formFields.flightNumber.format(l.flightNumber)}</TableCell>
-                    <TableCell align="center">{formFields.airport.format(l.departureAirport)}</TableCell>
-                    <TableCell align="center">{formFields.airport.format(l.arrivalAirport)}</TableCell>
+                    <TableCell align="center">{dataTypes.flightNumber.convertBusinessToView(l.flightNumber)}</TableCell>
+                    <TableCell align="center">{dataTypes.airport.convertBusinessToView(l.departureAirport)}</TableCell>
+                    <TableCell align="center">{dataTypes.airport.convertBusinessToView(l.arrivalAirport)}</TableCell>
                     <TableCell align="center">
                       <RefiningTextField
                         fullWidth
-                        formField={formFields.daytime}
+                        dataType={dataTypes.daytime}
                         value={viewState.legs[index].std}
                         onChange={({ target: { value: std } }) =>
                           setViewState({
@@ -199,10 +187,10 @@ const FlightModal: FC<FlightModalProps> = ({ state: [open, { flight }], onOpenFl
                         }
                       />
                     </TableCell>
-                    <TableCell align="center">{formFields.daytime.format(l.blockTime)}</TableCell>
+                    <TableCell align="center">{dataTypes.daytime.convertBusinessToView(l.blockTime)}</TableCell>
                     <TableCell align="center">
-                      {formFields.daytime.check(viewState.legs[index].std) ? (
-                        formFields.daytime.format(formFields.daytime.parse(viewState.legs[index].std) + l.blockTime)
+                      {dataTypes.daytime.checkView(viewState.legs[index].std) ? (
+                        dataTypes.daytime.convertModelToView(dataTypes.daytime.convertViewToModel(viewState.legs[index].std) + l.blockTime.minutes)
                       ) : (
                         <Fragment>&mdash;</Fragment>
                       )}

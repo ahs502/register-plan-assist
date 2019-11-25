@@ -9,7 +9,7 @@ import { CallMade as ConnectionIcon, Publish as ExportToExcelIcon } from '@mater
 import { ExcelExport, ExcelExportColumn, ExcelExportColumnGroup } from '@progress/kendo-react-excel-export';
 import { CellOptions } from '@progress/kendo-react-excel-export/dist/npm/ooxml/CellOptionsInterface';
 import FlightLeg from 'src/business/flight/FlightLeg';
-import { formFields } from 'src/utils/FormField';
+import { dataTypes } from 'src/utils/DataType';
 
 const character = {
   zeroConnection: '–'

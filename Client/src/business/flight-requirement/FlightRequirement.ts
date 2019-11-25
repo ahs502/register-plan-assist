@@ -1,6 +1,6 @@
 import FlightRequirementModel from '@core/models/flight-requirement/FlightRequirementModel';
 import Id from '@core/types/Id';
-import MasterData, { Stc } from '@core/master-data';
+import { Stc } from '@core/master-data';
 import Rsx from '@core/types/Rsx';
 import FlightRequirementLeg from './FlightRequirementLeg';
 import DayFlightRequirement from './DayFlightRequirement';
@@ -9,8 +9,10 @@ import { PreplanAircraftRegisters } from 'src/business/preplan/PreplanAircraftRe
 import Objectionable from 'src/business/constraints/Objectionable';
 import Objection, { ObjectionType } from 'src/business/constraints/Objection';
 import Checker from 'src/business/constraints/Checker';
+import ModelConvertable from 'src/business/ModelConvertable';
+import { dataTypes } from 'src/utils/DataType';
 
-export default class FlightRequirement implements Objectionable {
+export default class FlightRequirement implements ModelConvertable<FlightRequirementModel>, Objectionable {
   readonly id: Id;
   readonly label: string;
   readonly category: string;
@@ -26,17 +28,33 @@ export default class FlightRequirement implements Objectionable {
 
   constructor(raw: FlightRequirementModel, aircraftRegisters: PreplanAircraftRegisters) {
     this.id = raw.id;
-    this.label = raw.label;
-    this.category = raw.category;
-    this.stc = MasterData.all.stcs.id[raw.stcId];
+    this.label = dataTypes.label.convertModelToBusiness(raw.label);
+    this.category = dataTypes.name.convertModelToBusiness(raw.category);
+    this.stc = dataTypes.stc.convertModelToBusiness(raw.stcId);
     this.aircraftSelection = new PreplanAircraftSelection(raw.aircraftSelection, aircraftRegisters);
     this.rsx = raw.rsx;
-    this.notes = raw.notes;
+    this.notes = dataTypes.name.convertModelToBusiness(raw.notes);
     this.ignored = raw.ignored;
     this.route = raw.route.map((l, index) => new FlightRequirementLeg(l, index, this));
     this.days = raw.days.map(d => new DayFlightRequirement(d, aircraftRegisters, this));
 
     this.objectionStatusDependencies = this.days;
+  }
+
+  extractModel(override?: (flightRequirementModel: FlightRequirementModel) => FlightRequirementModel): FlightRequirementModel {
+    const flightRequirementModel: FlightRequirementModel = {
+      id: this.id,
+      label: dataTypes.label.convertBusinessToModel(this.label),
+      category: dataTypes.name.convertBusinessToModel(this.category),
+      stcId: dataTypes.stc.convertBusinessToModel(this.stc),
+      aircraftSelection: this.aircraftSelection.extractModel(),
+      rsx: this.rsx,
+      notes: dataTypes.name.convertBusinessToModel(this.notes),
+      ignored: this.ignored,
+      route: this.route.map(l => l.extractModel()),
+      days: this.days.map(d => d.extractModel())
+    };
+    return override?.(flightRequirementModel) ?? flightRequirementModel;
   }
 
   get marker(): string {

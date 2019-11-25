@@ -8,6 +8,7 @@ import Preplan from './Preplan';
 import Objectionable from 'src/business/constraints/Objectionable';
 import Objection, { ObjectionType } from 'src/business/constraints/Objection';
 import Checker from 'src/business/constraints/Checker';
+import { dataTypes } from 'src/utils/DataType';
 
 /**
  * An enhanced aircraft register capable of presenting both master data and dummy aircraft registers.
@@ -78,8 +79,8 @@ export class PreplanAircraftRegisters extends MasterDataItems<PreplanAircraftReg
           a =>
             new PreplanAircraftRegister(
               a.id,
-              a.name,
-              MasterData.all.aircraftTypes.id[a.aircraftTypeId],
+              dataTypes.name.convertModelToBusiness(a.name),
+              dataTypes.aircraftType.convertModelToBusiness(a.aircraftTypeId),
               [{ startDate: new Date(1970, 1, 1), endDate: new Date(2070, 1, 1) }],
               true,
               aircraftRegisterOptionsDictionary[a.id]

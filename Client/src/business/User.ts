@@ -1,5 +1,6 @@
 import Id from '@core/types/Id';
 import UserModel from '@core/models/UserModel';
+import { dataTypes } from 'src/utils/DataType';
 
 export default class User {
   readonly id: Id;
@@ -8,7 +9,7 @@ export default class User {
 
   constructor(raw: UserModel) {
     this.id = raw.id;
-    this.name = raw.name;
-    this.displayName = raw.displayName;
+    this.name = dataTypes.name.convertModelToBusiness(raw.name);
+    this.displayName = dataTypes.name.convertModelToBusiness(raw.displayName);
   }
 }

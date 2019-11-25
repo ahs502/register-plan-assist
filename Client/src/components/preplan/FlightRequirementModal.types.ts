@@ -16,6 +16,27 @@ export interface ViewState {
   route: RouteLegViewState[];
   days: DayTabViewState[];
 }
+export class ViewStateValidation extends Validation<
+  'LABEL_EXISTS' | 'LABEL_FORMAT_IS_VALID' | 'CATEGORY_FORMAT_IS_VALID',
+  {
+    defaultValidation: TabViewStateValidation;
+    routeValidation: RouteLegViewStateValidation[];
+    dayValidations: TabViewStateValidation[];
+  }
+> {
+  constructor({ label, category, default: defaultTab, route, days }: ViewState) {
+    super(validator => {
+      validator.check('LABEL_EXISTS', !!label).check('LABEL_FORMAT_IS_VALID', () => formFields.name.check(label), 'Invalid label.');
+      validator.if(!!category).check('CATEGORY_FORMAT_IS_VALID', () => formFields.name.check(category), 'Invalid category.');
+      validator.put(validator.$.defaultValidation, new TabViewStateValidation(defaultTab));
+      validator
+        .array(route)
+        .each((routeLeg, index, route) => validator.put(validator.$.routeValidation[index], new RouteLegViewStateValidation(routeLeg, route[index - 1], route[index + 1])));
+      validator.array(days).each((day, index) => validator.put(validator.$.dayValidations[index], new TabViewStateValidation(day)));
+    });
+  }
+}
+
 export interface TabViewState {
   rsx: Rsx;
   notes: string;
@@ -23,6 +44,21 @@ export interface TabViewState {
   forbiddenAircraftIdentities: readonly AircraftIdentityOptionViewState[];
   legs: LegViewState[];
 }
+class TabViewStateValidation extends Validation<
+  'NOTE_FORMAT_IS_VALID' | 'ALLOWED_AIRCRAFT_IDENTITIES_EXISTS',
+  {
+    legValidations: LegViewStateValidation[];
+  }
+> {
+  constructor({ notes, allowedAircraftIdentities, legs }: TabViewState) {
+    super(validator => {
+      validator.if(!!notes).check('NOTE_FORMAT_IS_VALID', () => formFields.name.check(notes));
+      validator.check('ALLOWED_AIRCRAFT_IDENTITIES_EXISTS', allowedAircraftIdentities.length > 0);
+      validator.array(legs).each((leg, index) => validator.put(validator.$.legValidations[index], new LegViewStateValidation(leg)));
+    });
+  }
+}
+
 export interface DayTabViewState extends TabViewState {
   selected: boolean;
 }
@@ -33,20 +69,40 @@ export interface RouteLegViewState {
   departureAirport: string;
   arrivalAirport: string;
 }
-// export class RouteLegViewStateValidation extends Validation<'FLIGHT_NUMBER_EXISTS'|'FLIGHT_NUMBER_FORMAT_IS_VALID'| ''>{
-
-//    constructor({flightNumber, departureAirport, arrivalAirport}: RouteLegViewState) {
-//        super(validator =>{
-//             validator
-//             .check('FLIGHT_NUMBER_EXISTS', !!flightNumber)
-//             .check('FLIGHT_NUMBER_FORMAT_IS_VALID', () => formFields.flightNumber.check(flightNumber), 'Invalid flight number.');
-//             validator
-//             .check()
-
-//        });
-
-//    }
-// }
+class RouteLegViewStateValidation extends Validation<
+  | 'FLIGHT_NUMBER_EXISTS'
+  | 'FLIGHT_NUMBER_FORMAT_IS_VALID'
+  | 'DEPARTURE_AIRPORT_EXISTS'
+  | 'DEPARTURE_AIRPORT_FORMAT_IS_VALIED'
+  | 'DEPARTURE_AIRPORT_MATCHES_PREVIOUS_LEG'
+  | 'ARRIVAL_AIRPORT_EXISTS'
+  | 'ARRIVAL_AIRPORT_FORMAT_IS_VALIED'
+  | 'ARRIVAL_AIRPORT_MATCHES_NEXT_LEG'
+> {
+  constructor({ flightNumber, departureAirport, arrivalAirport }: RouteLegViewState, previousLeg: RouteLegViewState | undefined, nextLeg: RouteLegViewState | undefined) {
+    super(validator => {
+      validator.check('FLIGHT_NUMBER_EXISTS', !!flightNumber).check('FLIGHT_NUMBER_FORMAT_IS_VALID', () => formFields.flightNumber.check(flightNumber), 'Invalid flight number.');
+      validator
+        .check('DEPARTURE_AIRPORT_EXISTS', !!departureAirport)
+        .check('DEPARTURE_AIRPORT_FORMAT_IS_VALIED', formFields.airport.check(departureAirport), 'Invalid airport.')
+        .if(!!previousLeg)
+        .check(
+          'DEPARTURE_AIRPORT_MATCHES_PREVIOUS_LEG',
+          () => formFields.airport.refine(departureAirport) === formFields.airport.refine(previousLeg!.arrivalAirport),
+          'Must match previous leg.'
+        );
+      validator
+        .check('ARRIVAL_AIRPORT_EXISTS', !!arrivalAirport)
+        .check('ARRIVAL_AIRPORT_FORMAT_IS_VALIED', formFields.airport.check(arrivalAirport), 'Invalid airport.')
+        .if(!!nextLeg)
+        .check(
+          'ARRIVAL_AIRPORT_MATCHES_NEXT_LEG',
+          () => formFields.airport.refine(arrivalAirport) === formFields.airport.refine(nextLeg!.departureAirport),
+          'Must match next leg.'
+        );
+    });
+  }
+}
 
 export interface LegViewState {
   blockTime: string;
@@ -55,7 +111,7 @@ export interface LegViewState {
   originPermission: boolean;
   destinationPermission: boolean;
 }
-export class LegViewStateValidation extends Validation<
+class LegViewStateValidation extends Validation<
   | 'BLOCKTIME_EXISTS'
   | 'BLOCKTIME_FORMAT_IS_CORRECT'
   | 'BLOCKTIME_IS_POSITIVE'

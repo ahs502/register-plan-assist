@@ -13,6 +13,13 @@ import { PreplanContext } from 'src/pages/preplan';
 import SideBarContainer from 'src/components/preplan/resource-scheduler/SideBarContainer';
 import { formFields } from 'src/utils/FormField';
 import RefiningTextField from 'src/components/RefiningTextField';
+import {
+  AircraftRegisterViewState,
+  ViewState,
+  DummyAircraftRegisterViewState,
+  AddDummyAircraftRegisterFormState,
+  AircraftRegistersPerTypeViewState
+} from 'src/components/preplan/resource-scheduler/SelectAircraftRegistersSideBar.types';
 
 const useStyles = makeStyles((theme: Theme) => ({
   searchWrapper: {
@@ -49,34 +56,6 @@ const useStyles = makeStyles((theme: Theme) => ({
     overflow: 'auto'
   }
 }));
-
-type ViewState = AircraftRegistersPerTypeViewState[];
-interface AircraftRegistersPerTypeViewState {
-  type: AircraftType;
-  registers: AircraftRegisterViewState[];
-  dummyRegisters: DummyAircraftRegisterViewState[];
-}
-interface AircraftRegisterViewState {
-  id: string;
-  name: string;
-  groups: string[];
-  baseAirport: string;
-  status: AircraftRegisterOptionsStatus;
-}
-interface DummyAircraftRegisterViewState {
-  id: string;
-  name: string;
-  baseAirport: string;
-  status: AircraftRegisterOptionsStatus;
-}
-
-interface AddDummyAircraftRegisterFormState {
-  show: boolean;
-  name: string;
-  aircraftType: string;
-  baseAirport: string;
-  status: AircraftRegisterOptionsStatus;
-}
 
 const aircraftRegisterOptionsStatusList: readonly { value: AircraftRegisterOptionsStatus; label: string }[] = [
   { value: 'IGNORED', label: 'Ignored' },

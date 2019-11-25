@@ -1,4 +1,4 @@
-import React, { FC, useMemo, useContext, Fragment } from 'react';
+import React, { FC, useMemo, useContext, Fragment, useState } from 'react';
 import { Theme, Typography, Grid, Paper, Tabs, Tab, Checkbox, IconButton, FormControlLabel } from '@material-ui/core';
 import { Clear as ClearIcon, Add as AddIcon, WrapText as WrapTextIcon } from '@material-ui/icons';
 import { makeStyles } from '@material-ui/styles';
@@ -24,7 +24,14 @@ import FlightRequirementService from 'src/services/FlightRequirementService';
 import DayFlightRequirementLegModel from '@core/models/flight-requirement/DayFlightRequirementLegModel';
 import { formFields } from 'src/utils/FormField';
 import RefiningTextField from 'src/components/RefiningTextField';
-import { ViewState, AircraftIdentityOptionViewState, RouteLegViewState, DayTabViewState, LegViewState } from 'src/components/preplan/FlightRequirementModal.types';
+import {
+  ViewState,
+  AircraftIdentityOptionViewState,
+  RouteLegViewState,
+  DayTabViewState,
+  LegViewState,
+  ViewStateValidation
+} from 'src/components/preplan/FlightRequirementModal.types';
 
 const useStyles = makeStyles((theme: Theme) => ({
   dayTab: {
@@ -206,6 +213,8 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
   const routeLegViewState = viewState.route[viewState.legIndex];
   const legViewState = viewState.tabIndex === 'ALL' ? viewState.default.legs[viewState.legIndex] : viewState.days[viewState.tabIndex].legs[viewState.legIndex];
 
+  const validation = new ViewStateValidation(viewState);
+
   const classes = useStyles();
 
   return (
@@ -222,7 +231,7 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
         {
           title: 'Submit',
           action: async () => {
-            //TODO: Validate the view model first.
+            if (!validation.ok) return;
 
             const newFlightRequirementModel: NewFlightRequirementModel = {
               label: formFields.label.parse(viewState.label),

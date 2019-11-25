@@ -9,7 +9,7 @@ import { CallMade as ConnectionIcon, Publish as ExportToExcelIcon } from '@mater
 import { ExcelExport, ExcelExportColumn, ExcelExportColumnGroup } from '@progress/kendo-react-excel-export';
 import { CellOptions } from '@progress/kendo-react-excel-export/dist/npm/ooxml/CellOptionsInterface';
 import FlightLeg from 'src/business/flight/FlightLeg';
-import { formFields } from 'src/utils/FormField';
+import { dataTypes } from 'src/utils/DataType';
 import RefiningTextField from 'src/components/RefiningTextField';
 import Validation from '@core/node_modules/@ahs502/validation/dist/Validation';
 
@@ -110,19 +110,19 @@ class ViewStateValidation extends Validation<
 > {
   constructor({ startDate, endDate, maxConnectionTime, minConnectionTime }: ViewState) {
     super(validator => {
-      validator.check('START_DATE_EXISTS', !!startDate).check('START_DATE_IS_VALID', () => formFields.utcDate.check(startDate));
-      validator.check('END_DATE_EXISTS', !!endDate).check('END_DATE_IS_VALID', () => formFields.utcDate.check(endDate));
+      validator.check('START_DATE_EXISTS', !!startDate).check('START_DATE_IS_VALID', () => dataTypes.utcDate.checkView(startDate));
+      validator.check('END_DATE_EXISTS', !!endDate).check('END_DATE_IS_VALID', () => dataTypes.utcDate.checkView(endDate));
       validator
         .when('START_DATE_IS_VALID', 'END_DATE_IS_VALID')
-        .then(() => formFields.utcDate.parse(startDate) <= formFields.utcDate.parse(endDate))
+        .then(() => dataTypes.utcDate.convertViewToModel(startDate) <= dataTypes.utcDate.convertViewToModel(endDate))
         .check('START_DATE_IS_NOT_AFTER_END_DATE', ok => ok, 'Can not be after end date.')
         .check('END_DATE_IS_NOT_BEFORE_START_DATE', ok => ok, 'Can not be before start date.');
 
-      validator.check('MAX_CONNECTION_TIME_EXISTS', !!maxConnectionTime).check('MAX_CONNECTION_TIME_IS_VALID', () => formFields.daytime.check(maxConnectionTime));
-      validator.check('MIN_CONNECTION_TIME_EXISTS', !!minConnectionTime).check('MIN_CONNECTION_TIME_IS_VALID', () => formFields.daytime.check(minConnectionTime));
+      validator.check('MAX_CONNECTION_TIME_EXISTS', !!maxConnectionTime).check('MAX_CONNECTION_TIME_IS_VALID', () => dataTypes.daytime.checkView(maxConnectionTime));
+      validator.check('MIN_CONNECTION_TIME_EXISTS', !!minConnectionTime).check('MIN_CONNECTION_TIME_IS_VALID', () => dataTypes.daytime.checkView(minConnectionTime));
       validator
         .when('MAX_CONNECTION_TIME_EXISTS', 'MIN_CONNECTION_TIME_EXISTS')
-        .then(() => formFields.daytime.parse(minConnectionTime) <= formFields.daytime.parse(minConnectionTime))
+        .then(() => dataTypes.daytime.convertViewToModel(minConnectionTime) <= dataTypes.daytime.convertViewToModel(minConnectionTime))
         .check('MIN_CONNECTION_IS_NOT_GREATER_THAN_MAX_CONNECTION_TIME', ok => ok, 'Can not be grater than max connection.')
         .check('MAX_CONNECTION_IS_NOT_LESS_THAN_MIN_CONNECTION_TIME', ok => ok, 'Can not be less than max connection.');
     });
@@ -154,10 +154,10 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
   const [{ eastAirports, westAirports, startDate, endDate, maxConnectionTime, minConnectionTime }, setViewState] = useState<ViewState>(() => ({
     eastAirports: allAirports.filter(a => defaultEastAirpot.indexOf(a.name) !== -1).orderBy('name'),
     westAirports: allAirports.filter(a => defaultWestAirport.indexOf(a.name) !== -1).orderBy('name'),
-    startDate: formFields.utcDate.format(fromDate),
-    endDate: formFields.utcDate.format(toDate),
-    maxConnectionTime: formFields.daytime.format(300),
-    minConnectionTime: formFields.daytime.format(70)
+    startDate: dataTypes.utcDate.convertBusinessToView(fromDate),
+    endDate: dataTypes.utcDate.convertBusinessToView(toDate),
+    maxConnectionTime: dataTypes.daytime.convertModelToView(300),
+    minConnectionTime: dataTypes.daytime.convertModelToView(70)
   }));
 
   const [connectionTableDataModel, setConnectionTableDataModel] = useState<{ [index: string]: any }[]>([]);
@@ -169,7 +169,7 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
 
   useEffect(() => {
     const flightLegInfoModels: FlightLegInfoModel[] = [];
-    const baseDate = new Date((new Date(formFields.utcDate.parse(startDate)).getTime() + new Date(formFields.utcDate.parse(endDate)).getTime()) / 2);
+    const baseDate = new Date((new Date(dataTypes.utcDate.convertViewToModel(startDate)).getTime() + new Date(dataTypes.utcDate.convertViewToModel(endDate)).getTime()) / 2);
 
     const targetFlights = flights.filter(
       f =>
@@ -743,14 +743,14 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
 
       <RefiningTextField
         label="Start Date"
-        formField={formFields.utcDate}
+        dataType={dataTypes.utcDate}
         value={startDate}
         onChange={({ target: { value: startDate } }) => setViewState({ eastAirports, westAirports, endDate, startDate, maxConnectionTime, minConnectionTime })}
       />
 
       <RefiningTextField
         label="End Date"
-        formField={formFields.utcDate}
+        dataType={dataTypes.utcDate}
         value={endDate}
         onChange={({ target: { value: endDate } }) => setViewState({ eastAirports, westAirports, endDate, startDate, maxConnectionTime, minConnectionTime })}
       />
@@ -764,14 +764,14 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
 
       <RefiningTextField
         label="Minimum Connection Time"
-        formField={formFields.daytime}
+        dataType={dataTypes.daytime}
         value={minConnectionTime}
         onChange={({ target: { value: minConnectionTime } }) => setViewState({ eastAirports, westAirports, endDate, startDate, maxConnectionTime, minConnectionTime })}
       />
 
       <RefiningTextField
         label="Maximum Connection Time"
-        formField={formFields.daytime}
+        dataType={dataTypes.daytime}
         value={maxConnectionTime}
         onChange={({ target: { value: maxConnectionTime } }) => setViewState({ eastAirports, westAirports, endDate, startDate, maxConnectionTime, minConnectionTime })}
       />

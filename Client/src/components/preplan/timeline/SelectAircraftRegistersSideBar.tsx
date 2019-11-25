@@ -10,8 +10,8 @@ import AircraftRegisterOptionsStatus from '@core/types/AircraftRegisterOptionsSt
 import DummyAircraftRegisterModel from '@core/models/preplan/DummyAircraftRegisterModel';
 import AircraftRegisterOptionsModel from '@core/models/preplan/AircraftRegisterOptionsModel';
 import { PreplanContext } from 'src/pages/preplan';
-import SideBarContainer from 'src/components/preplan/resource-scheduler/SideBarContainer';
-import { formFields } from 'src/utils/FormField';
+import SideBarContainer from 'src/components/preplan/timeline/SideBarContainer';
+import { dataTypes } from 'src/utils/DataType';
 import RefiningTextField from 'src/components/RefiningTextField';
 import {
   AircraftRegisterViewState,
@@ -19,7 +19,7 @@ import {
   DummyAircraftRegisterViewState,
   AddDummyAircraftRegisterFormState,
   AircraftRegistersPerTypeViewState
-} from 'src/components/preplan/resource-scheduler/SelectAircraftRegistersSideBar.types';
+} from 'src/components/preplan/timeline/SelectAircraftRegistersSideBar.types';
 
 const useStyles = makeStyles((theme: Theme) => ({
   searchWrapper: {
@@ -83,17 +83,17 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
         .filter(a => !a.dummy && a.aircraftType.id === t.id)
         .map<AircraftRegisterViewState>(a => ({
           id: a.id,
-          name: a.name,
+          name: dataTypes.name.convertBusinessToView(a.name),
           groups: MasterData.all.aircraftRegisterGroups.items.filter(g => g.aircraftRegisters.filter(r => r.id === a.id)).map(g => g.name),
-          baseAirport: a.options.baseAirport === undefined ? '' : formFields.airport.format(a.options.baseAirport),
+          baseAirport: dataTypes.airport.convertBusinessToViewOptional(a.options.baseAirport),
           status: a.options.status
         })),
       dummyRegisters: preplan.aircraftRegisters.items
         .filter(a => a.dummy && a.aircraftType.id === t.id)
         .map<DummyAircraftRegisterViewState>(a => ({
           id: a.id,
-          name: a.name,
-          baseAirport: a.options.baseAirport === undefined ? '' : formFields.airport.format(a.options.baseAirport),
+          name: dataTypes.name.convertBusinessToView(a.name),
+          baseAirport: dataTypes.airport.convertBusinessToViewOptional(a.options.baseAirport),
           status: a.options.status
         }))
     }))
@@ -140,21 +140,21 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
           >
             <TableCell className={classes.nameCell}>
               <RefiningTextField
-                formField={formFields.label}
+                dataType={dataTypes.label}
                 value={addDummyRegisterFormState.name}
                 onChange={({ target: { value: name } }) => setAddDummyRegisterFormState({ ...addDummyRegisterFormState, name })}
               />
             </TableCell>
             <TableCell>
               <RefiningTextField
-                formField={formFields.aircraftType}
+                dataType={dataTypes.aircraftType}
                 value={addDummyRegisterFormState.aircraftType}
                 onChange={({ target: { value: aircraftType } }) => setAddDummyRegisterFormState({ ...addDummyRegisterFormState, aircraftType })}
               />
             </TableCell>
             <TableCell className={classes.baseAirportCell}>
               <RefiningTextField
-                formField={formFields.airport}
+                dataType={dataTypes.airport}
                 value={addDummyRegisterFormState.baseAirport}
                 onChange={({ target: { value: baseAirport } }) => setAddDummyRegisterFormState({ ...addDummyRegisterFormState, baseAirport })}
               />
@@ -184,7 +184,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
                 size="small"
                 onClick={() => {
                   //TODO: Validate addDummyRegisterFormState...
-                  const type = MasterData.all.aircraftTypes.id[formFields.aircraftType.parse(addDummyRegisterFormState.aircraftType)];
+                  const type = MasterData.all.aircraftTypes.id[dataTypes.aircraftType.convertViewToModel(addDummyRegisterFormState.aircraftType)];
                   list
                     .find(t => t.type === type)!
                     .dummyRegisters.push({
@@ -234,7 +234,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
       </TableCell>
       <TableCell className={classes.baseAirportCell}>
         <RefiningTextField
-          formField={formFields.airport}
+          dataType={dataTypes.airport}
           disabled={loading}
           value={r.baseAirport}
           onChange={event => {
@@ -274,7 +274,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
     <TableRow key={r.id} hover={true} className={classNames({ [classes.backupRegister]: r.status === 'BACKUP', [classes.ignoredRegister]: r.status === 'IGNORED' })}>
       <TableCell className={classes.nameCell}>
         <RefiningTextField
-          formField={formFields.label}
+          dataType={dataTypes.label}
           value={r.name}
           disabled={loading}
           onChange={event => {
@@ -285,7 +285,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
       </TableCell>
       <TableCell className={classes.baseAirportCell}>
         <RefiningTextField
-          formField={formFields.airport}
+          dataType={dataTypes.airport}
           value={r.baseAirport}
           disabled={loading}
           onChange={event => {
@@ -333,19 +333,21 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
   return (
     <SideBarContainer
       onApply={() => {
-        const dummyAircraftRegisters: DummyAircraftRegisterModel[] = list.flatMap<DummyAircraftRegisterModel>(t =>
-          t.dummyRegisters.map<DummyAircraftRegisterModel>(r => ({
-            id: r.id,
-            name: formFields.label.parse(r.name),
-            aircraftTypeId: t.type.id
-          }))
-        );
+        const dummyAircraftRegisters: DummyAircraftRegisterModel[] = list
+          .map(t =>
+            t.dummyRegisters.map<DummyAircraftRegisterModel>(r => ({
+              id: r.id,
+              name: dataTypes.label.convertViewToModel(r.name),
+              aircraftTypeId: dataTypes.aircraftType.convertBusinessToModel(t.type)
+            }))
+          )
+          .flatten();
         const aircraftRegisterOptions: AircraftRegisterOptionsModel = {
           options: list.flatMap<AircraftRegisterOptionsModel['options'][number]>(t =>
             [...t.registers, ...t.dummyRegisters].map<AircraftRegisterOptionsModel['options'][number]>(r => ({
               aircraftRegisterId: r.id,
               status: r.status,
-              baseAirportId: r.baseAirport === '' ? undefined : formFields.airport.parse(r.baseAirport)
+              baseAirportId: dataTypes.airport.convertViewToModelOptional(r.baseAirport)
             }))
           )
         };

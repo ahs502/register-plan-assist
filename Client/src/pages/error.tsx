@@ -1,6 +1,14 @@
 import React, { FC, Fragment } from 'react';
-import { Button, Typography } from '@material-ui/core';
+import { Button, Typography, Theme, Divider } from '@material-ui/core';
 import { useHistory } from 'react-router-dom';
+import { makeStyles } from '@material-ui/styles';
+import { red } from '@material-ui/core/colors';
+
+const useStyles = makeStyles((theme: Theme) => ({
+  error: {
+    color: red[400]
+  }
+}));
 
 export interface ErrorPageState {
   title?: string;
@@ -9,6 +17,8 @@ export interface ErrorPageState {
 
 const ErrorPageComponent: FC = () => {
   const history = useHistory<ErrorPageState>();
+
+  const classes = useStyles();
 
   const { title, error } = ErrorPage.state;
   if (!error) {
@@ -19,22 +29,22 @@ const ErrorPageComponent: FC = () => {
   return (
     <Fragment>
       <br />
-      {!!title && <Typography variant="h4">&nbsp;&nbsp;{title}</Typography>}
+      {!!title && (
+        <Typography variant="h5" classes={{ root: classes.error }}>
+          &nbsp;&nbsp;{title}
+        </Typography>
+      )}
+      <br />
+      <Typography variant="body1" classes={{ root: classes.error }}>
+        &nbsp;&nbsp;&nbsp;{String(error)}
+      </Typography>
+      <br />
+      <Divider />
       <br />
       &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-      <Button
-        variant="outlined"
-        color="secondary"
-        onClick={() => {
-          window.location.reload();
-          history.push('/');
-        }}
-      >
+      <Button variant="outlined" color="primary" onClick={() => window.location.reload(true)}>
         Restart Application
       </Button>
-      <br />
-      <br />
-      <Typography variant="h5">&nbsp;&nbsp;&nbsp;{String(error)}</Typography>
     </Fragment>
   );
 };

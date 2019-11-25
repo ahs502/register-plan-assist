@@ -1,7 +1,7 @@
 import AircraftRegisterOptionsStatus from '@core/types/AircraftRegisterOptionsStatus';
 import MasterData, { AircraftType } from '@core/master-data';
 import Validation from '@core/node_modules/@ahs502/validation/dist/Validation';
-import { formFields } from 'src/utils/FormField';
+import { dataTypes } from 'src/utils/DataType';
 
 export type ViewState = AircraftRegistersPerTypeViewState[];
 export class ViewStateValidation extends Validation<
@@ -62,7 +62,7 @@ class AircraftRegisterViewStateValidation extends Validation<'BASE_AIRPORT_EXIST
       validator
         .if(status === 'INCLUDED' || status === 'BACKUP' || !!baseAirport)
         .check('BASE_AIRPORT_EXISTS', !!baseAirport)
-        .check('BASE_AIRPORT_FORMAT_IS_CORRECT', formFields.airport.check(baseAirport), 'Invalid.');
+        .check('BASE_AIRPORT_FORMAT_IS_CORRECT', dataTypes.airport.checkView(baseAirport), 'Invalid.');
     });
   }
 }
@@ -86,8 +86,8 @@ class DummyAircraftRegisterViewStateValidation extends Validation<
     super(validator => {
       validator
         .check('NAME_EXISTS', !!name)
-        .check('NAME_FORMAT_IS_CORRECT', () => formFields.label.check(name), 'Invalid.')
-        .then(() => formFields.label.refine(name))
+        .check('NAME_FORMAT_IS_CORRECT', () => dataTypes.label.checkView(name), 'Invalid.')
+        .then(() => dataTypes.label.refineView(name))
         .check(
           'NAME_IS_NOT_DUPLICATED_WITH_AIRCRAFT_TYPES',
           name => !MasterData.all.aircraftTypes.items.some(t => name === t.name || name === `${t.name}_DUMMY` || name === `${t.name}_EXISTS`),
@@ -106,7 +106,7 @@ class DummyAircraftRegisterViewStateValidation extends Validation<
       validator
         .if(status === 'INCLUDED' || status === 'BACKUP' || !!baseAirport)
         .check('BASE_AIRPORT_EXISTS', !!baseAirport)
-        .check('BASE_AIRPORT_FORMAT_IS_CORRECT', formFields.airport.check(baseAirport), 'Invalid.');
+        .check('BASE_AIRPORT_FORMAT_IS_CORRECT', dataTypes.airport.checkView(baseAirport), 'Invalid.');
     });
   }
 }
@@ -134,8 +134,8 @@ export class AddDummyAircraftRegisterFormStateValidation extends Validation<
       const dummyAircraftRegisterNames = viewState.flatMap(t => t.dummyRegisters.flatMap(r => r.name.toUpperCase()));
       validator
         .check('NAME_EXISTS', !!name)
-        .check('NAME_FORMAT_IS_CORRECT', () => formFields.label.check(name), 'Invalid.')
-        .then(() => formFields.label.refine(name))
+        .check('NAME_FORMAT_IS_CORRECT', () => dataTypes.label.checkView(name), 'Invalid.')
+        .then(() => dataTypes.label.refineView(name))
         .check(
           'NAME_IS_NOT_DUPLICATED_WITH_AIRCRAFT_TYPES',
           name => !MasterData.all.aircraftTypes.items.some(t => name === t.name || name === `${t.name}_DUMMY` || name === `${t.name}_EXISTS`),
@@ -151,11 +151,11 @@ export class AddDummyAircraftRegisterFormStateValidation extends Validation<
           name => !(name in MasterData.all.aircraftRegisters.name || dummyAircraftRegisterNames.includes(name)),
           name => `Dupplicated with aircraft register ${name}`
         );
-      validator.check('AIRCRAFT_TYPE_EXISTS', !!aircraftType).check('AIRCRAFT_TYPE_IS_VALID', () => formFields.aircraftType.check(aircraftType));
+      validator.check('AIRCRAFT_TYPE_EXISTS', !!aircraftType).check('AIRCRAFT_TYPE_IS_VALID', () => dataTypes.aircraftType.checkView(aircraftType));
       validator
         .if(status === 'INCLUDED' || status === 'BACKUP' || !!baseAirport)
         .check('BASE_AIRPORT_EXISTS', !!baseAirport)
-        .check('BASE_AIRPORT_IS_VALID', () => formFields.airport.check(baseAirport));
+        .check('BASE_AIRPORT_IS_VALID', () => dataTypes.airport.checkView(baseAirport));
     });
   }
 }

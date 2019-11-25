@@ -1,7 +1,7 @@
 import React, { FC } from 'react';
 import { Theme } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
-import SideBarContainer from 'src/components/preplan/resource-scheduler/SideBarContainer';
+import SideBarContainer from 'src/components/preplan/timeline/SideBarContainer';
 
 const useStyles = makeStyles((theme: Theme) => ({
   // formControl: {

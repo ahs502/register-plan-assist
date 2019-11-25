@@ -3,7 +3,7 @@ import { Theme } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import { Switch, Redirect, Route, useRouteMatch } from 'react-router-dom';
 import NavBar from 'src/components/NavBar';
-import ResourceSchedulerPage from 'src/pages/preplan/resource-scheduler';
+import TimelinePage from 'src/pages/preplan/timeline';
 import FlightRequirementListPage from 'src/pages/preplan/flight-requirement-list';
 import ReportsPage from 'src/pages/preplan/reports';
 import PreplanService from 'src/services/PreplanService';
@@ -11,6 +11,7 @@ import Preplan from 'src/business/preplan/Preplan';
 import ObjectionModal, { useObjectionModalState } from 'src/components/preplan/ObjectionModal';
 import FlightRequirementModal, { useFlightRequirementModalState } from 'src/components/preplan/FlightRequirementModal';
 import RemoveFlightRequirementModal, { useRemoveFlightRequirementModalState } from 'src/components/preplan/RemoveFlightRequirementModal';
+import FlightModal, { useFlightModalState } from 'src/components/preplan/FlightModal';
 import PreplanModel from '@core/models/preplan/PreplanModel';
 import { useThrowApplicationError } from 'src/pages/error';
 import MasterData from '@core/master-data';
@@ -23,9 +24,11 @@ export const ReloadPreplanContext = createContext<(newPreplanModel?: PreplanMode
 
 const PreplanPage: FC = () => {
   const [preplan, setPreplan] = useState<Preplan | null>(null);
+
   const [objectionModalState, openObjectionModal, closeObjectionModal] = useObjectionModalState();
   const [flightRequirementModalState, openFlightRequirementModal, closeFlightRequirementModal] = useFlightRequirementModalState();
   const [removeFlightRequirementModalState, openRemoveFlightRequirementModal, closeRemoveFlightRequirementModal] = useRemoveFlightRequirementModalState();
+  const [flightModalState, openFlightModal, closeFlightModal] = useFlightModalState();
 
   const navBarToolsRef = useRef<HTMLDivElement>(null);
 
@@ -39,7 +42,7 @@ const PreplanPage: FC = () => {
 
   if (!MasterData.initialized) return <Fragment />;
 
-  const resourceSchedulerPageSelected = window.location.href.startsWith(`${window.location.origin}/#${routeMatch.url}/resource-scheduler`);
+  const timelinePageSelected = window.location.href.startsWith(`${window.location.origin}/#${routeMatch.url}/timeline`);
   const flightRequirementListPageSelected = window.location.href.startsWith(`${window.location.origin}/#${routeMatch.url}/flight-requirement-list`);
   const reportsPageSelected = window.location.href.startsWith(`${window.location.origin}/#${routeMatch.url}/reports`);
   const reportsProposalPageSelected = reportsPageSelected && window.location.hash.endsWith('/proposal');
@@ -48,9 +51,9 @@ const PreplanPage: FC = () => {
   return (
     <Fragment>
       <NavBar
-        backLink={resourceSchedulerPageSelected ? '/preplan-list' : reportsProposalPageSelected || reportsConnectionsPageSelected ? `${routeMatch.url}/reports` : routeMatch.url}
+        backLink={timelinePageSelected ? '/preplan-list' : reportsProposalPageSelected || reportsConnectionsPageSelected ? `${routeMatch.url}/reports` : routeMatch.url}
         backTitle={
-          resourceSchedulerPageSelected
+          timelinePageSelected
             ? 'Back to Preplan List'
             : reportsProposalPageSelected || reportsConnectionsPageSelected
             ? `Back to Preplan ${preplan && preplan.name} Reports`
@@ -96,21 +99,21 @@ const PreplanPage: FC = () => {
                   const newPreplan = new Preplan(preplanModel, preplan);
                   setPreplan(newPreplan);
                 } catch (reason) {
-                  console.error(reason);
-                  // history.push('/preplan-list');
+                  throwApplicationError.withTitle('Unable to load the preplan.')(reason);
                 }
               }}
             >
               <Switch>
-                <Redirect exact from={routeMatch.url} to={routeMatch.url + '/resource-scheduler'} />
+                <Redirect exact from={routeMatch.url} to={routeMatch.url + '/timeline'} />
                 <Route
                   exact
-                  path={routeMatch.path + '/resource-scheduler'}
+                  path={routeMatch.path + '/timeline'}
                   render={() => (
-                    <ResourceSchedulerPage
+                    <TimelinePage
                       onObjectionTargetClick={target => openObjectionModal({ target })}
                       onEditFlightRequirement={flightRequirement => openFlightRequirementModal({ flightRequirement })}
                       onEditDayFlightRequirement={({ flightRequirement, day }) => openFlightRequirementModal({ flightRequirement, day })}
+                      onEditFlight={flight => openFlightModal({ flight })}
                     />
                   )}
                 />
@@ -129,9 +132,15 @@ const PreplanPage: FC = () => {
                 <Redirect to={routeMatch.url} />
               </Switch>
 
+              {/* Modals */}
               <ObjectionModal state={objectionModalState} onClose={closeObjectionModal} />
               <FlightRequirementModal state={flightRequirementModalState} onClose={closeFlightRequirementModal} />
               <RemoveFlightRequirementModal state={removeFlightRequirementModalState} onClose={closeRemoveFlightRequirementModal} />
+              <FlightModal
+                state={flightModalState}
+                onClose={closeFlightModal}
+                onOpenFlightRequirementModal={(flightRequirement, day) => openFlightRequirementModal({ flightRequirement, day })}
+              />
             </ReloadPreplanContext.Provider>
           </PreplanContext.Provider>
         </NavBarToolsContainerContext.Provider>

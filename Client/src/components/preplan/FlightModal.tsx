@@ -132,7 +132,7 @@ const FlightModal: FC<FlightModalProps> = ({ state: [open, { flight }], onOpenFl
             const newPreplanModel = await FlightService.edit(preplan.id, flightModel, ...otherFlightModels);
             await reloadPreplan(newPreplanModel);
           },
-          disable: !validation.ok
+          disabled: !validation.ok
         }
       ]}
     >

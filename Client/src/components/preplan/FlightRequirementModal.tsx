@@ -32,6 +32,7 @@ import {
   LegViewState,
   ViewStateValidation
 } from 'src/components/preplan/FlightRequirementModal.types';
+import classNames from 'classnames';
 
 const useStyles = makeStyles((theme: Theme) => ({
   dayTab: {
@@ -48,6 +49,9 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
   checkboxContainer: {
     height: 48
+  },
+  error: {
+    color: theme.palette.error.main
   }
 }));
 
@@ -214,6 +218,17 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
   const legViewState = viewState.tabIndex === 'ALL' ? viewState.default.legs[viewState.legIndex] : viewState.days[viewState.tabIndex].legs[viewState.legIndex];
 
   const validation = new ViewStateValidation(viewState);
+  const errors = {
+    label: validation.message('LABEL_*'),
+    category: validation.message('CATEGORY_*'),
+    allTab: validation.$.defaultValidation.ok || validation.$.routeValidation.some(v => !v.ok),
+    dayTabs: validation.$.dayValidations.map(v => v.ok),
+    notes: viewState.tabIndex === 'ALL' ? validation.$.defaultValidation.message('NOTES_*') : validation.$.dayValidations[viewState.tabIndex].message('NOTES_*'),
+    allowedAircrafts:
+      viewState.tabIndex === 'ALL'
+        ? validation.$.defaultValidation.message('ALLOWED_AIRCRAFT_IDENTITIES_*')
+        : validation.$.dayValidations[viewState.tabIndex].message('ALLOWED_AIRCRAFT_IDENTITIES_*')
+  };
 
   const classes = useStyles();
 
@@ -231,7 +246,7 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
         {
           title: 'Submit',
           action: async () => {
-            if (!validation.ok) return;
+            if (!validation.ok) throw 'Invalid form fields.';
 
             const newFlightRequirementModel: NewFlightRequirementModel = {
               label: dataTypes.label.convertViewToModel(viewState.label),
@@ -309,14 +324,23 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
               : await FlightRequirementService.add(preplan.id, newFlightRequirementModel, newFlightModels);
             await reloadPreplan(newPreplanModel);
             return others.onClose();
-          }
+          },
+          disabled: !validation.ok
         }
       ]}
     >
       <Grid container spacing={2}>
         {/* General */}
         <Grid item xs={5}>
-          <RefiningTextField fullWidth label="Label" dataType={dataTypes.label} value={viewState.label} onChange={e => setViewState({ ...viewState, label: e.target.value })} />
+          <RefiningTextField
+            fullWidth
+            label="Label"
+            dataType={dataTypes.label}
+            value={viewState.label}
+            onChange={e => setViewState({ ...viewState, label: e.target.value })}
+            error={errors.label !== undefined}
+            helperText={errors.label}
+          />
         </Grid>
         <Grid item xs={5}>
           <RefiningTextField
@@ -325,6 +349,8 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
             dataType={dataTypes.name}
             value={viewState.category}
             onChange={e => setViewState({ ...viewState, category: e.target.value })}
+            error={errors.category !== undefined}
+            helperText={errors.category}
           />
         </Grid>
         <Grid item xs={2}>
@@ -364,9 +390,9 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
           </Grid>
           <Grid item xs={1}>
             <Tabs value={viewState.tabIndex} onChange={(e, tabIndex) => setViewState({ ...viewState, tabIndex })} variant="fullWidth" orientation="vertical">
-              <Tab classes={{ root: classes.dayTab }} value="ALL" label="(All)" />
+              <Tab classes={{ root: classNames(classes.dayTab, { [classes.error]: errors.allTab }) }} value="ALL" label="(All)" />
               {Weekdays.map(d => (
-                <Tab key={d} classes={{ root: classes.dayTab }} value={d} label={Weekday[d].slice(0, 3)} />
+                <Tab key={d} classes={{ root: classNames(classes.dayTab, { [classes.error]: errors.dayTabs[d] }) }} value={d} label={Weekday[d].slice(0, 3)} />
               ))}
             </Tabs>
           </Grid>
@@ -407,6 +433,8 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                       )
                     }
                     disabled={viewState.tabIndex !== 'ALL' && !viewState.days[viewState.tabIndex].selected}
+                    error={errors.notes !== undefined}
+                    helperText={errors.notes}
                   />
                 </Grid>
                 <Grid item xs={6}>
@@ -436,6 +464,8 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                       )
                     }
                     isDisabled={viewState.tabIndex !== 'ALL' && !viewState.days[viewState.tabIndex].selected}
+                    error={errors.allowedAircrafts !== undefined}
+                    helperText={errors.allowedAircrafts}
                   ></MultiSelect>
                 </Grid>
                 <Grid item xs={6}>

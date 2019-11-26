@@ -43,15 +43,15 @@ export interface BaseModalProps<ModalState extends any> extends Omit<DraggableDi
   cancelable?: boolean;
   onClose(): void | Promise<void>;
   actions?: ModalAction[];
-  // discardingConfirmation?: boolean;
+  // requireConfirm?: boolean;
 }
 
 const BaseModal: FC<Omit<BaseModalProps<any>, 'state'> & { open: boolean }> = ({ children, open, title, complexTitle, cancelable, onClose, actions: modalActions, ...others }) => {
-  const [{ loading, errorMessage }, setViewModel] = useState<{ loading: boolean; errorMessage: string }>({ loading: false, errorMessage: '' });
+  const [{ loading, errorMessage }, setViewState] = useState<{ loading: boolean; errorMessage: string }>({ loading: false, errorMessage: '' });
 
   useEffect(() => {
     if (!open || (!loading && !errorMessage)) return;
-    setViewModel({ loading: false, errorMessage: '' });
+    setViewState({ loading: false, errorMessage: '' });
   }, [open]);
 
   const classes = useStyles();
@@ -100,8 +100,9 @@ const BaseModal: FC<Omit<BaseModalProps<any>, 'state'> & { open: boolean }> = ({
         await modalAction.action();
         return onClose();
       } catch (reason) {
+        // Do not close the modal when some exception occurs in the action.
         console.error(reason);
-        // No need to close the modal when some exception occurs in the action.
+        throw reason;
       }
     };
   }
@@ -111,13 +112,13 @@ const BaseModal: FC<Omit<BaseModalProps<any>, 'state'> & { open: boolean }> = ({
       const result = action();
       if (!(result instanceof Promise)) {
         if (!loading && !errorMessage) return;
-        setViewModel({ loading: false, errorMessage: '' });
+        setViewState({ loading: false, errorMessage: '' });
         return;
       }
-      setViewModel({ loading: true, errorMessage: '' });
+      setViewState({ loading: true, errorMessage: '' });
       result.then(
-        () => setViewModel({ loading: false, errorMessage: '' }),
-        reason => setViewModel({ loading: false, errorMessage: String(reason) })
+        () => setViewState({ loading: false, errorMessage: '' }),
+        reason => setViewState({ loading: false, errorMessage: String(reason) })
       );
     };
   }

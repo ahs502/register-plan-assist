@@ -172,15 +172,15 @@ class MasterDataDataType<Item extends MasterDataItem> extends DataType<Id, Item>
   }
 
   checkView(value: string): boolean {
-    const item = MasterData.all[this.masterDataItemsKey].name[value.toUpperCase()];
+    const item = MasterData.all[this.masterDataItemsKey].name[value.trim().toUpperCase()];
     return !!item;
   }
   refineView(value: string): string {
-    const item = MasterData.all[this.masterDataItemsKey].name[value.toUpperCase()];
+    const item = MasterData.all[this.masterDataItemsKey].name[value.trim().toUpperCase()];
     return item ? item.name : value;
   }
   convertViewToModel(value: string): Id {
-    const item = MasterData.all[this.masterDataItemsKey].name[value.toUpperCase()];
+    const item = MasterData.all[this.masterDataItemsKey].name[value.trim().toUpperCase()];
     if (!item) throw 'Invalid master data view value.';
     return item.id;
   }
@@ -246,15 +246,15 @@ class PreplanAircraftRegisterDataType extends DataType<Id, PreplanAircraftRegist
   }
 
   checkView(value: string): boolean {
-    const item = this.aircraftRegisters.name[value.toUpperCase()];
+    const item = this.aircraftRegisters.name[value.trim().toUpperCase()];
     return !!item;
   }
   refineView(value: string): string {
-    const item = this.aircraftRegisters.name[value.toUpperCase()];
+    const item = this.aircraftRegisters.name[value.trim().toUpperCase()];
     return item ? item.name : value;
   }
   convertViewToModel(value: string): Id {
-    const item = this.aircraftRegisters.name[value.toUpperCase()];
+    const item = this.aircraftRegisters.name[value.trim().toUpperCase()];
     if (!item) throw 'Invalid preplan aircraft register view value.';
     return item.id;
   }

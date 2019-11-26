@@ -518,6 +518,7 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                       <Fragment>
                         <div>
                           <IconButton
+                            disabled={!dataTypes.airport.checkView(viewState.route[viewState.route.length - 1].arrivalAirport)}
                             onClick={e =>
                               setViewState({
                                 ...viewState,
@@ -540,6 +541,11 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                         <div className={classes.grow} />
                         <div>
                           <IconButton
+                            disabled={
+                              !dataTypes.airport.checkView(viewState.route[viewState.route.length - 1].arrivalAirport) ||
+                              dataTypes.airport.refineView(viewState.route[0].departureAirport) ===
+                                dataTypes.airport.refineView(viewState.route[viewState.route.length - 1].arrivalAirport)
+                            }
                             onClick={e =>
                               setViewState({
                                 ...viewState,

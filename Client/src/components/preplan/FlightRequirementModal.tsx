@@ -572,38 +572,35 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                         <div>
                           <IconButton
                             disabled={
-                              !dataTypes.airport.checkView(viewState.route[viewState.route.length - 1].arrivalAirport) ||
+                              viewState.route.some(l => !dataTypes.airport.checkView(l.departureAirport) || !dataTypes.airport.checkView(l.arrivalAirport)) ||
                               dataTypes.airport.refineView(viewState.route[0].departureAirport) ===
                                 dataTypes.airport.refineView(viewState.route[viewState.route.length - 1].arrivalAirport)
                             }
-                            onClick={e =>
-                              setViewState({
-                                ...viewState,
-                                legIndex: viewState.route.length,
-                                default: {
-                                  ...viewState.default,
-                                  legs: [
-                                    ...viewState.default.legs,
-                                    ...[...viewState.default.legs]
-                                      .reverse()
-                                      .map(leg => ({ blockTime: '', stdLowerBound: '', stdUpperBound: '', originPermission: false, destinationPermission: false }))
-                                  ]
-                                },
-                                route: [
-                                  ...viewState.route,
-                                  ...[...viewState.route].reverse().map(leg => ({ flightNumber: '', departureAirport: leg.arrivalAirport, arrivalAirport: leg.departureAirport }))
-                                ],
-                                days: viewState.days.map(day => ({
-                                  ...day,
-                                  legs: [
-                                    ...day.legs,
-                                    ...[...day.legs]
-                                      .reverse()
-                                      .map(leg => ({ blockTime: '', stdLowerBound: '', stdUpperBound: '', originPermission: false, destinationPermission: false }))
-                                  ]
-                                }))
-                              })
-                            }
+                            onClick={e => {
+                              const path: string[] = [viewState.route[0].departureAirport, ...viewState.route.map(l => l.arrivalAirport)].map(a => dataTypes.airport.refineView(a));
+                              loop: for (let i = 1; i <= path.length - 1; i++) {
+                                for (let j = 0; j < path.length - i; ++j) if (path[j + i] !== path[path.length - j - 1]) continue loop;
+                                const departureAirport = path[i];
+                                const arrivalAirport = path[i - 1];
+                                setViewState({
+                                  ...viewState,
+                                  legIndex: viewState.route.length,
+                                  default: {
+                                    ...viewState.default,
+                                    legs: [
+                                      ...viewState.default.legs,
+                                      { blockTime: '', stdLowerBound: '', stdUpperBound: '', originPermission: false, destinationPermission: false }
+                                    ]
+                                  },
+                                  route: [...viewState.route, { flightNumber: '', departureAirport, arrivalAirport }],
+                                  days: viewState.days.map(day => ({
+                                    ...day,
+                                    legs: [...day.legs, { blockTime: '', stdLowerBound: '', stdUpperBound: '', originPermission: false, destinationPermission: false }]
+                                  }))
+                                });
+                                break loop;
+                              }
+                            }}
                           >
                             <WrapTextIcon />
                           </IconButton>

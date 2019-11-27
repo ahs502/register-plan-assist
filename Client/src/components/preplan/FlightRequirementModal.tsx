@@ -221,13 +221,32 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
   const errors = {
     label: validation.message('LABEL_*'),
     category: validation.message('CATEGORY_*'),
-    allTab: validation.$.defaultValidation.ok || validation.$.routeValidation.some(v => !v.ok),
-    dayTabs: validation.$.dayValidations.map(v => v.ok),
+    allTab: !validation.$.defaultValidation.ok || !validation.$.routeValidation.every(v => v.ok),
+    dayTabs: validation.$.dayValidations.map(v => !v.ok),
     notes: viewState.tabIndex === 'ALL' ? validation.$.defaultValidation.message('NOTES_*') : validation.$.dayValidations[viewState.tabIndex].message('NOTES_*'),
     allowedAircrafts:
       viewState.tabIndex === 'ALL'
         ? validation.$.defaultValidation.message('ALLOWED_AIRCRAFT_IDENTITIES_*')
-        : validation.$.dayValidations[viewState.tabIndex].message('ALLOWED_AIRCRAFT_IDENTITIES_*')
+        : validation.$.dayValidations[viewState.tabIndex].message('ALLOWED_AIRCRAFT_IDENTITIES_*'),
+    legTabs:
+      viewState.tabIndex === 'ALL'
+        ? validation.$.defaultValidation.$.legValidations.map((v, index) => !(v.ok && validation.$.routeValidation[index].ok))
+        : validation.$.dayValidations[viewState.tabIndex].$.legValidations.map((v, index) => !(v.ok && validation.$.routeValidation[index].ok)),
+    flightNumber: validation.$.routeValidation[viewState.legIndex].message('FLIGHT_NUMBER_*'),
+    departureAirport: validation.$.routeValidation[viewState.legIndex].message('DEPARTURE_AIRPORT_*'),
+    arrivalAirport: validation.$.routeValidation[viewState.legIndex].message('ARRIVAL_AIRPORT_*'),
+    stdLowerBound:
+      viewState.tabIndex === 'ALL'
+        ? validation.$.defaultValidation.$.legValidations[viewState.legIndex].message('STD_LOWER_BOUND_*')
+        : validation.$.dayValidations[viewState.tabIndex].$.legValidations[viewState.legIndex].message('STD_LOWER_BOUND_*'),
+    stdUpperBound:
+      viewState.tabIndex === 'ALL'
+        ? validation.$.defaultValidation.$.legValidations[viewState.legIndex].message('STD_UPPER_BOUND_*')
+        : validation.$.dayValidations[viewState.tabIndex].$.legValidations[viewState.legIndex].message('STD_UPPER_BOUND_*'),
+    blockTime:
+      viewState.tabIndex === 'ALL'
+        ? validation.$.defaultValidation.$.legValidations[viewState.legIndex].message('BLOCKTIME_*')
+        : validation.$.dayValidations[viewState.tabIndex].$.legValidations[viewState.legIndex].message('BLOCKTIME_*')
   };
 
   const classes = useStyles();
@@ -499,6 +518,7 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                     <Tabs variant="scrollable" scrollButtons="auto" value={viewState.legIndex} onChange={(e, legIndex) => setViewState({ ...viewState, legIndex })}>
                       {tabViewState.legs.map((leg, legIndex) => (
                         <Tab
+                          classes={{ root: classNames({ [classes.error]: errors.legTabs[legIndex] }) }}
                           key={legIndex}
                           label={
                             <div className={classes.flex}>
@@ -617,6 +637,8 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                           value={routeLegViewState.flightNumber}
                           onChange={({ target: { value: flightNumber } }) => setViewState({ ...viewState, route: routeButOne(routeLeg => ({ ...routeLeg, flightNumber })) })}
                           disabled={viewState.tabIndex !== 'ALL'}
+                          error={errors.flightNumber !== undefined}
+                          helperText={errors.flightNumber}
                         />
                       </Grid>
                       <Grid item xs={4}>
@@ -629,6 +651,8 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                             setViewState({ ...viewState, route: routeButOne(routeLeg => ({ ...routeLeg, departureAirport })) })
                           }
                           disabled={viewState.tabIndex !== 'ALL'}
+                          error={errors.departureAirport !== undefined}
+                          helperText={errors.departureAirport}
                         />
                       </Grid>
                       <Grid item xs={4}>
@@ -639,6 +663,8 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                           value={routeLegViewState.arrivalAirport}
                           onChange={({ target: { value: arrivalAirport } }) => setViewState({ ...viewState, route: routeButOne(routeLeg => ({ ...routeLeg, arrivalAirport })) })}
                           disabled={viewState.tabIndex !== 'ALL'}
+                          error={errors.arrivalAirport !== undefined}
+                          helperText={errors.arrivalAirport}
                         />
                       </Grid>
                       <Grid item xs={4}>
@@ -665,6 +691,8 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                             )
                           }
                           disabled={viewState.tabIndex !== 'ALL' && !viewState.days[viewState.tabIndex].selected}
+                          error={errors.stdLowerBound !== undefined}
+                          helperText={errors.stdLowerBound}
                         />
                       </Grid>
                       <Grid item xs={4}>
@@ -691,6 +719,8 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                             )
                           }
                           disabled={viewState.tabIndex !== 'ALL' && !viewState.days[viewState.tabIndex].selected}
+                          error={errors.stdUpperBound !== undefined}
+                          helperText={errors.stdUpperBound}
                         />
                       </Grid>
                       <Grid item xs={4}>
@@ -714,6 +744,8 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                             )
                           }
                           disabled={viewState.tabIndex !== 'ALL' && !viewState.days[viewState.tabIndex].selected}
+                          error={errors.blockTime !== undefined}
+                          helperText={errors.blockTime}
                         />
                       </Grid>
                       <Grid item xs={4}>

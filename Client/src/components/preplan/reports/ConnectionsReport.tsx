@@ -108,24 +108,32 @@ class ViewStateValidation extends Validation<
   | 'MIN_CONNECTION_IS_NOT_GREATER_THAN_MAX_CONNECTION_TIME'
   | 'MAX_CONNECTION_IS_NOT_LESS_THAN_MIN_CONNECTION_TIME'
 > {
-  constructor({ startDate, endDate, maxConnectionTime, minConnectionTime }: ViewState) {
-    super(validator => {
-      validator.check('START_DATE_EXISTS', !!startDate).check('START_DATE_IS_VALID', () => dataTypes.utcDate.checkView(startDate));
-      validator.check('END_DATE_EXISTS', !!endDate).check('END_DATE_IS_VALID', () => dataTypes.utcDate.checkView(endDate));
-      validator
-        .when('START_DATE_IS_VALID', 'END_DATE_IS_VALID')
-        .then(() => dataTypes.utcDate.convertViewToModel(startDate) <= dataTypes.utcDate.convertViewToModel(endDate))
-        .check('START_DATE_IS_NOT_AFTER_END_DATE', ok => ok, 'Can not be after end date.')
-        .check('END_DATE_IS_NOT_BEFORE_START_DATE', ok => ok, 'Can not be before start date.');
+  constructor(startDate: string, endDate: string, maxConnectionTime: string, minConnectionTime: string) {
+    super(
+      validator => {
+        validator.check('START_DATE_EXISTS', !!startDate).check('START_DATE_IS_VALID', () => dataTypes.utcDate.checkView(startDate));
+        validator.check('END_DATE_EXISTS', !!endDate).check('END_DATE_IS_VALID', () => dataTypes.utcDate.checkView(endDate));
+        validator
+          .when('START_DATE_IS_VALID', 'END_DATE_IS_VALID')
+          .then(() => dataTypes.utcDate.convertViewToModel(startDate) <= dataTypes.utcDate.convertViewToModel(endDate))
+          .check('START_DATE_IS_NOT_AFTER_END_DATE', ok => ok, 'Can not be after end date.')
+          .check('END_DATE_IS_NOT_BEFORE_START_DATE', ok => ok, 'Can not be before start date.');
 
-      validator.check('MAX_CONNECTION_TIME_EXISTS', !!maxConnectionTime).check('MAX_CONNECTION_TIME_IS_VALID', () => dataTypes.daytime.checkView(maxConnectionTime));
-      validator.check('MIN_CONNECTION_TIME_EXISTS', !!minConnectionTime).check('MIN_CONNECTION_TIME_IS_VALID', () => dataTypes.daytime.checkView(minConnectionTime));
-      validator
-        .when('MAX_CONNECTION_TIME_EXISTS', 'MIN_CONNECTION_TIME_EXISTS')
-        .then(() => dataTypes.daytime.convertViewToModel(minConnectionTime) <= dataTypes.daytime.convertViewToModel(minConnectionTime))
-        .check('MIN_CONNECTION_IS_NOT_GREATER_THAN_MAX_CONNECTION_TIME', ok => ok, 'Can not be grater than max connection.')
-        .check('MAX_CONNECTION_IS_NOT_LESS_THAN_MIN_CONNECTION_TIME', ok => ok, 'Can not be less than max connection.');
-    });
+        validator.check('MAX_CONNECTION_TIME_EXISTS', !!maxConnectionTime).check('MAX_CONNECTION_TIME_IS_VALID', () => dataTypes.daytime.checkView(maxConnectionTime));
+        validator.check('MIN_CONNECTION_TIME_EXISTS', !!minConnectionTime).check('MIN_CONNECTION_TIME_IS_VALID', () => dataTypes.daytime.checkView(minConnectionTime));
+        validator
+          .when('MAX_CONNECTION_TIME_EXISTS', 'MIN_CONNECTION_TIME_EXISTS')
+          .then(() => dataTypes.daytime.convertViewToModel(minConnectionTime) <= dataTypes.daytime.convertViewToModel(minConnectionTime))
+          .check('MIN_CONNECTION_IS_NOT_GREATER_THAN_MAX_CONNECTION_TIME', ok => ok, 'Can not be grater than max connection.')
+          .check('MAX_CONNECTION_IS_NOT_LESS_THAN_MIN_CONNECTION_TIME', ok => ok, 'Can not be less than max connection.');
+      },
+      {
+        '*_EXISTS': 'Required.',
+        '*_FORMAT_IS_VALID': 'Invalid format.',
+        '*_IS_VALID': 'Invalid.',
+        '*_IS_NOT_NEGATIVE': 'Should not be negative.'
+      }
+    );
   }
 }
 
@@ -241,6 +249,15 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
     setConnectionTableDataModel(generateConnectionTableDataModel(flightLegInfoModels));
     setConnectionNumberDataModel(generateConnectionNumberDataModel(flightLegInfoModels));
   }, [eastAirports, westAirports, minConnectionTime, maxConnectionTime, startDate, endDate]);
+
+  const validation = new ViewStateValidation(startDate, endDate, maxConnectionTime, minConnectionTime);
+
+  const errors = {
+    startDate: validation.message('START_DATE_*'),
+    endDate: validation.message('END_DATE_*'),
+    maxConnectionTime: validation.message('MAX_CONNECTION_*'),
+    minConnectionTime: validation.message('MIN_CONNECTION_*')
+  };
 
   const classes = useStyles();
 
@@ -746,6 +763,8 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
         dataType={dataTypes.utcDate}
         value={startDate}
         onChange={({ target: { value: startDate } }) => setViewState({ eastAirports, westAirports, endDate, startDate, maxConnectionTime, minConnectionTime })}
+        error={errors.startDate !== undefined}
+        helperText={errors.startDate}
       />
 
       <RefiningTextField
@@ -753,6 +772,8 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
         dataType={dataTypes.utcDate}
         value={endDate}
         onChange={({ target: { value: endDate } }) => setViewState({ eastAirports, westAirports, endDate, startDate, maxConnectionTime, minConnectionTime })}
+        error={errors.endDate !== undefined}
+        helperText={errors.endDate}
       />
 
       <br />
@@ -767,6 +788,8 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
         dataType={dataTypes.daytime}
         value={minConnectionTime}
         onChange={({ target: { value: minConnectionTime } }) => setViewState({ eastAirports, westAirports, endDate, startDate, maxConnectionTime, minConnectionTime })}
+        error={errors.minConnectionTime !== undefined}
+        helperText={errors.minConnectionTime}
       />
 
       <RefiningTextField
@@ -774,6 +797,8 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
         dataType={dataTypes.daytime}
         value={maxConnectionTime}
         onChange={({ target: { value: maxConnectionTime } }) => setViewState({ eastAirports, westAirports, endDate, startDate, maxConnectionTime, minConnectionTime })}
+        error={errors.maxConnectionTime !== undefined}
+        helperText={errors.maxConnectionTime}
       />
 
       <div className={classNames(classes.export, classes.marginBottom1)}>{exportConnectionNumber}</div>

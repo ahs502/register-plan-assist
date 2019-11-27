@@ -17,7 +17,7 @@ export interface ViewState {
   days: DayTabViewState[];
 }
 export class ViewStateValidation extends Validation<
-  'LABEL_EXISTS' | 'LABEL_FORMAT_IS_VALID' | 'CATEGORY_FORMAT_IS_VALID',
+  'LABEL_EXISTS' | 'LABEL_FORMAT_IS_VALID' | 'LABEL_IS_LESS_THAN_100' | 'CATEGORY_FORMAT_IS_VALID' | 'CATEGORY_IS_LESS_THAN_100',
   {
     defaultValidation: TabViewStateValidation;
     routeValidation: RouteLegViewStateValidation[];
@@ -27,8 +27,12 @@ export class ViewStateValidation extends Validation<
   constructor({ label, category, default: defaultTab, route, days }: ViewState) {
     super(
       validator => {
-        validator.check('LABEL_EXISTS', !!label).check('LABEL_FORMAT_IS_VALID', () => dataTypes.name.checkView(label), 'Invalid label.');
-        validator.if(!!category).check('CATEGORY_FORMAT_IS_VALID', () => dataTypes.name.checkView(category), 'Invalid category.');
+        validator.check('LABEL_EXISTS', !!label)
+        .check('LABEL_FORMAT_IS_VALID', () => dataTypes.name.checkView(label), 'Invalid label.')
+        .check('LABEL_IS_LESS_THAN_100',()=> dataTypes.name.refineView(label).length<=100);
+        validator.if(!!category)
+        .check('CATEGORY_FORMAT_IS_VALID', () => dataTypes.name.checkView(category), 'Invalid category.')
+        .check('CATEGORY_IS_LESS_THAN_100',dataTypes.name.refineView(category).length<=100);
         validator.put(validator.$.defaultValidation, new TabViewStateValidation(defaultTab));
         validator
           .array(route)

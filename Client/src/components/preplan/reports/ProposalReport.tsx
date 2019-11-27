@@ -256,15 +256,23 @@ class ViewStateValidation extends Validation<
   'START_DATE_EXISTS' | 'START_DATE_IS_VALID' | 'START_DATE_IS_NOT_AFTER_END_DATE' | 'END_DATE_EXISTS' | 'END_DATE_IS_VALID' | 'END_DATE_IS_NOT_BEFORE_START_DATE'
 > {
   constructor({ startDate, endDate }: ViewState) {
-    super(validator => {
-      validator.check('START_DATE_EXISTS', !!startDate).check('START_DATE_IS_VALID', () => dataTypes.utcDate.checkView(startDate));
-      validator.check('END_DATE_EXISTS', !!endDate).check('END_DATE_IS_VALID', () => dataTypes.utcDate.checkView(endDate));
-      validator
-        .when('START_DATE_IS_VALID', 'END_DATE_IS_VALID')
-        .then(() => dataTypes.utcDate.convertViewToModel(startDate) <= dataTypes.utcDate.convertViewToModel(endDate))
-        .check('START_DATE_IS_NOT_AFTER_END_DATE', ok => ok, 'Can not be after end date.')
-        .check('END_DATE_IS_NOT_BEFORE_START_DATE', ok => ok, 'Can not be before start date.');
-    });
+    super(
+      validator => {
+        validator.check('START_DATE_EXISTS', !!startDate).check('START_DATE_IS_VALID', () => dataTypes.utcDate.checkView(startDate));
+        validator.check('END_DATE_EXISTS', !!endDate).check('END_DATE_IS_VALID', () => dataTypes.utcDate.checkView(endDate));
+        validator
+          .when('START_DATE_IS_VALID', 'END_DATE_IS_VALID')
+          .then(() => dataTypes.utcDate.convertViewToModel(startDate) <= dataTypes.utcDate.convertViewToModel(endDate))
+          .check('START_DATE_IS_NOT_AFTER_END_DATE', ok => ok, 'Can not be after end date.')
+          .check('END_DATE_IS_NOT_BEFORE_START_DATE', ok => ok, 'Can not be before start date.');
+      },
+      {
+        '*_EXISTS': 'Required.',
+        '*_FORMAT_IS_VALID': 'Invalid format.',
+        '*_IS_VALID': 'Invalid.',
+        '*_IS_NOT_NEGATIVE': 'Should not be negative.'
+      }
+    );
   }
 }
 
@@ -320,9 +328,6 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
     color: '#000000',
     bold: true
   };
-
-  const color = makeColor();
-  const classes = useStyles();
 
   const generateReportDataModel = (
     { baseAirport, startDate, endDate, flightType, showReal, showSTB1, showSTB2, showExtra }: ViewState,
@@ -625,6 +630,16 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
     }
   };
 
+  const validation = new ViewStateValidation(viewState);
+
+  const errors = {
+    startDate: validation.message('START_DATE_*'),
+    endDate: validation.message('END_DATE_*')
+  };
+
+  const color = makeColor();
+  const classes = useStyles();
+
   return (
     <Fragment>
       <Grid container spacing={2}>
@@ -698,6 +713,8 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
                 dataType={dataTypes.utcDate}
                 value={viewState.startDate}
                 onChange={({ target: { value: startDate } }) => setViewState({ ...viewState, startDate: startDate })}
+                error={errors.startDate !== undefined}
+                helperText={errors.startDate}
               />
             </Grid>
             <Grid item xs={1} className={classes.datePosition}>
@@ -719,6 +736,8 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
                 dataType={dataTypes.utcDate}
                 value={viewState.endDate}
                 onChange={({ target: { value: endDate } }) => setViewState({ ...viewState, endDate: endDate })}
+                error={errors.endDate !== undefined}
+                helperText={errors.endDate}
               />
             </Grid>
             <Grid item xs={4} />

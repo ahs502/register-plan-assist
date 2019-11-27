@@ -20,7 +20,7 @@ interface ViewState {
 class ViewStateValidation extends Validation<
   | 'NAME_EXISTS'
   | 'NAME_FORMAT_IS_CORRECT'
-  | 'NAME_IS_NOT_DUPLICATED_WITH_OTHER_PERPLAN'
+  | 'NAME_IS_NOT_DUPLICATED_WITH_OTHER_PERPLANS'
   | 'START_DATE_EXISTS'
   | 'START_DATE_IS_VALID'
   | 'END_DATE_EXISTS'
@@ -29,22 +29,30 @@ class ViewStateValidation extends Validation<
   | 'END_DATE_IS_NOT_BEFORE_START_DATE'
 > {
   constructor({ name, startDate, endDate }: ViewState, preplanHeaders: readonly PreplanHeader[]) {
-    super(validator => {
-      validator
-        .check('NAME_EXISTS', !!name)
-        .check('NAME_FORMAT_IS_CORRECT', () => dataTypes.name.checkView(name))
-        .check(
-          'NAME_IS_NOT_DUPLICATED_WITH_OTHER_PERPLAN',
-          () => preplanHeaders.filter(p => p.user.id === persistant.user!.id && p.name.toUpperCase() === name.toUpperCase()).length < 2
-        );
-      validator.check('START_DATE_EXISTS', !!startDate).check('START_DATE_IS_VALID', () => dataTypes.utcDate.checkView(startDate));
-      validator.check('END_DATE_EXISTS', !!endDate).check('END_DATE_IS_VALID', () => dataTypes.utcDate.checkView(endDate));
-      validator
-        .when('START_DATE_IS_VALID', 'END_DATE_IS_VALID')
-        .then(() => dataTypes.utcDate.convertViewToModel(startDate) <= dataTypes.utcDate.convertViewToModel(endDate))
-        .check('START_DATE_IS_NOT_AFTER_END_DATE', ok => ok, 'Can not be after end date.')
-        .check('END_DATE_IS_NOT_BEFORE_START_DATE', ok => ok, 'Can not be before start date.');
-    });
+    super(
+      validator => {
+        validator
+          .check('NAME_EXISTS', !!name)
+          .check('NAME_FORMAT_IS_CORRECT', () => dataTypes.name.checkView(name))
+          .check(
+            'NAME_IS_NOT_DUPLICATED_WITH_OTHER_PERPLANS',
+            () => preplanHeaders.filter(p => p.user.id === persistant.user!.id && p.name.toUpperCase() === name.toUpperCase()).length < 2
+          );
+        validator.check('START_DATE_EXISTS', !!startDate).check('START_DATE_IS_VALID', () => dataTypes.utcDate.checkView(startDate));
+        validator.check('END_DATE_EXISTS', !!endDate).check('END_DATE_IS_VALID', () => dataTypes.utcDate.checkView(endDate));
+        validator
+          .when('START_DATE_IS_VALID', 'END_DATE_IS_VALID')
+          .then(() => dataTypes.utcDate.convertViewToModel(startDate) <= dataTypes.utcDate.convertViewToModel(endDate))
+          .check('START_DATE_IS_NOT_AFTER_END_DATE', ok => ok, 'Can not be after end date.')
+          .check('END_DATE_IS_NOT_BEFORE_START_DATE', ok => ok, 'Can not be before start date.');
+      },
+      {
+        '*_EXISTS': 'Required.',
+        '*_FORMAT_IS_VALID': 'Invalid format.',
+        '*_IS_VALID': 'Invalid.',
+        '*_IS_NOT_NEGATIVE': 'Should not be negative.'
+      }
+    );
   }
 }
 
@@ -57,7 +65,7 @@ export interface ClonePreplanModalProps extends BaseModalProps<ClonePreplanModal
   preplanHeaders: readonly PreplanHeader[];
 }
 
-const ClonePreplanModal: FC<ClonePreplanModalProps> = ({ state: [open, { preplanHeader }], onClone, ...others }) => {
+const ClonePreplanModal: FC<ClonePreplanModalProps> = ({ state: [open, { preplanHeader }], onClone, preplanHeaders, ...others }) => {
   const [viewState, setViewState, render] = useModalViewState<ViewState>(
     open,
     {
@@ -71,6 +79,14 @@ const ClonePreplanModal: FC<ClonePreplanModalProps> = ({ state: [open, { preplan
       endDate: dataTypes.utcDate.convertBusinessToView(preplanHeader.endDate)
     })
   );
+
+  const validation = new ViewStateValidation(viewState, preplanHeaders);
+
+  const errors = {
+    name: validation.message('NAME_*'),
+    startDate: validation.message('START_DATE_*'),
+    endDate: validation.message('END_DATE_*')
+  };
 
   const classes = useStyles();
 
@@ -101,7 +117,14 @@ const ClonePreplanModal: FC<ClonePreplanModalProps> = ({ state: [open, { preplan
     >
       <Grid container spacing={1}>
         <Grid item xs={12}>
-          <RefiningTextField label="Name" dataType={dataTypes.name} value={viewState.name} onChange={({ target: { value: name } }) => setViewState({ ...viewState, name })} />
+          <RefiningTextField
+            label="Name"
+            dataType={dataTypes.name}
+            value={viewState.name}
+            onChange={({ target: { value: name } }) => setViewState({ ...viewState, name })}
+            error={errors.name !== undefined}
+            helperText={errors.name}
+          />
         </Grid>
         <Grid item xs={6}>
           <RefiningTextField
@@ -109,6 +132,8 @@ const ClonePreplanModal: FC<ClonePreplanModalProps> = ({ state: [open, { preplan
             dataType={dataTypes.utcDate}
             value={viewState.startDate}
             onChange={({ target: { value: startDate } }) => setViewState({ ...viewState, startDate })}
+            error={errors.startDate !== undefined}
+            helperText={errors.startDate}
           />
         </Grid>
         <Grid item xs={6}>
@@ -117,6 +142,8 @@ const ClonePreplanModal: FC<ClonePreplanModalProps> = ({ state: [open, { preplan
             dataType={dataTypes.utcDate}
             value={viewState.endDate}
             onChange={({ target: { value: endDate } }) => setViewState({ ...viewState, endDate })}
+            error={errors.endDate !== undefined}
+            helperText={errors.endDate}
           />
         </Grid>
       </Grid>

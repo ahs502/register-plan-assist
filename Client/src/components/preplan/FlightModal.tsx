@@ -13,6 +13,7 @@ import { PreplanAircraftRegisters } from 'src/business/preplan/PreplanAircraftRe
 import FlightService from 'src/services/FlightService';
 import FlightModel from '@core/models/flight/FlightModel';
 import FlightLegModel from '@core/models/flight/FlightLegModel';
+import Daytime from '@core/types/Daytime';
 
 const useStyles = makeStyles((theme: Theme) => ({}));
 
@@ -155,8 +156,8 @@ const FlightModal: FC<FlightModalProps> = ({ state: [open, { flight }], onOpenFl
                   <TableCell align="center">Flight Number</TableCell>
                   <TableCell align="center">Departure</TableCell>
                   <TableCell align="center">Arrival</TableCell>
-                  <TableCell align="center">STD</TableCell>
                   <TableCell align="center">Block Time</TableCell>
+                  <TableCell align="center">STD</TableCell>
                   <TableCell align="center">STA</TableCell>
                 </TableRow>
               </TableHead>
@@ -167,6 +168,7 @@ const FlightModal: FC<FlightModalProps> = ({ state: [open, { flight }], onOpenFl
                     <TableCell align="center">{dataTypes.flightNumber.convertBusinessToView(l.flightNumber)}</TableCell>
                     <TableCell align="center">{dataTypes.airport.convertBusinessToView(l.departureAirport)}</TableCell>
                     <TableCell align="center">{dataTypes.airport.convertBusinessToView(l.arrivalAirport)}</TableCell>
+                    <TableCell align="center">{l.blockTime.toString('HH:mm', true)}</TableCell>
                     <TableCell align="center">
                       <RefiningTextField
                         fullWidth
@@ -187,10 +189,9 @@ const FlightModal: FC<FlightModalProps> = ({ state: [open, { flight }], onOpenFl
                         }
                       />
                     </TableCell>
-                    <TableCell align="center">{dataTypes.daytime.convertBusinessToView(l.blockTime)}</TableCell>
                     <TableCell align="center">
                       {dataTypes.daytime.checkView(viewState.legs[index].std) ? (
-                        dataTypes.daytime.convertModelToView(dataTypes.daytime.convertViewToModel(viewState.legs[index].std) + l.blockTime.minutes)
+                        new Daytime(dataTypes.daytime.convertViewToModel(viewState.legs[index].std) + l.blockTime.minutes).toString('HH:mm', true)
                       ) : (
                         <Fragment>&mdash;</Fragment>
                       )}

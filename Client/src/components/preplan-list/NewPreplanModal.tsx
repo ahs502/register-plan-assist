@@ -12,6 +12,7 @@ import persistant from 'src/utils/persistant';
 const useStyles = makeStyles((theme: Theme) => ({}));
 
 interface ViewState {
+  bypassValidation: boolean;
   name: string;
   startDate: string;
   endDate: string;
@@ -33,14 +34,18 @@ class ViewStateValidation extends Validation<
         validator
           .check('NAME_EXISTS', !!name)
           .check('NAME_FORMAT_IS_CORRECT', () => dataTypes.name.checkView(name))
-          .check('NAME_IS_NOT_DUPLICATED_WITH_OTHER_PERPLANS', () => !preplanHeaders.some(p => p.user.id === persistant.user!.id && p.name.toUpperCase() === name.toUpperCase()));
+          .check(
+            'NAME_IS_NOT_DUPLICATED_WITH_OTHER_PERPLANS',
+            () => !preplanHeaders.some(p => p.user.id === persistant.user!.id && p.name.toUpperCase() === name.toUpperCase()),
+            'Preplan already exists.'
+          );
         validator.check('START_DATE_EXISTS', !!startDate).check('START_DATE_IS_VALID', () => dataTypes.utcDate.checkView(startDate));
         validator.check('END_DATE_EXISTS', !!endDate).check('END_DATE_IS_VALID', () => dataTypes.utcDate.checkView(endDate));
-        validator
-          .when('START_DATE_IS_VALID', 'END_DATE_IS_VALID')
-          .then(() => dataTypes.utcDate.convertViewToModel(startDate) <= dataTypes.utcDate.convertViewToModel(endDate))
-          .check('START_DATE_IS_NOT_AFTER_END_DATE', ok => ok, 'Can not be after end date.')
-          .check('END_DATE_IS_NOT_BEFORE_START_DATE', ok => ok, 'Can not be before start date.');
+        validator.when('START_DATE_IS_VALID', 'END_DATE_IS_VALID').then(() => {
+          const ok = dataTypes.utcDate.convertViewToModel(startDate) <= dataTypes.utcDate.convertViewToModel(endDate);
+          validator.check('START_DATE_IS_NOT_AFTER_END_DATE', ok, 'Can not be after end date.');
+          validator.check('END_DATE_IS_NOT_BEFORE_START_DATE', ok, 'Can not be before start date.');
+        });
       },
       {
         '*_EXISTS': 'Required.',
@@ -61,6 +66,7 @@ export interface NewPreplanModalProps extends BaseModalProps<NewPreplanModalStat
 
 const NewPreplanModal: FC<NewPreplanModalProps> = ({ state: [open], onCreate, preplanHeaders, ...others }) => {
   const [viewState, setViewState, render] = useModalViewState<ViewState>(open, {
+    bypassValidation: true,
     name: '',
     startDate: '',
     endDate: ''
@@ -69,9 +75,9 @@ const NewPreplanModal: FC<NewPreplanModalProps> = ({ state: [open], onCreate, pr
   const validation = new ViewStateValidation(viewState, preplanHeaders);
 
   const errors = {
-    name: validation.message('NAME_*'),
-    startDate: validation.message('START_DATE_*'),
-    endDate: validation.message('END_DATE_*')
+    name: viewState.bypassValidation ? undefined : validation.message('NAME_*'),
+    startDate: viewState.bypassValidation ? undefined : validation.message('START_DATE_*'),
+    endDate: viewState.bypassValidation ? undefined : validation.message('END_DATE_*')
   };
 
   const classes = useStyles();
@@ -88,7 +94,9 @@ const NewPreplanModal: FC<NewPreplanModalProps> = ({ state: [open], onCreate, pr
         {
           title: 'Create',
           action: async () => {
-            //TODO: Validate the view model first...
+            viewState.bypassValidation && setViewState({ ...viewState, bypassValidation: false });
+
+            if (!validation.ok) throw 'Invalid form fields.';
 
             const newPreplanModel: NewPreplanModel = {
               name: dataTypes.name.convertViewToModel(viewState.name),
@@ -97,14 +105,16 @@ const NewPreplanModal: FC<NewPreplanModalProps> = ({ state: [open], onCreate, pr
             };
 
             await onCreate(newPreplanModel);
-          }
+          },
+          disabled: !viewState.bypassValidation && !validation.ok
         }
       ]}
     >
-      <Grid container spacing={1}>
+      <Grid container spacing={2}>
         <Grid item xs={12}>
           <RefiningTextField
             label="Name"
+            fullWidth
             dataType={dataTypes.name}
             value={viewState.name}
             onChange={({ target: { value: name } }) => setViewState({ ...viewState, name })}
@@ -115,6 +125,7 @@ const NewPreplanModal: FC<NewPreplanModalProps> = ({ state: [open], onCreate, pr
         <Grid item xs={6}>
           <RefiningTextField
             label="Start Date"
+            fullWidth
             dataType={dataTypes.utcDate}
             value={viewState.startDate}
             onChange={({ target: { value: startDate } }) => setViewState({ ...viewState, startDate })}
@@ -125,6 +136,7 @@ const NewPreplanModal: FC<NewPreplanModalProps> = ({ state: [open], onCreate, pr
         <Grid item xs={6}>
           <RefiningTextField
             label="End Date"
+            fullWidth
             dataType={dataTypes.utcDate}
             value={viewState.endDate}
             onChange={({ target: { value: endDate } }) => setViewState({ ...viewState, endDate })}

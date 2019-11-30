@@ -1,5 +1,5 @@
 import React, { FC, useState, Fragment, useEffect } from 'react';
-import { Theme, InputLabel, TextField, TableHead, TableCell, Table, TableRow, TableBody, Button } from '@material-ui/core';
+import { Theme, InputLabel, TextField, TableHead, TableCell, Table, TableRow, TableBody, Button, Paper, Typography } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import MasterData, { Airport } from '@core/master-data';
 import Weekday from '@core/types/Weekday';
@@ -13,6 +13,7 @@ import { dataTypes } from 'src/utils/DataType';
 import RefiningTextField from 'src/components/RefiningTextField';
 import Validation from '@core/node_modules/@ahs502/validation/dist/Validation';
 
+const errorPaperSize = 250;
 const character = {
   zeroConnection: '–'
 };
@@ -82,6 +83,12 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
   zeroNumberOfConnection: {
     color: '#C4BD97'
+  },
+  errorPaper: {
+    height: errorPaperSize
+  },
+  errorPaperMessage: {
+    lineHeight: `${errorPaperSize}px`
   }
 }));
 
@@ -94,38 +101,59 @@ interface ViewState {
   minConnectionTime: string;
 }
 
-class ViewStateValidation extends Validation<
+class ConnectionReportValidation extends Validation<
+  | 'WEST_AIRPORT_EXISTS'
+  | 'EAST_AIRPORT_EXISTS'
   | 'START_DATE_EXISTS'
   | 'START_DATE_IS_VALID'
   | 'START_DATE_IS_NOT_AFTER_END_DATE'
   | 'END_DATE_EXISTS'
   | 'END_DATE_IS_VALID'
   | 'END_DATE_IS_NOT_BEFORE_START_DATE'
+> {
+  constructor(startDate: string, endDate: string, eastAirports: Airport[], westAirports: Airport[]) {
+    super(
+      validator => {
+        validator.check('EAST_AIRPORT_EXISTS', eastAirports.length > 0);
+        validator.check('WEST_AIRPORT_EXISTS', westAirports.length > 0);
+        validator.if(!!startDate).check('START_DATE_IS_VALID', () => dataTypes.utcDate.checkView(startDate));
+        validator.if(!!endDate).check('END_DATE_IS_VALID', () => dataTypes.utcDate.checkView(endDate));
+        validator.when('START_DATE_IS_VALID', 'END_DATE_IS_VALID').then(() => {
+          const ok = dataTypes.utcDate.convertViewToModel(startDate) <= dataTypes.utcDate.convertViewToModel(endDate);
+          validator.check('START_DATE_IS_NOT_AFTER_END_DATE', ok, 'Can not be after end date.');
+          validator.check('END_DATE_IS_NOT_BEFORE_START_DATE', ok, 'Can not be before start date.');
+        });
+      },
+      {
+        '*_EXISTS': 'Required.',
+        '*_FORMAT_IS_VALID': 'Invalid format.',
+        '*_IS_VALID': 'Invalid.',
+        '*_IS_NOT_NEGATIVE': 'Should not be negative.'
+      }
+    );
+  }
+}
+
+class NumberOfConnectionValidation extends Validation<
   | 'MAX_CONNECTION_TIME_EXISTS'
   | 'MAX_CONNECTION_TIME_IS_VALID'
   | 'MIN_CONNECTION_TIME_EXISTS'
   | 'MIN_CONNECTION_TIME_IS_VALID'
   | 'MIN_CONNECTION_IS_NOT_GREATER_THAN_MAX_CONNECTION_TIME'
-  | 'MAX_CONNECTION_IS_NOT_LESS_THAN_MIN_CONNECTION_TIME'
+  | 'MAX_CONNECTION_IS_NOT_LESS_THAN_MIN_CONNECTION_TIME',
+  { connectionReportValidation: ConnectionReportValidation }
 > {
-  constructor(startDate: string, endDate: string, maxConnectionTime: string, minConnectionTime: string) {
+  constructor(maxConnectionTime: string, minConnectionTime: string, startDate: string, endDate: string, eastAirports: Airport[], westAirports: Airport[]) {
     super(
       validator => {
-        validator.check('START_DATE_EXISTS', !!startDate).check('START_DATE_IS_VALID', () => dataTypes.utcDate.checkView(startDate));
-        validator.check('END_DATE_EXISTS', !!endDate).check('END_DATE_IS_VALID', () => dataTypes.utcDate.checkView(endDate));
-        validator
-          .when('START_DATE_IS_VALID', 'END_DATE_IS_VALID')
-          .then(() => dataTypes.utcDate.convertViewToModel(startDate) <= dataTypes.utcDate.convertViewToModel(endDate))
-          .check('START_DATE_IS_NOT_AFTER_END_DATE', ok => ok, 'Can not be after end date.')
-          .check('END_DATE_IS_NOT_BEFORE_START_DATE', ok => ok, 'Can not be before start date.');
-
         validator.check('MAX_CONNECTION_TIME_EXISTS', !!maxConnectionTime).check('MAX_CONNECTION_TIME_IS_VALID', () => dataTypes.daytime.checkView(maxConnectionTime));
         validator.check('MIN_CONNECTION_TIME_EXISTS', !!minConnectionTime).check('MIN_CONNECTION_TIME_IS_VALID', () => dataTypes.daytime.checkView(minConnectionTime));
-        validator
-          .when('MAX_CONNECTION_TIME_EXISTS', 'MIN_CONNECTION_TIME_EXISTS')
-          .then(() => dataTypes.daytime.convertViewToModel(minConnectionTime) <= dataTypes.daytime.convertViewToModel(minConnectionTime))
-          .check('MIN_CONNECTION_IS_NOT_GREATER_THAN_MAX_CONNECTION_TIME', ok => ok, 'Can not be grater than max connection.')
-          .check('MAX_CONNECTION_IS_NOT_LESS_THAN_MIN_CONNECTION_TIME', ok => ok, 'Can not be less than max connection.');
+        validator.when('MAX_CONNECTION_TIME_EXISTS', 'MIN_CONNECTION_TIME_EXISTS').then(() => {
+          const ok = dataTypes.daytime.convertViewToModel(minConnectionTime) <= dataTypes.daytime.convertViewToModel(maxConnectionTime);
+          validator.check('MIN_CONNECTION_IS_NOT_GREATER_THAN_MAX_CONNECTION_TIME', ok, 'Can not be grater than max connection.');
+          validator.check('MAX_CONNECTION_IS_NOT_LESS_THAN_MIN_CONNECTION_TIME', ok, 'Can not be less than max connection.');
+        });
+        validator.put(validator.$.connectionReportValidation, new ConnectionReportValidation(startDate, endDate, eastAirports, westAirports));
       },
       {
         '*_EXISTS': 'Required.',
@@ -176,87 +204,94 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
   let connectionTableExporter: ExcelExport | null;
 
   useEffect(() => {
-    const flightLegInfoModels: FlightLegInfoModel[] = [];
-    const baseDate = new Date((new Date(dataTypes.utcDate.convertViewToModel(startDate)).getTime() + new Date(dataTypes.utcDate.convertViewToModel(endDate)).getTime()) / 2);
+    if (validation.ok) {
+      const flightLegInfoModels: FlightLegInfoModel[] = [];
+      const baseDate = new Date((new Date(dataTypes.utcDate.convertViewToModel(startDate)).getTime() + new Date(dataTypes.utcDate.convertViewToModel(endDate)).getTime()) / 2);
 
-    const targetFlights = flights.filter(
-      f =>
-        eastAirports.some(a => a.id === f.departureAirport.id || a.id === f.arrivalAirport.id) ||
-        westAirports.some(a => a.id === f.departureAirport.id || a.id === f.arrivalAirport.id)
-    );
+      const targetFlights = flights.filter(
+        f =>
+          eastAirports.some(a => a.id === f.departureAirport.id || a.id === f.arrivalAirport.id) ||
+          westAirports.some(a => a.id === f.departureAirport.id || a.id === f.arrivalAirport.id)
+      );
 
-    eastAirports.forEach(airport => {
-      if (!flightLegInfoModels.some(f => f.airport === airport)) {
-        flightLegInfoModels.push({ airport: airport, flightInfo: [] });
-      }
-    });
+      eastAirports.forEach(airport => {
+        if (!flightLegInfoModels.some(f => f.airport === airport)) {
+          flightLegInfoModels.push({ airport: airport, flightInfo: [] });
+        }
+      });
 
-    westAirports.forEach(airport => {
-      if (!flightLegInfoModels.some(f => f.airport === airport)) {
-        flightLegInfoModels.push({ airport: airport, flightInfo: [] });
-      }
-    });
+      westAirports.forEach(airport => {
+        if (!flightLegInfoModels.some(f => f.airport === airport)) {
+          flightLegInfoModels.push({ airport: airport, flightInfo: [] });
+        }
+      });
 
-    targetFlights.forEach(flight => {
-      const isDepartureFromIKA = flight.departureAirport.name === 'IKA';
-      if (isDepartureFromIKA) {
-        const utcStd = flight.actualStd.toDate(baseDate);
-        const localStd = flight.departureAirport.convertUtcToLocal(utcStd);
+      targetFlights.forEach(flight => {
+        const isDepartureFromIKA = flight.departureAirport.name === 'IKA';
+        if (isDepartureFromIKA) {
+          const utcStd = flight.actualStd.toDate(baseDate);
+          const localStd = flight.departureAirport.convertUtcToLocal(utcStd);
 
-        let diffLocalStdandUtcStd = localStd.getUTCDay() - utcStd.getUTCDay();
-        if (diffLocalStdandUtcStd > 1) diffLocalStdandUtcStd = -1;
-        if (diffLocalStdandUtcStd < -1) diffLocalStdandUtcStd = 1;
+          let diffLocalStdandUtcStd = localStd.getUTCDay() - utcStd.getUTCDay();
+          if (diffLocalStdandUtcStd > 1) diffLocalStdandUtcStd = -1;
+          if (diffLocalStdandUtcStd < -1) diffLocalStdandUtcStd = 1;
 
-        const departureWeekDay = (flight.day + Math.floor(flight.actualStd.minutes / 1440) + diffLocalStdandUtcStd + 7) % 7;
+          const departureWeekDay = (flight.day + Math.floor(flight.actualStd.minutes / 1440) + diffLocalStdandUtcStd + 7) % 7;
 
-        const flightLegInfoModel = flightLegInfoModels.find(f => f.airport.id === flight.arrivalAirport.id);
-        if (flightLegInfoModel) {
-          const flightInfo = flightLegInfoModel.flightInfo.find(fi => fi.weekday === departureWeekDay);
-          if (flightInfo) {
-            flightInfo.departureTimeFromIKA.push(localStd);
-          } else {
-            flightLegInfoModel.flightInfo.push({ weekday: departureWeekDay, arrivalTimeToIKA: [], departureTimeFromIKA: [localStd] });
+          const flightLegInfoModel = flightLegInfoModels.find(f => f.airport.id === flight.arrivalAirport.id);
+          if (flightLegInfoModel) {
+            const flightInfo = flightLegInfoModel.flightInfo.find(fi => fi.weekday === departureWeekDay);
+            if (flightInfo) {
+              flightInfo.departureTimeFromIKA.push(localStd);
+            } else {
+              flightLegInfoModel.flightInfo.push({ weekday: departureWeekDay, arrivalTimeToIKA: [], departureTimeFromIKA: [localStd] });
+            }
+          }
+        } else {
+          const utcStd = flight.actualStd.toDate(baseDate);
+          const localStd = flight.departureAirport.convertUtcToLocal(utcStd);
+          const utcSta = flight.actualSta.toDate(baseDate);
+          const localSta = flight.arrivalAirport.convertUtcToLocal(utcSta);
+
+          let diffLocalStdandUtcStd = localStd.getUTCDay() - utcStd.getUTCDay();
+          if (diffLocalStdandUtcStd > 1) diffLocalStdandUtcStd = -1;
+          if (diffLocalStdandUtcStd < -1) diffLocalStdandUtcStd = 1;
+
+          let diffLocalStdandLocalSta = localStd.getUTCDay() - localSta.getUTCDay();
+          if (diffLocalStdandLocalSta > 1) diffLocalStdandLocalSta = -1;
+          if (diffLocalStdandLocalSta < -1) diffLocalStdandLocalSta = 1;
+
+          const arrivalWeekDay = (flight.day + Math.floor(flight.actualStd.minutes / 1440) + diffLocalStdandUtcStd + (diffLocalStdandLocalSta === -1 ? 1 : 0) + 7) % 7;
+
+          const flightLegInfoModel = flightLegInfoModels.find(f => f.airport.id === flight.departureAirport.id);
+          if (flightLegInfoModel) {
+            const flightInfo = flightLegInfoModel.flightInfo.find(fi => fi.weekday === arrivalWeekDay);
+            if (flightInfo) {
+              flightInfo.arrivalTimeToIKA.push(localSta);
+            } else {
+              flightLegInfoModel.flightInfo.push({ weekday: arrivalWeekDay, arrivalTimeToIKA: [localSta], departureTimeFromIKA: [] });
+            }
           }
         }
-      } else {
-        const utcStd = flight.actualStd.toDate(baseDate);
-        const localStd = flight.departureAirport.convertUtcToLocal(utcStd);
-        const utcSta = flight.actualSta.toDate(baseDate);
-        const localSta = flight.arrivalAirport.convertUtcToLocal(utcSta);
+      });
 
-        let diffLocalStdandUtcStd = localStd.getUTCDay() - utcStd.getUTCDay();
-        if (diffLocalStdandUtcStd > 1) diffLocalStdandUtcStd = -1;
-        if (diffLocalStdandUtcStd < -1) diffLocalStdandUtcStd = 1;
-
-        let diffLocalStdandLocalSta = localStd.getUTCDay() - localSta.getUTCDay();
-        if (diffLocalStdandLocalSta > 1) diffLocalStdandLocalSta = -1;
-        if (diffLocalStdandLocalSta < -1) diffLocalStdandLocalSta = 1;
-
-        const arrivalWeekDay = (flight.day + Math.floor(flight.actualStd.minutes / 1440) + diffLocalStdandUtcStd + (diffLocalStdandLocalSta === -1 ? 1 : 0) + 7) % 7;
-
-        const flightLegInfoModel = flightLegInfoModels.find(f => f.airport.id === flight.departureAirport.id);
-        if (flightLegInfoModel) {
-          const flightInfo = flightLegInfoModel.flightInfo.find(fi => fi.weekday === arrivalWeekDay);
-          if (flightInfo) {
-            flightInfo.arrivalTimeToIKA.push(localSta);
-          } else {
-            flightLegInfoModel.flightInfo.push({ weekday: arrivalWeekDay, arrivalTimeToIKA: [localSta], departureTimeFromIKA: [] });
-          }
-        }
+      setConnectionTableDataModel(generateConnectionTableDataModel(flightLegInfoModels));
+      if (numberOfConnectionValidation.ok) {
+        setConnectionNumberDataModel(generateConnectionNumberDataModel(flightLegInfoModels));
       }
-    });
-
-    setConnectionTableDataModel(generateConnectionTableDataModel(flightLegInfoModels));
-    setConnectionNumberDataModel(generateConnectionNumberDataModel(flightLegInfoModels));
+    }
   }, [eastAirports, westAirports, minConnectionTime, maxConnectionTime, startDate, endDate]);
 
-  const validation = new ViewStateValidation(startDate, endDate, maxConnectionTime, minConnectionTime);
+  const validation = new ConnectionReportValidation(startDate, endDate, eastAirports, westAirports);
+  const numberOfConnectionValidation = new NumberOfConnectionValidation(maxConnectionTime, minConnectionTime, startDate, endDate, eastAirports, westAirports);
 
   const errors = {
+    eastAirports: validation.message('EAST_AIRPORT_*'),
+    westAirports: validation.message('WEST_AIRPORT_*'),
     startDate: validation.message('START_DATE_*'),
     endDate: validation.message('END_DATE_*'),
-    maxConnectionTime: validation.message('MAX_CONNECTION_*'),
-    minConnectionTime: validation.message('MIN_CONNECTION_*')
+    maxConnectionTime: numberOfConnectionValidation.message('MAX_CONNECTION_*'),
+    minConnectionTime: numberOfConnectionValidation.message('MIN_CONNECTION_*')
   };
 
   const classes = useStyles();
@@ -444,6 +479,7 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
             connectionTableExporter.save(options);
           }
         }}
+        disabled={!validation.ok}
       >
         Export to Excel
         <ExportToExcelIcon className={classes.transform180} />
@@ -611,6 +647,7 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
             connectionNumberExporter.save(options);
           }
         }}
+        disabled={!numberOfConnectionValidation.ok}
       >
         Export to Excel
         <ExportToExcelIcon className={classes.transform180} />
@@ -728,10 +765,9 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
 
   return (
     <Fragment>
-      <InputLabel htmlFor="east-airport" className={classes.marginBottom1}>
+      <InputLabel error={errors.eastAirports !== undefined} htmlFor="east-airport" className={classes.marginBottom1}>
         East Airport
       </InputLabel>
-
       <MultiSelect
         id="east-airport"
         value={eastAirports}
@@ -742,9 +778,11 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
           setViewState({ eastAirports: value ? value.orderBy('name') : [], westAirports, endDate, startDate, maxConnectionTime, minConnectionTime });
         }}
         className={classes.marginBottom1}
+        error={errors.eastAirports !== undefined}
+        helperText={errors.eastAirports}
       />
       <br />
-      <InputLabel htmlFor="west-airport" className={classes.marginBottom1}>
+      <InputLabel error={errors.westAirports !== undefined} htmlFor="west-airport" className={classes.marginBottom1}>
         West Airport
       </InputLabel>
       <MultiSelect
@@ -756,6 +794,8 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
         onSelect={value => {
           setViewState({ eastAirports, westAirports: value ? value.orderBy('name') : [], endDate, startDate, maxConnectionTime, minConnectionTime });
         }}
+        error={errors.westAirports !== undefined}
+        helperText={errors.westAirports}
       />
 
       <RefiningTextField
@@ -777,9 +817,19 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
       />
 
       <br />
+      <br />
 
       <div className={classNames(classes.export, classes.marginBottom1)}>{exportConnectionTable}</div>
-      <div className={classes.tableContainer}>{connectionTable}</div>
+      {validation.ok ? (
+        <div className={classes.tableContainer}>{connectionTable}</div>
+      ) : (
+        <Paper className={classes.errorPaper}>
+          <Typography align="center" className={classes.errorPaperMessage}>
+            Invalid form fields.
+          </Typography>
+        </Paper>
+      )}
+
       <br />
       <br />
 
@@ -801,8 +851,19 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
         helperText={errors.maxConnectionTime}
       />
 
+      <br />
+      <br />
+
       <div className={classNames(classes.export, classes.marginBottom1)}>{exportConnectionNumber}</div>
-      <div className={classes.tableContainer}>{connectionNumber}</div>
+      {numberOfConnectionValidation.ok ? (
+        <div className={classes.tableContainer}>{connectionNumber}</div>
+      ) : (
+        <Paper className={classes.errorPaper}>
+          <Typography align="center" className={classes.errorPaperMessage}>
+            Invalid form fields.
+          </Typography>
+        </Paper>
+      )}
     </Fragment>
   );
 };

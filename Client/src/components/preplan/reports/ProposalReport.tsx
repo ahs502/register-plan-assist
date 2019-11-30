@@ -1,5 +1,5 @@
 import React, { FC, Fragment, useState, useEffect, useMemo } from 'react';
-import { Theme, InputLabel, TextField, TableHead, TableCell, Table, TableRow, TableBody, Button, Grid, FormControlLabel, Checkbox } from '@material-ui/core';
+import { Theme, InputLabel, TextField, TableHead, TableCell, Table, TableRow, TableBody, Button, Grid, FormControlLabel, Checkbox, Paper, Typography } from '@material-ui/core';
 import { red, grey } from '@material-ui/core/colors';
 import { makeStyles } from '@material-ui/styles';
 import MasterData, { Airport } from '@core/master-data';
@@ -19,6 +19,7 @@ import { dataTypes } from 'src/utils/DataType';
 import RefiningTextField from 'src/components/RefiningTextField';
 import Validation from '@core/node_modules/@ahs502/validation/dist/Validation';
 
+const errorPaperSize = 250;
 const makeColor = () => ({
   changeStatus: { background: '#FFFFCC' },
   realBoarder: { backgroundColor: '#FFC7CE' },
@@ -106,6 +107,12 @@ const useStyles = makeStyles((theme: Theme) => {
     },
     datePosition: {
       marginTop: theme.spacing(1)
+    },
+    errorPaper: {
+      height: errorPaperSize
+    },
+    errorPaperMessage: {
+      lineHeight: `${errorPaperSize}px`
     }
   };
 });
@@ -260,11 +267,11 @@ class ViewStateValidation extends Validation<
       validator => {
         validator.check('START_DATE_EXISTS', !!startDate).check('START_DATE_IS_VALID', () => dataTypes.utcDate.checkView(startDate));
         validator.check('END_DATE_EXISTS', !!endDate).check('END_DATE_IS_VALID', () => dataTypes.utcDate.checkView(endDate));
-        validator
-          .when('START_DATE_IS_VALID', 'END_DATE_IS_VALID')
-          .then(() => dataTypes.utcDate.convertViewToModel(startDate) <= dataTypes.utcDate.convertViewToModel(endDate))
-          .check('START_DATE_IS_NOT_AFTER_END_DATE', ok => ok, 'Can not be after end date.')
-          .check('END_DATE_IS_NOT_BEFORE_START_DATE', ok => ok, 'Can not be before start date.');
+        validator.when('START_DATE_IS_VALID', 'END_DATE_IS_VALID').then(() => {
+          const ok = dataTypes.utcDate.convertViewToModel(startDate) <= dataTypes.utcDate.convertViewToModel(endDate);
+          validator.check('START_DATE_IS_NOT_AFTER_END_DATE', ok, 'Can not be after end date.');
+          validator.check('END_DATE_IS_NOT_BEFORE_START_DATE', ok, 'Can not be before start date.');
+        });
       },
       {
         '*_EXISTS': 'Required.',
@@ -375,47 +382,49 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
   // }, []);
 
   useEffect(() => {
-    const realFlatModel = generateReportDataModel(viewState, flights, true);
-    const reserveFlatModel = generateReportDataModel(viewState, flights, false);
+    if (validation.ok) {
+      const realFlatModel = generateReportDataModel(viewState, flights, true);
+      const reserveFlatModel = generateReportDataModel(viewState, flights, false);
 
-    setFlattenFlightRequirmentsStatus(realFlatModel);
-    setFlattenFlightRequirmentsStatus(reserveFlatModel);
+      setFlattenFlightRequirmentsStatus(realFlatModel);
+      setFlattenFlightRequirmentsStatus(reserveFlatModel);
 
-    if (viewState.compareMode) {
-      const targetPreplan = viewState.preplanHeader;
-      const targetRealFlatModel = generateReportDataModel(viewState, getPreplanFlightRequirments(targetPreplan.id), true);
-      const targetReserveFlatModel = generateReportDataModel(viewState, getPreplanFlightRequirments(targetPreplan.id), false);
+      if (viewState.compareMode) {
+        const targetPreplan = viewState.preplanHeader;
+        const targetRealFlatModel = generateReportDataModel(viewState, getPreplanFlightRequirments(targetPreplan.id), true);
+        const targetReserveFlatModel = generateReportDataModel(viewState, getPreplanFlightRequirments(targetPreplan.id), false);
 
-      compareFlattenFlightRequirment(realFlatModel, targetRealFlatModel);
-      compareFlattenFlightRequirment(reserveFlatModel, targetReserveFlatModel);
-    }
-
-    realFlatModel.sort((first, second) => {
-      const firstLabel = first.label;
-      const secondLabel = second.label;
-      return firstLabel > secondLabel ? 1 : firstLabel < secondLabel ? -1 : 0;
-    });
-
-    reserveFlatModel.sort((first, second) => {
-      const firstLabel = first.label;
-      const secondLabel = second.label;
-      return firstLabel > secondLabel ? 1 : firstLabel < secondLabel ? -1 : 0;
-    });
-
-    const realGroup = groupFlattenFlightRequirmentbyCategory(realFlatModel);
-    const reserveGroup = groupFlattenFlightRequirmentbyCategory(reserveFlatModel);
-
-    realGroup.forEach(d => {
-      const groupInReserve = reserveGroup.find(r => r.value === d.value);
-      if (groupInReserve) {
-        d.countOfRealFlight = d.items.length;
-        d.items = d.items.concat(groupInReserve.items);
-        reserveGroup.remove(groupInReserve);
+        compareFlattenFlightRequirment(realFlatModel, targetRealFlatModel);
+        compareFlattenFlightRequirment(reserveFlatModel, targetReserveFlatModel);
       }
-    });
 
-    setDataProvider(realGroup.concat(reserveGroup));
-    setFlattenFlightRequirments(realFlatModel.concat(reserveFlatModel));
+      realFlatModel.sort((first, second) => {
+        const firstLabel = first.label;
+        const secondLabel = second.label;
+        return firstLabel > secondLabel ? 1 : firstLabel < secondLabel ? -1 : 0;
+      });
+
+      reserveFlatModel.sort((first, second) => {
+        const firstLabel = first.label;
+        const secondLabel = second.label;
+        return firstLabel > secondLabel ? 1 : firstLabel < secondLabel ? -1 : 0;
+      });
+
+      const realGroup = groupFlattenFlightRequirmentbyCategory(realFlatModel);
+      const reserveGroup = groupFlattenFlightRequirmentbyCategory(reserveFlatModel);
+
+      realGroup.forEach(d => {
+        const groupInReserve = reserveGroup.find(r => r.value === d.value);
+        if (groupInReserve) {
+          d.countOfRealFlight = d.items.length;
+          d.items = d.items.concat(groupInReserve.items);
+          reserveGroup.remove(groupInReserve);
+        }
+      });
+
+      setDataProvider(realGroup.concat(reserveGroup));
+      setFlattenFlightRequirments(realFlatModel.concat(reserveFlatModel));
+    }
   }, [viewState]);
 
   const exportToExcel = () => {
@@ -832,228 +841,212 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
       </Grid>
 
       <br />
-      <Button className={classes.marginBottom2} variant="outlined" color="primary" onClick={() => exportToExcel()}>
+      <Button disabled={!validation.ok} className={classes.marginBottom2} variant="outlined" color="primary" onClick={() => exportToExcel()}>
         Export to Excel
         <ExportToExcelIcon className={classes.transform180} />
       </Button>
-
-      <ExcelExport
-        data={dataProvider}
-        group={group}
-        fileName={"Proposal  '" + preplanName + "'-" + viewState.baseAirport.name + '-' + FlightType[viewState.flightType] + '-' + new Date().format('~D$') + '.xlsx'}
-        ref={exporter => {
-          proposalExporter = exporter;
-        }}
-      >
-        <ExcelExportColumnGroup
-          title={'Propoal Schedule from ' + dataTypes.utcDate.convertViewToModel(viewState.startDate) + ' till ' + dataTypes.utcDate.convertViewToModel(viewState.endDate)}
-          headerCellOptions={{ ...headerCellOptions, background: '#FFFFFF' }}
+      {validation.ok && (
+        <ExcelExport
+          data={dataProvider}
+          group={group}
+          fileName={"Proposal  '" + preplanName + "'-" + viewState.baseAirport.name + '-' + FlightType[viewState.flightType] + '-' + new Date().format('~D$') + '.xlsx'}
+          ref={exporter => {
+            proposalExporter = exporter;
+          }}
         >
-          <ExcelExportColumnGroup title={'Base ' + viewState.baseAirport.name} headerCellOptions={{ ...headerCellOptions, background: color.excelHeader.backgroundColor }}>
-            <ExcelExportColumn
-              title={'F/N'}
-              field="flightNumber"
-              width={31}
-              cellOptions={{ ...detailCellOption, borderLeft: { color: '#000000', size: 3 } }}
-              headerCellOptions={{
-                ...headerCellOptions,
-                background: color.excelHeader.backgroundColor,
-                borderLeft: { color: '#000000', size: 3 },
-                borderTop: { color: '#000000', size: 3 },
-                borderBottom: { color: '#000000', size: 3 }
-              }}
-            />
-            <ExcelExportColumn
-              title="ROUTE"
-              field="route"
-              width={55}
-              cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 } }}
-              headerCellOptions={{
-                ...headerCellOptions,
-                background: color.excelHeader.backgroundColor,
-                borderRight: { color: '#000000', size: 3 },
-                borderTop: { color: '#000000', size: 3 },
-                borderBottom: { color: '#000000', size: 3 }
-              }}
-            />
-
-            <ExcelExportColumn
-              title="LCL"
-              field="localStd"
-              width={30}
-              cellOptions={{ ...detailCellOption }}
-              headerCellOptions={{
-                ...headerCellOptions,
-                background: color.excelHeader.backgroundColor,
-                borderLeft: { color: '#000000', size: 3 },
-                borderTop: { color: '#000000', size: 3 },
-                borderBottom: { color: '#000000', size: 3 }
-              }}
-            />
-            <ExcelExportColumn
-              title="LCL"
-              field="localSta"
-              width={30}
-              cellOptions={{ ...detailCellOption }}
-              headerCellOptions={{
-                ...headerCellOptions,
-                background: color.excelHeader.backgroundColor,
-                borderTop: { color: '#000000', size: 3 },
-                borderBottom: { color: '#000000', size: 3 }
-              }}
-            />
-
-            <ExcelExportColumn
-              title="UTC"
-              field="utcStd"
-              width={30}
-              cellOptions={{ ...detailCellOption, color: '#F44336' }}
-              headerCellOptions={{
-                ...headerCellOptions,
-                background: color.excelHeader.backgroundColor,
-                color: '#F44336',
-                borderTop: { color: '#000000', size: 3 },
-                borderBottom: { color: '#000000', size: 3 }
-              }}
-            />
-            <ExcelExportColumn
-              title="UTC"
-              field="utcSta"
-              width={30}
-              cellOptions={{ ...detailCellOption, color: '#F44336', borderRight: { color: '#000000', size: 3 } }}
-              headerCellOptions={{
-                ...headerCellOptions,
-                background: color.excelHeader.backgroundColor,
-                color: '#F44336',
-                borderRight: { color: '#000000', size: 3 },
-                borderTop: { color: '#000000', size: 3 },
-                borderBottom: { color: '#000000', size: 3 }
-              }}
-            />
-
-            <ExcelExportColumn
-              title={['Sat', '6'].join('\r\n')}
-              field="weekDay0"
-              width={26}
-              cellOptions={{ ...detailCellOption, borderLeft: { color: '#000000', size: 3 } }}
-              headerCellOptions={{
-                ...headerCellOptions,
-                wrap: true,
-                background: color.excelHeader.backgroundColor,
-                borderLeft: { color: '#000000', size: 3 },
-                borderTop: { color: '#000000', size: 3 },
-                borderBottom: { color: '#000000', size: 3 }
-              }}
-            />
-
-            <ExcelExportColumn
-              title={['Sun', '7'].join('\r\n')}
-              field="weekDay1"
-              width={26}
-              cellOptions={{ ...detailCellOption }}
-              headerCellOptions={{
-                ...headerCellOptions,
-                wrap: true,
-                background: color.excelHeader.backgroundColor,
-                borderTop: { color: '#000000', size: 3 },
-                borderBottom: { color: '#000000', size: 3 }
-              }}
-            />
-
-            <ExcelExportColumn
-              title={['Mon', '1'].join('\r\n')}
-              field="weekDay2"
-              width={26}
-              cellOptions={{ ...detailCellOption }}
-              headerCellOptions={{
-                ...headerCellOptions,
-                wrap: true,
-                background: color.excelHeader.backgroundColor,
-                borderTop: { color: '#000000', size: 3 },
-                borderBottom: { color: '#000000', size: 3 }
-              }}
-            />
-
-            <ExcelExportColumn
-              title={['Tue', '2'].join('\r\n')}
-              field="weekDay3"
-              width={26}
-              cellOptions={{ ...detailCellOption }}
-              headerCellOptions={{
-                ...headerCellOptions,
-                wrap: true,
-                background: color.excelHeader.backgroundColor,
-                borderTop: { color: '#000000', size: 3 },
-                borderBottom: { color: '#000000', size: 3 }
-              }}
-            />
-
-            <ExcelExportColumn
-              title={['Wed', '3'].join('\r\n')}
-              field="weekDay4"
-              width={26}
-              cellOptions={{ ...detailCellOption }}
-              headerCellOptions={{
-                ...headerCellOptions,
-                wrap: true,
-                background: color.excelHeader.backgroundColor,
-                borderTop: { color: '#000000', size: 3 },
-                borderBottom: { color: '#000000', size: 3 }
-              }}
-            />
-
-            <ExcelExportColumn
-              title={['Thu', '4'].join('\r\n')}
-              field="weekDay5"
-              width={26}
-              cellOptions={{ ...detailCellOption }}
-              headerCellOptions={{
-                ...headerCellOptions,
-                wrap: true,
-                background: color.excelHeader.backgroundColor,
-                borderTop: { color: '#000000', size: 3 },
-                borderBottom: { color: '#000000', size: 3 }
-              }}
-            />
-
-            <ExcelExportColumn
-              title={['Fri', '5'].join('\r\n')}
-              field="weekDay6"
-              width={26}
-              cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 } }}
-              headerCellOptions={{
-                ...headerCellOptions,
-                wrap: true,
-                background: color.excelHeader.backgroundColor,
-                borderRight: { color: '#000000', size: 3 },
-                borderTop: { color: '#000000', size: 3 },
-                borderBottom: { color: '#000000', size: 3 }
-              }}
-            />
-
-            <ExcelExportColumn
-              title="DUR."
-              field="formatedBlockTime"
-              width={30}
-              cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 }, borderLeft: { color: '#000000', size: 3 } }}
-              headerCellOptions={{
-                ...headerCellOptions,
-                background: color.excelHeader.backgroundColor,
-                borderRight: { color: '#000000', size: 3 },
-                borderLeft: { color: '#000000', size: 3 },
-                borderTop: { color: '#000000', size: 3 },
-                borderBottom: { color: '#000000', size: 3 }
-              }}
-            />
-            {viewState.showNote && (
+          <ExcelExportColumnGroup
+            title={'Propoal Schedule from ' + dataTypes.utcDate.convertViewToModel(viewState.startDate) + ' till ' + dataTypes.utcDate.convertViewToModel(viewState.endDate)}
+            headerCellOptions={{ ...headerCellOptions, background: '#FFFFFF' }}
+          >
+            <ExcelExportColumnGroup title={'Base ' + viewState.baseAirport.name} headerCellOptions={{ ...headerCellOptions, background: color.excelHeader.backgroundColor }}>
               <ExcelExportColumn
-                title={['NOTE', '(base on domestic/lcl)'].join('\r\n')}
-                field="note"
-                width={100}
-                cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 }, borderLeft: { color: '#000000', size: 3 } }}
+                title={'F/N'}
+                field="flightNumber"
+                width={31}
+                cellOptions={{ ...detailCellOption, borderLeft: { color: '#000000', size: 3 } }}
+                headerCellOptions={{
+                  ...headerCellOptions,
+                  background: color.excelHeader.backgroundColor,
+                  borderLeft: { color: '#000000', size: 3 },
+                  borderTop: { color: '#000000', size: 3 },
+                  borderBottom: { color: '#000000', size: 3 }
+                }}
+              />
+              <ExcelExportColumn
+                title="ROUTE"
+                field="route"
+                width={55}
+                cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 } }}
+                headerCellOptions={{
+                  ...headerCellOptions,
+                  background: color.excelHeader.backgroundColor,
+                  borderRight: { color: '#000000', size: 3 },
+                  borderTop: { color: '#000000', size: 3 },
+                  borderBottom: { color: '#000000', size: 3 }
+                }}
+              />
+
+              <ExcelExportColumn
+                title="LCL"
+                field="localStd"
+                width={30}
+                cellOptions={{ ...detailCellOption }}
+                headerCellOptions={{
+                  ...headerCellOptions,
+                  background: color.excelHeader.backgroundColor,
+                  borderLeft: { color: '#000000', size: 3 },
+                  borderTop: { color: '#000000', size: 3 },
+                  borderBottom: { color: '#000000', size: 3 }
+                }}
+              />
+              <ExcelExportColumn
+                title="LCL"
+                field="localSta"
+                width={30}
+                cellOptions={{ ...detailCellOption }}
+                headerCellOptions={{
+                  ...headerCellOptions,
+                  background: color.excelHeader.backgroundColor,
+                  borderTop: { color: '#000000', size: 3 },
+                  borderBottom: { color: '#000000', size: 3 }
+                }}
+              />
+
+              <ExcelExportColumn
+                title="UTC"
+                field="utcStd"
+                width={30}
+                cellOptions={{ ...detailCellOption, color: '#F44336' }}
+                headerCellOptions={{
+                  ...headerCellOptions,
+                  background: color.excelHeader.backgroundColor,
+                  color: '#F44336',
+                  borderTop: { color: '#000000', size: 3 },
+                  borderBottom: { color: '#000000', size: 3 }
+                }}
+              />
+              <ExcelExportColumn
+                title="UTC"
+                field="utcSta"
+                width={30}
+                cellOptions={{ ...detailCellOption, color: '#F44336', borderRight: { color: '#000000', size: 3 } }}
+                headerCellOptions={{
+                  ...headerCellOptions,
+                  background: color.excelHeader.backgroundColor,
+                  color: '#F44336',
+                  borderRight: { color: '#000000', size: 3 },
+                  borderTop: { color: '#000000', size: 3 },
+                  borderBottom: { color: '#000000', size: 3 }
+                }}
+              />
+
+              <ExcelExportColumn
+                title={['Sat', '6'].join('\r\n')}
+                field="weekDay0"
+                width={26}
+                cellOptions={{ ...detailCellOption, borderLeft: { color: '#000000', size: 3 } }}
                 headerCellOptions={{
                   ...headerCellOptions,
                   wrap: true,
+                  background: color.excelHeader.backgroundColor,
+                  borderLeft: { color: '#000000', size: 3 },
+                  borderTop: { color: '#000000', size: 3 },
+                  borderBottom: { color: '#000000', size: 3 }
+                }}
+              />
+
+              <ExcelExportColumn
+                title={['Sun', '7'].join('\r\n')}
+                field="weekDay1"
+                width={26}
+                cellOptions={{ ...detailCellOption }}
+                headerCellOptions={{
+                  ...headerCellOptions,
+                  wrap: true,
+                  background: color.excelHeader.backgroundColor,
+                  borderTop: { color: '#000000', size: 3 },
+                  borderBottom: { color: '#000000', size: 3 }
+                }}
+              />
+
+              <ExcelExportColumn
+                title={['Mon', '1'].join('\r\n')}
+                field="weekDay2"
+                width={26}
+                cellOptions={{ ...detailCellOption }}
+                headerCellOptions={{
+                  ...headerCellOptions,
+                  wrap: true,
+                  background: color.excelHeader.backgroundColor,
+                  borderTop: { color: '#000000', size: 3 },
+                  borderBottom: { color: '#000000', size: 3 }
+                }}
+              />
+
+              <ExcelExportColumn
+                title={['Tue', '2'].join('\r\n')}
+                field="weekDay3"
+                width={26}
+                cellOptions={{ ...detailCellOption }}
+                headerCellOptions={{
+                  ...headerCellOptions,
+                  wrap: true,
+                  background: color.excelHeader.backgroundColor,
+                  borderTop: { color: '#000000', size: 3 },
+                  borderBottom: { color: '#000000', size: 3 }
+                }}
+              />
+
+              <ExcelExportColumn
+                title={['Wed', '3'].join('\r\n')}
+                field="weekDay4"
+                width={26}
+                cellOptions={{ ...detailCellOption }}
+                headerCellOptions={{
+                  ...headerCellOptions,
+                  wrap: true,
+                  background: color.excelHeader.backgroundColor,
+                  borderTop: { color: '#000000', size: 3 },
+                  borderBottom: { color: '#000000', size: 3 }
+                }}
+              />
+
+              <ExcelExportColumn
+                title={['Thu', '4'].join('\r\n')}
+                field="weekDay5"
+                width={26}
+                cellOptions={{ ...detailCellOption }}
+                headerCellOptions={{
+                  ...headerCellOptions,
+                  wrap: true,
+                  background: color.excelHeader.backgroundColor,
+                  borderTop: { color: '#000000', size: 3 },
+                  borderBottom: { color: '#000000', size: 3 }
+                }}
+              />
+
+              <ExcelExportColumn
+                title={['Fri', '5'].join('\r\n')}
+                field="weekDay6"
+                width={26}
+                cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 } }}
+                headerCellOptions={{
+                  ...headerCellOptions,
+                  wrap: true,
+                  background: color.excelHeader.backgroundColor,
+                  borderRight: { color: '#000000', size: 3 },
+                  borderTop: { color: '#000000', size: 3 },
+                  borderBottom: { color: '#000000', size: 3 }
+                }}
+              />
+
+              <ExcelExportColumn
+                title="DUR."
+                field="formatedBlockTime"
+                width={30}
+                cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 }, borderLeft: { color: '#000000', size: 3 } }}
+                headerCellOptions={{
+                  ...headerCellOptions,
                   background: color.excelHeader.backgroundColor,
                   borderRight: { color: '#000000', size: 3 },
                   borderLeft: { color: '#000000', size: 3 },
@@ -1061,342 +1054,366 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
                   borderBottom: { color: '#000000', size: 3 }
                 }}
               />
-            )}
-
-            {viewState.showSlot && (
-              <ExcelExportColumn
-                title={['DESTINATION', 'SLOT (LCL)'].join('\r\n')}
-                field="destinationNoPermissions"
-                width={70}
-                cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 }, borderLeft: { color: '#000000', size: 3 } }}
-                headerCellOptions={{
-                  ...headerCellOptions,
-                  wrap: true,
-                  background: color.excelHeader.backgroundColor,
-                  borderRight: { color: '#000000', size: 3 },
-                  borderLeft: { color: '#000000', size: 3 },
-                  borderTop: { color: '#000000', size: 3 },
-                  borderBottom: { color: '#000000', size: 3 }
-                }}
-              />
-            )}
-
-            {viewState.showSlot && (
-              <ExcelExportColumn
-                title={['ORIGIN', 'SLOT (UTC)'].join('\r\n')}
-                field="originNoPermissions"
-                width={85}
-                cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 }, borderLeft: { color: '#000000', size: 3 } }}
-                headerCellOptions={{
-                  ...headerCellOptions,
-                  wrap: true,
-                  background: color.excelHeader.backgroundColor,
-                  borderRight: { color: '#000000', size: 3 },
-                  borderLeft: { color: '#000000', size: 3 },
-                  borderTop: { color: '#000000', size: 3 },
-                  borderBottom: { color: '#000000', size: 3 }
-                }}
-              />
-            )}
-
-            {viewState.showType && (
-              <ExcelExportColumn
-                title="Type"
-                field="aircraftType"
-                width={40}
-                cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 }, borderLeft: { color: '#000000', size: 3 } }}
-                headerCellOptions={{
-                  ...headerCellOptions,
-                  wrap: true,
-                  background: color.excelHeader.backgroundColor,
-                  borderRight: { color: '#000000', size: 3 },
-                  borderLeft: { color: '#000000', size: 3 },
-                  borderTop: { color: '#000000', size: 3 },
-                  borderBottom: { color: '#000000', size: 3 }
-                }}
-              />
-            )}
-
-            {viewState.showFrequency && (
-              <ExcelExportColumn
-                title="Fre"
-                field="frequency"
-                width={40}
-                cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 }, borderLeft: { color: '#000000', size: 3 } }}
-                headerCellOptions={{
-                  ...headerCellOptions,
-                  wrap: true,
-                  background: color.excelHeader.backgroundColor,
-                  borderRight: { color: '#000000', size: 3 },
-                  borderLeft: { color: '#000000', size: 3 },
-                  borderTop: { color: '#000000', size: 3 },
-                  borderBottom: { color: '#000000', size: 3 }
-                }}
-              />
-            )}
-          </ExcelExportColumnGroup>
-        </ExcelExportColumnGroup>
-        <ExcelExportColumn title="Category" field="category" hidden={true} />
-        <ExcelExportColumn title="id" field="id" />
-        <ExcelExportColumn title="parentRoute" field="parentRoute" />
-        <ExcelExportColumn title="label" field="label" />
-      </ExcelExport>
-
-      <Table className={classNames(classes.marginBottom1, classes.marginRight1)}>
-        <TableHead>
-          <TableRow>
-            <TableCell className={classes.border} align="center" colSpan={19}>
-              {viewState.baseAirport ? 'Base ' + viewState.baseAirport.name : ''}
-            </TableCell>
-          </TableRow>
-          <TableRow className={classes.borderBottom}>
-            <TableCell className={classes.border} rowSpan={2}>
-              F/N
-            </TableCell>
-            <TableCell className={classes.border} rowSpan={2}>
-              ROUTE
-            </TableCell>
-            <TableCell className={classes.border} align="center" colSpan={2} rowSpan={2}>
-              LCL
-            </TableCell>
-            <TableCell className={classNames(classes.border, classes.utc)} align="center" colSpan={2} rowSpan={2}>
-              UTC
-            </TableCell>
-            <TableCell className={classes.border} align="center">
-              <div>Sat</div>
-              <div>6</div>
-            </TableCell>
-            <TableCell className={classes.border} align="center">
-              <div>Sun</div>
-              <div>7</div>
-            </TableCell>
-            <TableCell className={classes.border} align="center">
-              <div>Mon</div>
-              <div>1</div>
-            </TableCell>
-            <TableCell className={classes.border} align="center">
-              <div>Tue</div>
-              <div>2</div>
-            </TableCell>
-            <TableCell className={classes.border} align="center">
-              <div>Wed</div>
-              <div>3</div>
-            </TableCell>
-            <TableCell className={classes.border} align="center">
-              <div>Thu</div>
-              <div>4</div>
-            </TableCell>
-            <TableCell className={classes.border} align="center">
-              <div>Fri</div>
-              <div>5</div>
-            </TableCell>
-            <TableCell className={classes.border} align="center">
-              DUR.
-            </TableCell>
-            {viewState.showNote && (
-              <TableCell className={classes.border} align="center">
-                <div>NOTE</div>
-                <div>(base on domestic/lcl)</div>
-              </TableCell>
-            )}
-            {viewState.showSlot && (
-              <Fragment>
-                <TableCell className={classes.border} align="center">
-                  <div>DESTINATION</div>
-                  <div>SLOT (LCL)</div>
-                </TableCell>
-
-                <TableCell className={classes.border} align="center">
-                  <div>ORIGIN </div>
-                  <div>SLOT (UTC)</div>
-                </TableCell>
-              </Fragment>
-            )}
-            {viewState.showType && (
-              <TableCell className={classes.border} align="center">
-                Type
-              </TableCell>
-            )}
-
-            {viewState.showFrequency && (
-              <TableCell className={classes.border} align="center">
-                Fre
-              </TableCell>
-            )}
-          </TableRow>
-        </TableHead>
-
-        <TableBody>
-          {dataProvider.map(d => (
-            <Fragment key={d.value}>
-              {d.value && (
-                <TableRow>
-                  <TableCell className={classNames(classes.category, classes.border)} colSpan={19}>
-                    Category: {d.value}
-                  </TableCell>
-                </TableRow>
+              {viewState.showNote && (
+                <ExcelExportColumn
+                  title={['NOTE', '(base on domestic/lcl)'].join('\r\n')}
+                  field="note"
+                  width={100}
+                  cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 }, borderLeft: { color: '#000000', size: 3 } }}
+                  headerCellOptions={{
+                    ...headerCellOptions,
+                    wrap: true,
+                    background: color.excelHeader.backgroundColor,
+                    borderRight: { color: '#000000', size: 3 },
+                    borderLeft: { color: '#000000', size: 3 },
+                    borderTop: { color: '#000000', size: 3 },
+                    borderBottom: { color: '#000000', size: 3 }
+                  }}
+                />
               )}
-              {d.items.map((f, index, self) => (
+
+              {viewState.showSlot && (
+                <ExcelExportColumn
+                  title={['DESTINATION', 'SLOT (LCL)'].join('\r\n')}
+                  field="destinationNoPermissions"
+                  width={70}
+                  cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 }, borderLeft: { color: '#000000', size: 3 } }}
+                  headerCellOptions={{
+                    ...headerCellOptions,
+                    wrap: true,
+                    background: color.excelHeader.backgroundColor,
+                    borderRight: { color: '#000000', size: 3 },
+                    borderLeft: { color: '#000000', size: 3 },
+                    borderTop: { color: '#000000', size: 3 },
+                    borderBottom: { color: '#000000', size: 3 }
+                  }}
+                />
+              )}
+
+              {viewState.showSlot && (
+                <ExcelExportColumn
+                  title={['ORIGIN', 'SLOT (UTC)'].join('\r\n')}
+                  field="originNoPermissions"
+                  width={85}
+                  cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 }, borderLeft: { color: '#000000', size: 3 } }}
+                  headerCellOptions={{
+                    ...headerCellOptions,
+                    wrap: true,
+                    background: color.excelHeader.backgroundColor,
+                    borderRight: { color: '#000000', size: 3 },
+                    borderLeft: { color: '#000000', size: 3 },
+                    borderTop: { color: '#000000', size: 3 },
+                    borderBottom: { color: '#000000', size: 3 }
+                  }}
+                />
+              )}
+
+              {viewState.showType && (
+                <ExcelExportColumn
+                  title="Type"
+                  field="aircraftType"
+                  width={40}
+                  cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 }, borderLeft: { color: '#000000', size: 3 } }}
+                  headerCellOptions={{
+                    ...headerCellOptions,
+                    wrap: true,
+                    background: color.excelHeader.backgroundColor,
+                    borderRight: { color: '#000000', size: 3 },
+                    borderLeft: { color: '#000000', size: 3 },
+                    borderTop: { color: '#000000', size: 3 },
+                    borderBottom: { color: '#000000', size: 3 }
+                  }}
+                />
+              )}
+
+              {viewState.showFrequency && (
+                <ExcelExportColumn
+                  title="Fre"
+                  field="frequency"
+                  width={40}
+                  cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 }, borderLeft: { color: '#000000', size: 3 } }}
+                  headerCellOptions={{
+                    ...headerCellOptions,
+                    wrap: true,
+                    background: color.excelHeader.backgroundColor,
+                    borderRight: { color: '#000000', size: 3 },
+                    borderLeft: { color: '#000000', size: 3 },
+                    borderTop: { color: '#000000', size: 3 },
+                    borderBottom: { color: '#000000', size: 3 }
+                  }}
+                />
+              )}
+            </ExcelExportColumnGroup>
+          </ExcelExportColumnGroup>
+          <ExcelExportColumn title="Category" field="category" hidden={true} />
+          <ExcelExportColumn title="id" field="id" />
+          <ExcelExportColumn title="parentRoute" field="parentRoute" />
+          <ExcelExportColumn title="label" field="label" />
+        </ExcelExport>
+      )}
+      {validation.ok ? (
+        <Table className={classNames(classes.marginBottom1, classes.marginRight1)}>
+          <TableHead>
+            <TableRow>
+              <TableCell className={classes.border} align="center" colSpan={19}>
+                {viewState.baseAirport ? 'Base ' + viewState.baseAirport.name : ''}
+              </TableCell>
+            </TableRow>
+            <TableRow className={classes.borderBottom}>
+              <TableCell className={classes.border} rowSpan={2}>
+                F/N
+              </TableCell>
+              <TableCell className={classes.border} rowSpan={2}>
+                ROUTE
+              </TableCell>
+              <TableCell className={classes.border} align="center" colSpan={2} rowSpan={2}>
+                LCL
+              </TableCell>
+              <TableCell className={classNames(classes.border, classes.utc)} align="center" colSpan={2} rowSpan={2}>
+                UTC
+              </TableCell>
+              <TableCell className={classes.border} align="center">
+                <div>Sat</div>
+                <div>6</div>
+              </TableCell>
+              <TableCell className={classes.border} align="center">
+                <div>Sun</div>
+                <div>7</div>
+              </TableCell>
+              <TableCell className={classes.border} align="center">
+                <div>Mon</div>
+                <div>1</div>
+              </TableCell>
+              <TableCell className={classes.border} align="center">
+                <div>Tue</div>
+                <div>2</div>
+              </TableCell>
+              <TableCell className={classes.border} align="center">
+                <div>Wed</div>
+                <div>3</div>
+              </TableCell>
+              <TableCell className={classes.border} align="center">
+                <div>Thu</div>
+                <div>4</div>
+              </TableCell>
+              <TableCell className={classes.border} align="center">
+                <div>Fri</div>
+                <div>5</div>
+              </TableCell>
+              <TableCell className={classes.border} align="center">
+                DUR.
+              </TableCell>
+              {viewState.showNote && (
+                <TableCell className={classes.border} align="center">
+                  <div>NOTE</div>
+                  <div>(base on domestic/lcl)</div>
+                </TableCell>
+              )}
+              {viewState.showSlot && (
                 <Fragment>
-                  {d.countOfRealFlight === index ? (
-                    <TableRow>
-                      <TableCell className={classNames(classes.category, classes.realBoarder, classes.border)} colSpan={19}>
-                        {'‎' /**Left to right character dont remove it*/ +
-                          d.value +
-                          (d.value ? ': ' : '') +
-                          (viewState.showSTB2 ? 'STB2' : '') +
-                          (viewState.showExtra ? (viewState.showSTB2 ? ' & EXT' : 'EXT') : '')}
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    <Fragment />
-                  )}
-                  <TableRow
-                    key={index.toString() + f.label + f.flightNumber}
-                    className={classNames(
-                      index > 0 && self[index - 1].label !== f.label
-                        ? self[index - 1].parentRoute !== f.parentRoute
-                          ? classes.borderTopThick
-                          : classes.internalPreplanDevider
-                        : '',
-                      f.status.isNew ? classes.changeStatus : ''
-                    )}
-                  >
-                    <TableCell className={classes.border}>{f.flightNumber}</TableCell>
-                    <TableCell className={classNames(classes.border, f.status.routeChange ? classes.changeStatus : '')}>{f.route}</TableCell>
-                    <TableCell className={classNames(classes.border, f.status.localStd && f.status.localStd.isChange ? classes.changeStatus : '')} align="center">
-                      {f.localStd}
-                    </TableCell>
-                    <TableCell className={classNames(classes.border, f.status.localSta && f.status.localSta.isChange ? classes.changeStatus : '')} align="center">
-                      <div className={f.diffLocalStdandLocalSta !== 0 ? classes.diffContainer : ''}>
-                        <span>{f.localSta}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className={classNames(classes.border, classes.utc, f.status.utcStd && f.status.utcStd.isChange ? classes.changeStatus : '')} align="center">
-                      <div className={f.diffLocalStdandUtcStd !== 0 ? classes.diffContainer : ''}>
-                        <span>{f.utcStd}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className={classNames(classes.border, classes.utc, f.status.utcSta && f.status.utcSta.isChange ? classes.changeStatus : '')} align="center">
-                      <div className={f.diffLocalStdandUtcSta !== 0 ? classes.diffContainer : ''}>
-                        <span>{f.utcSta}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell
-                      align="center"
-                      className={classNames(
-                        classes.border,
-                        isRealFlight(f, 0) ? classes.rsx : '',
-                        !f.status.weekDay0.hasPermission ? classes.noPermission : '',
-                        f.status.weekDay0.isChange ? classes.changeStatus : ''
-                      )}
-                    >
-                      <div className={isRealFlight(f, 0) && f.status.weekDay0.hasHalfPermission ? classes.halfPermission : ''}>{f.weekDay0}</div>
-                    </TableCell>
-                    <TableCell
-                      align="center"
-                      className={classNames(
-                        classes.border,
-                        isRealFlight(f, 1) ? classes.rsx : '',
-                        !f.status.weekDay1.hasPermission ? classes.noPermission : '',
-                        f.status.weekDay1.isChange ? classes.changeStatus : ''
-                      )}
-                    >
-                      <div className={isRealFlight(f, 1) && f.status.weekDay1.hasHalfPermission ? classes.halfPermission : ''}>{f.weekDay1}</div>
-                    </TableCell>
-                    <TableCell
-                      align="center"
-                      className={classNames(
-                        classes.border,
-                        isRealFlight(f, 2) ? classes.rsx : '',
-                        !f.status.weekDay2.hasPermission ? classes.noPermission : '',
-                        f.status.weekDay2.isChange ? classes.changeStatus : ''
-                      )}
-                    >
-                      <div className={isRealFlight(f, 2) && f.status.weekDay2.hasHalfPermission ? classes.halfPermission : ''}>{f.weekDay2}</div>
-                    </TableCell>
-                    <TableCell
-                      align="center"
-                      className={classNames(
-                        classes.border,
-                        isRealFlight(f, 3) ? classes.rsx : '',
-                        !f.status.weekDay3.hasPermission ? classes.noPermission : '',
-                        f.status.weekDay3.isChange ? classes.changeStatus : ''
-                      )}
-                    >
-                      <div className={isRealFlight(f, 3) && f.status.weekDay3.hasHalfPermission ? classes.halfPermission : ''}>{f.weekDay3}</div>
-                    </TableCell>
-                    <TableCell
-                      align="center"
-                      className={classNames(
-                        classes.border,
-                        isRealFlight(f, 4) ? classes.rsx : '',
-                        !f.status.weekDay4.hasPermission ? classes.noPermission : '',
-                        f.status.weekDay4.isChange ? classes.changeStatus : ''
-                      )}
-                    >
-                      <div className={isRealFlight(f, 4) && f.status.weekDay4.hasHalfPermission ? classes.halfPermission : ''}>{f.weekDay4}</div>
-                    </TableCell>
-                    <TableCell
-                      align="center"
-                      className={classNames(
-                        classes.border,
-                        isRealFlight(f, 5) ? classes.rsx : '',
-                        !f.status.weekDay5.hasPermission ? classes.noPermission : '',
-                        f.status.weekDay5.isChange ? classes.changeStatus : ''
-                      )}
-                    >
-                      <div className={isRealFlight(f, 5) && f.status.weekDay5.hasHalfPermission ? classes.halfPermission : ''}>{f.weekDay5}</div>
-                    </TableCell>
-                    <TableCell
-                      align="center"
-                      className={classNames(
-                        classes.border,
-                        isRealFlight(f, 6) ? classes.rsx : '',
-                        !f.status.weekDay6.hasPermission ? classes.noPermission : '',
-                        f.status.weekDay6.isChange ? classes.changeStatus : ''
-                      )}
-                    >
-                      <div className={isRealFlight(f, 6) && f.status.weekDay6.hasHalfPermission ? classes.halfPermission : ''}>{f.weekDay6}</div>
-                    </TableCell>
-                    <TableCell align="center" className={classes.border}>
-                      {f.formatedBlockTime}
-                    </TableCell>
-                    {viewState.showNote && (
-                      <TableCell align="center" className={classes.border}>
-                        {f.note}
-                      </TableCell>
-                    )}
+                  <TableCell className={classes.border} align="center">
+                    <div>DESTINATION</div>
+                    <div>SLOT (LCL)</div>
+                  </TableCell>
 
-                    {viewState.showSlot && (
-                      <Fragment>
-                        <TableCell className={classes.border} align="center">
-                          {f.destinationNoPermissions}
-                        </TableCell>
-
-                        <TableCell className={classes.border} align="center">
-                          {f.originNoPermissions}
-                        </TableCell>
-                      </Fragment>
-                    )}
-                    {viewState.showType && (
-                      <TableCell className={classes.border} align="center">
-                        {f.aircraftType}
-                      </TableCell>
-                    )}
-
-                    {viewState.showFrequency && (
-                      <TableCell className={classes.border} align="center">
-                        {f.frequency}
-                      </TableCell>
-                    )}
-                  </TableRow>
+                  <TableCell className={classes.border} align="center">
+                    <div>ORIGIN </div>
+                    <div>SLOT (UTC)</div>
+                  </TableCell>
                 </Fragment>
-              ))}
-            </Fragment>
-          ))}
-        </TableBody>
-      </Table>
+              )}
+              {viewState.showType && (
+                <TableCell className={classes.border} align="center">
+                  Type
+                </TableCell>
+              )}
+
+              {viewState.showFrequency && (
+                <TableCell className={classes.border} align="center">
+                  Fre
+                </TableCell>
+              )}
+            </TableRow>
+          </TableHead>
+
+          <TableBody>
+            {dataProvider.map(d => (
+              <Fragment key={d.value}>
+                {d.value && (
+                  <TableRow>
+                    <TableCell className={classNames(classes.category, classes.border)} colSpan={19}>
+                      Category: {d.value}
+                    </TableCell>
+                  </TableRow>
+                )}
+                {d.items.map((f, index, self) => (
+                  <Fragment>
+                    {d.countOfRealFlight === index ? (
+                      <TableRow>
+                        <TableCell className={classNames(classes.category, classes.realBoarder, classes.border)} colSpan={19}>
+                          {'‎' /**Left to right character dont remove it*/ +
+                            d.value +
+                            (d.value ? ': ' : '') +
+                            (viewState.showSTB2 ? 'STB2' : '') +
+                            (viewState.showExtra ? (viewState.showSTB2 ? ' & EXT' : 'EXT') : '')}
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      <Fragment />
+                    )}
+                    <TableRow
+                      key={index.toString() + f.label + f.flightNumber}
+                      className={classNames(
+                        index > 0 && self[index - 1].label !== f.label
+                          ? self[index - 1].parentRoute !== f.parentRoute
+                            ? classes.borderTopThick
+                            : classes.internalPreplanDevider
+                          : '',
+                        f.status.isNew ? classes.changeStatus : ''
+                      )}
+                    >
+                      <TableCell className={classes.border}>{f.flightNumber}</TableCell>
+                      <TableCell className={classNames(classes.border, f.status.routeChange ? classes.changeStatus : '')}>{f.route}</TableCell>
+                      <TableCell className={classNames(classes.border, f.status.localStd && f.status.localStd.isChange ? classes.changeStatus : '')} align="center">
+                        {f.localStd}
+                      </TableCell>
+                      <TableCell className={classNames(classes.border, f.status.localSta && f.status.localSta.isChange ? classes.changeStatus : '')} align="center">
+                        <div className={f.diffLocalStdandLocalSta !== 0 ? classes.diffContainer : ''}>
+                          <span>{f.localSta}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className={classNames(classes.border, classes.utc, f.status.utcStd && f.status.utcStd.isChange ? classes.changeStatus : '')} align="center">
+                        <div className={f.diffLocalStdandUtcStd !== 0 ? classes.diffContainer : ''}>
+                          <span>{f.utcStd}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className={classNames(classes.border, classes.utc, f.status.utcSta && f.status.utcSta.isChange ? classes.changeStatus : '')} align="center">
+                        <div className={f.diffLocalStdandUtcSta !== 0 ? classes.diffContainer : ''}>
+                          <span>{f.utcSta}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell
+                        align="center"
+                        className={classNames(
+                          classes.border,
+                          isRealFlight(f, 0) ? classes.rsx : '',
+                          !f.status.weekDay0.hasPermission ? classes.noPermission : '',
+                          f.status.weekDay0.isChange ? classes.changeStatus : ''
+                        )}
+                      >
+                        <div className={isRealFlight(f, 0) && f.status.weekDay0.hasHalfPermission ? classes.halfPermission : ''}>{f.weekDay0}</div>
+                      </TableCell>
+                      <TableCell
+                        align="center"
+                        className={classNames(
+                          classes.border,
+                          isRealFlight(f, 1) ? classes.rsx : '',
+                          !f.status.weekDay1.hasPermission ? classes.noPermission : '',
+                          f.status.weekDay1.isChange ? classes.changeStatus : ''
+                        )}
+                      >
+                        <div className={isRealFlight(f, 1) && f.status.weekDay1.hasHalfPermission ? classes.halfPermission : ''}>{f.weekDay1}</div>
+                      </TableCell>
+                      <TableCell
+                        align="center"
+                        className={classNames(
+                          classes.border,
+                          isRealFlight(f, 2) ? classes.rsx : '',
+                          !f.status.weekDay2.hasPermission ? classes.noPermission : '',
+                          f.status.weekDay2.isChange ? classes.changeStatus : ''
+                        )}
+                      >
+                        <div className={isRealFlight(f, 2) && f.status.weekDay2.hasHalfPermission ? classes.halfPermission : ''}>{f.weekDay2}</div>
+                      </TableCell>
+                      <TableCell
+                        align="center"
+                        className={classNames(
+                          classes.border,
+                          isRealFlight(f, 3) ? classes.rsx : '',
+                          !f.status.weekDay3.hasPermission ? classes.noPermission : '',
+                          f.status.weekDay3.isChange ? classes.changeStatus : ''
+                        )}
+                      >
+                        <div className={isRealFlight(f, 3) && f.status.weekDay3.hasHalfPermission ? classes.halfPermission : ''}>{f.weekDay3}</div>
+                      </TableCell>
+                      <TableCell
+                        align="center"
+                        className={classNames(
+                          classes.border,
+                          isRealFlight(f, 4) ? classes.rsx : '',
+                          !f.status.weekDay4.hasPermission ? classes.noPermission : '',
+                          f.status.weekDay4.isChange ? classes.changeStatus : ''
+                        )}
+                      >
+                        <div className={isRealFlight(f, 4) && f.status.weekDay4.hasHalfPermission ? classes.halfPermission : ''}>{f.weekDay4}</div>
+                      </TableCell>
+                      <TableCell
+                        align="center"
+                        className={classNames(
+                          classes.border,
+                          isRealFlight(f, 5) ? classes.rsx : '',
+                          !f.status.weekDay5.hasPermission ? classes.noPermission : '',
+                          f.status.weekDay5.isChange ? classes.changeStatus : ''
+                        )}
+                      >
+                        <div className={isRealFlight(f, 5) && f.status.weekDay5.hasHalfPermission ? classes.halfPermission : ''}>{f.weekDay5}</div>
+                      </TableCell>
+                      <TableCell
+                        align="center"
+                        className={classNames(
+                          classes.border,
+                          isRealFlight(f, 6) ? classes.rsx : '',
+                          !f.status.weekDay6.hasPermission ? classes.noPermission : '',
+                          f.status.weekDay6.isChange ? classes.changeStatus : ''
+                        )}
+                      >
+                        <div className={isRealFlight(f, 6) && f.status.weekDay6.hasHalfPermission ? classes.halfPermission : ''}>{f.weekDay6}</div>
+                      </TableCell>
+                      <TableCell align="center" className={classes.border}>
+                        {f.formatedBlockTime}
+                      </TableCell>
+                      {viewState.showNote && (
+                        <TableCell align="center" className={classes.border}>
+                          {f.note}
+                        </TableCell>
+                      )}
+
+                      {viewState.showSlot && (
+                        <Fragment>
+                          <TableCell className={classes.border} align="center">
+                            {f.destinationNoPermissions}
+                          </TableCell>
+
+                          <TableCell className={classes.border} align="center">
+                            {f.originNoPermissions}
+                          </TableCell>
+                        </Fragment>
+                      )}
+                      {viewState.showType && (
+                        <TableCell className={classes.border} align="center">
+                          {f.aircraftType}
+                        </TableCell>
+                      )}
+
+                      {viewState.showFrequency && (
+                        <TableCell className={classes.border} align="center">
+                          {f.frequency}
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  </Fragment>
+                ))}
+              </Fragment>
+            ))}
+          </TableBody>
+        </Table>
+      ) : (
+        <Paper className={classes.errorPaper}>
+          <Typography align="center" className={classes.errorPaperMessage}>
+            Invalid form fields.
+          </Typography>
+        </Paper>
+      )}
     </Fragment>
   );
 };

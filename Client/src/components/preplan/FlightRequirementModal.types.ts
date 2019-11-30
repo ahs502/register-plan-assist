@@ -7,6 +7,7 @@ import Validation from '@ahs502/validation';
 import { dataTypes } from 'src/utils/DataType';
 
 export interface ViewState {
+  bypassValidation: boolean;
   label: string;
   category: string;
   stc: Stc;
@@ -27,12 +28,14 @@ export class ViewStateValidation extends Validation<
   constructor({ label, category, default: defaultTab, route, days }: ViewState) {
     super(
       validator => {
-        validator.check('LABEL_EXISTS', !!label)
-        .check('LABEL_FORMAT_IS_VALID', () => dataTypes.name.checkView(label), 'Invalid label.')
-        .check('LABEL_IS_LESS_THAN_100',()=> dataTypes.name.refineView(label).length<=100);
-        validator.if(!!category)
-        .check('CATEGORY_FORMAT_IS_VALID', () => dataTypes.name.checkView(category), 'Invalid category.')
-        .check('CATEGORY_IS_LESS_THAN_100',dataTypes.name.refineView(category).length<=100);
+        validator
+          .check('LABEL_EXISTS', !!label)
+          .check('LABEL_FORMAT_IS_VALID', () => dataTypes.name.checkView(label), 'Invalid label.')
+          .check('LABEL_IS_LESS_THAN_100', () => dataTypes.name.refineView(label).length <= 100);
+        validator
+          .if(!!category)
+          .check('CATEGORY_FORMAT_IS_VALID', () => dataTypes.name.checkView(category), 'Invalid category.')
+          .check('CATEGORY_IS_LESS_THAN_100', dataTypes.name.refineView(category).length <= 100);
         validator.put(validator.$.defaultValidation, new TabViewStateValidation(defaultTab));
         validator
           .array(route)

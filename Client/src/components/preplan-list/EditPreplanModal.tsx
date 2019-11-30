@@ -36,15 +36,16 @@ class ViewStateValidation extends Validation<
           .check('NAME_FORMAT_IS_CORRECT', () => dataTypes.name.checkView(name))
           .check(
             'NAME_IS_NOT_DUPLICATED_WITH_OTHER_PERPLANS',
-            () => preplanHeaders.filter(p => p.user.id === persistant.user!.id && p.name.toUpperCase() === name.toUpperCase()).length < 2
+            () => preplanHeaders.filter(p => p.user.id === persistant.user!.id && p.name.toUpperCase() === name.toUpperCase()).length < 2,
+            'Preplan already exists.'
           );
         validator.check('START_DATE_EXISTS', !!startDate).check('START_DATE_IS_VALID', () => dataTypes.utcDate.checkView(startDate));
         validator.check('END_DATE_EXISTS', !!endDate).check('END_DATE_IS_VALID', () => dataTypes.utcDate.checkView(endDate));
-        validator
-          .when('START_DATE_IS_VALID', 'END_DATE_IS_VALID')
-          .then(() => dataTypes.utcDate.convertViewToModel(startDate) <= dataTypes.utcDate.convertViewToModel(endDate))
-          .check('START_DATE_IS_NOT_AFTER_END_DATE', ok => ok, 'Can not be after end date.')
-          .check('END_DATE_IS_NOT_BEFORE_START_DATE', ok => ok, 'Can not be before start date.');
+        validator.when('START_DATE_IS_VALID', 'END_DATE_IS_VALID').then(() => {
+          const ok = dataTypes.utcDate.convertViewToModel(startDate) <= dataTypes.utcDate.convertViewToModel(endDate);
+          validator.check('START_DATE_IS_NOT_AFTER_END_DATE', ok, 'Can not be after end date.');
+          validator.check('END_DATE_IS_NOT_BEFORE_START_DATE', ok, 'Can not be before start date.');
+        });
       },
       {
         '*_EXISTS': 'Required.',
@@ -102,7 +103,7 @@ const EditPreplanModal: FC<EditPreplanModalProps> = ({ state: [open, { preplanHe
         {
           title: 'Submit',
           action: async () => {
-            //TODO: Validate the view model first...
+            if (!validation.ok) throw 'Invalid form fields.';
 
             const newPreplanModel: NewPreplanModel = {
               name: dataTypes.name.convertViewToModel(viewState.name),
@@ -111,14 +112,16 @@ const EditPreplanModal: FC<EditPreplanModalProps> = ({ state: [open, { preplanHe
             };
 
             await onApply(preplanHeader.id, newPreplanModel);
-          }
+          },
+          disabled: !validation.ok
         }
       ]}
     >
-      <Grid container spacing={1}>
+      <Grid container spacing={2}>
         <Grid item xs={12}>
           <RefiningTextField
             label="Name"
+            fullWidth
             dataType={dataTypes.name}
             value={viewState.name}
             onChange={({ target: { value: name } }) => setViewState({ ...viewState, name })}
@@ -129,6 +132,7 @@ const EditPreplanModal: FC<EditPreplanModalProps> = ({ state: [open, { preplanHe
         <Grid item xs={6}>
           <RefiningTextField
             label="Start Date"
+            fullWidth
             dataType={dataTypes.utcDate}
             value={viewState.startDate}
             onChange={({ target: { value: startDate } }) => setViewState({ ...viewState, startDate })}
@@ -139,6 +143,7 @@ const EditPreplanModal: FC<EditPreplanModalProps> = ({ state: [open, { preplanHe
         <Grid item xs={6}>
           <RefiningTextField
             label="End Date"
+            fullWidth
             dataType={dataTypes.utcDate}
             value={viewState.endDate}
             onChange={({ target: { value: endDate } }) => setViewState({ ...viewState, endDate })}

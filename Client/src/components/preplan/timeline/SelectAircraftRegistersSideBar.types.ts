@@ -56,7 +56,7 @@ export interface AircraftRegisterViewState {
   baseAirport: string;
   status: AircraftRegisterOptionsStatus;
 }
-class AircraftRegisterViewStateValidation extends Validation<'BASE_AIRPORT_EXISTS' | 'BASE_AIRPORT_FORMAT_IS_CORRECT'> {
+export class AircraftRegisterViewStateValidation extends Validation<'BASE_AIRPORT_EXISTS' | 'BASE_AIRPORT_FORMAT_IS_CORRECT'> {
   constructor({ baseAirport, status }: AircraftRegisterViewState) {
     super(validator => {
       validator
@@ -85,25 +85,6 @@ class DummyAircraftRegisterViewStateValidation extends Validation<
   constructor({ baseAirport, status }: DummyAircraftRegisterViewState, dummyAircraftRegisterNames: readonly string[]) {
     super(validator => {
       validator
-        .check('NAME_EXISTS', !!name)
-        .check('NAME_FORMAT_IS_CORRECT', () => dataTypes.label.checkView(name), 'Invalid.')
-        .then(() => dataTypes.label.refineView(name))
-        .check(
-          'NAME_IS_NOT_DUPLICATED_WITH_AIRCRAFT_TYPES',
-          name => !MasterData.all.aircraftTypes.items.some(t => name === t.name || name === `${t.name}_DUMMY` || name === `${t.name}_EXISTS`),
-          name => `Dupplicated with aircraft type ${name}`
-        )
-        .check(
-          'NAME_IS_NOT_DUPLICATED_WITH_AIRCRAFT_GROUPS',
-          name => !(name in MasterData.all.aircraftRegisterGroups.name),
-          name => `Dupplicated with aircraft group ${name}`
-        )
-        .check(
-          'NAME_IS_NOT_DUPLICATED_WITH_AIRCRAFT_REGISTERS',
-          name => !(name in MasterData.all.aircraftRegisters.name || dummyAircraftRegisterNames.filter(n => n === name).length > 1),
-          name => `Dupplicated with aircraft register ${name}`
-        );
-      validator
         .if(status === 'INCLUDED' || status === 'BACKUP' || !!baseAirport)
         .check('BASE_AIRPORT_EXISTS', !!baseAirport)
         .check('BASE_AIRPORT_FORMAT_IS_CORRECT', dataTypes.airport.checkView(baseAirport), 'Invalid.');
@@ -112,6 +93,7 @@ class DummyAircraftRegisterViewStateValidation extends Validation<
 }
 
 export interface AddDummyAircraftRegisterFormState {
+  bypassValidation: boolean;
   show: boolean;
   name: string;
   aircraftType: string;
@@ -129,7 +111,7 @@ export class AddDummyAircraftRegisterFormStateValidation extends Validation<
   | 'BASE_AIRPORT_EXISTS'
   | 'BASE_AIRPORT_IS_VALID'
 > {
-  constructor({ name, aircraftType, baseAirport }: AddDummyAircraftRegisterFormState, viewState: ViewState) {
+  constructor({ name, aircraftType, baseAirport, status }: AddDummyAircraftRegisterFormState, viewState: ViewState) {
     super(validator => {
       const dummyAircraftRegisterNames = viewState.flatMap(t => t.dummyRegisters.flatMap(r => r.name.toUpperCase()));
       validator

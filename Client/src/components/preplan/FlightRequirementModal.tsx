@@ -258,7 +258,8 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
       ? undefined
       : viewState.tabIndex === 'ALL'
       ? validation.$.defaultValidation.$.legValidations[viewState.legIndex].message('BLOCKTIME_*')
-      : validation.$.dayValidations[viewState.tabIndex].$.legValidations[viewState.legIndex].message('BLOCKTIME_*')
+      : validation.$.dayValidations[viewState.tabIndex].$.legValidations[viewState.legIndex].message('BLOCKTIME_*'),
+    atleastOneDay: viewState.bypassValidation ? undefined : validation.message('AT_LEAST_SELECT_ONE_DAY')
   };
 
   const classes = useStyles();

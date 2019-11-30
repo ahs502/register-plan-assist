@@ -18,7 +18,7 @@ export interface ViewState {
   days: DayTabViewState[];
 }
 export class ViewStateValidation extends Validation<
-  'LABEL_EXISTS' | 'LABEL_FORMAT_IS_VALID' | 'LABEL_IS_LESS_THAN_100' | 'CATEGORY_FORMAT_IS_VALID' | 'CATEGORY_IS_LESS_THAN_100',
+  'LABEL_EXISTS' | 'LABEL_FORMAT_IS_VALID' | 'LABEL_IS_LESS_THAN_100' | 'CATEGORY_FORMAT_IS_VALID' | 'CATEGORY_IS_LESS_THAN_100' | 'AT_LEAST_SELECT_ONE_DAY',
   {
     defaultValidation: TabViewStateValidation;
     routeValidation: RouteLegViewStateValidation[];
@@ -41,6 +41,7 @@ export class ViewStateValidation extends Validation<
           .array(route)
           .each((routeLeg, index, route) => validator.put(validator.$.routeValidation[index], new RouteLegViewStateValidation(routeLeg, route[index - 1], route[index + 1])));
         validator.array(days).each((day, index) => validator.put(validator.$.dayValidations[index], new TabViewStateValidation(day)));
+        validator.check('AT_LEAST_SELECT_ONE_DAY', () => days.some(d => d.selected), 'Select one day.');
       },
       {
         '*_EXISTS': 'Required.',

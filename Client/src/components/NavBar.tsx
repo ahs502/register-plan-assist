@@ -4,7 +4,7 @@ import { makeStyles } from '@material-ui/styles';
 import { NavigateNext as NavigateNextIcon, KeyboardBackspace as BackIcon } from '@material-ui/icons';
 import LinkTypography from './LinkTypography';
 import LinkIconButton from './LinkIconButton';
-import useRouter from 'src/utils/useRouter';
+import { useHistory } from 'react-router-dom';
 
 const useStyles = makeStyles((theme: Theme) => ({
   root: {
@@ -19,6 +19,11 @@ const useStyles = makeStyles((theme: Theme) => ({
   navigation: {
     position: 'absolute',
     left: 86
+  },
+  navigationNextIcon: {
+    position: 'relative',
+    top: '6px',
+    margin: theme.spacing(0, 0.5)
   },
   tools: {
     float: 'right'
@@ -40,8 +45,8 @@ export interface NavBarProps {
 }
 
 const NavBar: FC<NavBarProps> = ({ children, backLink, navBarLinks, backTitle }) => {
+  const history = useHistory();
   const classes = useStyles();
-  const { history } = useRouter();
 
   return (
     <Toolbar className={classes.root} variant="dense">
@@ -56,7 +61,7 @@ const NavBar: FC<NavBarProps> = ({ children, backLink, navBarLinks, backTitle })
       <div className={classes.navigation}>
         {(navBarLinks.filter(Boolean) as NavBarLink[]).map((navBarLink, index) => (
           <Fragment key={index}>
-            {index > 0 && <NavigateNextIcon />}
+            {index > 0 && <NavigateNextIcon classes={{ root: classes.navigationNextIcon }} />}
             {navBarLink.link ? (
               <LinkTypography variant="h6" display="inline" to={navBarLink.link as string}>
                 {navBarLink.title}

@@ -1,6 +1,7 @@
 import Id from '@core/types/Id';
 import PreplanHeaderModel from '@core/models/preplan/PreplanHeaderModel';
 import User from 'src/business/User';
+import { dataTypes } from 'src/utils/DataType';
 
 export default class PreplanHeader {
   readonly id: Id;
@@ -30,22 +31,22 @@ export default class PreplanHeader {
 
   constructor(raw: PreplanHeaderModel) {
     this.id = raw.id;
-    this.name = raw.name;
+    this.name = dataTypes.name.convertModelToBusiness(raw.name);
     this.published = raw.published;
     this.finalized = raw.finalized;
     this.user = new User(raw.user);
     this.parentPreplan = raw.parentPreplan && {
       id: raw.parentPreplan.id,
-      name: raw.parentPreplan.name,
+      name: dataTypes.name.convertModelToBusiness(raw.parentPreplan.name),
       user: new User(raw.parentPreplan.user)
     };
-    this.creationDateTime = new Date(raw.creationDateTime);
-    this.lastEditDateTime = new Date(raw.lastEditDateTime);
-    this.startDate = new Date(raw.startDate);
-    this.endDate = new Date(raw.endDate);
+    this.creationDateTime = dataTypes.utcDate.convertModelToBusiness(raw.creationDateTime);
+    this.lastEditDateTime = dataTypes.utcDate.convertModelToBusiness(raw.lastEditDateTime);
+    this.startDate = dataTypes.utcDate.convertModelToBusiness(raw.startDate);
+    this.endDate = dataTypes.utcDate.convertModelToBusiness(raw.endDate);
     this.simulation = raw.simulation && {
       id: raw.simulation.id,
-      name: raw.simulation.name
+      name: dataTypes.name.convertModelToBusiness(raw.simulation.name)
     };
   }
 }

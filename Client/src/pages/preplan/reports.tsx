@@ -1,11 +1,11 @@
 import React, { FC, useEffect, Fragment, useContext } from 'react';
 import { Theme, Portal } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
-import useRouter from 'src/utils/useRouter';
 import SectionList, { SectionItem } from 'src/components/SectionList';
 import { NavBarToolsContainerContext, PreplanContext } from 'src/pages/preplan';
 import ProposalReport from 'src/components/preplan/reports/ProposalReport';
 import ConnectionsReport from 'src/components/preplan/reports/ConnectionsReport';
+import { useRouteMatch, useHistory } from 'react-router-dom';
 
 const useStyles = makeStyles((theme: Theme) => ({}));
 
@@ -30,13 +30,15 @@ const ReportsPage: FC<ReportsPageProps> = ({}) => {
   const navBarToolsContainer = useContext(NavBarToolsContainerContext);
   const preplan = useContext(PreplanContext);
 
+  const history = useHistory();
+  const routeMatch = useRouteMatch<{ id: string; report: string }>()!;
+  const preplanReport = preplanReports.find(r => r.path === routeMatch.params.report);
+
   const classes = useStyles();
-  const { match, history } = useRouter<{ id: string; report: string }>();
-  const preplanReport = preplanReports.find(r => r.path === match.params.report);
 
   useEffect(() => {
-    if (!preplanReport && match.params.report) {
-      history.push(`/preplan/${match.params.id}/reports`);
+    if (!preplanReport && routeMatch.params.report) {
+      history.push(`/preplan/${routeMatch.params.id}/reports`);
     }
   });
 
@@ -48,7 +50,7 @@ const ReportsPage: FC<ReportsPageProps> = ({}) => {
       <SectionList
         sections={preplanReports}
         selectedSection={preplanReport}
-        onSectionSelect={selectedSection => history.push(`/preplan/${match.params.id}/reports/${(selectedSection as PreplanReport).path}`)}
+        onSectionSelect={selectedSection => history.push(`/preplan/${routeMatch.params.id}/reports/${(selectedSection as PreplanReport).path}`)}
       >
         {preplanReport === proposalPreplanReport && <ProposalReport flights={preplan.flights} preplanName={preplan.name} fromDate={preplan.startDate} toDate={preplan.endDate} />}
         {preplanReport === connectionsPpreplanReport && (

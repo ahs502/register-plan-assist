@@ -430,7 +430,10 @@ router.post(
             fromDate: c.fromDate && new Date(c.fromDate).toJSON(),
             toDate: c.toDate && new Date(c.toDate).toJSON(),
             seasonTypeId: c.seasonTypeId,
-            days: xmlArray(xmlParse(c.daysXml, 'Days')['Day']).reduce((days, d) => ((days[d._attributes.Index] = true), days), Array.range(0, 6).map(() => false))
+            days: xmlArray(xmlParse(c.daysXml, 'Days')['Day']).reduce(
+              (days, d) => ((days[d._attributes.Index] = true), days),
+              Array.range(0, 6).map(() => false)
+            )
           },
           data: dataKeys.reduce<any>((data, k) => ((data[k] = dataValues.shift()), data), {})
         };

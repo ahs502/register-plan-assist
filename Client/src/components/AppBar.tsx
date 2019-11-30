@@ -64,11 +64,13 @@ const AppBar: FC<AppBarProps> = ({ loading }) => {
           RPA
         </Typography>
 
-        <ButtonBase>
-          <Typography classes={{ root: classes.textMargin }} variant="h6" color="inherit" ref={userDisplayNameRef} onClick={() => setUserDisplayNameMenuModel({ open: true })}>
-            {persistant.user!.displayName}
-          </Typography>
-        </ButtonBase>
+        {!!persistant.user && (
+          <ButtonBase>
+            <Typography classes={{ root: classes.textMargin }} variant="h6" color="inherit" ref={userDisplayNameRef} onClick={() => setUserDisplayNameMenuModel({ open: true })}>
+              {persistant.user!.displayName}
+            </Typography>
+          </ButtonBase>
+        )}
         <Menu id="user-display-name-menu" anchorEl={userDisplayNameRef.current} open={!!userDisplayNameMenuModel.open} onClose={() => setUserDisplayNameMenuModel({ open: false })}>
           <MenuItem
             onClick={() => {

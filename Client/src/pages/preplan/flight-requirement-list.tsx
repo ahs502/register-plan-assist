@@ -16,6 +16,7 @@ import TablePaginationActions from 'src/components/TablePaginationActions';
 import FlightRequirementService from 'src/services/FlightRequirementService';
 import NewFlightModel from '@core/models/flight/NewFlightModel';
 import FlightLegModel from '@core/models/flight/FlightLegModel';
+import { dataTypes } from 'src/utils/DataType';
 
 const useStyles = makeStyles((theme: Theme) => ({
   contentPage: {
@@ -42,13 +43,13 @@ const useStyles = makeStyles((theme: Theme) => ({
     borderBottom: '1px solid ',
     borderBottomColor: theme.palette.grey[300]
   },
-  STDStyle: {
+  stdStyle: {
     '& div:not(last-child)': {
       borderBottom: '1px solid ',
       borderBottomColor: theme.palette.grey[300]
     }
   },
-  STDpadding: {
+  stdPadding: {
     padding: theme.spacing(0)
   },
   divContent: {
@@ -158,13 +159,17 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = React.memo
                       try {
                         const newPreplanModel = await FlightRequirementService.edit(
                           preplan.id,
-                          flightRequirement.extractModel({ ignored: !flightRequirement.ignored }),
+                          flightRequirement.extractModel(flightRequirementModel => ({ ...flightRequirementModel, ignored: !flightRequirement.ignored })),
                           [],
                           flightRequirement.ignored
                             ? flightRequirement.days.map<NewFlightModel>(d => ({
                                 day: d.day,
-                                aircraftRegisterId: d.aircraftSelection.backupAircraftRegister && d.aircraftSelection.backupAircraftRegister.id,
-                                legs: d.route.map<FlightLegModel>(l => ({ std: l.stdLowerBound.minutes }))
+                                aircraftRegisterId: dataTypes
+                                  .preplanAircraftRegister(preplan.aircraftRegisters)
+                                  .convertBusinessToModelOptional(d.aircraftSelection.backupAircraftRegister),
+                                legs: d.route.map<FlightLegModel>(l => ({
+                                  std: l.stdLowerBound.minutes
+                                }))
                               }))
                             : []
                         );

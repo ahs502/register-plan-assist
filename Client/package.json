@@ -1,6 +1,6 @@
 {
   "name": "register-plan-assist-client",
-  "version": "2.1.2",
+  "version": "2.1.3",
   "private": true,
   "scripts": {
     "start": "cross-env TSC_WATCHFILE=UseFsEventsWithFallbackDynamicPolling react-app-rewired start",
@@ -27,6 +27,8 @@
     "vis-timeline": "^6.2.0"
   },
   "devDependencies": {
+    "@babel/plugin-proposal-nullish-coalescing-operator": "^7.7.4",
+    "@babel/plugin-proposal-optional-chaining": "^7.7.4",
     "@babel/plugin-transform-modules-commonjs": "^7.7.0",
     "@types/chroma-js": "^1.4.3",
     "@types/classnames": "^2.2.9",

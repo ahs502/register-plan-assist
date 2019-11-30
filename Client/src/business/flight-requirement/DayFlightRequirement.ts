@@ -1,16 +1,16 @@
-import ModelConvertable, { getOverridedObject, getOverrided, getOverridedArray } from '../ModelConvertable';
 import DayFlightRequirementModel from '@core/models/flight-requirement/DayFlightRequirementModel';
-import PreplanAircraftSelection from '../preplan/PreplanAircraftSelection';
-import { PreplanAircraftRegisters } from '../preplan/PreplanAircraftRegister';
-import DayFlightRequirementLeg from './DayFlightRequirementLeg';
 import Rsx from '@core/types/Rsx';
-import DeepWritablePartial from '@core/types/DeepWritablePartial';
 import Objectionable from 'src/business/constraints/Objectionable';
 import Objection, { ObjectionType } from 'src/business/constraints/Objection';
 import FlightRequirement from 'src/business/flight-requirement/FlightRequirement';
 import Weekday from '@core/types/Weekday';
 import Checker from 'src/business/constraints/Checker';
 import Id from '@core/types/Id';
+import PreplanAircraftSelection from 'src/business/preplan/PreplanAircraftSelection';
+import DayFlightRequirementLeg from 'src/business/flight-requirement/DayFlightRequirementLeg';
+import { PreplanAircraftRegisters } from 'src/business/preplan/PreplanAircraftRegister';
+import ModelConvertable from 'src/business/ModelConvertable';
+import { dataTypes } from 'src/utils/DataType';
 
 export default class DayFlightRequirement implements ModelConvertable<DayFlightRequirementModel>, Objectionable {
   readonly derivedId: Id;
@@ -25,7 +25,7 @@ export default class DayFlightRequirement implements ModelConvertable<DayFlightR
     this.aircraftSelection = new PreplanAircraftSelection(raw.aircraftSelection, aircraftRegisters);
     this.rsx = raw.rsx;
     this.day = raw.day;
-    this.notes = raw.notes;
+    this.notes = dataTypes.name.convertModelToBusiness(raw.notes);
 
     let dayOffset = 0;
     let previousStaLowerBound = Number.NEGATIVE_INFINITY;
@@ -46,14 +46,15 @@ export default class DayFlightRequirement implements ModelConvertable<DayFlightR
     });
   }
 
-  extractModel(overrides?: DeepWritablePartial<DayFlightRequirementModel>): DayFlightRequirementModel {
-    return {
-      aircraftSelection: getOverridedObject(this.aircraftSelection, overrides, 'aircraftSelection'),
-      rsx: getOverrided(this.rsx, overrides, 'rsx'),
-      day: getOverrided(this.day, overrides, 'day'),
-      notes: getOverrided(this.notes, overrides, 'notes'),
-      route: getOverridedArray(this.route, overrides, 'route')
+  extractModel(override?: (dayFlightRequirementModel: DayFlightRequirementModel) => DayFlightRequirementModel): DayFlightRequirementModel {
+    const dayFlightRequirementModel: DayFlightRequirementModel = {
+      aircraftSelection: this.aircraftSelection.extractModel(),
+      rsx: this.rsx,
+      day: this.day,
+      notes: dataTypes.name.convertBusinessToModel(this.notes),
+      route: this.route.map(l => l.extractModel())
     };
+    return override?.(dayFlightRequirementModel) ?? dayFlightRequirementModel;
   }
 
   get marker(): string {

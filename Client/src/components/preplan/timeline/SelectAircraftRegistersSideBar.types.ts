@@ -73,7 +73,7 @@ export interface DummyAircraftRegisterViewState {
   baseAirport: string;
   status: AircraftRegisterOptionsStatus;
 }
-class DummyAircraftRegisterViewStateValidation extends Validation<
+export class DummyAircraftRegisterViewStateValidation extends Validation<
   | 'NAME_EXISTS'
   | 'NAME_FORMAT_IS_CORRECT'
   | 'NAME_IS_NOT_DUPLICATED_WITH_AIRCRAFT_TYPES'
@@ -82,8 +82,28 @@ class DummyAircraftRegisterViewStateValidation extends Validation<
   | 'BASE_AIRPORT_EXISTS'
   | 'BASE_AIRPORT_FORMAT_IS_CORRECT'
 > {
-  constructor({ baseAirport, status }: DummyAircraftRegisterViewState, dummyAircraftRegisterNames: readonly string[]) {
+  constructor({ baseAirport, status }: DummyAircraftRegisterViewState, viewState: ViewState) {
     super(validator => {
+      const dummyAircraftRegisterNames = viewState.flatMap(t => t.dummyRegisters.flatMap(r => r.name.toUpperCase()));
+      validator
+        .check('NAME_EXISTS', !!name)
+        .check('NAME_FORMAT_IS_CORRECT', () => dataTypes.label.checkView(name), 'Invalid.')
+        .then(() => dataTypes.label.refineView(name))
+        .check(
+          'NAME_IS_NOT_DUPLICATED_WITH_AIRCRAFT_TYPES',
+          name => !MasterData.all.aircraftTypes.items.some(t => name === t.name || name === `${t.name}_DUMMY` || name === `${t.name}_EXISTS`),
+          name => `Dupplicated with aircraft type ${name}`
+        )
+        .check(
+          'NAME_IS_NOT_DUPLICATED_WITH_AIRCRAFT_GROUPS',
+          name => !(name in MasterData.all.aircraftRegisterGroups.name),
+          name => `Dupplicated with aircraft group ${name}`
+        )
+        .check(
+          'NAME_IS_NOT_DUPLICATED_WITH_AIRCRAFT_REGISTERS',
+          name => !(name in MasterData.all.aircraftRegisters.name || dummyAircraftRegisterNames.includes(name)),
+          name => `Dupplicated with aircraft register ${name}`
+        );
       validator
         .if(status === 'INCLUDED' || status === 'BACKUP' || !!baseAirport)
         .check('BASE_AIRPORT_EXISTS', !!baseAirport)

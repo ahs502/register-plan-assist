@@ -699,8 +699,8 @@ const TimelineView: FC<TimelineViewProps> = ({
                     <div>
                       &nbsp;&nbsp;&nbsp;&nbsp;
                       ${l.flightNumber}:
-                      ${l.departureAirport.name} (${l.std.toString('HH:mm')}) &dash;
-                      ${l.arrivalAirport.name} (${new Daytime(l.std.minutes + l.blockTime.minutes).toString('HH:mm')})
+                      ${l.departureAirport.name} (${l.std.toString('HH:mm', true)}) &dash;
+                      ${l.arrivalAirport.name} (${new Daytime(l.std.minutes + l.blockTime.minutes).toString('HH:mm', true)})
                     </div>
                   `
                 )

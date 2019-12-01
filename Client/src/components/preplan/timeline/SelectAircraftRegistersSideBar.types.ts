@@ -82,6 +82,8 @@ export class DummyAircraftRegisterViewStateValidation extends Validation<
   | 'NAME_IS_NOT_DUPLICATED_WITH_AIRCRAFT_TYPES'
   | 'NAME_IS_NOT_DUPLICATED_WITH_AIRCRAFT_GROUPS'
   | 'NAME_IS_NOT_DUPLICATED_WITH_AIRCRAFT_REGISTERS'
+  | 'NAME_HAS_AT_LEAST_3_CHARACTERS'
+  | 'NAME_HAS_AT_MOST_10_CHARACTERS'
   | 'BASE_AIRPORT_EXISTS'
   | 'BASE_AIRPORT_FORMAT_IS_CORRECT'
 > {
@@ -106,7 +108,9 @@ export class DummyAircraftRegisterViewStateValidation extends Validation<
           'NAME_IS_NOT_DUPLICATED_WITH_AIRCRAFT_REGISTERS',
           name => !(name in MasterData.all.aircraftRegisters.name || dummyAircraftRegisterNames.filter(n => n === name).length > 1),
           name => `Dupplicated with aircraft register ${name}`
-        );
+        )
+        .check('NAME_HAS_AT_LEAST_3_CHARACTERS', name => name.length >= 3, 'At least 3 characters.')
+        .check('NAME_HAS_AT_MOST_10_CHARACTERS', name => name.length <= 10, 'At most 10 characters.');
       validator
         .if(status === 'INCLUDED' || status === 'BACKUP' || !!baseAirport)
         .check('BASE_AIRPORT_EXISTS', !!baseAirport)

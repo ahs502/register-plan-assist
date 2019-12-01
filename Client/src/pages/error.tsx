@@ -42,7 +42,7 @@ const ErrorPageComponent: FC = () => {
       <Divider />
       <br />
       &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-      <Button variant="outlined" color="primary" onClick={() => window.location.reload(true)}>
+      <Button variant="contained" color="primary" onClick={() => window.location.reload(true)}>
         Restart Application
       </Button>
     </Fragment>

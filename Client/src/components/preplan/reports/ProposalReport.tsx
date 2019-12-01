@@ -15,7 +15,9 @@ import Rsx from '@core/types/Rsx';
 import PreplanHeader from 'src/business/preplan/PreplanHeader';
 import Flight from 'src/business/flight/Flight';
 import FlightLeg from 'src/business/flight/FlightLeg';
-import { formFields } from 'src/utils/FormField';
+import { dataTypes } from 'src/utils/DataType';
+import RefiningTextField from 'src/components/RefiningTextField';
+import Validation from '@core/node_modules/@ahs502/validation/dist/Validation';
 
 const makeColor = () => ({
   changeStatus: { background: '#FFFFCC' },
@@ -108,7 +110,10 @@ const useStyles = makeStyles((theme: Theme) => {
   };
 });
 
-const flightType = [{ label: 'International', value: 'International' }, { label: 'Domestic', value: 'Domestic' }];
+const flightType = [
+  { label: 'International', value: 'International' },
+  { label: 'Domestic', value: 'Domestic' }
+];
 const group = [{ field: 'category' }];
 
 const character = {
@@ -230,10 +235,10 @@ interface DataProvider {
   countOfRealFlight: number;
 }
 
-interface FliterModel {
+interface ViewState {
   baseAirport: Airport;
-  startDate: Date;
-  endDate: Date;
+  startDate: string;
+  endDate: string;
   flightType: FlightType;
   showType: boolean;
   showSlot: boolean;
@@ -247,6 +252,22 @@ interface FliterModel {
   compareMode: boolean;
 }
 
+class ViewStateValidation extends Validation<
+  'START_DATE_EXISTS' | 'START_DATE_IS_VALID' | 'START_DATE_IS_NOT_AFTER_END_DATE' | 'END_DATE_EXISTS' | 'END_DATE_IS_VALID' | 'END_DATE_IS_NOT_BEFORE_START_DATE'
+> {
+  constructor({ startDate, endDate }: ViewState) {
+    super(validator => {
+      validator.check('START_DATE_EXISTS', !!startDate).check('START_DATE_IS_VALID', () => dataTypes.utcDate.checkView(startDate));
+      validator.check('END_DATE_EXISTS', !!endDate).check('END_DATE_IS_VALID', () => dataTypes.utcDate.checkView(endDate));
+      validator
+        .when('START_DATE_IS_VALID', 'END_DATE_IS_VALID')
+        .then(() => dataTypes.utcDate.convertViewToModel(startDate) <= dataTypes.utcDate.convertViewToModel(endDate))
+        .check('START_DATE_IS_NOT_AFTER_END_DATE', ok => ok, 'Can not be after end date.')
+        .check('END_DATE_IS_NOT_BEFORE_START_DATE', ok => ok, 'Can not be before start date.');
+    });
+  }
+}
+
 const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName, fromDate, toDate }) => {
   const ika = MasterData.all.airports.name['IKA'];
   const thr = MasterData.all.airports.name['THR'];
@@ -257,10 +278,10 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
   //const [preplanHeaders, setPreplanHeaders] = useState<ReadonlyArray<Readonly<PreplanHeader>>>([]);
   //const preplanHeaderOptions = useMemo<PreplanHeader[]>(() => [{} as PreplanHeader, ...preplanHeaders], [preplanHeaders]);
   const [flattenFlightRequirments, setFlattenFlightRequirments] = useState<FlattenFlightRequirment[]>([]);
-  const [filterModel, setFilterModel] = useState<FliterModel>({
+  const [viewState, setViewState] = useState<ViewState>({
     baseAirport: ika,
-    startDate: fromDate,
-    endDate: toDate,
+    startDate: dataTypes.utcDate.convertBusinessToView(fromDate),
+    endDate: dataTypes.utcDate.convertBusinessToView(toDate),
     flightType: FlightType.International,
     showType: false,
     showSlot: true,
@@ -272,7 +293,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
     showExtra: true,
     preplanHeader: {} as PreplanHeader,
     compareMode: false
-  } as FliterModel);
+  } as ViewState);
 
   let proposalExporter: ExcelExport | null;
 
@@ -304,7 +325,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
   const classes = useStyles();
 
   const generateReportDataModel = (
-    { baseAirport, startDate, endDate, flightType, showReal, showSTB1, showSTB2, showExtra }: FliterModel,
+    { baseAirport, startDate, endDate, flightType, showReal, showSTB1, showSTB2, showExtra }: ViewState,
     flights: readonly Flight[],
     generateRealFlight: boolean
   ): FlattenFlightRequirment[] => {
@@ -312,9 +333,8 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
 
     if (!baseAirport || !startDate || !endDate) return [];
 
-    const baseDate = new Date(new Date((startDate.getTime() + endDate.getTime()) / 2));
+    const baseDate = new Date((new Date(dataTypes.utcDate.convertViewToModel(startDate)).getTime() + new Date(dataTypes.utcDate.convertViewToModel(endDate)).getTime()) / 2);
 
-    //TODO: Ask hessam
     var filterdFlight = flights.filter(
       f =>
         f.flightRequirement.route[0].departureAirport.id === baseAirport.id &&
@@ -350,16 +370,16 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
   // }, []);
 
   useEffect(() => {
-    const realFlatModel = generateReportDataModel(filterModel, flights, true);
-    const reserveFlatModel = generateReportDataModel(filterModel, flights, false);
+    const realFlatModel = generateReportDataModel(viewState, flights, true);
+    const reserveFlatModel = generateReportDataModel(viewState, flights, false);
 
     setFlattenFlightRequirmentsStatus(realFlatModel);
     setFlattenFlightRequirmentsStatus(reserveFlatModel);
 
-    if (filterModel.compareMode) {
-      const targetPreplan = filterModel.preplanHeader;
-      const targetRealFlatModel = generateReportDataModel(filterModel, getPreplanFlightRequirments(targetPreplan.id), true);
-      const targetReserveFlatModel = generateReportDataModel(filterModel, getPreplanFlightRequirments(targetPreplan.id), false);
+    if (viewState.compareMode) {
+      const targetPreplan = viewState.preplanHeader;
+      const targetRealFlatModel = generateReportDataModel(viewState, getPreplanFlightRequirments(targetPreplan.id), true);
+      const targetReserveFlatModel = generateReportDataModel(viewState, getPreplanFlightRequirments(targetPreplan.id), false);
 
       compareFlattenFlightRequirment(realFlatModel, targetRealFlatModel);
       compareFlattenFlightRequirment(reserveFlatModel, targetReserveFlatModel);
@@ -391,7 +411,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
 
     setDataProvider(realGroup.concat(reserveGroup));
     setFlattenFlightRequirments(realFlatModel.concat(reserveFlatModel));
-  }, [filterModel]);
+  }, [viewState]);
 
   const exportToExcel = () => {
     if (!proposalExporter) return;
@@ -529,8 +549,8 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
                   '‎' /**Left to right character dont remove it*/ +
                   element.value +
                   (element.value ? ': ' : '') +
-                  (filterModel.showSTB2 ? 'STB2' : '') +
-                  (filterModel.showExtra ? (filterModel.showSTB2 ? ' & EXT' : 'EXT') : ''),
+                  (viewState.showSTB2 ? 'STB2' : '') +
+                  (viewState.showExtra ? (viewState.showSTB2 ? ' & EXT' : 'EXT') : ''),
                 textAlign: 'left',
                 borderLeft: { color: '#000000', size: 3 },
                 borderRight: { color: '#000000', size: 3 },
@@ -616,12 +636,12 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
               </InputLabel>
               <AutoComplete
                 id="compare-preplan-base-airport"
-                value={filterModel.baseAirport}
+                value={viewState.baseAirport}
                 options={allBaseAirport}
                 getOptionLabel={l => l.name}
                 getOptionValue={l => l.id}
                 onSelect={s => {
-                  setFilterModel({ ...filterModel, baseAirport: s });
+                  setViewState({ ...viewState, baseAirport: s });
                 }}
               />
             </Grid>
@@ -633,14 +653,14 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
               <AutoComplete
                 id="compare-preplan-flightType"
                 options={flightType}
-                value={filterModel.flightType === FlightType.International ? flightType.find(f => f.value === 'International') : flightType.find(f => f.value === 'Domestic')}
+                value={viewState.flightType === FlightType.International ? flightType.find(f => f.value === 'International') : flightType.find(f => f.value === 'Domestic')}
                 onSelect={s => {
-                  filterModel.flightType = s.value === 'Domestic' ? FlightType.Domestic : FlightType.International;
-                  filterModel.showSlot = s.value !== 'Domestic';
-                  filterModel.showNote = s.value !== 'Domestic';
-                  filterModel.showType = s.value === 'Domestic';
-                  filterModel.showFrequency = s.value === 'Domestic';
-                  setFilterModel({ ...filterModel });
+                  viewState.flightType = s.value === 'Domestic' ? FlightType.Domestic : FlightType.International;
+                  viewState.showSlot = s.value !== 'Domestic';
+                  viewState.showNote = s.value !== 'Domestic';
+                  viewState.showType = s.value === 'Domestic';
+                  viewState.showFrequency = s.value === 'Domestic';
+                  setViewState({ ...viewState });
                 }}
               />
             </Grid>
@@ -659,7 +679,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
               /> */}
             {/* </Grid> */}
             <Grid item xs={1} className={classes.datePosition}>
-              <TextField
+              {/* <TextField
                 className={classNames(classes.marginRight1, classes.marginBottom2)}
                 label=" Start Date"
                 onChange={e => {
@@ -667,13 +687,21 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
                   if (!value) return;
                   const ticks = Date.parse(value);
                   if (ticks) {
-                    setFilterModel({ ...filterModel, startDate: new Date(ticks) });
+                    setViewState({ ...viewState, startDate: new Date(ticks) });
                   }
                 }}
+              /> */}
+
+              <RefiningTextField
+                label="Start Date"
+                className={classNames(classes.marginRight1, classes.marginBottom2)}
+                dataType={dataTypes.utcDate}
+                value={viewState.startDate}
+                onChange={({ target: { value: startDate } }) => setViewState({ ...viewState, startDate: startDate })}
               />
             </Grid>
             <Grid item xs={1} className={classes.datePosition}>
-              <TextField
+              {/* <TextField
                 className={classNames(classes.marginRight1, classes.marginBottom2)}
                 label="End Date"
                 onChange={e => {
@@ -681,9 +709,16 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
                   if (!value) return;
                   const ticks = Date.parse(value);
                   if (ticks) {
-                    setFilterModel({ ...filterModel, endDate: new Date(ticks) });
+                    setViewState({ ...viewState, endDate: new Date(ticks) });
                   }
                 }}
+              /> */}
+
+              <RefiningTextField
+                label="End Date"
+                dataType={dataTypes.utcDate}
+                value={viewState.endDate}
+                onChange={({ target: { value: endDate } }) => setViewState({ ...viewState, endDate: endDate })}
               />
             </Grid>
             <Grid item xs={4} />
@@ -698,7 +733,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
             <Grid item xs={2}>
               <FormControlLabel
                 value="start"
-                control={<Checkbox checked={filterModel.showSlot} onChange={e => setFilterModel({ ...filterModel, showSlot: e.target.checked })} color="primary" />}
+                control={<Checkbox checked={viewState.showSlot} onChange={e => setViewState({ ...viewState, showSlot: e.target.checked })} color="primary" />}
                 label="Show Slot"
                 labelPlacement="end"
               />
@@ -707,7 +742,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
             <Grid item xs={2}>
               <FormControlLabel
                 value="start"
-                control={<Checkbox checked={filterModel.showNote} onChange={e => setFilterModel({ ...filterModel, showNote: e.target.checked })} color="primary" />}
+                control={<Checkbox checked={viewState.showNote} onChange={e => setViewState({ ...viewState, showNote: e.target.checked })} color="primary" />}
                 label="Show Note"
                 labelPlacement="end"
               />
@@ -716,7 +751,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
             <Grid item xs={2}>
               <FormControlLabel
                 value="start"
-                control={<Checkbox checked={filterModel.showType} onChange={e => setFilterModel({ ...filterModel, showType: e.target.checked })} color="primary" />}
+                control={<Checkbox checked={viewState.showType} onChange={e => setViewState({ ...viewState, showType: e.target.checked })} color="primary" />}
                 label="Show Type"
                 labelPlacement="end"
               />
@@ -725,7 +760,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
             <Grid item xs={3}>
               <FormControlLabel
                 value="start"
-                control={<Checkbox checked={filterModel.showFrequency} onChange={e => setFilterModel({ ...filterModel, showFrequency: e.target.checked })} color="primary" />}
+                control={<Checkbox checked={viewState.showFrequency} onChange={e => setViewState({ ...viewState, showFrequency: e.target.checked })} color="primary" />}
                 label="Show Frequency"
                 labelPlacement="end"
               />
@@ -741,7 +776,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
             <Grid item xs={2}>
               <FormControlLabel
                 value="start"
-                control={<Checkbox checked={filterModel.showReal} onChange={e => setFilterModel({ ...filterModel, showReal: e.target.checked })} color="primary" />}
+                control={<Checkbox checked={viewState.showReal} onChange={e => setViewState({ ...viewState, showReal: e.target.checked })} color="primary" />}
                 label="Show Real"
                 labelPlacement="end"
               />
@@ -750,7 +785,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
             <Grid item xs={2}>
               <FormControlLabel
                 value="start"
-                control={<Checkbox checked={filterModel.showSTB1} onChange={e => setFilterModel({ ...filterModel, showSTB1: e.target.checked })} color="primary" />}
+                control={<Checkbox checked={viewState.showSTB1} onChange={e => setViewState({ ...viewState, showSTB1: e.target.checked })} color="primary" />}
                 label="Show STB1"
                 labelPlacement="end"
               />
@@ -759,7 +794,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
             <Grid item xs={2}>
               <FormControlLabel
                 value="start"
-                control={<Checkbox checked={filterModel.showSTB2} onChange={e => setFilterModel({ ...filterModel, showSTB2: e.target.checked })} color="primary" />}
+                control={<Checkbox checked={viewState.showSTB2} onChange={e => setViewState({ ...viewState, showSTB2: e.target.checked })} color="primary" />}
                 label="Show STB2"
                 labelPlacement="end"
               />
@@ -768,7 +803,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
             <Grid item xs={3}>
               <FormControlLabel
                 value="start"
-                control={<Checkbox checked={filterModel.showExtra} onChange={e => setFilterModel({ ...filterModel, showExtra: e.target.checked })} color="primary" />}
+                control={<Checkbox checked={viewState.showExtra} onChange={e => setViewState({ ...viewState, showExtra: e.target.checked })} color="primary" />}
                 label="Show EXT"
                 labelPlacement="end"
               />
@@ -786,16 +821,16 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
       <ExcelExport
         data={dataProvider}
         group={group}
-        fileName={"Proposal  '" + preplanName + "'-" + filterModel.baseAirport.name + '-' + FlightType[filterModel.flightType] + '-' + new Date().format('~D$') + '.xlsx'}
+        fileName={"Proposal  '" + preplanName + "'-" + viewState.baseAirport.name + '-' + FlightType[viewState.flightType] + '-' + new Date().format('~D$') + '.xlsx'}
         ref={exporter => {
           proposalExporter = exporter;
         }}
       >
         <ExcelExportColumnGroup
-          title={'Propoal Schedule from ' + filterModel.startDate.format('d') + ' till ' + filterModel.endDate.format('d')}
+          title={'Propoal Schedule from ' + dataTypes.utcDate.convertViewToModel(viewState.startDate) + ' till ' + dataTypes.utcDate.convertViewToModel(viewState.endDate)}
           headerCellOptions={{ ...headerCellOptions, background: '#FFFFFF' }}
         >
-          <ExcelExportColumnGroup title={'Base ' + filterModel.baseAirport.name} headerCellOptions={{ ...headerCellOptions, background: color.excelHeader.backgroundColor }}>
+          <ExcelExportColumnGroup title={'Base ' + viewState.baseAirport.name} headerCellOptions={{ ...headerCellOptions, background: color.excelHeader.backgroundColor }}>
             <ExcelExportColumn
               title={'F/N'}
               field="flightNumber"
@@ -991,7 +1026,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
                 borderBottom: { color: '#000000', size: 3 }
               }}
             />
-            {filterModel.showNote && (
+            {viewState.showNote && (
               <ExcelExportColumn
                 title={['NOTE', '(base on domestic/lcl)'].join('\r\n')}
                 field="note"
@@ -1009,7 +1044,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
               />
             )}
 
-            {filterModel.showSlot && (
+            {viewState.showSlot && (
               <ExcelExportColumn
                 title={['DESTINATION', 'SLOT (LCL)'].join('\r\n')}
                 field="destinationNoPermissions"
@@ -1027,7 +1062,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
               />
             )}
 
-            {filterModel.showSlot && (
+            {viewState.showSlot && (
               <ExcelExportColumn
                 title={['ORIGIN', 'SLOT (UTC)'].join('\r\n')}
                 field="originNoPermissions"
@@ -1045,7 +1080,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
               />
             )}
 
-            {filterModel.showType && (
+            {viewState.showType && (
               <ExcelExportColumn
                 title="Type"
                 field="aircraftType"
@@ -1063,7 +1098,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
               />
             )}
 
-            {filterModel.showFrequency && (
+            {viewState.showFrequency && (
               <ExcelExportColumn
                 title="Fre"
                 field="frequency"
@@ -1092,7 +1127,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
         <TableHead>
           <TableRow>
             <TableCell className={classes.border} align="center" colSpan={19}>
-              {filterModel.baseAirport ? 'Base ' + filterModel.baseAirport.name : ''}
+              {viewState.baseAirport ? 'Base ' + viewState.baseAirport.name : ''}
             </TableCell>
           </TableRow>
           <TableRow className={classes.borderBottom}>
@@ -1139,13 +1174,13 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
             <TableCell className={classes.border} align="center">
               DUR.
             </TableCell>
-            {filterModel.showNote && (
+            {viewState.showNote && (
               <TableCell className={classes.border} align="center">
                 <div>NOTE</div>
                 <div>(base on domestic/lcl)</div>
               </TableCell>
             )}
-            {filterModel.showSlot && (
+            {viewState.showSlot && (
               <Fragment>
                 <TableCell className={classes.border} align="center">
                   <div>DESTINATION</div>
@@ -1158,13 +1193,13 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
                 </TableCell>
               </Fragment>
             )}
-            {filterModel.showType && (
+            {viewState.showType && (
               <TableCell className={classes.border} align="center">
                 Type
               </TableCell>
             )}
 
-            {filterModel.showFrequency && (
+            {viewState.showFrequency && (
               <TableCell className={classes.border} align="center">
                 Fre
               </TableCell>
@@ -1190,8 +1225,8 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
                         {'‎' /**Left to right character dont remove it*/ +
                           d.value +
                           (d.value ? ': ' : '') +
-                          (filterModel.showSTB2 ? 'STB2' : '') +
-                          (filterModel.showExtra ? (filterModel.showSTB2 ? ' & EXT' : 'EXT') : '')}
+                          (viewState.showSTB2 ? 'STB2' : '') +
+                          (viewState.showExtra ? (viewState.showSTB2 ? ' & EXT' : 'EXT') : '')}
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -1308,13 +1343,13 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
                     <TableCell align="center" className={classes.border}>
                       {f.formatedBlockTime}
                     </TableCell>
-                    {filterModel.showNote && (
+                    {viewState.showNote && (
                       <TableCell align="center" className={classes.border}>
                         {f.note}
                       </TableCell>
                     )}
 
-                    {filterModel.showSlot && (
+                    {viewState.showSlot && (
                       <Fragment>
                         <TableCell className={classes.border} align="center">
                           {f.destinationNoPermissions}
@@ -1325,13 +1360,13 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
                         </TableCell>
                       </Fragment>
                     )}
-                    {filterModel.showType && (
+                    {viewState.showType && (
                       <TableCell className={classes.border} align="center">
                         {f.aircraftType}
                       </TableCell>
                     )}
 
-                    {filterModel.showFrequency && (
+                    {viewState.showFrequency && (
                       <TableCell className={classes.border} align="center">
                         {f.frequency}
                       </TableCell>
@@ -1350,15 +1385,12 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
 export default ProposalReport;
 
 function groupFlattenFlightRequirmentbyCategory(realFlatModel: FlattenFlightRequirment[]) {
-  const groupObject = realFlatModel.reduce(
-    (acc, current) => {
-      const category = current.category || '';
-      acc[category] = acc[category] || [];
-      acc[category].push(current);
-      return acc;
-    },
-    {} as any
-  );
+  const groupObject = realFlatModel.reduce((acc, current) => {
+    const category = current.category || '';
+    acc[category] = acc[category] || [];
+    acc[category].push(current);
+    return acc;
+  }, {} as any);
   const result = Object.keys(groupObject)
     .sort()
     .map(function(k) {
@@ -1376,30 +1408,57 @@ function compareFlattenFlightRequirment(sources: FlattenFlightRequirment[], targ
     const source = sources.filter(s => s.fullFlightNumber === f);
     const target = targets.filter(s => s.fullFlightNumber === f);
     source.forEach(s => {
-      const checkDay = checkDayChangeBaseOnTimes(s, target.filter(t => t.route === s.route));
+      const checkDay = checkDayChangeBaseOnTimes(
+        s,
+        target.filter(t => t.route === s.route)
+      );
     });
 
     source.forEach(s => {
-      checkTimeChange(s, target.filter(t => t.route === s.route));
-      checkDayChange(s, target.filter(t => t.route === s.route));
+      checkTimeChange(
+        s,
+        target.filter(t => t.route === s.route)
+      );
+      checkDayChange(
+        s,
+        target.filter(t => t.route === s.route)
+      );
     });
 
     source.forEach(s => {
-      checkDayChangeBaseOnTarget(s, target.filter(t => t.route === s.route));
+      checkDayChangeBaseOnTarget(
+        s,
+        target.filter(t => t.route === s.route)
+      );
     });
 
     source.forEach(s => {
-      checkRouteChange(s, target.filter(t => t.route !== s.route));
-      checkDayChangeBaseOnTimes(s, target.filter(t => t.route !== s.route));
+      checkRouteChange(
+        s,
+        target.filter(t => t.route !== s.route)
+      );
+      checkDayChangeBaseOnTimes(
+        s,
+        target.filter(t => t.route !== s.route)
+      );
     });
 
     source.forEach(s => {
-      checkTimeChange(s, target.filter(t => t.route !== s.route));
-      checkDayChange(s, target.filter(t => t.route !== s.route));
+      checkTimeChange(
+        s,
+        target.filter(t => t.route !== s.route)
+      );
+      checkDayChange(
+        s,
+        target.filter(t => t.route !== s.route)
+      );
     });
 
     source.forEach(s => {
-      checkDayChangeBaseOnTarget(s, target.filter(t => t.route !== s.route));
+      checkDayChangeBaseOnTarget(
+        s,
+        target.filter(t => t.route !== s.route)
+      );
     });
   });
 
@@ -1556,13 +1615,10 @@ function setFlattenFlightRequirmentStatus(flattenFlightRequirment: FlattenFlight
 function calculateFrequency(flattenFlightRequirments: FlattenFlightRequirment[]) {
   const parentRoutes = flattenFlightRequirments
     .map(r => r.parentRoute)
-    .reduce(
-      (acc, current) => {
-        if (acc.indexOf(current) === -1) acc.push(current);
-        return acc;
-      },
-      [] as string[]
-    );
+    .reduce((acc, current) => {
+      if (acc.indexOf(current) === -1) acc.push(current);
+      return acc;
+    }, [] as string[]);
   parentRoutes.forEach(r => {
     const flatFlightRequirments = flattenFlightRequirments.filter(f => f.parentRoute === r);
     const realFrequency = flatFlightRequirments
@@ -1651,7 +1707,7 @@ function createFlattenFlightRequirmentsFromDailyFlightRequirment(flights: Flight
         f =>
           f.arrivalAirport.id === leg.arrivalAirport.id &&
           f.departureAirport.id === leg.departureAirport.id &&
-          f.blocktime === leg.blockTime &&
+          f.blocktime === leg.blockTime.minutes &&
           f.flightNumber === normalizeFlightNumber(leg.flightNumber.standardFormat) &&
           f.std.minutes === leg.std.minutes
       );
@@ -1699,8 +1755,8 @@ function createFlattenFlightRequirment(leg: FlightLeg, date: Date): FlattenFligh
     fullFlightNumber: leg.flightNumber.toString(),
     arrivalAirport: leg.arrivalAirport,
     departureAirport: leg.departureAirport,
-    blocktime: leg.blockTime,
-    formatedBlockTime: formFields.daytime.format(leg.blockTime),
+    blocktime: leg.blockTime.minutes,
+    formatedBlockTime: dataTypes.daytime.convertBusinessToView(leg.blockTime),
     days: [] as number[],
     utcDays: [] as number[],
     std: leg.std,

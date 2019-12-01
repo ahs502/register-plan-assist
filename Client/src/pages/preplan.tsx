@@ -99,8 +99,7 @@ const PreplanPage: FC = () => {
                   const newPreplan = new Preplan(preplanModel, preplan);
                   setPreplan(newPreplan);
                 } catch (reason) {
-                  console.error(reason);
-                  // history.push('/preplan-list');
+                  throwApplicationError.withTitle('Unable to load the preplan.')(reason);
                 }
               }}
             >

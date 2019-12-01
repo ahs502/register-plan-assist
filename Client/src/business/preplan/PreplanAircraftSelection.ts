@@ -2,6 +2,7 @@ import PreplanAircraftIdentity from './PreplanAircraftIdentity';
 import PreplanAircraftRegister, { PreplanAircraftRegisters } from './PreplanAircraftRegister';
 import AircraftSelectionModel from '@core/models/AircraftSelectionModel';
 import { AircraftSelection } from '@core/master-data';
+import ModelConvertable from 'src/business/ModelConvertable';
 
 /**
  * A data structure describing a range of aircraft registers.
@@ -9,7 +10,7 @@ import { AircraftSelection } from '@core/master-data';
  * in at least one of the included aircraft identities while it is not
  * included in any of the excluded aircraft identities.
  */
-export default class PreplanAircraftSelection {
+export default class PreplanAircraftSelection implements ModelConvertable<AircraftSelectionModel> {
   readonly includedIdentities: readonly PreplanAircraftIdentity[];
   readonly excludedIdentities: readonly PreplanAircraftIdentity[];
 
@@ -33,6 +34,14 @@ export default class PreplanAircraftSelection {
     this.aircraftRegisters = includedAircraftRegisters.filter(r => r.options.status === 'INCLUDED');
     this.backupAircraftRegister =
       includedAircraftRegisters.find(r => r.options.status === 'INCLUDED') || includedAircraftRegisters.find(r => r.options.status === 'BACKUP') || undefined;
+  }
+
+  extractModel(override?: (aircraftSelectionModel: AircraftSelectionModel) => AircraftSelectionModel): AircraftSelectionModel {
+    const aircraftSelectionModel: AircraftSelectionModel = {
+      includedIdentities: this.includedIdentities.map(i => i.extractModel()),
+      excludedIdentities: this.excludedIdentities.map(i => i.extractModel())
+    };
+    return override?.(aircraftSelectionModel) ?? aircraftSelectionModel;
   }
 
   getMinimumGroundTime(transit: boolean, international: boolean, startDate: Date, endDate?: Date, method: 'MAXIMUM' | 'MINIMUM' = 'MAXIMUM'): number {

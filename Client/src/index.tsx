@@ -7,10 +7,12 @@ import '@core/utils/extensions.implementation';
 import '@core/utils/validation-init';
 import { HashRouter as Router } from 'react-router-dom';
 import App from './App';
+import KeyboardHandler from 'src/utils/KeyboardHandler';
 
 ReactDOM.render(
   <Fragment>
     <CssBaseline />
+    <KeyboardHandler />
     <Router>
       <App />
     </Router>

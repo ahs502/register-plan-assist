@@ -34,7 +34,7 @@ export interface ModalAction {
   title: string;
   action?(): void | Promise<void>;
   invisible?: boolean;
-  disable?: boolean;
+  disabled?: boolean;
 }
 
 export interface BaseModalProps<ModalState extends any> extends Omit<DraggableDialogProps, 'open'> {
@@ -84,7 +84,7 @@ const BaseModal: FC<Omit<BaseModalProps<any>, 'state'> & { open: boolean }> = ({
           {modalActions
             .filter(action => !action.invisible)
             .map((modalAction, index) => (
-              <Button key={index} color="primary" disabled={modalAction.disable || loading} onClick={handleLoader(fullAction(modalAction))}>
+              <Button key={index} color="primary" disabled={modalAction.disabled || loading} onClick={handleLoader(fullAction(modalAction))}>
                 {modalAction.title}
               </Button>
             ))}

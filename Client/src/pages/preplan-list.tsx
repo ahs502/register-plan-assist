@@ -231,6 +231,7 @@ const PreplanListPage: FC = () => {
       </div>
 
       <NewPreplanModal
+        preplanHeaders={preplanHeaders}
         state={newPreplanModalState}
         onClose={closeNewPreplanModal}
         onCreate={async newPreplanModel => {
@@ -240,6 +241,7 @@ const PreplanListPage: FC = () => {
       />
 
       <ClonePreplanModal
+        preplanHeaders={preplanHeaders}
         state={clonePreplanModalState}
         onClose={closeClonePreplanModal}
         onClone={async (sourcePreplanId, newPreplanModel) => {
@@ -249,6 +251,7 @@ const PreplanListPage: FC = () => {
       />
 
       <EditPreplanModal
+        preplanHeaders={preplanHeaders}
         state={editPreplanModalState}
         onClose={closeEditPreplanModal}
         onApply={async (sourcePreplanId, newPreplanModel) => {

@@ -111,7 +111,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
   }));
 
   const classes = useStyles();
-  debugger;
+
   const validation = new ViewStateValidation(list);
   const errors = {
     registerBaseAirpot: validation.$.aircraftRegistersPerTypeViewStateValidations?.map(v => v.$.registerValidations?.map(n => n.message('BASE_AIRPORT_*'))),

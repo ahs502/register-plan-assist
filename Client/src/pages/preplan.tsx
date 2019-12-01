@@ -128,7 +128,7 @@ const PreplanPage: FC = () => {
                     />
                   )}
                 />
-                <Route exact path={routeMatch.path + '/reports/:report?'} component={() => <ReportsPage />} />
+                <Route exact path={routeMatch.path + '/reports/:report?'} component={ReportsPage} />
                 <Redirect to={routeMatch.url} />
               </Switch>
 

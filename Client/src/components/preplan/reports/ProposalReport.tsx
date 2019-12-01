@@ -18,6 +18,7 @@ import FlightLeg from 'src/business/flight/FlightLeg';
 import { dataTypes } from 'src/utils/DataType';
 import RefiningTextField from 'src/components/RefiningTextField';
 import Validation from '@core/node_modules/@ahs502/validation/dist/Validation';
+import PreplanService from 'src/services/PreplanService';
 
 const errorPaperSize = 250;
 const makeColor = () => ({
@@ -255,8 +256,7 @@ interface ViewState {
   showSTB1: boolean;
   showSTB2: boolean;
   showExtra: boolean;
-  preplanHeader: PreplanHeader;
-  compareMode: boolean;
+  preplanHeader?: PreplanHeader;
 }
 
 class ViewStateValidation extends Validation<
@@ -289,11 +289,28 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
   const mhd = MasterData.all.airports.name['MHD'];
   const ker = MasterData.all.airports.name['KER'];
   const allBaseAirport = [ika, thr, mhd, ker];
+
   const [dataProvider, setDataProvider] = useState<DataProvider[]>([]);
-  //const [preplanHeaders, setPreplanHeaders] = useState<ReadonlyArray<Readonly<PreplanHeader>>>([]);
-  //const preplanHeaderOptions = useMemo<PreplanHeader[]>(() => [{} as PreplanHeader, ...preplanHeaders], [preplanHeaders]);
+  const [preplanHeaders, setPreplanHeaders] = useState<PreplanHeader[]>([]);
+  const preplanHeaderOptions = useMemo(
+    () => [
+      {
+        id: '',
+        label: ' ',
+        header: undefined
+      },
+      ...preplanHeaders.map(p => ({
+        id: p.id,
+        label: p.name,
+        header: p
+      }))
+    ],
+    [preplanHeaders]
+  );
+
   const [flattenFlightRequirments, setFlattenFlightRequirments] = useState<FlattenFlightRequirment[]>([]);
-  const [viewState, setViewState] = useState<ViewState>({
+
+  const [viewState, setViewState] = useState<ViewState>(() => ({
     baseAirport: ika,
     startDate: dataTypes.utcDate.convertBusinessToView(fromDate),
     endDate: dataTypes.utcDate.convertBusinessToView(toDate),
@@ -305,10 +322,8 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
     showReal: true,
     showSTB1: true,
     showSTB2: true,
-    showExtra: true,
-    preplanHeader: {} as PreplanHeader,
-    compareMode: false
-  } as ViewState);
+    showExtra: true
+  }));
 
   let proposalExporter: ExcelExport | null;
 
@@ -373,13 +388,12 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
     return result;
   };
 
-  // useEffect(() => {
-  //   PreplanService.getAllHeaders().then(preplanHeaderModels => {
-  //     const preplanHeaders = preplanHeaderModels.map(p => new PreplanHeader(p));
-  //     //setPreplanHeaders(preplanHeaders);
-  //     setPreplanHeaderOptions([{} as PreplanHeader, ...preplanHeaders]);
-  //   });
-  // }, []);
+  useEffect(() => {
+    PreplanService.getAllHeaders().then(preplanHeaderModels => {
+      const preplanHeaders = preplanHeaderModels.map(p => new PreplanHeader(p));
+      setPreplanHeaders(preplanHeaders);
+    });
+  }, []);
 
   useEffect(() => {
     if (validation.ok) {
@@ -389,7 +403,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
       setFlattenFlightRequirmentsStatus(realFlatModel);
       setFlattenFlightRequirmentsStatus(reserveFlatModel);
 
-      if (viewState.compareMode) {
+      if (viewState.preplanHeader) {
         const targetPreplan = viewState.preplanHeader;
         const targetRealFlatModel = generateReportDataModel(viewState, getPreplanFlightRequirments(targetPreplan.id), true);
         const targetReserveFlatModel = generateReportDataModel(viewState, getPreplanFlightRequirments(targetPreplan.id), false);
@@ -688,34 +702,20 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
                 }}
               />
             </Grid>
-            {/* <Grid item xs={3}> */}
-            {/* <InputLabel htmlFor="compare-preplan" className={classes.marginBottom1}>
-                Compare with:
-              </InputLabel> */}
-            {/* <AutoComplete
+            <Grid item xs={3}>
+              <InputLabel htmlFor="compare-preplan" className={classes.marginBottom1}>
+                Compare with (optional)
+              </InputLabel>
+              <AutoComplete
                 id="compare-preplan"
                 options={preplanHeaderOptions}
-                getOptionLabel={l => l.name}
+                value={viewState.preplanHeader ? preplanHeaderOptions.find(p => p.header === viewState.preplanHeader) : undefined}
+                getOptionLabel={l => l.label}
                 getOptionValue={l => l.id}
-                onSelect={s => {
-                  setFilterModel({ ...filterModel, preplanHeader: s, compareMode: !!s.id });
-                }}
-              /> */}
-            {/* </Grid> */}
+                onSelect={({ header: preplanHeader }) => setViewState({ ...viewState, preplanHeader })}
+              />
+            </Grid>
             <Grid item xs={1} className={classes.datePosition}>
-              {/* <TextField
-                className={classNames(classes.marginRight1, classes.marginBottom2)}
-                label=" Start Date"
-                onChange={e => {
-                  const value = e.target.value;
-                  if (!value) return;
-                  const ticks = Date.parse(value);
-                  if (ticks) {
-                    setViewState({ ...viewState, startDate: new Date(ticks) });
-                  }
-                }}
-              /> */}
-
               <RefiningTextField
                 label="Start Date"
                 className={classNames(classes.marginRight1, classes.marginBottom2)}
@@ -727,19 +727,6 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
               />
             </Grid>
             <Grid item xs={1} className={classes.datePosition}>
-              {/* <TextField
-                className={classNames(classes.marginRight1, classes.marginBottom2)}
-                label="End Date"
-                onChange={e => {
-                  const value = e.target.value;
-                  if (!value) return;
-                  const ticks = Date.parse(value);
-                  if (ticks) {
-                    setViewState({ ...viewState, endDate: new Date(ticks) });
-                  }
-                }}
-              /> */}
-
               <RefiningTextField
                 label="End Date"
                 dataType={dataTypes.utcDate}

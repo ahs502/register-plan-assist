@@ -73,13 +73,11 @@
       return this.slice().sortByDescending(...propertySelectors);
     };
 
+    function isNotDuplicatedBefore<T>(item: T, index: number, array: T[]): boolean {
+      return array.indexOf(item) === index;
+    }
     Array.prototype.distinct = function Array_prototype_distinct<T>(areEqual?: (a: T, b: T) => boolean): T[] {
-      const areEqualFunction: (a: T, b: T) => boolean = areEqual || ((a: T, b: T) => a === b);
-      const result: T[] = [];
-      for (let i = 0; i < this.length; ++i) {
-        result.find(x => areEqualFunction(this[i], x)) || result.push(this[i]);
-      }
-      return result;
+      return this.filter(isNotDuplicatedBefore);
     };
 
     Array.prototype.flatten = function Array_prototype_flatten(): any[] {

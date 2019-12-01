@@ -9,13 +9,12 @@ export default class ValidPeriodCheckOnAircraftsChecker extends Checker {
   }
 
   check(): void {
-    // return this.preplan.stagedAircraftRegisters.items
-    //   .filter(a => a.options.status !== 'IGNORED' && !a.validPeriods.some(p => Date.intervalCovers(p.startDate, p.endDate, this.preplan.startDate, this.preplan.endDate)))
-    //   .map(
-    //     a =>
-    //       a.validPeriods.some(p => Date.intervalOverlaps(p.startDate, p.endDate, this.preplan.startDate, this.preplan.endDate))
-    //         ? a.issueObjection('WARNING', 12345, this, constraintMarker => `${constraintMarker}: ${a.marker} valid periods does not fully cover the preplan interval.`) //TODO: Refine this instantiation.
-    //         : a.issueObjection('ERROR', 12345, this, constraintMarker => `${constraintMarker}: ${a.marker} is out of its valid periods for this preplan.`) //TODO: Refine this instantiation.
-    //   );
+    this.preplan.aircraftRegisters.items
+      .filter(a => a.options.status !== 'IGNORED' && !a.validPeriods.some(p => Date.intervalCovers(p.startDate, p.endDate, this.preplan.startDate, this.preplan.endDate)))
+      .map(a =>
+        a.validPeriods.some(p => Date.intervalOverlaps(p.startDate, p.endDate, this.preplan.startDate, this.preplan.endDate))
+          ? this.issueObjection(a, 'WARNING', 12345, constraintMarker => `${constraintMarker}: ${a.marker} valid periods does not fully cover the preplan interval.`)
+          : this.issueObjection(a, 'ERROR', 12345, constraintMarker => `${constraintMarker}: ${a.marker} is out of its valid periods for this preplan.`)
+      );
   }
 }

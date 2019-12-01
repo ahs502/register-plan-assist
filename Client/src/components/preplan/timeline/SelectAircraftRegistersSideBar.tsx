@@ -18,7 +18,10 @@ import {
   ViewState,
   DummyAircraftRegisterViewState,
   AddDummyAircraftRegisterFormState,
-  AircraftRegistersPerTypeViewState
+  AircraftRegistersPerTypeViewState,
+  AddDummyAircraftRegisterFormStateValidation,
+  ViewStateValidation,
+  AircraftRegisterViewStateValidation
 } from 'src/components/preplan/timeline/SelectAircraftRegistersSideBar.types';
 
 const useStyles = makeStyles((theme: Theme) => ({
@@ -99,6 +102,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
     }))
   );
   const [addDummyRegisterFormState, setAddDummyRegisterFormState] = useState<AddDummyAircraftRegisterFormState>(() => ({
+    bypassValidation: true,
     show: false,
     name: '',
     aircraftType: '',
@@ -107,6 +111,22 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
   }));
 
   const classes = useStyles();
+
+  const validation = new ViewStateValidation(list);
+  const errors = {
+    registerBaseAirpot: validation.$.aircraftRegistersPerTypeViewStateValidations?.map(v => v.$.registerValidations?.map(n => n.message('BASE_AIRPORT_*'))),
+    dummyRegistersErrors: validation.$.aircraftRegistersPerTypeViewStateValidations?.map(v =>
+      v.$.dummyRegisterValidations?.map(n => ({ register: n.message('NAME_*'), baseAirport: n.message('BASE_AIRPORT_*') }))
+    )
+  };
+
+  const dummyRegisterFormValidation = new AddDummyAircraftRegisterFormStateValidation(addDummyRegisterFormState, list);
+
+  const dummyRegistewrFromErrors = {
+    register: addDummyRegisterFormState.bypassValidation ? undefined : dummyRegisterFormValidation.message('NAME_*'),
+    type: addDummyRegisterFormState.bypassValidation ? undefined : dummyRegisterFormValidation.message('AIRCRAFT_TYPE_*'),
+    baseAirport: addDummyRegisterFormState.bypassValidation ? undefined : dummyRegisterFormValidation.message('BASE_AIRPORT_*')
+  };
 
   const addDummyRegisterForm = (
     <Collapse in={addDummyRegisterFormState.show}>
@@ -143,6 +163,8 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
                 dataType={dataTypes.label}
                 value={addDummyRegisterFormState.name}
                 onChange={({ target: { value: name } }) => setAddDummyRegisterFormState({ ...addDummyRegisterFormState, name })}
+                error={dummyRegistewrFromErrors.register !== undefined}
+                helperText={dummyRegistewrFromErrors.register}
               />
             </TableCell>
             <TableCell>
@@ -150,6 +172,8 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
                 dataType={dataTypes.aircraftType}
                 value={addDummyRegisterFormState.aircraftType}
                 onChange={({ target: { value: aircraftType } }) => setAddDummyRegisterFormState({ ...addDummyRegisterFormState, aircraftType })}
+                error={dummyRegistewrFromErrors.type !== undefined}
+                helperText={dummyRegistewrFromErrors.type}
               />
             </TableCell>
             <TableCell className={classes.baseAirportCell}>
@@ -157,6 +181,8 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
                 dataType={dataTypes.airport}
                 value={addDummyRegisterFormState.baseAirport}
                 onChange={({ target: { value: baseAirport } }) => setAddDummyRegisterFormState({ ...addDummyRegisterFormState, baseAirport })}
+                error={dummyRegistewrFromErrors.baseAirport !== undefined}
+                helperText={dummyRegistewrFromErrors.baseAirport}
               />
             </TableCell>
             <TableCell className={classes.stateCell}>
@@ -184,6 +210,10 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
                 size="small"
                 onClick={() => {
                   //TODO: Validate addDummyRegisterFormState...
+                  addDummyRegisterFormState.bypassValidation && setAddDummyRegisterFormState({ ...addDummyRegisterFormState, bypassValidation: false });
+
+                  if (!dummyRegisterFormValidation.ok) throw 'Invalid form fields.';
+
                   const type = MasterData.all.aircraftTypes.id[dataTypes.aircraftType.convertViewToModel(addDummyRegisterFormState.aircraftType)];
                   list
                     .find(t => t.type === type)!
@@ -195,6 +225,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
                     });
                   setAddDummyRegisterFormState({ ...addDummyRegisterFormState, show: false });
                 }}
+                disabled={!addDummyRegisterFormState.bypassValidation && !dummyRegisterFormValidation.ok}
               >
                 <CheckIcon />
               </IconButton>
@@ -353,7 +384,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
         };
         onApply(dummyAircraftRegisters, aircraftRegisterOptions);
       }}
-      onAdd={() => setAddDummyRegisterFormState({ show: true, name: '', aircraftType: '', baseAirport: '', status: 'INCLUDED' })}
+      onAdd={() => setAddDummyRegisterFormState({ bypassValidation: true, show: true, name: '', aircraftType: '', baseAirport: '', status: 'INCLUDED' })}
       label="Select Aircraft Registers"
       loading={loading}
       errorMessage={errorMessage}

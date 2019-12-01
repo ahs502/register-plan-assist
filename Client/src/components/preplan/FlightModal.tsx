@@ -27,10 +27,18 @@ class ViewStateValidation extends Validation<
   }
 > {
   constructor({ aircraftRegister, legs }: ViewState, aircraftRegisters: PreplanAircraftRegisters) {
-    super(validator => {
-      validator.if(!aircraftRegister).check('AIRCRAFT_REGISTER_IS_VALID', () => dataTypes.preplanAircraftRegister(aircraftRegisters).checkView(aircraftRegister));
-      validator.array(legs).each((leg, index) => validator.put(validator.$.legValidations[index], new LegViewStateValidation(leg)));
-    });
+    super(
+      validator => {
+        validator.if(!!aircraftRegister).check('AIRCRAFT_REGISTER_IS_VALID', () => dataTypes.preplanAircraftRegister(aircraftRegisters).checkView(aircraftRegister));
+        validator.array(legs).each((leg, index) => validator.put(validator.$.legValidations[index], new LegViewStateValidation(leg)));
+      },
+      {
+        '*_EXISTS': 'Required.',
+        '*_FORMAT_IS_VALID': 'Invalid format.',
+        '*_IS_VALID': 'Invalid.',
+        '*_IS_NOT_NEGATIVE': 'Should not be negative.'
+      }
+    );
   }
 }
 
@@ -39,7 +47,12 @@ interface LegViewState {
 }
 class LegViewStateValidation extends Validation<'STD_EXISTS' | 'STD_FORMAT_IS_VALID'> {
   constructor({ std }: LegViewState) {
-    super(validator => validator.check('STD_EXISTS', !!std).check('STD_FORMAT_IS_VALID', () => dataTypes.daytime.checkView(std)));
+    super(validator => validator.check('STD_EXISTS', !!std).check('STD_FORMAT_IS_VALID', () => dataTypes.daytime.checkView(std)), {
+      '*_EXISTS': 'Required.',
+      '*_FORMAT_IS_VALID': 'Invalid format.',
+      '*_IS_VALID': 'Invalid.',
+      '*_IS_NOT_NEGATIVE': 'Should not be negative.'
+    });
   }
 }
 
@@ -70,6 +83,11 @@ const FlightModal: FC<FlightModalProps> = ({ state: [open, { flight }], onOpenFl
   );
 
   const validation = new ViewStateValidation(viewState, preplan.aircraftRegisters);
+
+  const errors = {
+    aircraftRegister: validation.message('AIRCRAFT_REGISTER_*'),
+    stds: validation.$.legValidations?.map(v => v.message('STD_*'))
+  };
 
   const classes = useStyles();
 
@@ -145,6 +163,8 @@ const FlightModal: FC<FlightModalProps> = ({ state: [open, { flight }], onOpenFl
               dataType={dataTypes.preplanAircraftRegister(preplan.aircraftRegisters)}
               value={viewState.aircraftRegister}
               onChange={({ target: { value: aircraftRegister } }) => setViewState({ ...viewState, aircraftRegister })}
+              error={errors.aircraftRegister !== undefined}
+              helperText={errors.aircraftRegister}
             />
           </Grid>
           <Grid item xs={12}>
@@ -185,6 +205,8 @@ const FlightModal: FC<FlightModalProps> = ({ state: [open, { flight }], onOpenFl
                             ]
                           })
                         }
+                        error={errors.stds[index] !== undefined}
+                        helperText={errors.stds[index]}
                       />
                     </TableCell>
                     <TableCell align="center">{dataTypes.daytime.convertBusinessToView(l.blockTime)}</TableCell>

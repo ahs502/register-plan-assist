@@ -247,15 +247,15 @@ class PreplanAircraftRegisterDataType extends DataType<Id, PreplanAircraftRegist
 
   checkView(value: string): boolean {
     const item = this.aircraftRegisters.name[value.trim().toUpperCase()];
-    return !!item;
+    return !!item && item.options.status !== 'IGNORED';
   }
   refineView(value: string): string {
     const item = this.aircraftRegisters.name[value.trim().toUpperCase()];
-    return item ? item.name : value;
+    return item && item.options.status !== 'IGNORED' ? item.name : value;
   }
   convertViewToModel(value: string): Id {
     const item = this.aircraftRegisters.name[value.trim().toUpperCase()];
-    if (!item) throw 'Invalid preplan aircraft register view value.';
+    if (!item || item.options.status === 'IGNORED') throw 'Invalid preplan aircraft register view value.';
     return item.id;
   }
   convertModelToBusiness(value: Id): PreplanAircraftRegister {

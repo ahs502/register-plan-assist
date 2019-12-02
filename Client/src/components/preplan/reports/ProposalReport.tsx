@@ -247,6 +247,7 @@ interface ViewState {
   baseAirport: Airport;
   startDate: string;
   endDate: string;
+  baseDate: string;
   flightType: FlightType;
   showType: boolean;
   showSlot: boolean;
@@ -260,17 +261,35 @@ interface ViewState {
 }
 
 class ViewStateValidation extends Validation<
-  'START_DATE_EXISTS' | 'START_DATE_IS_VALID' | 'START_DATE_IS_NOT_AFTER_END_DATE' | 'END_DATE_EXISTS' | 'END_DATE_IS_VALID' | 'END_DATE_IS_NOT_BEFORE_START_DATE'
+  | 'START_DATE_EXISTS'
+  | 'START_DATE_IS_VALID'
+  | 'START_DATE_IS_NOT_AFTER_END_DATE'
+  | 'END_DATE_EXISTS'
+  | 'END_DATE_IS_VALID'
+  | 'END_DATE_IS_NOT_BEFORE_START_DATE'
+  | 'BASE_DATE_EXISTS'
+  | 'BASE_DATE_IS_VALID'
+  | 'BASE_DATE_BETWEEN_START_DATE_AND_END_DATE'
 > {
-  constructor({ startDate, endDate }: ViewState) {
+  constructor({ startDate, endDate, baseDate }: ViewState) {
     super(
       validator => {
         validator.check('START_DATE_EXISTS', !!startDate).check('START_DATE_IS_VALID', () => dataTypes.utcDate.checkView(startDate));
         validator.check('END_DATE_EXISTS', !!endDate).check('END_DATE_IS_VALID', () => dataTypes.utcDate.checkView(endDate));
+        validator.check('BASE_DATE_EXISTS', !!baseDate).check('BASE_DATE_IS_VALID', () => dataTypes.utcDate.checkView(baseDate));
         validator.when('START_DATE_IS_VALID', 'END_DATE_IS_VALID').then(() => {
           const ok = dataTypes.utcDate.convertViewToModel(startDate) <= dataTypes.utcDate.convertViewToModel(endDate);
           validator.check('START_DATE_IS_NOT_AFTER_END_DATE', ok, 'Can not be after end date.');
           validator.check('END_DATE_IS_NOT_BEFORE_START_DATE', ok, 'Can not be before start date.');
+          validator
+            .when('START_DATE_IS_NOT_AFTER_END_DATE', 'END_DATE_IS_NOT_BEFORE_START_DATE', 'BASE_DATE_IS_VALID')
+            .check(
+              'BASE_DATE_BETWEEN_START_DATE_AND_END_DATE',
+              () =>
+                dataTypes.utcDate.convertViewToModel(baseDate) <= dataTypes.utcDate.convertViewToModel(endDate) &&
+                dataTypes.utcDate.convertViewToModel(startDate) <= dataTypes.utcDate.convertViewToModel(baseDate),
+              'Between start date and end date.'
+            );
         });
       },
       {
@@ -314,6 +333,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
     baseAirport: ika,
     startDate: dataTypes.utcDate.convertBusinessToView(fromDate),
     endDate: dataTypes.utcDate.convertBusinessToView(toDate),
+    baseDate: dataTypes.utcDate.convertBusinessToView(fromDate),
     flightType: FlightType.International,
     showType: false,
     showSlot: true,
@@ -352,15 +372,15 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
   };
 
   const generateReportDataModel = (
-    { baseAirport, startDate, endDate, flightType, showReal, showSTB1, showSTB2, showExtra }: ViewState,
+    { baseAirport, startDate, endDate, baseDate, flightType, showReal, showSTB1, showSTB2, showExtra }: ViewState,
     flights: readonly Flight[],
     generateRealFlight: boolean
   ): FlattenFlightRequirment[] => {
     const result: FlattenFlightRequirment[] = [];
 
-    if (!baseAirport || !startDate || !endDate) return [];
+    if (!baseAirport || !startDate || !endDate || !baseDate) return [];
 
-    const baseDate = new Date((new Date(dataTypes.utcDate.convertViewToModel(startDate)).getTime() + new Date(dataTypes.utcDate.convertViewToModel(endDate)).getTime()) / 2);
+    const reportBaseDate = new Date(dataTypes.utcDate.convertViewToModel(baseDate));
 
     var filterdFlight = flights.filter(
       f =>
@@ -374,7 +394,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
     for (const key in flightByflightRequirmentId) {
       if (flightByflightRequirmentId.hasOwnProperty(key)) {
         const flights = flightByflightRequirmentId[key];
-        const flattenFlightRequirmentList = createFlattenFlightRequirmentsFromDailyFlightRequirment(flights, baseAirport, baseDate);
+        const flattenFlightRequirmentList = createFlattenFlightRequirmentsFromDailyFlightRequirment(flights, baseAirport, reportBaseDate);
         flattenFlightRequirmentList.sort((a, b) => compareFunction(a.std.minutes, b.std.minutes));
         const sortedFlattenFlightRequirments = sortFlattenFlightRequirment(flattenFlightRequirmentList, baseAirport);
 
@@ -657,7 +677,8 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
 
   const errors = {
     startDate: validation.message('START_DATE_*'),
-    endDate: validation.message('END_DATE_*')
+    endDate: validation.message('END_DATE_*'),
+    baseDate: validation.message('BASE_DATE_*')
   };
 
   const color = makeColor();
@@ -724,6 +745,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
                 onChange={({ target: { value: startDate } }) => setViewState({ ...viewState, startDate: startDate })}
                 error={errors.startDate !== undefined}
                 helperText={errors.startDate}
+                disabled
               />
             </Grid>
             <Grid item xs={1} className={classes.datePosition}>
@@ -734,6 +756,17 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
                 onChange={({ target: { value: endDate } }) => setViewState({ ...viewState, endDate: endDate })}
                 error={errors.endDate !== undefined}
                 helperText={errors.endDate}
+                disabled
+              />
+            </Grid>
+            <Grid item xs={1} className={classes.datePosition}>
+              <RefiningTextField
+                label="Base Date"
+                dataType={dataTypes.utcDate}
+                value={viewState.baseDate}
+                onChange={({ target: { value: baseDate } }) => setViewState({ ...viewState, baseDate })}
+                error={errors.baseDate !== undefined}
+                helperText={errors.baseDate}
               />
             </Grid>
             <Grid item xs={4} />
@@ -842,7 +875,15 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
           }}
         >
           <ExcelExportColumnGroup
-            title={'Propoal Schedule from ' + dataTypes.utcDate.convertViewToModel(viewState.startDate) + ' till ' + dataTypes.utcDate.convertViewToModel(viewState.endDate)}
+            title={
+              'Proposal Schedule from ' +
+              dataTypes.utcDate.refineView(viewState.startDate) +
+              ' till ' +
+              dataTypes.utcDate.refineView(viewState.endDate) +
+              ' (Based on ' +
+              dataTypes.utcDate.refineView(viewState.baseDate) +
+              ')'
+            }
             headerCellOptions={{ ...headerCellOptions, background: '#FFFFFF' }}
           >
             <ExcelExportColumnGroup title={'Base ' + viewState.baseAirport.name} headerCellOptions={{ ...headerCellOptions, background: color.excelHeader.backgroundColor }}>

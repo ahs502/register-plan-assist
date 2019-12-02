@@ -97,6 +97,7 @@ interface ViewState {
   westAirports: Airport[];
   startDate: string;
   endDate: string;
+  baseDate: string;
   maxConnectionTime: string;
   minConnectionTime: string;
 }
@@ -110,18 +111,31 @@ class ConnectionReportValidation extends Validation<
   | 'END_DATE_EXISTS'
   | 'END_DATE_IS_VALID'
   | 'END_DATE_IS_NOT_BEFORE_START_DATE'
+  | 'BASE_DATE_EXISTS'
+  | 'BASE_DATE_IS_VALID'
+  | 'BASE_DATE_BETWEEN_START_DATE_AND_END_DATE'
 > {
-  constructor(startDate: string, endDate: string, eastAirports: Airport[], westAirports: Airport[]) {
+  constructor(startDate: string, endDate: string, baseDate: string, eastAirports: Airport[], westAirports: Airport[]) {
     super(
       validator => {
         validator.check('EAST_AIRPORT_EXISTS', eastAirports.length > 0);
         validator.check('WEST_AIRPORT_EXISTS', westAirports.length > 0);
-        validator.if(!!startDate).check('START_DATE_IS_VALID', () => dataTypes.utcDate.checkView(startDate));
-        validator.if(!!endDate).check('END_DATE_IS_VALID', () => dataTypes.utcDate.checkView(endDate));
+        validator.check('START_DATE_EXISTS', !!startDate).check('START_DATE_IS_VALID', () => dataTypes.utcDate.checkView(startDate));
+        validator.check('END_DATE_EXISTS', !!endDate).check('END_DATE_IS_VALID', () => dataTypes.utcDate.checkView(endDate));
+        validator.check('BASE_DATE_EXISTS', !!baseDate).check('BASE_DATE_IS_VALID', () => dataTypes.utcDate.checkView(baseDate));
         validator.when('START_DATE_IS_VALID', 'END_DATE_IS_VALID').then(() => {
           const ok = dataTypes.utcDate.convertViewToModel(startDate) <= dataTypes.utcDate.convertViewToModel(endDate);
           validator.check('START_DATE_IS_NOT_AFTER_END_DATE', ok, 'Can not be after end date.');
           validator.check('END_DATE_IS_NOT_BEFORE_START_DATE', ok, 'Can not be before start date.');
+          validator
+            .when('START_DATE_IS_NOT_AFTER_END_DATE', 'END_DATE_IS_NOT_BEFORE_START_DATE', 'BASE_DATE_IS_VALID')
+            .check(
+              'BASE_DATE_BETWEEN_START_DATE_AND_END_DATE',
+              () =>
+                dataTypes.utcDate.convertViewToModel(baseDate) <= dataTypes.utcDate.convertViewToModel(endDate) &&
+                dataTypes.utcDate.convertViewToModel(startDate) <= dataTypes.utcDate.convertViewToModel(baseDate),
+              'Between start date and end date.'
+            );
         });
       },
       {
@@ -143,7 +157,7 @@ class NumberOfConnectionValidation extends Validation<
   | 'MAX_CONNECTION_IS_NOT_LESS_THAN_MIN_CONNECTION_TIME',
   { connectionReportValidation: ConnectionReportValidation }
 > {
-  constructor(maxConnectionTime: string, minConnectionTime: string, startDate: string, endDate: string, eastAirports: Airport[], westAirports: Airport[]) {
+  constructor(maxConnectionTime: string, minConnectionTime: string, startDate: string, endDate: string, baseDate: string, eastAirports: Airport[], westAirports: Airport[]) {
     super(
       validator => {
         validator.check('MAX_CONNECTION_TIME_EXISTS', !!maxConnectionTime).check('MAX_CONNECTION_TIME_IS_VALID', () => dataTypes.daytime.checkView(maxConnectionTime));
@@ -153,7 +167,7 @@ class NumberOfConnectionValidation extends Validation<
           validator.check('MIN_CONNECTION_IS_NOT_GREATER_THAN_MAX_CONNECTION_TIME', ok, 'Can not be grater than max connection.');
           validator.check('MAX_CONNECTION_IS_NOT_LESS_THAN_MIN_CONNECTION_TIME', ok, 'Can not be less than max connection.');
         });
-        validator.put(validator.$.connectionReportValidation, new ConnectionReportValidation(startDate, endDate, eastAirports, westAirports));
+        validator.put(validator.$.connectionReportValidation, new ConnectionReportValidation(startDate, endDate, baseDate, eastAirports, westAirports));
       },
       {
         '*_EXISTS': 'Required.',
@@ -187,11 +201,12 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
   const allAirports = MasterData.all.airports.items;
   const defaultWestAirport = ['BCN', 'DXB', 'ESB', 'EVN', 'GYD', 'IST', 'MXP', 'VKO'];
   const defaultEastAirpot = ['BKK', 'CAN', 'DEL', 'BOM', 'KUL', 'LHE', 'PEK', 'PVG'];
-  const [{ eastAirports, westAirports, startDate, endDate, maxConnectionTime, minConnectionTime }, setViewState] = useState<ViewState>(() => ({
+  const [{ eastAirports, westAirports, startDate, endDate, baseDate, maxConnectionTime, minConnectionTime }, setViewState] = useState<ViewState>(() => ({
     eastAirports: allAirports.filter(a => defaultEastAirpot.indexOf(a.name) !== -1).orderBy('name'),
     westAirports: allAirports.filter(a => defaultWestAirport.indexOf(a.name) !== -1).orderBy('name'),
     startDate: dataTypes.utcDate.convertBusinessToView(fromDate),
     endDate: dataTypes.utcDate.convertBusinessToView(toDate),
+    baseDate: dataTypes.utcDate.convertBusinessToView(fromDate),
     maxConnectionTime: dataTypes.daytime.convertModelToView(300),
     minConnectionTime: dataTypes.daytime.convertModelToView(70)
   }));
@@ -206,7 +221,7 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
   useEffect(() => {
     if (validation.ok) {
       const flightLegInfoModels: FlightLegInfoModel[] = [];
-      const baseDate = new Date((new Date(dataTypes.utcDate.convertViewToModel(startDate)).getTime() + new Date(dataTypes.utcDate.convertViewToModel(endDate)).getTime()) / 2);
+      const reportBaseDate = new Date(dataTypes.utcDate.convertViewToModel(baseDate));
 
       const targetFlights = flights.filter(
         f =>
@@ -229,7 +244,7 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
       targetFlights.forEach(flight => {
         const isDepartureFromIKA = flight.departureAirport.name === 'IKA';
         if (isDepartureFromIKA) {
-          const utcStd = flight.actualStd.toDate(baseDate);
+          const utcStd = flight.actualStd.toDate(reportBaseDate);
           const localStd = flight.departureAirport.convertUtcToLocal(utcStd);
 
           let diffLocalStdandUtcStd = localStd.getUTCDay() - utcStd.getUTCDay();
@@ -248,9 +263,9 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
             }
           }
         } else {
-          const utcStd = flight.actualStd.toDate(baseDate);
+          const utcStd = flight.actualStd.toDate(reportBaseDate);
           const localStd = flight.departureAirport.convertUtcToLocal(utcStd);
-          const utcSta = flight.actualSta.toDate(baseDate);
+          const utcSta = flight.actualSta.toDate(reportBaseDate);
           const localSta = flight.arrivalAirport.convertUtcToLocal(utcSta);
 
           let diffLocalStdandUtcStd = localStd.getUTCDay() - utcStd.getUTCDay();
@@ -280,16 +295,17 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
         setConnectionNumberDataModel(generateConnectionNumberDataModel(flightLegInfoModels));
       }
     }
-  }, [eastAirports, westAirports, minConnectionTime, maxConnectionTime, startDate, endDate]);
+  }, [eastAirports, westAirports, minConnectionTime, maxConnectionTime, baseDate]);
 
-  const validation = new ConnectionReportValidation(startDate, endDate, eastAirports, westAirports);
-  const numberOfConnectionValidation = new NumberOfConnectionValidation(maxConnectionTime, minConnectionTime, startDate, endDate, eastAirports, westAirports);
+  const validation = new ConnectionReportValidation(startDate, endDate, baseDate, eastAirports, westAirports);
+  const numberOfConnectionValidation = new NumberOfConnectionValidation(maxConnectionTime, minConnectionTime, startDate, endDate, baseDate, eastAirports, westAirports);
 
   const errors = {
     eastAirports: validation.message('EAST_AIRPORT_*'),
     westAirports: validation.message('WEST_AIRPORT_*'),
     startDate: validation.message('START_DATE_*'),
     endDate: validation.message('END_DATE_*'),
+    baseDate: validation.message('BASE_DATE_*'),
     maxConnectionTime: numberOfConnectionValidation.message('MAX_CONNECTION_*'),
     minConnectionTime: numberOfConnectionValidation.message('MIN_CONNECTION_*')
   };
@@ -775,7 +791,7 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
         getOptionLabel={r => r.name}
         getOptionValue={r => r.id}
         onSelect={value => {
-          setViewState({ eastAirports: value ? value.orderBy('name') : [], westAirports, endDate, startDate, maxConnectionTime, minConnectionTime });
+          setViewState({ eastAirports: value ? value.orderBy('name') : [], westAirports, endDate, startDate, baseDate, maxConnectionTime, minConnectionTime });
         }}
         className={classes.marginBottom1}
         error={errors.eastAirports !== undefined}
@@ -792,7 +808,7 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
         getOptionLabel={r => r.name}
         getOptionValue={r => r.id}
         onSelect={value => {
-          setViewState({ eastAirports, westAirports: value ? value.orderBy('name') : [], endDate, startDate, maxConnectionTime, minConnectionTime });
+          setViewState({ eastAirports, westAirports: value ? value.orderBy('name') : [], endDate, startDate, baseDate, maxConnectionTime, minConnectionTime });
         }}
         error={errors.westAirports !== undefined}
         helperText={errors.westAirports}
@@ -802,18 +818,29 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
         label="Start Date"
         dataType={dataTypes.utcDate}
         value={startDate}
-        onChange={({ target: { value: startDate } }) => setViewState({ eastAirports, westAirports, endDate, startDate, maxConnectionTime, minConnectionTime })}
+        onChange={({ target: { value: startDate } }) => setViewState({ eastAirports, westAirports, endDate, startDate, baseDate, maxConnectionTime, minConnectionTime })}
         error={errors.startDate !== undefined}
         helperText={errors.startDate}
+        disabled
       />
 
       <RefiningTextField
         label="End Date"
         dataType={dataTypes.utcDate}
         value={endDate}
-        onChange={({ target: { value: endDate } }) => setViewState({ eastAirports, westAirports, endDate, startDate, maxConnectionTime, minConnectionTime })}
+        onChange={({ target: { value: endDate } }) => setViewState({ eastAirports, westAirports, endDate, startDate, baseDate, maxConnectionTime, minConnectionTime })}
         error={errors.endDate !== undefined}
         helperText={errors.endDate}
+        disabled
+      />
+
+      <RefiningTextField
+        label="Base Date"
+        dataType={dataTypes.utcDate}
+        value={baseDate}
+        onChange={({ target: { value: baseDate } }) => setViewState({ eastAirports, westAirports, endDate, startDate, baseDate, maxConnectionTime, minConnectionTime })}
+        error={errors.baseDate !== undefined}
+        helperText={errors.baseDate}
       />
 
       <br />
@@ -837,7 +864,7 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
         label="Minimum Connection Time"
         dataType={dataTypes.daytime}
         value={minConnectionTime}
-        onChange={({ target: { value: minConnectionTime } }) => setViewState({ eastAirports, westAirports, endDate, startDate, maxConnectionTime, minConnectionTime })}
+        onChange={({ target: { value: minConnectionTime } }) => setViewState({ eastAirports, westAirports, endDate, startDate, baseDate, maxConnectionTime, minConnectionTime })}
         error={errors.minConnectionTime !== undefined}
         helperText={errors.minConnectionTime}
       />
@@ -846,7 +873,7 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
         label="Maximum Connection Time"
         dataType={dataTypes.daytime}
         value={maxConnectionTime}
-        onChange={({ target: { value: maxConnectionTime } }) => setViewState({ eastAirports, westAirports, endDate, startDate, maxConnectionTime, minConnectionTime })}
+        onChange={({ target: { value: maxConnectionTime } }) => setViewState({ eastAirports, westAirports, endDate, startDate, baseDate, maxConnectionTime, minConnectionTime })}
         error={errors.maxConnectionTime !== undefined}
         helperText={errors.maxConnectionTime}
       />

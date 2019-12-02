@@ -18,8 +18,11 @@ import {
   ViewState,
   DummyAircraftRegisterViewState,
   AddDummyAircraftRegisterFormState,
-  AircraftRegistersPerTypeViewState
+  AircraftRegistersPerTypeViewState,
+  AddDummyAircraftRegisterFormStateValidation,
+  ViewStateValidation
 } from 'src/components/preplan/timeline/SelectAircraftRegistersSideBar.types';
+import Id from '@core/types/Id';
 
 const useStyles = makeStyles((theme: Theme) => ({
   searchWrapper: {
@@ -99,6 +102,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
     }))
   );
   const [addDummyRegisterFormState, setAddDummyRegisterFormState] = useState<AddDummyAircraftRegisterFormState>(() => ({
+    bypassValidation: true,
     show: false,
     name: '',
     aircraftType: '',
@@ -107,6 +111,39 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
   }));
 
   const classes = useStyles();
+
+  const validation = new ViewStateValidation(list);
+  interface Errors {
+    [typeId: string]: {
+      registers: { [registerId: string]: { baseAirport?: string } };
+      dummyRegisters: { [dummyRegisterId: string]: { name?: string; baseAirport?: string } };
+    };
+  }
+  const errors: Errors = list.reduce<Errors>((a, t) => {
+    a[t.type.id] = {
+      registers: t.registers.reduce<Errors[Id]['registers']>((a, r) => {
+        a[r.id] = {
+          baseAirport: validation.$.aircraftRegistersPerTypeViewStateValidations[t.type.id].$.registerValidations[r.id].message('BASE_AIRPORT_*')
+        };
+        return a;
+      }, {}),
+      dummyRegisters: t.dummyRegisters.reduce<Errors[Id]['dummyRegisters']>((a, r) => {
+        a[r.id] = {
+          name: validation.$.aircraftRegistersPerTypeViewStateValidations[t.type.id].$.dummyRegisterValidations[r.id].message('NAME_*'),
+          baseAirport: validation.$.aircraftRegistersPerTypeViewStateValidations[t.type.id].$.dummyRegisterValidations[r.id].message('BASE_AIRPORT_*')
+        };
+        return a;
+      }, {})
+    };
+    return a;
+  }, {});
+
+  const dummyRegisterFormValidation = new AddDummyAircraftRegisterFormStateValidation(addDummyRegisterFormState, list);
+  const dummyRegistewrFromErrors = {
+    register: addDummyRegisterFormState.bypassValidation ? undefined : dummyRegisterFormValidation.message('NAME_*'),
+    type: addDummyRegisterFormState.bypassValidation ? undefined : dummyRegisterFormValidation.message('AIRCRAFT_TYPE_*'),
+    baseAirport: addDummyRegisterFormState.bypassValidation ? undefined : dummyRegisterFormValidation.message('BASE_AIRPORT_*')
+  };
 
   const addDummyRegisterForm = (
     <Collapse in={addDummyRegisterFormState.show}>
@@ -143,6 +180,8 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
                 dataType={dataTypes.label}
                 value={addDummyRegisterFormState.name}
                 onChange={({ target: { value: name } }) => setAddDummyRegisterFormState({ ...addDummyRegisterFormState, name })}
+                error={dummyRegistewrFromErrors.register !== undefined}
+                helperText={dummyRegistewrFromErrors.register}
               />
             </TableCell>
             <TableCell>
@@ -150,6 +189,8 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
                 dataType={dataTypes.aircraftType}
                 value={addDummyRegisterFormState.aircraftType}
                 onChange={({ target: { value: aircraftType } }) => setAddDummyRegisterFormState({ ...addDummyRegisterFormState, aircraftType })}
+                error={dummyRegistewrFromErrors.type !== undefined}
+                helperText={dummyRegistewrFromErrors.type}
               />
             </TableCell>
             <TableCell className={classes.baseAirportCell}>
@@ -157,6 +198,8 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
                 dataType={dataTypes.airport}
                 value={addDummyRegisterFormState.baseAirport}
                 onChange={({ target: { value: baseAirport } }) => setAddDummyRegisterFormState({ ...addDummyRegisterFormState, baseAirport })}
+                error={dummyRegistewrFromErrors.baseAirport !== undefined}
+                helperText={dummyRegistewrFromErrors.baseAirport}
               />
             </TableCell>
             <TableCell className={classes.stateCell}>
@@ -184,6 +227,10 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
                 size="small"
                 onClick={() => {
                   //TODO: Validate addDummyRegisterFormState...
+                  addDummyRegisterFormState.bypassValidation && setAddDummyRegisterFormState({ ...addDummyRegisterFormState, bypassValidation: false });
+
+                  if (!dummyRegisterFormValidation.ok) throw 'Invalid form fields.';
+
                   const type = MasterData.all.aircraftTypes.id[dataTypes.aircraftType.convertViewToModel(addDummyRegisterFormState.aircraftType)];
                   list
                     .find(t => t.type === type)!
@@ -195,6 +242,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
                     });
                   setAddDummyRegisterFormState({ ...addDummyRegisterFormState, show: false });
                 }}
+                disabled={!addDummyRegisterFormState.bypassValidation && !dummyRegisterFormValidation.ok}
               >
                 <CheckIcon />
               </IconButton>
@@ -227,7 +275,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
     </TableHead>
   );
 
-  const aircraftRegisterRow = (t: AircraftRegistersPerTypeViewState, r: AircraftRegisterViewState) => (
+  const aircraftRegisterRow = (t: AircraftRegistersPerTypeViewState, r: AircraftRegisterViewState, e: Errors[Id]['registers'][Id]) => (
     <TableRow key={r.id} hover={true} className={classNames({ [classes.backupRegister]: r.status === 'BACKUP', [classes.ignoredRegister]: r.status === 'IGNORED' })}>
       <TableCell className={classes.nameCell}>
         <Typography variant="body2">{r.name}</Typography>
@@ -241,6 +289,8 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
             r.baseAirport = event.target.value;
             setList([...list]);
           }}
+          error={e.baseAirport !== undefined}
+          helperText={e.baseAirport}
         />
       </TableCell>
       <TableCell className={classes.stateCell}>
@@ -270,7 +320,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
     </TableRow>
   );
 
-  const dummyAircraftRegisterRow = (t: AircraftRegistersPerTypeViewState, r: DummyAircraftRegisterViewState) => (
+  const dummyAircraftRegisterRow = (t: AircraftRegistersPerTypeViewState, r: DummyAircraftRegisterViewState, e: Errors[Id]['dummyRegisters'][Id]) => (
     <TableRow key={r.id} hover={true} className={classNames({ [classes.backupRegister]: r.status === 'BACKUP', [classes.ignoredRegister]: r.status === 'IGNORED' })}>
       <TableCell className={classes.nameCell}>
         <RefiningTextField
@@ -281,6 +331,8 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
             r.name = event.target.value;
             setList([...list]);
           }}
+          error={e.name !== undefined}
+          helperText={e.name}
         />
       </TableCell>
       <TableCell className={classes.baseAirportCell}>
@@ -292,6 +344,8 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
             r.baseAirport = event.target.value;
             setList([...list]);
           }}
+          error={e.baseAirport !== undefined}
+          helperText={e.baseAirport}
         />
       </TableCell>
       <TableCell className={classes.stateCell}>
@@ -333,6 +387,8 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
   return (
     <SideBarContainer
       onApply={() => {
+        if (!validation.ok || addDummyRegisterFormState.show) return;
+
         const dummyAircraftRegisters: DummyAircraftRegisterModel[] = list
           .map(t =>
             t.dummyRegisters.map<DummyAircraftRegisterModel>(r => ({
@@ -353,7 +409,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
         };
         onApply(dummyAircraftRegisters, aircraftRegisterOptions);
       }}
-      onAdd={() => setAddDummyRegisterFormState({ show: true, name: '', aircraftType: '', baseAirport: '', status: 'INCLUDED' })}
+      onAdd={() => setAddDummyRegisterFormState({ bypassValidation: true, show: true, name: '', aircraftType: '', baseAirport: '', status: 'INCLUDED' })}
       label="Select Aircraft Registers"
       loading={loading}
       errorMessage={errorMessage}
@@ -365,28 +421,30 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
 
         {addDummyRegisterForm}
         <div className={addDummyRegisterFormState.show ? classes.bodyWithAddDummy : classes.body}>
-          {list.map((t, index) => (
-            <div key={t.type.id}>
-              <Typography variant="h6" display="inline">
-                Type: {t.type.name}
-              </Typography>
-              <Table size="small">
-                {tableHead}
-                <TableBody>
-                  {filterOnProperties(t.registers, query, 'name').map(r => aircraftRegisterRow(t, r))}
-                  {filterOnProperties(t.dummyRegisters, query, 'name').map(r => dummyAircraftRegisterRow(t, r))}
-                </TableBody>
-              </Table>
-              {index !== list.length - 1 ? (
-                <Fragment>
-                  <br />
-                  <br />
-                </Fragment>
-              ) : (
-                <Fragment></Fragment>
-              )}
-            </div>
-          ))}
+          {list
+            .filter(t => filterOnProperties(t.registers, query, 'name').length + filterOnProperties(t.dummyRegisters, query, 'name').length > 0)
+            .map((t, index) => (
+              <div key={t.type.id}>
+                <Typography variant="h6" display="inline">
+                  Type: {t.type.name}
+                </Typography>
+                <Table size="small">
+                  {tableHead}
+                  <TableBody>
+                    {filterOnProperties(t.registers, query, 'name').map(r => aircraftRegisterRow(t, r, errors[t.type.id].registers[r.id]))}
+                    {filterOnProperties(t.dummyRegisters, query, 'name').map(r => dummyAircraftRegisterRow(t, r, errors[t.type.id].dummyRegisters[r.id]))}
+                  </TableBody>
+                </Table>
+                {index !== list.length - 1 ? (
+                  <Fragment>
+                    <br />
+                    <br />
+                  </Fragment>
+                ) : (
+                  <Fragment></Fragment>
+                )}
+              </div>
+            ))}
         </div>
       </div>
     </SideBarContainer>

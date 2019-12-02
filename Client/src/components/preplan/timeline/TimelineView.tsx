@@ -15,6 +15,8 @@ import chroma from 'chroma-js';
 import Flight from 'src/business/flight/Flight';
 import { PreplanContext } from 'src/pages/preplan';
 import KeyboardHandler from 'src/utils/KeyboardHandler';
+import FlightRequirement from 'src/business/flight-requirement/FlightRequirement';
+import DayFlightRequirement from 'src/business/flight-requirement/DayFlightRequirement';
 
 const useStyles = makeStyles((theme: Theme) => ({
   '@global': {
@@ -242,6 +244,8 @@ interface FlightContextMenuModel {
 export interface TimelineViewProps {
   selectedFlight?: Flight;
   onSelectFlight(flight?: Flight): void;
+  onEditFlightRequirement(flightRequirement: FlightRequirement): void;
+  onEditDayFlightRequirement(dayFlightRequirement: DayFlightRequirement): void;
   onEditFlight(flight: Flight): void;
   onFlightDragAndDrop(flight: Flight, deltaStd: number, newAircraftRegister: PreplanAircraftRegister | undefined, allWeekdays: boolean): void;
   onFlightMouseHover(flight: Flight): void;
@@ -252,6 +256,8 @@ export interface TimelineViewProps {
 const TimelineView: FC<TimelineViewProps> = ({
   selectedFlight,
   onSelectFlight,
+  onEditFlightRequirement,
+  onEditDayFlightRequirement,
   onEditFlight,
   onFlightDragAndDrop,
   onFlightMouseHover,
@@ -699,8 +705,8 @@ const TimelineView: FC<TimelineViewProps> = ({
                     <div>
                       &nbsp;&nbsp;&nbsp;&nbsp;
                       ${l.flightNumber}:
-                      ${l.departureAirport.name} (${l.std.toString('HH:mm')}) &dash;
-                      ${l.arrivalAirport.name} (${new Daytime(l.std.minutes + l.blockTime.minutes).toString('HH:mm')})
+                      ${l.departureAirport.name} (${l.std.toString('HH:mm', true)}) &dash;
+                      ${l.arrivalAirport.name} (${new Daytime(l.std.minutes + l.blockTime.minutes).toString('HH:mm', true)})
                     </div>
                   `
                 )
@@ -804,7 +810,8 @@ const TimelineView: FC<TimelineViewProps> = ({
                 <MenuItem
                   onClick={() => {
                     setFlightContextMenuModel({ ...flightContextMenuModel, open: false });
-                    onEditFlight(flightContextMenuModel.flight!);
+                    // onEditFlight(flightContextMenuModel.flight!);
+                    onEditDayFlightRequirement(flightContextMenuModel.flight!.dayFlightRequirement);
                   }}
                 >
                   {/* <ListItemIcon>

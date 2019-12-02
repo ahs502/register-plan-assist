@@ -33,7 +33,7 @@ export default class FlightRequirement implements ModelConvertable<FlightRequire
     this.stc = dataTypes.stc.convertModelToBusiness(raw.stcId);
     this.aircraftSelection = new PreplanAircraftSelection(raw.aircraftSelection, aircraftRegisters);
     this.rsx = raw.rsx;
-    this.notes = dataTypes.name.convertModelToBusiness(raw.notes);
+    this.notes = dataTypes.label.convertModelToBusiness(raw.notes);
     this.ignored = raw.ignored;
     this.route = raw.route.map((l, index) => new FlightRequirementLeg(l, index, this));
     this.days = raw.days.map(d => new DayFlightRequirement(d, aircraftRegisters, this));
@@ -49,7 +49,7 @@ export default class FlightRequirement implements ModelConvertable<FlightRequire
       stcId: dataTypes.stc.convertBusinessToModel(this.stc),
       aircraftSelection: this.aircraftSelection.extractModel(),
       rsx: this.rsx,
-      notes: dataTypes.name.convertBusinessToModel(this.notes),
+      notes: dataTypes.label.convertBusinessToModel(this.notes),
       ignored: this.ignored,
       route: this.route.map(l => l.extractModel()),
       days: this.days.map(d => d.extractModel())

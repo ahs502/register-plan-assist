@@ -78,8 +78,8 @@ export default class Flight implements ModelConvertable<FlightModel> {
       previousSta = std + dayFlightRequirement.route[index].blockTime.minutes;
     });
 
-    this.start = this.legs[0].std;
-    this.end = this.legs[this.legs.length - 1].sta;
+    this.start = this.legs[0].actualStd;
+    this.end = this.legs[this.legs.length - 1].actualSta;
     this.weekStart = this.day * 24 * 60 + this.start.minutes;
     this.weekEnd = this.day * 24 * 60 + this.end.minutes;
     this.sections = this.legs.map(l => ({

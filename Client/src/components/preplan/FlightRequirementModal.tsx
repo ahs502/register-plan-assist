@@ -172,7 +172,7 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
         legIndex: 0,
         default: {
           rsx: flightRequirement.rsx,
-          notes: dataTypes.name.convertBusinessToView(flightRequirement.notes),
+          notes: dataTypes.label.convertBusinessToView(flightRequirement.notes),
           allowedAircraftIdentities: flightRequirement.aircraftSelection.includedIdentities.map(
             i => aircraftIdentityOptions.find(o => o.type === i.type && o.entityId === i.entity.id)!
           ),
@@ -200,7 +200,7 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
           return {
             selected: !!sourceDayFlightRequirement,
             rsx: sourceDayFlightRequirement ? sourceDayFlightRequirement.rsx : flightRequirement.rsx,
-            notes: dataTypes.name.convertBusinessToView(sourceDayFlightRequirement ? sourceDayFlightRequirement.notes : flightRequirement.notes),
+            notes: dataTypes.label.convertBusinessToView(sourceDayFlightRequirement ? sourceDayFlightRequirement.notes : flightRequirement.notes),
             allowedAircraftIdentities: (sourceDayFlightRequirement ? sourceDayFlightRequirement.aircraftSelection : flightRequirement.aircraftSelection).includedIdentities.map(
               i => aircraftIdentityOptions.find(o => o.type === i.type && o.entityId === i.entity.id)!
             ),
@@ -318,7 +318,7 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                 }))
               },
               rsx: viewState.default.rsx,
-              notes: dataTypes.name.convertViewToModel(viewState.default.notes),
+              notes: dataTypes.label.convertViewToModel(viewState.default.notes),
               ignored: flightRequirement ? flightRequirement.ignored : false,
               route: viewState.default.legs.map<FlightRequirementLegModel>((l, index) => ({
                 flightNumber: dataTypes.flightNumber.convertViewToModel(viewState.route[index].flightNumber),
@@ -346,7 +346,7 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                     },
                     rsx: d.rsx,
                     day: index,
-                    notes: dataTypes.name.convertViewToModel(d.notes),
+                    notes: dataTypes.label.convertViewToModel(d.notes),
                     route: d.legs.map<DayFlightRequirementLegModel>(l => ({
                       blockTime: dataTypes.daytime.convertViewToModel(l.blockTime),
                       stdLowerBound: dataTypes.daytime.convertViewToModel(l.stdLowerBound),
@@ -470,7 +470,7 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                   value={d}
                   label={
                     (viewState.days[d].rsx !== viewState.default.rsx ||
-                    dataTypes.name.refineView(viewState.days[d].notes) !== dataTypes.name.refineView(viewState.default.notes) ||
+                    dataTypes.label.refineView(viewState.days[d].notes) !== dataTypes.label.refineView(viewState.default.notes) ||
                     viewState.days[d].allowedAircraftIdentities.some(i => !viewState.default.allowedAircraftIdentities.includes(i)) ||
                     viewState.default.allowedAircraftIdentities.some(i => !viewState.days[d].allowedAircraftIdentities.includes(i)) ||
                     viewState.days[d].forbiddenAircraftIdentities.some(i => !viewState.default.forbiddenAircraftIdentities.includes(i)) ||
@@ -517,7 +517,7 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                   <RefiningTextField
                     fullWidth
                     label="Notes"
-                    dataType={dataTypes.name}
+                    dataType={dataTypes.label}
                     value={tabViewState.notes}
                     onChange={({ target: { value: notes } }) =>
                       setViewState(

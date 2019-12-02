@@ -25,7 +25,7 @@ export default class DayFlightRequirement implements ModelConvertable<DayFlightR
     this.aircraftSelection = new PreplanAircraftSelection(raw.aircraftSelection, aircraftRegisters);
     this.rsx = raw.rsx;
     this.day = raw.day;
-    this.notes = dataTypes.name.convertModelToBusiness(raw.notes);
+    this.notes = dataTypes.label.convertModelToBusiness(raw.notes);
 
     let dayOffset = 0;
     let previousStaLowerBound = Number.NEGATIVE_INFINITY;
@@ -51,7 +51,7 @@ export default class DayFlightRequirement implements ModelConvertable<DayFlightR
       aircraftSelection: this.aircraftSelection.extractModel(),
       rsx: this.rsx,
       day: this.day,
-      notes: dataTypes.name.convertBusinessToModel(this.notes),
+      notes: dataTypes.label.convertBusinessToModel(this.notes),
       route: this.route.map(l => l.extractModel())
     };
     return override?.(dayFlightRequirementModel) ?? dayFlightRequirementModel;

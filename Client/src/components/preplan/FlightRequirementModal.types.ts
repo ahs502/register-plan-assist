@@ -71,7 +71,7 @@ class TabViewStateValidation extends Validation<
   constructor({ notes, allowedAircraftIdentities, aircraftRegister, legs }: TabViewState, aircraftRegisters: PreplanAircraftRegisters) {
     super(
       validator => {
-        validator.if(!!notes).check('NOTES_FORMAT_IS_VALID', () => dataTypes.name.checkView(notes));
+        validator.if(!!notes).check('NOTES_FORMAT_IS_VALID', () => dataTypes.label.checkView(notes));
         validator.check('ALLOWED_AIRCRAFT_IDENTITIES_EXISTS', allowedAircraftIdentities.length > 0);
         validator
           .if(!!aircraftRegister)

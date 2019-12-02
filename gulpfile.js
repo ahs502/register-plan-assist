@@ -18,9 +18,17 @@ gulp.task(
     }
   })
 );
-
-gulp.task('dist', gulp.series(() => gulp.src('Server/dist/**').pipe(gulp.dest('dist')), () => gulp.src('Client/build/**').pipe(gulp.dest('dist/public'))));
-gulp.task('build', gulp.series('clean', 'build-server', 'build-client', 'dist'));
+gulp.task(
+  'build',
+  gulp.series(
+    'clean',
+    'build-server',
+    'build-client',
+    () => gulp.src('Server/dist/**').pipe(gulp.dest('dist')),
+    () => gulp.src('Client/build/**').pipe(gulp.dest('dist/public')),
+    () => gulp.src('Dockerfile').pipe(gulp.dest('dist'))
+  )
+);
 
 gulp.task(
   'dev-server',

@@ -147,9 +147,11 @@ const components = {
 export interface MuiReactSelectProps<T extends {}> extends StateManagerProps<T>, SelectProps<T> {
   label?: string;
   isMulti?: boolean;
+  error?: boolean;
+  helperText?: string;
 }
 
-const MuiReactSelect = <T extends {}>({ label, isMulti, ...others }: MuiReactSelectProps<T>): ReactElement | null => {
+const MuiReactSelect = <T extends {}>({ label, isMulti, error, helperText, ...others }: MuiReactSelectProps<T>): ReactElement | null => {
   const classes = useStyles();
   const theme = useTheme() as Theme;
 
@@ -174,9 +176,15 @@ const MuiReactSelect = <T extends {}>({ label, isMulti, ...others }: MuiReactSel
       className={classes.root}
       classes={classes}
       styles={selectStyles}
-      TextFieldProps={
-        isMulti ? { label, InputLabelProps: { shrink: true, htmlFor: 'react-select-multiple' } } : { label, InputLabelProps: { shrink: true, htmlFor: 'react-select-single' } }
-      }
+      TextFieldProps={{
+        label,
+        error,
+        helperText,
+        InputLabelProps: {
+          shrink: true,
+          htmlFor: isMulti ? 'react-select-multiple' : 'react-select-single'
+        }
+      }}
       components={components}
       isMulti={isMulti}
       {...others}

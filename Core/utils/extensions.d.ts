@@ -138,10 +138,10 @@ declare interface DateConstructor {
 
   /**
    * Returns the parsed date object from the given date string as an UTC date.
-   * Returns `null` for empty input.
+   * Returns `Date.invalidDate` for empty input.
    * @param date The string formatted date.
    */
-  parseUtc(date?: string): Date | null;
+  parseUtc(date: string): Date;
 
   /**
    * Returns the JSON formatted date string or
@@ -216,6 +216,12 @@ declare interface Date {
    * Returns the time part of this and makes sure its date is 1970/01/01.
    */
   getTimePart(): Date;
+
+  /**
+   * Returns true iff the two dates are pointing to the same moment in history.
+   * @param date The other date comparison partner.
+   */
+  equals(date: Date | string | number): boolean;
 
   /**
    * Returns a clone of this.

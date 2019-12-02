@@ -13,13 +13,18 @@ export default class Daytime {
   constructor(value: any, baseDate?: Date) {
     if (typeof value === 'number' && !isNaN(value) /* && value >= 0 */) {
       this.minutes = value;
-    } else if (typeof value === 'string' && /^\d+:\d+$/.test(value)) {
+    } else if (typeof value === 'string' && /^-?\d+:\d+$/.test(value)) {
       const stringValue: string = value,
-        separatorIndex = stringValue.indexOf(':');
-      this.minutes = Number(stringValue.slice(0, separatorIndex)) * 60 + Number(stringValue.slice(separatorIndex + 1));
-    } else if (typeof value === 'string' && /^\d{3,}$/.test(value)) {
+        separatorIndex = stringValue.indexOf(':'),
+        negative = stringValue.startsWith('-');
+      this.minutes = (negative ? -1 : +1) * (Number(stringValue.slice(negative ? 1 : 0, separatorIndex)) * 60 + Number(stringValue.slice(separatorIndex + 1)));
+    } else if (typeof value === 'string' && /^-?\d{3,}$/.test(value)) {
+      const stringValue: string = value,
+        negative = stringValue.startsWith('-');
+      this.minutes = (negative ? -1 : +1) * (Number(stringValue.slice(negative ? 1 : 0, -2)) * 60 + Number(stringValue.slice(-2)));
+    } else if (typeof value === 'string' && /^-?\d{1,2}$/.test(value)) {
       const stringValue: string = value;
-      this.minutes = Number(stringValue.slice(0, -2)) * 60 + Number(stringValue.slice(-2));
+      this.minutes = Number(stringValue) * 60;
     } else if (value && value.constructor === Date && (value as Date).isValid()) {
       if (baseDate) {
         const date = new Date(baseDate);
@@ -58,18 +63,23 @@ export default class Daytime {
    */
   toString(format: 'HH:mm' | 'H:mm' | 'HHmm' | 'Hmm' = 'HH:mm', clip?: boolean): string {
     this.checkValidity();
-    const totalMinutes = clip ? this.minutes % (24 * 60) : this.minutes;
-    const minutes = totalMinutes % 60,
-      hours = (totalMinutes - minutes) / 60;
-    return format === 'HH:mm'
-      ? String(hours).padStart(2, '0') + ':' + String(minutes).padStart(2, '0')
-      : format === 'H:mm'
-      ? String(hours) + ':' + String(minutes).padStart(2, '0')
-      : format === 'HHmm'
-      ? String(hours).padStart(2, '0') + String(minutes).padStart(2, '0')
-      : format === 'Hmm'
-      ? String(hours) + String(minutes).padStart(2, '0')
-      : '';
+    const negative = this.minutes < 0;
+    const absoluteMinutes = Math.abs(this.minutes);
+    const totalMinutes = clip ? absoluteMinutes % (24 * 60) : absoluteMinutes;
+    const minutes = totalMinutes % 60;
+    const hours = (totalMinutes - minutes) / 60;
+    return (
+      (negative ? '-' : '') +
+      (format === 'HH:mm'
+        ? String(hours).padStart(2, '0') + ':' + String(minutes).padStart(2, '0')
+        : format === 'H:mm'
+        ? String(hours) + ':' + String(minutes).padStart(2, '0')
+        : format === 'HHmm'
+        ? String(hours).padStart(2, '0') + String(minutes).padStart(2, '0')
+        : format === 'Hmm'
+        ? String(hours) + String(minutes).padStart(2, '0')
+        : '')
+    );
   }
 
   /**

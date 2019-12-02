@@ -2,8 +2,7 @@ import AircraftIdentityType from '@core/types/AircraftIdentityType';
 import MasterData, { MasterDataItem, AircraftIdentity } from '@core/master-data';
 import PreplanAircraftRegister, { PreplanAircraftRegisters } from './PreplanAircraftRegister';
 import AircraftIdentityModel from '@core/models/AircraftIdentityModel';
-import ModelConvertable, { getOverrided } from 'src/business/ModelConvertable';
-import DeepWritablePartial from '@core/types/DeepWritablePartial';
+import ModelConvertable from 'src/business/ModelConvertable';
 
 /**
  * A representive object identifying one or more aircraft registers
@@ -27,6 +26,14 @@ export default abstract class PreplanAircraftIdentity implements ModelConvertabl
     this.aircraftRegisters = new Set(aircraftRegisters);
   }
 
+  extractModel(override?: (aircraftIdentityModel: AircraftIdentityModel) => AircraftIdentityModel): AircraftIdentityModel {
+    const aircraftIdentityModel: AircraftIdentityModel = {
+      type: this.type,
+      entityId: this.entity.id
+    };
+    return override?.(aircraftIdentityModel) ?? aircraftIdentityModel;
+  }
+
   static parse(raw: AircraftIdentityModel | AircraftIdentity, aircraftRegisters: PreplanAircraftRegisters): PreplanAircraftIdentity {
     switch (raw.type) {
       case 'REGISTER':
@@ -43,13 +50,6 @@ export default abstract class PreplanAircraftIdentity implements ModelConvertabl
         throw 'Invalid aircraft identity type.';
     }
   }
-
-  extractModel(overrides?: DeepWritablePartial<AircraftIdentityModel>): AircraftIdentityModel {
-    return {
-      entityId: getOverrided(this.entity.id, overrides, 'entityId'),
-      type: getOverrided(this.type, overrides, 'type')
-    };
-  }
 }
 
 export class PreplanAircraftRegisterIdentity extends PreplanAircraftIdentity {
@@ -62,27 +62,43 @@ export class PreplanAircraftRegisterIdentity extends PreplanAircraftIdentity {
 export class PreplanAircraftTypeIdentity extends PreplanAircraftIdentity {
   constructor(raw: AircraftIdentityModel | AircraftIdentity, aircraftRegisters: PreplanAircraftRegisters) {
     const entityId = raw instanceof AircraftIdentity ? raw.entity.id : raw.entityId;
-    super(raw, MasterData.all.aircraftTypes.id[entityId], aircraftRegisters.items.filter(r => r.aircraftType.id === entityId));
+    super(
+      raw,
+      MasterData.all.aircraftTypes.id[entityId],
+      aircraftRegisters.items.filter(r => r.aircraftType.id === entityId)
+    );
   }
 }
 
 export class PreplanAircraftTypeExistingIdentity extends PreplanAircraftIdentity {
   constructor(raw: AircraftIdentityModel | AircraftIdentity, aircraftRegisters: PreplanAircraftRegisters) {
     const entityId = raw instanceof AircraftIdentity ? raw.entity.id : raw.entityId;
-    super(raw, MasterData.all.aircraftTypes.id[entityId], aircraftRegisters.items.filter(r => r.aircraftType.id === entityId && !r.dummy));
+    super(
+      raw,
+      MasterData.all.aircraftTypes.id[entityId],
+      aircraftRegisters.items.filter(r => r.aircraftType.id === entityId && !r.dummy)
+    );
   }
 }
 
 export class PreplanAircraftTypeDummyIdentity extends PreplanAircraftIdentity {
   constructor(raw: AircraftIdentityModel | AircraftIdentity, aircraftRegisters: PreplanAircraftRegisters) {
     const entityId = raw instanceof AircraftIdentity ? raw.entity.id : raw.entityId;
-    super(raw, MasterData.all.aircraftTypes.id[entityId], aircraftRegisters.items.filter(r => r.aircraftType.id === entityId && r.dummy));
+    super(
+      raw,
+      MasterData.all.aircraftTypes.id[entityId],
+      aircraftRegisters.items.filter(r => r.aircraftType.id === entityId && r.dummy)
+    );
   }
 }
 
 export class PreplanAircraftRegisterGroupIdentity extends PreplanAircraftIdentity {
   constructor(raw: AircraftIdentityModel | AircraftIdentity, aircraftRegisters: PreplanAircraftRegisters) {
     const entityId = raw instanceof AircraftIdentity ? raw.entity.id : raw.entityId;
-    super(raw, MasterData.all.aircraftRegisterGroups.id[entityId], MasterData.all.aircraftRegisterGroups.id[entityId].aircraftRegisters.map(r => aircraftRegisters.id[r.id]));
+    super(
+      raw,
+      MasterData.all.aircraftRegisterGroups.id[entityId],
+      MasterData.all.aircraftRegisterGroups.id[entityId].aircraftRegisters.map(r => aircraftRegisters.id[r.id])
+    );
   }
 }

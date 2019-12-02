@@ -1,4 +1,3 @@
-import ModelConvertable, { getOverrided, getOverridedArray } from 'src/business/ModelConvertable';
 import FlightModel from '@core/models/flight/FlightModel';
 import DayFlightRequirement from 'src/business/flight-requirement/DayFlightRequirement';
 import FlightRequirement from 'src/business/flight-requirement/FlightRequirement';
@@ -7,9 +6,10 @@ import Daytime from '@core/types/Daytime';
 import PreplanAircraftRegister, { PreplanAircraftRegisters } from 'src/business/preplan/PreplanAircraftRegister';
 import { Stc } from '@core/master-data';
 import Rsx from '@core/types/Rsx';
-import DeepWritablePartial from '@core/types/DeepWritablePartial';
 import Weekday from '@core/types/Weekday';
 import Id from '@core/types/Id';
+import ModelConvertable from 'src/business/ModelConvertable';
+import { dataTypes } from 'src/utils/DataType';
 
 export default class Flight implements ModelConvertable<FlightModel> {
   // Original:
@@ -30,6 +30,7 @@ export default class Flight implements ModelConvertable<FlightModel> {
   // References:
   readonly flightRequirement: FlightRequirement;
   readonly dayFlightRequirement: DayFlightRequirement;
+  readonly aircraftRegisters: PreplanAircraftRegisters;
   readonly legs: readonly FlightLeg[];
 
   // Computational:
@@ -62,6 +63,7 @@ export default class Flight implements ModelConvertable<FlightModel> {
 
     this.flightRequirement = dayFlightRequirement.flightRequirement;
     this.dayFlightRequirement = dayFlightRequirement;
+    this.aircraftRegisters = aircraftRegisters;
 
     let dayOffset = 0;
     let previousSta = Number.NEGATIVE_INFINITY;
@@ -73,11 +75,11 @@ export default class Flight implements ModelConvertable<FlightModel> {
         std += 24 * 60;
       }
       legs.push(new FlightLeg(leg, dayOffset, this, dayFlightRequirement.route[index]));
-      previousSta = std + dayFlightRequirement.route[index].blockTime;
+      previousSta = std + dayFlightRequirement.route[index].blockTime.minutes;
     });
 
-    this.start = this.legs[0].std;
-    this.end = this.legs[this.legs.length - 1].sta;
+    this.start = this.legs[0].actualStd;
+    this.end = this.legs[this.legs.length - 1].actualSta;
     this.weekStart = this.day * 24 * 60 + this.start.minutes;
     this.weekEnd = this.day * 24 * 60 + this.end.minutes;
     this.sections = this.legs.map(l => ({
@@ -88,14 +90,15 @@ export default class Flight implements ModelConvertable<FlightModel> {
     this.icons = [];
   }
 
-  extractModel(overrides?: DeepWritablePartial<FlightModel>): FlightModel {
-    return {
-      id: getOverrided(this.id, overrides, 'id'),
-      flightRequirementId: getOverrided(this.flightRequirement.id, overrides, 'flightRequirementId'),
-      day: getOverrided(this.day, overrides, 'day'),
-      aircraftRegisterId: getOverrided(this.aircraftRegister === undefined ? undefined : this.aircraftRegister.id, overrides, 'aircraftRegisterId'),
-      legs: getOverridedArray(this.legs, overrides, 'legs')
+  extractModel(override?: (flightModel: FlightModel) => FlightModel): FlightModel {
+    const flightModel: FlightModel = {
+      id: this.id,
+      flightRequirementId: this.flightRequirement.id,
+      day: this.day,
+      aircraftRegisterId: dataTypes.preplanAircraftRegister(this.aircraftRegisters).convertBusinessToModelOptional(this.aircraftRegister),
+      legs: this.legs.map(l => l.extractModel())
     };
+    return override?.(flightModel) ?? flightModel;
   }
 
   startDateTime(startDate: Date): Date {

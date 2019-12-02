@@ -3,7 +3,6 @@ import Id from '@core/types/Id';
 import PreplanHeaderModel from '@core/models/preplan/PreplanHeaderModel';
 import NewPreplanModel from '@core/models/preplan/NewPreplanModel';
 import PreplanModel from '@core/models/preplan/PreplanModel';
-import NewFlightRequirementModel from '@core/models/flight-requirement/NewFlightRequirementModel';
 import DummyAircraftRegisterModel from '@core/models/preplan/DummyAircraftRegisterModel';
 import AircraftRegisterOptionsModel from '@core/models/preplan/AircraftRegisterOptionsModel';
 

@@ -6,7 +6,7 @@ import Weekday from '@core/types/Weekday';
 import TablePaginationActions from 'src/components/TablePaginationActions';
 import FlightLeg from 'src/business/flight/FlightLeg';
 import { PreplanContext } from 'src/pages/preplan';
-import SideBarContainer from 'src/components/preplan/resource-scheduler/SideBarContainer';
+import SideBarContainer from 'src/components/preplan/timeline/SideBarContainer';
 
 const useStyles = makeStyles((theme: Theme) => ({
   searchWrapper: {
@@ -51,9 +51,13 @@ const SearchFlightsSideBar: FC<SearchFlightsSideBarProps> = ({ initialSearch, on
               !query.length
                 ? preplan.flightLegs
                 : preplan.flightLegs.filter(l => {
-                    const values = [l.label, l.arrivalAirport.name, l.departureAirport.name, l.flightNumber.standardFormat, l.aircraftRegister ? l.aircraftRegister.name : ''].map(
-                      s => s.toLowerCase()
-                    );
+                    const values = [
+                      l.label,
+                      l.arrivalAirport.name,
+                      l.departureAirport.name,
+                      l.flightNumber.standardFormat,
+                      l.aircraftRegister ? l.aircraftRegister.name : ''
+                    ].map(s => s.toLowerCase());
                     for (let j = 0; j < query.length; ++j) {
                       if (values.some(s => s.includes(query[j]))) return true;
                     }
@@ -77,7 +81,7 @@ const SearchFlightsSideBar: FC<SearchFlightsSideBarProps> = ({ initialSearch, on
           {filteredFlightLegs.slice(pageNumber * rowPerPage, (pageNumber + 1) * rowPerPage).map(f => {
             return (
               <TableRow key={f.derivedId} onClick={() => onClick(f)} hover={true}>
-                <TableCell classes={{ root: classes.tableCell }}> {f.flightNumber}</TableCell>
+                <TableCell classes={{ root: classes.tableCell }}> {f.flightNumber.standardFormat}</TableCell>
                 <TableCell classes={{ root: classes.tableCell }}>
                   {f.arrivalAirport.name} &ndash; {f.departureAirport.name}
                 </TableCell>

@@ -9,13 +9,13 @@ import Rsx from '@core/types/Rsx';
 import Flight from 'src/business/flight/Flight';
 import Objection, { ObjectionType } from 'src/business/constraints/Objection';
 import FlightLegModel from '@core/models/flight/FlightLegModel';
-import DeepWritablePartial from '@core/types/DeepWritablePartial';
-import ModelConvertable, { getOverrided } from 'src/business/ModelConvertable';
 import Weekday from '@core/types/Weekday';
 import Objectionable from 'src/business/constraints/Objectionable';
 import Checker from 'src/business/constraints/Checker';
 import FlightNumber from '@core/types/FlightNumber';
 import Id from '@core/types/Id';
+import ModelConvertable from 'src/business/ModelConvertable';
+import { dataTypes } from 'src/utils/DataType';
 
 export default class FlightLeg implements ModelConvertable<FlightLegModel>, Objectionable {
   // Original:
@@ -34,7 +34,7 @@ export default class FlightLeg implements ModelConvertable<FlightLegModel>, Obje
   readonly flightNumber: FlightNumber;
   readonly departureAirport: Airport;
   readonly arrivalAirport: Airport;
-  readonly blockTime: number;
+  readonly blockTime: Daytime;
   readonly originPermission: boolean;
   readonly destinationPermission: boolean;
 
@@ -60,7 +60,7 @@ export default class FlightLeg implements ModelConvertable<FlightLegModel>, Obje
   readonly objectionStatusDependencies: readonly Objectionable[];
 
   constructor(raw: FlightLegModel, dayOffset: number, flight: Flight, dayFlightRequirementLeg: DayFlightRequirementLeg) {
-    this.std = new Daytime(raw.std);
+    this.std = dataTypes.daytime.convertModelToBusiness(raw.std);
 
     this.label = flight.label;
     this.category = flight.category;
@@ -85,7 +85,7 @@ export default class FlightLeg implements ModelConvertable<FlightLegModel>, Obje
     this.dayFlightRequirementLeg = dayFlightRequirementLeg;
 
     this.derivedId = `${flight.id}#${this.index}`;
-    this.sta = new Daytime(this.std.minutes + this.blockTime);
+    this.sta = new Daytime(this.std.minutes + this.blockTime.minutes);
     this.transit = this.index > 0; //TODO: Ask Saleh.
     this.international = this.departureAirport.international || this.arrivalAirport.international;
     this.dayOffset = dayOffset;
@@ -101,10 +101,11 @@ export default class FlightLeg implements ModelConvertable<FlightLegModel>, Obje
     this.objectionStatusDependencies = [this.flightRequirement, this.dayFlightRequirement];
   }
 
-  extractModel(overrides?: DeepWritablePartial<FlightLegModel>): FlightLegModel {
-    return {
-      std: getOverrided(this.std.minutes, overrides, 'std')
+  extractModel(override?: (flightLegModel: FlightLegModel) => FlightLegModel): FlightLegModel {
+    const flightLegModel: FlightLegModel = {
+      std: dataTypes.daytime.convertBusinessToModel(this.std)
     };
+    return override?.(flightLegModel) ?? flightLegModel;
   }
 
   get marker(): string {

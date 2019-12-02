@@ -167,6 +167,8 @@ declare module 'vis-timeline' {
     tooltip?: {
       followMouse?: boolean;
       overflowMethod?: 'cap' | 'flip';
+      delay?: number;
+      template?: (itemData: DataItem, editedItemData: DataItem) => string;
     };
     tooltipOnItemUpdateTime?:
       | boolean

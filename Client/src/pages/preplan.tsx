@@ -1,57 +1,59 @@
 import React, { FC, Fragment, useState, useEffect, useRef, createContext } from 'react';
 import { Theme } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
-import { Switch, Redirect, Route } from 'react-router-dom';
-import useRouter from 'src/utils/useRouter';
+import { Switch, Redirect, Route, useRouteMatch } from 'react-router-dom';
 import NavBar from 'src/components/NavBar';
-import ResourceSchedulerPage from 'src/pages/preplan/resource-scheduler';
+import TimelinePage from 'src/pages/preplan/timeline';
 import FlightRequirementListPage from 'src/pages/preplan/flight-requirement-list';
 import ReportsPage from 'src/pages/preplan/reports';
 import PreplanService from 'src/services/PreplanService';
 import Preplan from 'src/business/preplan/Preplan';
-import ObjectionModal, { ObjectionModalModel } from 'src/components/preplan/ObjectionModal';
-import FlightRequirementModal, { FlightRequirementModalModel } from 'src/components/preplan/FlightRequirementModal';
-import FlightRequirementService from 'src/services/FlightRequirementService';
-import RemoveFlightRequirementModal, { RemoveFlightRequirementModalModel } from 'src/components/preplan/RemoveFlightRequirementModal';
+import ObjectionModal, { useObjectionModalState } from 'src/components/preplan/ObjectionModal';
+import FlightRequirementModal, { useFlightRequirementModalState } from 'src/components/preplan/FlightRequirementModal';
+import RemoveFlightRequirementModal, { useRemoveFlightRequirementModalState } from 'src/components/preplan/RemoveFlightRequirementModal';
+import FlightModal, { useFlightModalState } from 'src/components/preplan/FlightModal';
+import PreplanModel from '@core/models/preplan/PreplanModel';
+import { useThrowApplicationError } from 'src/pages/error';
+import MasterData from '@core/master-data';
 
 const useStyles = makeStyles((theme: Theme) => ({}));
 
 export const NavBarToolsContainerContext = createContext<HTMLDivElement | null>(null);
 export const PreplanContext = createContext<Preplan>(null as any);
+export const ReloadPreplanContext = createContext<(newPreplanModel?: PreplanModel) => Promise<void>>(null as any);
 
 const PreplanPage: FC = () => {
   const [preplan, setPreplan] = useState<Preplan | null>(null);
-  const [objectionModalModel, setObjectionModalModel] = useState<ObjectionModalModel>({});
-  const [flightRequirementModalModel, setFlightRequirementModalModel] = useState<FlightRequirementModalModel>({});
-  const [removeFlightRequirementModalModel, setRemoveFlightRequirementModalModel] = useState<RemoveFlightRequirementModalModel>({});
+
+  const [objectionModalState, openObjectionModal, closeObjectionModal] = useObjectionModalState();
+  const [flightRequirementModalState, openFlightRequirementModal, closeFlightRequirementModal] = useFlightRequirementModalState();
+  const [removeFlightRequirementModalState, openRemoveFlightRequirementModal, closeRemoveFlightRequirementModal] = useRemoveFlightRequirementModalState();
+  const [flightModalState, openFlightModal, closeFlightModal] = useFlightModalState();
 
   const navBarToolsRef = useRef<HTMLDivElement>(null);
 
-  const { match } = useRouter<{ id: string }>();
+  const routeMatch = useRouteMatch<{ id: string }>()!;
+  const throwApplicationError = useThrowApplicationError();
   const classes = useStyles();
 
   useEffect(() => {
-    PreplanService.get(match.params.id).then(
-      preplanModel => setPreplan(new Preplan(preplanModel)),
-      reason => {
-        console.error(reason);
-        // history.push('/preplan-list');
-      }
-    );
-  }, [match.params.id]);
+    PreplanService.get(routeMatch.params.id).then(preplanModel => setPreplan(new Preplan(preplanModel)), throwApplicationError.withTitle('Unable to load the preplan.'));
+  }, [routeMatch.params.id]);
 
-  const resourceSchedulerPageSelected = window.location.href.startsWith(`${window.location.origin}/#${match.url}/resource-scheduler`);
-  const flightRequirementListPageSelected = window.location.href.startsWith(`${window.location.origin}/#${match.url}/flight-requirement-list`);
-  const reportsPageSelected = window.location.href.startsWith(`${window.location.origin}/#${match.url}/reports`);
+  if (!MasterData.initialized) return <Fragment />;
+
+  const timelinePageSelected = window.location.href.startsWith(`${window.location.origin}/#${routeMatch.url}/timeline`);
+  const flightRequirementListPageSelected = window.location.href.startsWith(`${window.location.origin}/#${routeMatch.url}/flight-requirement-list`);
+  const reportsPageSelected = window.location.href.startsWith(`${window.location.origin}/#${routeMatch.url}/reports`);
   const reportsProposalPageSelected = reportsPageSelected && window.location.hash.endsWith('/proposal');
   const reportsConnectionsPageSelected = reportsPageSelected && window.location.hash.endsWith('/connections');
 
   return (
     <Fragment>
       <NavBar
-        backLink={resourceSchedulerPageSelected ? '/preplan-list' : reportsProposalPageSelected || reportsConnectionsPageSelected ? `${match.url}/reports` : match.url}
+        backLink={timelinePageSelected ? '/preplan-list' : reportsProposalPageSelected || reportsConnectionsPageSelected ? `${routeMatch.url}/reports` : routeMatch.url}
         backTitle={
-          resourceSchedulerPageSelected
+          timelinePageSelected
             ? 'Back to Preplan List'
             : reportsProposalPageSelected || reportsConnectionsPageSelected
             ? `Back to Preplan ${preplan && preplan.name} Reports`
@@ -64,23 +66,23 @@ const PreplanPage: FC = () => {
           },
           preplan && {
             title: preplan.name,
-            link: match.url
+            link: routeMatch.url
           },
           flightRequirementListPageSelected && {
-            title: 'Flight Requirements',
-            link: `${match.url}/flight-requirement-list`
+            title: 'Flights',
+            link: `${routeMatch.url}/flight-requirement-list`
           },
           reportsPageSelected && {
             title: 'Reports',
-            link: `${match.url}/reports`
+            link: `${routeMatch.url}/reports`
           },
           reportsProposalPageSelected && {
-            title: 'Proposal Report',
-            link: `${match.url}/reports/proposal`
+            title: 'Proposal',
+            link: `${routeMatch.url}/reports/proposal`
           },
           reportsConnectionsPageSelected && {
-            title: 'Connections Report',
-            link: `${match.url}/reports/connections`
+            title: 'Connections',
+            link: `${routeMatch.url}/reports/connections`
           }
         ]}
       >
@@ -90,87 +92,59 @@ const PreplanPage: FC = () => {
       {preplan && (
         <NavBarToolsContainerContext.Provider value={navBarToolsRef.current}>
           <PreplanContext.Provider value={preplan}>
-            <Switch>
-              <Redirect exact from={match.url} to={match.url + '/resource-scheduler'} />
-              <Route
-                exact
-                path={match.path + '/resource-scheduler'}
-                render={() => (
-                  <ResourceSchedulerPage
-                    reloadPreplan={newPreplanModel => {
-                      if (newPreplanModel) return setPreplan(new Preplan(newPreplanModel, preplan));
-                      PreplanService.get(match.params.id).then(
-                        preplanModel => setPreplan(new Preplan(preplanModel, preplan)),
-                        reason => {
-                          console.error(reason);
-                          // history.push('/preplan-list');
-                        }
-                      );
-                    }}
-                    onObjectionTargetClick={target => setObjectionModalModel({ open: true, target })}
-                    onEditFlightRequirement={flightRequirement => setFlightRequirementModalModel({ open: true, sourceFlightRequirement: flightRequirement })}
-                    onEditDayFlightRequirement={({ flightRequirement, day }) => setFlightRequirementModalModel({ open: true, sourceFlightRequirement: flightRequirement, day })}
-                  />
-                )}
+            <ReloadPreplanContext.Provider
+              value={async newPreplanModel => {
+                try {
+                  const preplanModel = newPreplanModel || (await PreplanService.get(routeMatch.params.id));
+                  const newPreplan = new Preplan(preplanModel, preplan);
+                  setPreplan(newPreplan);
+                } catch (reason) {
+                  throwApplicationError.withTitle('Unable to load the preplan.')(reason);
+                }
+              }}
+            >
+              <Switch>
+                <Redirect exact from={routeMatch.url} to={routeMatch.url + '/timeline'} />
+                <Route
+                  exact
+                  path={routeMatch.path + '/timeline'}
+                  render={() => (
+                    <TimelinePage
+                      onObjectionTargetClick={target => openObjectionModal({ target })}
+                      onEditFlightRequirement={flightRequirement => openFlightRequirementModal({ flightRequirement })}
+                      onEditDayFlightRequirement={({ flightRequirement, day }) => openFlightRequirementModal({ flightRequirement, day })}
+                      onEditFlight={flight => openFlightModal({ flight })}
+                    />
+                  )}
+                />
+                <Route
+                  exact
+                  path={routeMatch.path + '/flight-requirement-list'}
+                  render={() => (
+                    <FlightRequirementListPage
+                      onAddFlightRequirement={() => openFlightRequirementModal({})}
+                      onRemoveFlightRequirement={flightRequirement => openRemoveFlightRequirementModal({ flightRequirement })}
+                      onEditFlightRequirement={flightRequirement => openFlightRequirementModal({ flightRequirement })}
+                    />
+                  )}
+                />
+                <Route exact path={routeMatch.path + '/reports/:report?'} component={ReportsPage} />
+                <Redirect to={routeMatch.url} />
+              </Switch>
+
+              {/* Modals */}
+              <ObjectionModal state={objectionModalState} onClose={closeObjectionModal} />
+              <FlightRequirementModal state={flightRequirementModalState} onClose={closeFlightRequirementModal} />
+              <RemoveFlightRequirementModal state={removeFlightRequirementModalState} onClose={closeRemoveFlightRequirementModal} />
+              <FlightModal
+                state={flightModalState}
+                onClose={closeFlightModal}
+                onOpenFlightRequirementModal={(flightRequirement, day) => openFlightRequirementModal({ flightRequirement, day })}
               />
-              <Route
-                exact
-                path={match.path + '/flight-requirement-list'}
-                render={() => (
-                  <FlightRequirementListPage
-                    onAddFlightRequirement={() => setFlightRequirementModalModel({ open: true })}
-                    onRemoveFlightRequirement={flightRequirement => setRemoveFlightRequirementModalModel({ open: true, flightRequirement })}
-                    onEditFlightRequirement={flightRequirement => setFlightRequirementModalModel({ open: true, sourceFlightRequirement: flightRequirement })}
-                  />
-                )}
-              />
-              <Route exact path={match.path + '/reports/:report?'} component={() => <ReportsPage />} />
-              <Redirect to={match.url} />
-            </Switch>
+            </ReloadPreplanContext.Provider>
           </PreplanContext.Provider>
         </NavBarToolsContainerContext.Provider>
       )}
-
-      <ObjectionModal model={objectionModalModel} onClose={() => setObjectionModalModel({ ...objectionModalModel, open: false })} />
-
-      <FlightRequirementModal
-        model={flightRequirementModalModel}
-        onClose={() => setFlightRequirementModalModel({ ...flightRequirementModalModel, open: false })}
-        onApply={async (newFlightRequirementModel, flightModels, newFlightModels) => {
-          if (!preplan) return;
-          setFlightRequirementModalModel({ ...flightRequirementModalModel, loading: true, errorMessage: undefined });
-          try {
-            const newPreplanModel = flightRequirementModalModel.sourceFlightRequirement
-              ? await FlightRequirementService.edit(
-                  preplan.id,
-                  { id: flightRequirementModalModel.sourceFlightRequirement.id, ...newFlightRequirementModel },
-                  flightModels,
-                  newFlightModels
-                )
-              : await FlightRequirementService.add(preplan.id, newFlightRequirementModel, newFlightModels);
-            setPreplan(new Preplan(newPreplanModel, preplan));
-            setFlightRequirementModalModel(flightRequirementModalModel => ({ ...flightRequirementModalModel, loading: false, open: false }));
-          } catch (reason) {
-            setFlightRequirementModalModel(flightRequirementModalModel => ({ ...flightRequirementModalModel, loading: false, errorMessage: String(reason) }));
-          }
-        }}
-      />
-
-      <RemoveFlightRequirementModal
-        model={removeFlightRequirementModalModel}
-        onClose={() => setRemoveFlightRequirementModalModel({ ...removeFlightRequirementModalModel, open: false })}
-        onRemove={async () => {
-          if (!preplan) return;
-          setRemoveFlightRequirementModalModel({ ...removeFlightRequirementModalModel, loading: true, errorMessage: undefined });
-          try {
-            const newPreplanModel = await FlightRequirementService.remove(preplan.id, removeFlightRequirementModalModel.flightRequirement!.id);
-            setPreplan(new Preplan(newPreplanModel, preplan));
-            setRemoveFlightRequirementModalModel(removeFlightRequirementModalModel => ({ ...removeFlightRequirementModalModel, loading: false, open: false }));
-          } catch (reason) {
-            setRemoveFlightRequirementModalModel(removeFlightRequirementModalModel => ({ ...removeFlightRequirementModalModel, loading: false, errorMessage: String(reason) }));
-          }
-        }}
-      />
     </Fragment>
   );
 };

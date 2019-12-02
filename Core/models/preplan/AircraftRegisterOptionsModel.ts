@@ -14,7 +14,7 @@ export default interface AircraftRegisterOptionsModel {
 export class AircraftRegisterOptionsModelValidation extends Validation {
   constructor(data: AircraftRegisterOptionsModel, dummyAircraftRegisterIds: readonly Id[]) {
     super(validator =>
-      validator.object(data).then(({ options }) =>
+      validator.object(data).then(({ options }) => {
         validator
           .array(options)
           .must(options => options.map(o => o.aircraftRegisterId).distinct().length === options.length)
@@ -29,9 +29,9 @@ export class AircraftRegisterOptionsModelValidation extends Validation {
             validator
               .if(baseAirportId !== undefined)
               .must(() => typeof baseAirportId === 'string')
-              .must(() => baseAirportId in MasterData.all.airports.id);
-          })
-      )
+              .must(() => baseAirportId! in MasterData.all.airports.id);
+          });
+      })
     );
   }
 }

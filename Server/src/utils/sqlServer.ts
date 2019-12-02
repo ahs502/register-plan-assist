@@ -142,7 +142,17 @@ interface DbAccessQueryParams {
   nVarCharParam(name: string, value: string | null, length: number | 'max'): Parameter;
   dateTimeParam(name: string, value: Date | string | null, scale?: number): Parameter;
   xmlParam(name: string, value: Xml | null): Parameter;
+
   tableParam(name: string, columns: readonly TableColumn[], rows: readonly any[][]): Parameter;
+
+  column(name: string, type: TediousType, options?: ParameterOptions): TableColumn;
+  bitColumn(name: string): TableColumn;
+  intColumn(name: string): TableColumn;
+  bigIntColumn(name: string): TableColumn;
+  varCharColumn(name: string, length: number | 'max'): TableColumn;
+  nVarCharColumn(name: string, length: number | 'max'): TableColumn;
+  dateTimeColumn(name: string, scale?: number): TableColumn;
+  xmlColumn(name: string): TableColumn;
 }
 export interface DbAccess {
   types: TediousTypes;
@@ -163,7 +173,18 @@ function attachHelperFunctions(f: any): any {
   f.nVarCharParam = nVarCharParam;
   f.dateTimeParam = dateTimeParam;
   f.xmlParam = xmlParam;
+
   f.tableParam = tableParam;
+
+  f.column = column;
+  f.bitColumn = bitColumn;
+  f.intColumn = intColumn;
+  f.bigIntColumn = bigIntColumn;
+  f.varCharColumn = varCharColumn;
+  f.nVarCharColumn = nVarCharColumn;
+  f.dateTimeColumn = dateTimeColumn;
+  f.xmlColumn = xmlColumn;
+
   return f;
 
   function param(name: string, type: TediousType, value: any, options?: ParameterOptions): Parameter {
@@ -176,7 +197,7 @@ function attachHelperFunctions(f: any): any {
     return { name, type: TYPES.Int, value };
   }
   function bigIntParam(name: string, value: bigint | string | null): Parameter {
-    return { name, type: TYPES.BigInt, value };
+    return { name, type: TYPES.VarChar, value, options: { length: 30 } }; // Do not use TYPES.BigInt, it does not work with large numbers.
   }
   function varCharParam(name: string, value: string | null, length: number | 'max'): Parameter {
     return { name, type: TYPES.VarChar, value, options: { length } };
@@ -188,10 +209,36 @@ function attachHelperFunctions(f: any): any {
     return { name, type: TYPES.VarChar, value: typeof value === 'string' ? value : value.toJSON(), options: { scale } };
   }
   function xmlParam(name: string, value: Xml | null): Parameter {
-    return { name, type: TYPES.Xml, value };
+    return { name, type: TYPES.VarBinary, options: { length: 'max' }, value: value && Buffer.from(value, 'utf-8') }; // Do not use TYPES.Xml or TYPES.NText, tedious does not accept those type for input parameters.
   }
+
   function tableParam(name: string, columns: readonly TableColumn[], rows: readonly any[][]): Parameter {
     return { name, type: TYPES.TVP, value: { columns, rows } };
+  }
+
+  function column(name: string, type: TediousType, options?: ParameterOptions): TableColumn {
+    return { name, type, ...options };
+  }
+  function bitColumn(name: string): TableColumn {
+    return { name, type: TYPES.Bit };
+  }
+  function intColumn(name: string): TableColumn {
+    return { name, type: TYPES.Int };
+  }
+  function bigIntColumn(name: string): TableColumn {
+    return { name, type: TYPES.VarChar, length: 30 }; // Do not use TYPES.BigInt, it does not work with large numbers.
+  }
+  function varCharColumn(name: string, length: number | 'max'): TableColumn {
+    return { name, type: TYPES.VarChar, length };
+  }
+  function nVarCharColumn(name: string, length: number | 'max'): TableColumn {
+    return { name, type: TYPES.NVarChar, length };
+  }
+  function dateTimeColumn(name: string, scale?: number): TableColumn {
+    return { name, type: TYPES.VarChar, scale };
+  }
+  function xmlColumn(name: string): TableColumn {
+    return { name, type: TYPES.NVarChar, length: 'max' }; // Do not use TYPES.Xml or TYPES.Text, tedious does not support them as column types of a TVP.
   }
 }
 

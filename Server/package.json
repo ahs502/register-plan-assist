@@ -17,13 +17,13 @@
   "author": "Mahan Air",
   "license": "ISC",
   "dependencies": {
-    "@ahs502/validation": "^4.0.0",
+    "@ahs502/validation": "^4.0.1",
     "colors": "^1.4.0",
     "cryptr": "^6.0.1",
     "express": "^4.17.1",
     "jsonwebtoken": "^8.5.1",
     "node-fetch": "^2.6.0",
-    "tedious": "^6.6.0",
+    "tedious": "^6.6.2",
     "xml-js": "^1.6.11"
   },
   "devDependencies": {
@@ -32,16 +32,16 @@
     "@types/express": "^4.17.2",
     "@types/gulp": "^4.0.6",
     "@types/jsonwebtoken": "^8.3.5",
-    "@types/node": "^12.12.7",
-    "@types/node-fetch": "^2.5.3",
+    "@types/node": "^12.12.14",
+    "@types/node-fetch": "^2.5.4",
     "@types/tedious": "^4.0.0",
     "cross-env": "^6.0.3",
     "del": "^5.1.0",
     "gulp": "^4.0.2",
     "gulp-modify-file": "^1.0.1",
     "gulp-typescript": "^5.0.1",
-    "nodemon": "^1.19.4",
-    "npm-check-updates": "^3.2.1",
+    "nodemon": "^2.0.1",
+    "npm-check-updates": "^3.2.2",
     "typescript": "^3.7.2"
   }
 }

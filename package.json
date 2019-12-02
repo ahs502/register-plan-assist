@@ -31,7 +31,7 @@
     "concurrently": "^5.0.0",
     "del": "^5.1.0",
     "gulp": "^4.0.2",
-    "gulp-run-command": "0.0.9",
-    "npm-check-updates": "^3.2.1"
+    "gulp-run-command": "0.0.10",
+    "npm-check-updates": "^3.2.2"
   }
 }

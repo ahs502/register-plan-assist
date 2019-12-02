@@ -93,7 +93,7 @@ const TimelinePage: FC<TimelinePageProps> = ({ onObjectionTargetClick, onEditFli
           <IconButton disabled={timelineViewState.loading} color="inherit" title="Finilize Preplan">
             <FinilizedIcon />
           </IconButton>
-          <LinkIconButton disabled={timelineViewState.loading} color="inherit" to={`/preplan/${preplan.id}/flight-requirement-list`} title="Flight Requirments">
+          <LinkIconButton disabled={timelineViewState.loading} color="inherit" to={`/preplan/${preplan.id}/flight-requirement-list`} title="Flights">
             <MahanIcon type={MahanIconType.FlightIcon} />
           </LinkIconButton>
           <LinkIconButton disabled={timelineViewState.loading} color="inherit" title="Reports" to={`/preplan/${preplan.id}/reports`}>
@@ -103,7 +103,7 @@ const TimelinePage: FC<TimelinePageProps> = ({ onObjectionTargetClick, onEditFli
             disabled={timelineViewState.loading}
             color="inherit"
             onClick={() => setSideBarState({ ...sideBarState, sideBar: 'SEARCH_FLIGHTS', open: true })}
-            title="Search Flights"
+            title="Search Flight Legs"
           >
             <SearchIcon />
           </IconButton>
@@ -169,6 +169,8 @@ const TimelinePage: FC<TimelinePageProps> = ({ onObjectionTargetClick, onEditFli
         <TimelineView
           selectedFlight={timelineViewState.selectedFlight}
           onSelectFlight={flight => setTimelineViewState({ ...timelineViewState, selectedFlight: flight })}
+          onEditFlightRequirement={onEditFlightRequirement}
+          onEditDayFlightRequirement={onEditDayFlightRequirement}
           onEditFlight={onEditFlight}
           onFlightDragAndDrop={async (flight, deltaStd, newAircraftRegister, allWeekdays) => {
             setTimelineViewState({ ...timelineViewState, loading: true });

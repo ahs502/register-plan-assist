@@ -5,6 +5,7 @@ import { Stc } from '@core/master-data';
 import Weekday from '@core/types/Weekday';
 import Validation from '@ahs502/validation';
 import { dataTypes } from 'src/utils/DataType';
+import { PreplanAircraftRegisters } from 'src/business/preplan/PreplanAircraftRegister';
 
 export interface ViewState {
   bypassValidation: boolean;
@@ -25,7 +26,7 @@ export class ViewStateValidation extends Validation<
     dayValidations: TabViewStateValidation[];
   }
 > {
-  constructor({ label, category, default: defaultTab, route, days }: ViewState) {
+  constructor({ label, category, default: defaultTab, route, days }: ViewState, aircraftRegisters: PreplanAircraftRegisters) {
     super(
       validator => {
         validator
@@ -36,11 +37,11 @@ export class ViewStateValidation extends Validation<
           .if(!!category)
           .check('CATEGORY_FORMAT_IS_VALID', () => dataTypes.name.checkView(category), 'Invalid category.')
           .check('CATEGORY_IS_LESS_THAN_100', dataTypes.name.refineView(category).length <= 100);
-        validator.put(validator.$.defaultValidation, new TabViewStateValidation(defaultTab));
+        validator.put(validator.$.defaultValidation, new TabViewStateValidation(defaultTab, aircraftRegisters));
         validator
           .array(route)
           .each((routeLeg, index, route) => validator.put(validator.$.routeValidation[index], new RouteLegViewStateValidation(routeLeg, route[index - 1], route[index + 1])));
-        validator.array(days).each((day, index) => validator.put(validator.$.dayValidations[index], new TabViewStateValidation(day)));
+        validator.array(days).each((day, index) => validator.put(validator.$.dayValidations[index], new TabViewStateValidation(day, aircraftRegisters)));
         validator.check('AT_LEAST_SELECT_ONE_DAY', () => days.some(d => d.selected), 'Select one day.');
       },
       {
@@ -58,19 +59,23 @@ export interface TabViewState {
   notes: string;
   allowedAircraftIdentities: readonly AircraftIdentityOptionViewState[];
   forbiddenAircraftIdentities: readonly AircraftIdentityOptionViewState[];
+  aircraftRegister: string;
   legs: LegViewState[];
 }
 class TabViewStateValidation extends Validation<
-  'NOTES_FORMAT_IS_VALID' | 'ALLOWED_AIRCRAFT_IDENTITIES_EXISTS',
+  'NOTES_FORMAT_IS_VALID' | 'ALLOWED_AIRCRAFT_IDENTITIES_EXISTS' | 'AIRCRAFT_REGISTER_FORMAT_IS_VALID',
   {
     legValidations: LegViewStateValidation[];
   }
 > {
-  constructor({ notes, allowedAircraftIdentities, legs }: TabViewState) {
+  constructor({ notes, allowedAircraftIdentities, aircraftRegister, legs }: TabViewState, aircraftRegisters: PreplanAircraftRegisters) {
     super(
       validator => {
         validator.if(!!notes).check('NOTES_FORMAT_IS_VALID', () => dataTypes.name.checkView(notes));
         validator.check('ALLOWED_AIRCRAFT_IDENTITIES_EXISTS', allowedAircraftIdentities.length > 0);
+        validator
+          .if(!!aircraftRegister)
+          .check('AIRCRAFT_REGISTER_FORMAT_IS_VALID', () => dataTypes.preplanAircraftRegister(aircraftRegisters).checkView(aircraftRegister), 'Invalid aircraft register.');
         validator.array(legs).each((leg, index) => validator.put(validator.$.legValidations[index], new LegViewStateValidation(leg)));
       },
       {

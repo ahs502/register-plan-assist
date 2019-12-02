@@ -1,6 +1,6 @@
 import React, { FC, useMemo, useContext, Fragment, useState } from 'react';
 import { Theme, Typography, Grid, Paper, Tabs, Tab, Checkbox, IconButton, FormControlLabel } from '@material-ui/core';
-import { Clear as ClearIcon, Add as AddIcon, WrapText as WrapTextIcon } from '@material-ui/icons';
+import { Clear as ClearIcon, Add as AddIcon, WrapText as WrapTextIcon, CheckBoxOutlineBlank as CheckBoxOutlineBlankIcon } from '@material-ui/icons';
 import { makeStyles } from '@material-ui/styles';
 import BaseModal, { BaseModalProps, useModalViewState, useModalState } from 'src/components/BaseModal';
 import FlightRequirement from 'src/business/flight-requirement/FlightRequirement';
@@ -119,6 +119,7 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
         notes: '',
         allowedAircraftIdentities: [],
         forbiddenAircraftIdentities: [],
+        aircraftRegister: '',
         legs: [
           {
             blockTime: '',
@@ -142,6 +143,7 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
         notes: '',
         allowedAircraftIdentities: [],
         forbiddenAircraftIdentities: [],
+        aircraftRegister: '',
         legs: [
           {
             blockTime: '',
@@ -153,8 +155,15 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
         ]
       }))
     },
-    () =>
-      flightRequirement && {
+    () => {
+      if (!flightRequirement) return;
+      const flights = preplan.flights.filter(f => f.flightRequirement === flightRequirement);
+      const aircraftRegisters = flights.map(f => f.aircraftRegister).distinct();
+      const defaultAircraftRegister =
+        aircraftRegisters.length !== 1 || !!aircraftRegisters[0]
+          ? ''
+          : dataTypes.preplanAircraftRegister(preplan.aircraftRegisters).convertBusinessToViewOptional(aircraftRegisters[0]);
+      return {
         bypassValidation: false,
         label: dataTypes.label.convertBusinessToView(flightRequirement.label),
         category: dataTypes.name.convertBusinessToView(flightRequirement.category),
@@ -170,6 +179,7 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
           forbiddenAircraftIdentities: flightRequirement.aircraftSelection.excludedIdentities.map(
             i => aircraftIdentityOptions.find(o => o.type === i.type && o.entityId === i.entity.id)!
           ),
+          aircraftRegister: defaultAircraftRegister,
           legs: flightRequirement.route.map<LegViewState>(l => ({
             blockTime: dataTypes.daytime.convertBusinessToView(l.blockTime),
             stdLowerBound: dataTypes.daytime.convertBusinessToView(l.stdLowerBound),
@@ -186,6 +196,7 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
         })),
         days: Weekdays.map<DayTabViewState>(d => {
           const sourceDayFlightRequirement = flightRequirement.days.find(x => x.day === d);
+          const flight = flights.find(f => f.day === d);
           return {
             selected: !!sourceDayFlightRequirement,
             rsx: sourceDayFlightRequirement ? sourceDayFlightRequirement.rsx : flightRequirement.rsx,
@@ -196,6 +207,10 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
             forbiddenAircraftIdentities: (sourceDayFlightRequirement ? sourceDayFlightRequirement.aircraftSelection : flightRequirement.aircraftSelection).excludedIdentities.map(
               i => aircraftIdentityOptions.find(o => o.type === i.type && o.entityId === i.entity.id)!
             ),
+            aircraftRegister:
+              sourceDayFlightRequirement && flight
+                ? dataTypes.preplanAircraftRegister(preplan.aircraftRegisters).convertBusinessToViewOptional(flight.aircraftRegister)
+                : defaultAircraftRegister,
             legs: sourceDayFlightRequirement
               ? sourceDayFlightRequirement.route.map<LegViewState>(l => ({
                   blockTime: dataTypes.daytime.convertBusinessToView(l.blockTime),
@@ -213,17 +228,19 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                 }))
           };
         })
-      }
+      };
+    }
   );
   const tabViewState = viewState.tabIndex === 'ALL' ? viewState.default : viewState.days[viewState.tabIndex];
   const routeLegViewState = viewState.route[viewState.legIndex];
   const legViewState = viewState.tabIndex === 'ALL' ? viewState.default.legs[viewState.legIndex] : viewState.days[viewState.tabIndex].legs[viewState.legIndex];
 
-  const validation = new ViewStateValidation(viewState);
+  const validation = new ViewStateValidation(viewState, preplan.aircraftRegisters);
   const errors = {
     label: viewState.bypassValidation ? undefined : validation.message('LABEL_*'),
     category: viewState.bypassValidation ? undefined : validation.message('CATEGORY_*'),
     allTab: viewState.bypassValidation ? false : !validation.$.defaultValidation.ok || !validation.$.routeValidation.every(v => v.ok),
+    daySelects: viewState.bypassValidation ? undefined : validation.message('AT_LEAST_SELECT_ONE_DAY'),
     dayTabs: validation.$.dayValidations.map(v => (viewState.bypassValidation ? false : !v.ok)),
     notes: viewState.bypassValidation
       ? undefined
@@ -235,6 +252,11 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
       : viewState.tabIndex === 'ALL'
       ? validation.$.defaultValidation.message('ALLOWED_AIRCRAFT_IDENTITIES_*')
       : validation.$.dayValidations[viewState.tabIndex].message('ALLOWED_AIRCRAFT_IDENTITIES_*'),
+    aircraftRegister: viewState.bypassValidation
+      ? undefined
+      : viewState.tabIndex === 'ALL'
+      ? validation.$.defaultValidation.message('AIRCRAFT_REGISTER_*')
+      : validation.$.dayValidations[viewState.tabIndex].message('AIRCRAFT_REGISTER_*'),
     legTabs:
       viewState.tabIndex === 'ALL'
         ? validation.$.defaultValidation.$.legValidations.map((v, index) => (viewState.bypassValidation ? false : !(v.ok && validation.$.routeValidation[index].ok)))
@@ -258,8 +280,7 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
       ? undefined
       : viewState.tabIndex === 'ALL'
       ? validation.$.defaultValidation.$.legValidations[viewState.legIndex].message('BLOCKTIME_*')
-      : validation.$.dayValidations[viewState.tabIndex].$.legValidations[viewState.legIndex].message('BLOCKTIME_*'),
-    atleastOneDay: viewState.bypassValidation ? undefined : validation.message('AT_LEAST_SELECT_ONE_DAY')
+      : validation.$.dayValidations[viewState.tabIndex].$.legValidations[viewState.legIndex].message('BLOCKTIME_*')
   };
 
   const classes = useStyles();
@@ -270,7 +291,7 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
       open={open}
       maxWidth="md"
       cancelable={true}
-      title={flightRequirement ? 'What are your intended changes?' : 'What is the new flight requirement?'}
+      title={flightRequirement ? 'What are your intended changes?' : 'What is the new flight?'}
       actions={[
         {
           title: 'Cancel'
@@ -345,13 +366,28 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
               .filter(d => !flights.some(f => f.day === d.day))
               .map<NewFlightModel>(d => ({
                 day: d.day,
-                aircraftRegisterId: (new PreplanAircraftSelection(d.aircraftSelection, preplan.aircraftRegisters).backupAircraftRegister || { id: undefined }).id,
+                // aircraftRegisterId: (new PreplanAircraftSelection(d.aircraftSelection, preplan.aircraftRegisters).backupAircraftRegister || { id: undefined }).id,
+                aircraftRegisterId: dataTypes.preplanAircraftRegister(preplan.aircraftRegisters).convertViewToModelOptional(viewState.days[d.day].aircraftRegister),
                 legs: d.route.map<FlightLegModel>(l => ({
                   std: l.stdLowerBound
                 }))
               }));
 
-            const flightModels: FlightModel[] = flights.filter(f => newFlightRequirementModel.days.some(d => d.day === f.day)).map(f => f.extractModel());
+            // const flightModels: FlightModel[] = flights.filter(f => newFlightRequirementModel.days.some(d => d.day === f.day)).map(f => f.extractModel());
+            const flightModels: FlightModel[] = !flightRequirement
+              ? []
+              : flights
+                  .filter(f => newFlightRequirementModel.days.some(d => d.day === f.day))
+                  .map(f =>
+                    f.extractModel(flightModel => ({
+                      ...flightModel,
+                      aircraftRegisterId: dataTypes.preplanAircraftRegister(preplan.aircraftRegisters).convertViewToModelOptional(viewState.days[f.day].aircraftRegister),
+                      legs: flightModel.legs.map<FlightLegModel>((l, index) => ({
+                        ...l,
+                        std: dataTypes.daytime.convertViewToModel(viewState.days[f.day].legs[index].stdLowerBound)
+                      }))
+                    }))
+                  );
 
             const newPreplanModel = flightRequirement
               ? await FlightRequirementService.edit(preplan.id, { id: flightRequirement.id, ...newFlightRequirementModel }, flightModels, newFlightModels)
@@ -404,6 +440,7 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
           <Grid item xs={1}>
             <div className={classes.checkboxContainer}>
               <Checkbox
+                icon={errors.daySelects === undefined ? <CheckBoxOutlineBlankIcon /> : <CheckBoxOutlineBlankIcon color="error" />}
                 indeterminate={viewState.days.some(d => d.selected) && !viewState.days.every(d => d.selected)}
                 checked={viewState.days.every(d => d.selected)}
                 onChange={e => {
@@ -416,6 +453,7 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
             {Weekdays.map(d => (
               <div className={classes.checkboxContainer} key={d}>
                 <Checkbox
+                  icon={errors.daySelects === undefined ? <CheckBoxOutlineBlankIcon /> : <CheckBoxOutlineBlankIcon color="error" />}
                   checked={viewState.days[d].selected}
                   onChange={e => setViewState({ ...viewState, days: daysButOne(d, { ...viewState.default, selected: e.target.checked }) })}
                 />
@@ -426,7 +464,29 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
             <Tabs value={viewState.tabIndex} onChange={(e, tabIndex) => setViewState({ ...viewState, tabIndex })} variant="fullWidth" orientation="vertical">
               <Tab classes={{ root: classNames(classes.dayTab, { [classes.error]: errors.allTab }) }} value="ALL" label="(All)" />
               {Weekdays.map(d => (
-                <Tab key={d} classes={{ root: classNames(classes.dayTab, { [classes.error]: errors.dayTabs[d] }) }} value={d} label={Weekday[d].slice(0, 3)} />
+                <Tab
+                  key={d}
+                  classes={{ root: classNames(classes.dayTab, { [classes.error]: errors.dayTabs[d] }) }}
+                  value={d}
+                  label={
+                    (viewState.days[d].rsx !== viewState.default.rsx ||
+                    dataTypes.name.refineView(viewState.days[d].notes) !== dataTypes.name.refineView(viewState.default.notes) ||
+                    viewState.days[d].allowedAircraftIdentities.some(i => !viewState.default.allowedAircraftIdentities.includes(i)) ||
+                    viewState.default.allowedAircraftIdentities.some(i => !viewState.days[d].allowedAircraftIdentities.includes(i)) ||
+                    viewState.days[d].forbiddenAircraftIdentities.some(i => !viewState.default.forbiddenAircraftIdentities.includes(i)) ||
+                    viewState.default.forbiddenAircraftIdentities.some(i => !viewState.days[d].forbiddenAircraftIdentities.includes(i)) ||
+                    viewState.days[d].legs.some(
+                      (l, index) =>
+                        dataTypes.daytime.refineView(l.stdLowerBound) !== dataTypes.daytime.refineView(viewState.default.legs[index].stdLowerBound) ||
+                        dataTypes.daytime.refineView(l.stdUpperBound) !== dataTypes.daytime.refineView(viewState.default.legs[index].stdUpperBound) ||
+                        dataTypes.daytime.refineView(l.blockTime) !== dataTypes.daytime.refineView(viewState.default.legs[index].blockTime) ||
+                        l.originPermission !== viewState.default.legs[index].originPermission ||
+                        l.destinationPermission !== viewState.default.legs[index].destinationPermission
+                    )
+                      ? '✱ '
+                      : '') + Weekday[d].slice(0, 3)
+                  }
+                />
               ))}
             </Tabs>
           </Grid>
@@ -471,14 +531,9 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                     helperText={errors.notes}
                   />
                 </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="caption">Allowed Aircrafts</Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="caption">Forbidden Aircrafts</Typography>
-                </Grid>
-                <Grid item xs={6}>
+                <Grid item xs={5}>
                   <MultiSelect
+                    label="Allowed Aircrafts"
                     options={aircraftIdentityOptions}
                     getOptionLabel={l => l.name}
                     getOptionValue={l => l.id}
@@ -502,8 +557,9 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                     helperText={errors.allowedAircrafts}
                   ></MultiSelect>
                 </Grid>
-                <Grid item xs={6}>
+                <Grid item xs={5}>
                   <MultiSelect
+                    label="Forbidden Aircrafts"
                     options={aircraftIdentityOptions}
                     getOptionLabel={l => l.name}
                     getOptionValue={l => l.id}
@@ -525,7 +581,37 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                     isDisabled={viewState.tabIndex !== 'ALL' && !viewState.days[viewState.tabIndex].selected}
                   ></MultiSelect>
                 </Grid>
-
+                <Grid item xs={2}>
+                  <RefiningTextField
+                    fullWidth
+                    label="Register"
+                    dataType={dataTypes.preplanAircraftRegister(preplan.aircraftRegisters)}
+                    value={tabViewState.aircraftRegister}
+                    onChange={({ target: { value: aircraftRegister } }) =>
+                      setViewState(
+                        viewState.tabIndex === 'ALL'
+                          ? { ...viewState, default: { ...viewState.default, aircraftRegister }, days: viewState.days.map(day => ({ ...day, aircraftRegister })) }
+                          : {
+                              ...viewState,
+                              default: {
+                                ...viewState.default,
+                                aircraftRegister: viewState.days.some(
+                                  d =>
+                                    dataTypes.preplanAircraftRegister(preplan.aircraftRegisters).refineView(d.aircraftRegister) !==
+                                    dataTypes.preplanAircraftRegister(preplan.aircraftRegisters).refineView(aircraftRegister)
+                                )
+                                  ? ''
+                                  : aircraftRegister
+                              },
+                              days: daysButOne(viewState.tabIndex, day => ({ ...day, aircraftRegister }))
+                            }
+                      )
+                    }
+                    disabled={viewState.tabIndex !== 'ALL' && !viewState.days[viewState.tabIndex].selected}
+                    error={errors.aircraftRegister !== undefined}
+                    helperText={errors.aircraftRegister}
+                  />
+                </Grid>
                 {/* Legs */}
                 <Grid item xs={12}>
                   {/* Leg tabs */}
@@ -685,7 +771,7 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                           helperText={errors.arrivalAirport}
                         />
                       </Grid>
-                      <Grid item xs={4}>
+                      {/* <Grid item xs={4}>
                         <RefiningTextField
                           fullWidth
                           label="STD Lower bound"
@@ -712,8 +798,36 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                           error={errors.stdLowerBound !== undefined}
                           helperText={errors.stdLowerBound}
                         />
-                      </Grid>
+                      </Grid> */}
                       <Grid item xs={4}>
+                        <RefiningTextField
+                          fullWidth
+                          label="STD"
+                          dataType={dataTypes.daytime}
+                          value={legViewState.stdLowerBound}
+                          onChange={({ target: { value: stdLowerBound } }) =>
+                            setViewState(
+                              viewState.tabIndex === 'ALL'
+                                ? {
+                                    ...viewState,
+                                    default: { ...viewState.default, legs: allLegsButOne(leg => ({ ...leg, stdLowerBound })) },
+                                    days: Weekdays.map(d => ({ ...viewState.days[d], legs: dayLegsButOne(d, leg => ({ ...leg, stdLowerBound })) }))
+                                  }
+                                : {
+                                    ...viewState,
+                                    days: daysButOne(viewState.tabIndex, day => ({
+                                      ...day,
+                                      legs: dayLegsButOne(viewState.tabIndex as Weekday, leg => ({ ...leg, stdLowerBound }))
+                                    }))
+                                  }
+                            )
+                          }
+                          disabled={viewState.tabIndex !== 'ALL' && !viewState.days[viewState.tabIndex].selected}
+                          error={errors.stdLowerBound !== undefined}
+                          helperText={errors.stdLowerBound}
+                        />
+                      </Grid>
+                      {/* <Grid item xs={4}>
                         <RefiningTextField
                           fullWidth
                           label="STD Upper bound"
@@ -740,7 +854,7 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                           error={errors.stdUpperBound !== undefined}
                           helperText={errors.stdUpperBound}
                         />
-                      </Grid>
+                      </Grid> */}
                       <Grid item xs={4}>
                         <RefiningTextField
                           fullWidth
@@ -764,6 +878,21 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                           disabled={viewState.tabIndex !== 'ALL' && !viewState.days[viewState.tabIndex].selected}
                           error={errors.blockTime !== undefined}
                           helperText={errors.blockTime}
+                        />
+                      </Grid>
+                      <Grid item xs={4}>
+                        <RefiningTextField
+                          fullWidth
+                          label="STA"
+                          dataType={dataTypes.daytime}
+                          value={
+                            dataTypes.daytime.checkView(legViewState.stdLowerBound) && dataTypes.daytime.checkView(legViewState.blockTime)
+                              ? dataTypes.daytime.convertModelToView(
+                                  dataTypes.daytime.convertViewToModel(legViewState.stdLowerBound) + dataTypes.daytime.convertViewToModel(legViewState.blockTime)
+                                )
+                              : '—'
+                          }
+                          disabled
                         />
                       </Grid>
                       <Grid item xs={4}>

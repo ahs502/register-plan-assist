@@ -69,7 +69,7 @@ const PreplanPage: FC = () => {
             link: routeMatch.url
           },
           flightRequirementListPageSelected && {
-            title: 'Flight Requirements',
+            title: 'Flights',
             link: `${routeMatch.url}/flight-requirement-list`
           },
           reportsPageSelected && {
@@ -77,11 +77,11 @@ const PreplanPage: FC = () => {
             link: `${routeMatch.url}/reports`
           },
           reportsProposalPageSelected && {
-            title: 'Proposal Report',
+            title: 'Proposal',
             link: `${routeMatch.url}/reports/proposal`
           },
           reportsConnectionsPageSelected && {
-            title: 'Connections Report',
+            title: 'Connections',
             link: `${routeMatch.url}/reports/connections`
           }
         ]}

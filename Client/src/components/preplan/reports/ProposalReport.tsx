@@ -1450,7 +1450,7 @@ export default ProposalReport;
 
 function groupFlattenFlightRequirmentbyCategory(realFlatModel: FlattenFlightRequirment[]) {
   const groupObject = realFlatModel.reduce((acc, current) => {
-    const category = current.category || '';
+    const category = (current.category || '').toUpperCase();
     acc[category] = acc[category] || [];
     acc[category].push(current);
     return acc;

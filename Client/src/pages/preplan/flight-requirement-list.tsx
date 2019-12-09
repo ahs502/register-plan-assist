@@ -101,8 +101,8 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = React.memo
     <div className={classes.contentPage}>
       <Tabs className={classes.tabsStyle} value={tab} indicatorColor="primary" textColor="primary" onChange={(e, t) => setTab(t)}>
         <Tab value="ALL" label={`All (${numberOfFlightRequirements})`} />
-        <Tab value="INCLUDE" label={`Included (${numberOfIncludedFlightRequirements})`} />
-        <Tab value="IGNORE" label={`Ignored (${numberOfIgnoredFlightRequirements})`} />
+        <Tab value="INCLUDED" label={`Included (${numberOfIncludedFlightRequirements})`} />
+        <Tab value="IGNORED" label={`Ignored (${numberOfIgnoredFlightRequirements})`} />
         <Search outlined onQueryChange={setQuery} />
         <IconButton color="primary" title="Add Flight" onClick={onAddFlightRequirement}>
           <AddIcon fontSize="large" />

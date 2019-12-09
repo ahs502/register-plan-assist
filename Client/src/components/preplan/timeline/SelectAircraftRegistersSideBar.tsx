@@ -87,7 +87,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
         .map<AircraftRegisterViewState>(a => ({
           id: a.id,
           name: dataTypes.name.convertBusinessToView(a.name),
-          groups: MasterData.all.aircraftRegisterGroups.items.filter(g => g.aircraftRegisters.filter(r => r.id === a.id)).map(g => g.name),
+          groups: MasterData.all.aircraftRegisterGroups.items.filter(g => g.aircraftRegisters.some(r => r.id === a.id)).map(g => g.name),
           baseAirport: dataTypes.airport.convertBusinessToViewOptional(a.options.baseAirport),
           status: a.options.status
         })),

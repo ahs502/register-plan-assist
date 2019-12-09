@@ -176,7 +176,7 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
       const flights = preplan.flights.filter(f => f.flightRequirement === flightRequirement);
       const aircraftRegisters = flights.map(f => f.aircraftRegister).distinct();
       const defaultAircraftRegister =
-        aircraftRegisters.length !== 1 || !!aircraftRegisters[0]
+        aircraftRegisters.length !== 1 || !aircraftRegisters[0]
           ? ''
           : dataTypes.preplanAircraftRegister(preplan.aircraftRegisters).convertBusinessToViewOptional(aircraftRegisters[0]);
 
@@ -401,10 +401,18 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                     f.extractModel(flightModel => ({
                       ...flightModel,
                       aircraftRegisterId: dataTypes.preplanAircraftRegister(preplan.aircraftRegisters).convertViewToModelOptional(viewState.days[f.day].aircraftRegister),
-                      legs: flightModel.legs.map<FlightLegModel>((l, index) => ({
-                        ...l,
-                        std: dataTypes.daytime.convertViewToModel(viewState.days[f.day].legs[index].stdLowerBound)
-                      }))
+                      legs: newFlightRequirementModel.route.map<FlightLegModel>((l, index) => {
+                        const oldLegIndex = viewState.route.findIndex(g => g.originalIndex === index);
+                        if (oldLegIndex === -1)
+                          return {
+                            std: l.stdLowerBound
+                          };
+                        const oldLeg = flightModel.legs[oldLegIndex];
+                        return {
+                          ...oldLeg,
+                          std: l.stdLowerBound
+                        };
+                      })
                     }))
                   );
 
@@ -630,7 +638,16 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                     label="Register"
                     dataType={dataTypes.preplanAircraftRegister(preplan.aircraftRegisters)}
                     value={tabViewState.aircraftRegister}
-                    onChange={({ target: { value: aircraftRegister } }) =>
+                    onChange={({ target: { value: aircraftRegister } }) => {
+                      const defaultAircraftRegister = viewState.days
+                        .filter(d => d.selected)
+                        .some(
+                          d =>
+                            dataTypes.preplanAircraftRegister(preplan.aircraftRegisters).refineView(d.aircraftRegister) !==
+                            dataTypes.preplanAircraftRegister(preplan.aircraftRegisters).refineView(aircraftRegister)
+                        )
+                        ? ''
+                        : aircraftRegister;
                       setViewState(
                         viewState.tabIndex === 'ALL'
                           ? { ...viewState, default: { ...viewState.default, aircraftRegister }, days: viewState.days.map(day => ({ ...day, aircraftRegister })) }
@@ -638,18 +655,14 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                               ...viewState,
                               default: {
                                 ...viewState.default,
-                                aircraftRegister: viewState.days.some(
-                                  d =>
-                                    dataTypes.preplanAircraftRegister(preplan.aircraftRegisters).refineView(d.aircraftRegister) !==
-                                    dataTypes.preplanAircraftRegister(preplan.aircraftRegisters).refineView(aircraftRegister)
-                                )
-                                  ? ''
-                                  : aircraftRegister
+                                aircraftRegister: defaultAircraftRegister
                               },
-                              days: daysButOne(viewState.tabIndex, day => ({ ...day, aircraftRegister }))
+                              days: daysButOne(viewState.tabIndex, day => ({ ...day, aircraftRegister })).map<DayTabViewState>(d =>
+                                d.selected ? d : { ...d, aircraftRegister: defaultAircraftRegister }
+                              )
                             }
-                      )
-                    }
+                      );
+                    }}
                     disabled={viewState.tabIndex !== 'ALL' && !viewState.days[viewState.tabIndex].selected}
                     error={errors.aircraftRegister !== undefined}
                     helperText={errors.aircraftRegister}

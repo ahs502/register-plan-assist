@@ -113,8 +113,9 @@ const NewPreplanModal: FC<NewPreplanModalProps> = ({ state: [open], onCreate, pr
       <Grid container spacing={2}>
         <Grid item xs={12}>
           <RefiningTextField
-            label="Name"
             fullWidth
+            autoFocus
+            label="Name"
             dataType={dataTypes.name}
             value={viewState.name}
             onChange={({ target: { value: name } }) => setViewState({ ...viewState, name })}
@@ -124,8 +125,8 @@ const NewPreplanModal: FC<NewPreplanModalProps> = ({ state: [open], onCreate, pr
         </Grid>
         <Grid item xs={6}>
           <RefiningTextField
-            label="Start Date"
             fullWidth
+            label="Start Date"
             dataType={dataTypes.utcDate}
             value={viewState.startDate}
             onChange={({ target: { value: startDate } }) => setViewState({ ...viewState, startDate })}
@@ -135,8 +136,8 @@ const NewPreplanModal: FC<NewPreplanModalProps> = ({ state: [open], onCreate, pr
         </Grid>
         <Grid item xs={6}>
           <RefiningTextField
-            label="End Date"
             fullWidth
+            label="End Date"
             dataType={dataTypes.utcDate}
             value={viewState.endDate}
             onChange={({ target: { value: endDate } }) => setViewState({ ...viewState, endDate })}

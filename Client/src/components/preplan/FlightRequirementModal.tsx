@@ -431,6 +431,7 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
         <Grid item xs={5}>
           <RefiningTextField
             fullWidth
+            autoFocus
             label="Label"
             dataType={dataTypes.label}
             value={viewState.label}

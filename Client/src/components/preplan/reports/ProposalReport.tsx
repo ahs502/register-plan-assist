@@ -118,6 +118,9 @@ const useStyles = makeStyles((theme: Theme) => {
     },
     errorPaperMessage: {
       lineHeight: `${errorPaperSize}px`
+    },
+    reportRendering: {
+      opacity: 0.2
     }
   };
 });
@@ -361,6 +364,8 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
     showExtra: true
   }));
 
+  const [renderReport, setRenderReport] = useState(false);
+
   let proposalExporter: ExcelExport | null;
 
   const detailCellOption: CellOptions = {
@@ -432,11 +437,12 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
   }, []);
 
   useEffect(() => {
-    generateReport().then();
+    setRenderReport(true);
+    generateReport().then(() => setRenderReport(false));
 
     async function generateReport() {
       if (!validation.ok) return;
-
+      console.log(viewState);
       const realFlatModel = generateReportDataModel(viewState, filterFlight(viewState, flights, true));
       const reserveFlatModel = generateReportDataModel(viewState, filterFlight(viewState, flights, false));
 
@@ -729,6 +735,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
                 }}
                 error={errors.baseAirport !== undefined}
                 helperText={errors.baseAirport}
+                isDisabled={renderReport}
               />
             </Grid>
             <Grid item xs={2}>
@@ -748,6 +755,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
                   viewState.showFrequency = s.value === 'Domestic';
                   setViewState({ ...viewState });
                 }}
+                isDisabled={renderReport}
               />
             </Grid>
 
@@ -766,6 +774,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
                 }}
                 error={errors.categories !== undefined}
                 helperText={errors.categories}
+                isDisabled={renderReport}
               />
             </Grid>
           </Grid>
@@ -781,6 +790,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
                 getOptionLabel={l => l.label}
                 getOptionValue={l => l.id}
                 onSelect={({ header: preplanHeader }) => setViewState({ ...viewState, preplanHeader })}
+                isDisabled={renderReport}
               />
             </Grid>
             <Grid item xs={1} className={classes.datePosition}>
@@ -814,6 +824,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
                 onChange={({ target: { value: baseDate } }) => setViewState({ ...viewState, baseDate })}
                 error={errors.baseDate !== undefined}
                 helperText={errors.baseDate}
+                disabled={renderReport}
               />
             </Grid>
             <Grid item xs={4} />
@@ -1232,7 +1243,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
         </ExcelExport>
       )}
       {validation.ok ? (
-        <Table className={classNames(classes.marginBottom1, classes.marginRight1)}>
+        <Table className={classNames(classes.marginBottom1, classes.marginRight1, { [classes.reportRendering]: renderReport })}>
           <TableHead>
             <TableRow>
               <TableCell className={classes.border} align="center" colSpan={19}>

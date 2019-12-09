@@ -66,6 +66,19 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
   const preplan = useContext(PreplanContext);
   const reloadPreplan = useContext(ReloadPreplanContext);
 
+  const categoryOptions = useMemo(
+    () => [
+      { name: ' ' /* &nbsp; */ },
+      ...preplan.flightRequirements
+        .map(f => f.category)
+        .filter(Boolean)
+        .reverse()
+        .distinct((a, b) => a.toUpperCase() === b.toUpperCase())
+        .sortBy(c => c.toUpperCase())
+        .map(c => ({ name: c }))
+    ],
+    [preplan.flightRequirements]
+  );
   const rsxOptions = useMemo(() => Rsxes.map(r => ({ name: r })), []);
   const aircraftIdentityOptions = useMemo<AircraftIdentityOptionViewState[]>(
     () => [
@@ -102,7 +115,7 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
         entityId: g.id
       }))
     ],
-    [preplan]
+    [preplan.aircraftRegisters]
   );
 
   const [viewState, setViewState, render] = useModalViewState<ViewState>(
@@ -110,7 +123,9 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
     {
       bypassValidation: true,
       label: '',
+      addingNewCategory: false,
       category: '',
+      categoryOption: undefined,
       stc: MasterData.all.stcs.items.find(s => s.name === 'J')!,
       tabIndex: 'ALL',
       legIndex: 0,
@@ -157,16 +172,20 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
     },
     () => {
       if (!flightRequirement) return;
+
       const flights = preplan.flights.filter(f => f.flightRequirement === flightRequirement);
       const aircraftRegisters = flights.map(f => f.aircraftRegister).distinct();
       const defaultAircraftRegister =
-        aircraftRegisters.length !== 1 || !!aircraftRegisters[0]
+        aircraftRegisters.length !== 1 || !aircraftRegisters[0]
           ? ''
           : dataTypes.preplanAircraftRegister(preplan.aircraftRegisters).convertBusinessToViewOptional(aircraftRegisters[0]);
+
       return {
         bypassValidation: false,
         label: dataTypes.label.convertBusinessToView(flightRequirement.label),
+        addingNewCategory: false,
         category: dataTypes.name.convertBusinessToView(flightRequirement.category),
+        categoryOption: categoryOptions.slice(1).find(o => o.name.toUpperCase() === dataTypes.name.convertBusinessToView(flightRequirement.category).toUpperCase()) || undefined,
         stc: flightRequirement.stc,
         tabIndex: day === undefined ? 'ALL' : day,
         legIndex: 0,
@@ -382,10 +401,18 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                     f.extractModel(flightModel => ({
                       ...flightModel,
                       aircraftRegisterId: dataTypes.preplanAircraftRegister(preplan.aircraftRegisters).convertViewToModelOptional(viewState.days[f.day].aircraftRegister),
-                      legs: flightModel.legs.map<FlightLegModel>((l, index) => ({
-                        ...l,
-                        std: dataTypes.daytime.convertViewToModel(viewState.days[f.day].legs[index].stdLowerBound)
-                      }))
+                      legs: newFlightRequirementModel.route.map<FlightLegModel>((l, index) => {
+                        const oldLegIndex = viewState.route.findIndex(g => g.originalIndex === index);
+                        if (oldLegIndex === -1)
+                          return {
+                            std: l.stdLowerBound
+                          };
+                        const oldLeg = flightModel.legs[oldLegIndex];
+                        return {
+                          ...oldLeg,
+                          std: l.stdLowerBound
+                        };
+                      })
                     }))
                   );
 
@@ -412,23 +439,47 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
             helperText={errors.label}
           />
         </Grid>
-        <Grid item xs={5}>
-          <RefiningTextField
-            fullWidth
-            label="Category"
-            dataType={dataTypes.name}
-            value={viewState.category}
-            onChange={e => setViewState({ ...viewState, category: e.target.value })}
-            error={errors.category !== undefined}
-            helperText={errors.category}
-          />
+        <Grid item xs={4}>
+          {viewState.addingNewCategory ? (
+            <RefiningTextField
+              fullWidth
+              label="New Category"
+              dataType={dataTypes.name}
+              value={viewState.category}
+              onChange={({ target: { value: category } }) =>
+                setViewState({ ...viewState, category, categoryOption: categoryOptions.slice(1).find(o => o.name.toUpperCase() === category.toUpperCase()) || categoryOptions[0] })
+              }
+              error={errors.category !== undefined}
+              helperText={errors.category}
+            />
+          ) : (
+            <AutoComplete
+              options={categoryOptions}
+              label="Category"
+              getOptionLabel={o => o.name}
+              getOptionValue={o => o.name}
+              value={viewState.categoryOption}
+              onSelect={categoryOption => setViewState({ ...viewState, category: categoryOption === categoryOptions[0] ? '' : categoryOption.name, categoryOption })}
+            />
+          )}
+        </Grid>
+        <Grid item xs={1}>
+          {viewState.addingNewCategory ? (
+            <IconButton title="Select Category" onClick={() => setViewState({ ...viewState, addingNewCategory: false, category: '', categoryOption: categoryOptions[0] })}>
+              <ClearIcon />
+            </IconButton>
+          ) : (
+            <IconButton title="New Category" onClick={() => setViewState({ ...viewState, addingNewCategory: true, category: '', categoryOption: categoryOptions[0] })}>
+              <AddIcon />
+            </IconButton>
+          )}
         </Grid>
         <Grid item xs={2}>
           <AutoComplete
             options={MasterData.all.stcs.items}
             label="Stc"
-            getOptionLabel={l => l.name}
-            getOptionValue={l => l.id}
+            getOptionLabel={s => s.name}
+            getOptionValue={s => s.id}
             value={viewState.stc}
             onSelect={stc => setViewState({ ...viewState, stc })}
           />
@@ -587,7 +638,16 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                     label="Register"
                     dataType={dataTypes.preplanAircraftRegister(preplan.aircraftRegisters)}
                     value={tabViewState.aircraftRegister}
-                    onChange={({ target: { value: aircraftRegister } }) =>
+                    onChange={({ target: { value: aircraftRegister } }) => {
+                      const defaultAircraftRegister = viewState.days
+                        .filter(d => d.selected)
+                        .some(
+                          d =>
+                            dataTypes.preplanAircraftRegister(preplan.aircraftRegisters).refineView(d.aircraftRegister) !==
+                            dataTypes.preplanAircraftRegister(preplan.aircraftRegisters).refineView(aircraftRegister)
+                        )
+                        ? ''
+                        : aircraftRegister;
                       setViewState(
                         viewState.tabIndex === 'ALL'
                           ? { ...viewState, default: { ...viewState.default, aircraftRegister }, days: viewState.days.map(day => ({ ...day, aircraftRegister })) }
@@ -595,18 +655,14 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                               ...viewState,
                               default: {
                                 ...viewState.default,
-                                aircraftRegister: viewState.days.some(
-                                  d =>
-                                    dataTypes.preplanAircraftRegister(preplan.aircraftRegisters).refineView(d.aircraftRegister) !==
-                                    dataTypes.preplanAircraftRegister(preplan.aircraftRegisters).refineView(aircraftRegister)
-                                )
-                                  ? ''
-                                  : aircraftRegister
+                                aircraftRegister: defaultAircraftRegister
                               },
-                              days: daysButOne(viewState.tabIndex, day => ({ ...day, aircraftRegister }))
+                              days: daysButOne(viewState.tabIndex, day => ({ ...day, aircraftRegister })).map<DayTabViewState>(d =>
+                                d.selected ? d : { ...d, aircraftRegister: defaultAircraftRegister }
+                              )
                             }
-                      )
-                    }
+                      );
+                    }}
                     disabled={viewState.tabIndex !== 'ALL' && !viewState.days[viewState.tabIndex].selected}
                     error={errors.aircraftRegister !== undefined}
                     helperText={errors.aircraftRegister}

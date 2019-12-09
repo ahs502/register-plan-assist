@@ -2003,12 +2003,6 @@ function formatDateToHHMM(date: Date) {
   );
 }
 
-function compareFunction(a: number, b: number) {
-  if (a > b) return 1;
-  if (a < b) return -1;
-  return 0;
-}
-
 function hasPermission(flattenFlightRequirment: FlattenFlightRequirment, day: number) {
   const destinationPermission = flattenFlightRequirment.destinationNoPermissionsWeekDay.includes(day);
   const domesticPermission = flattenFlightRequirment.originNoPermissionsWeekDay.includes(day);

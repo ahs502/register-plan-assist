@@ -465,11 +465,11 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
         </Grid>
         <Grid item xs={1}>
           {viewState.addingNewCategory ? (
-            <IconButton onClick={() => setViewState({ ...viewState, addingNewCategory: false, category: '', categoryOption: categoryOptions[0] })}>
+            <IconButton title="Select Category" onClick={() => setViewState({ ...viewState, addingNewCategory: false, category: '', categoryOption: categoryOptions[0] })}>
               <ClearIcon />
             </IconButton>
           ) : (
-            <IconButton onClick={() => setViewState({ ...viewState, addingNewCategory: true, category: '', categoryOption: categoryOptions[0] })}>
+            <IconButton title="New Category" onClick={() => setViewState({ ...viewState, addingNewCategory: true, category: '', categoryOption: categoryOptions[0] })}>
               <AddIcon />
             </IconButton>
           )}

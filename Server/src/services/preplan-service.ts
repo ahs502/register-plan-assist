@@ -139,7 +139,11 @@ router.post(
   >(async (userId, { id, dummyAircraftRegisters, aircraftRegisterOptions }, { runQuery, runSp }) => {
     new DummyAircraftRegisterModelArrayValidation(dummyAircraftRegisters).throw('Invalid API input.');
     const dummyAircraftRegisterIds = dummyAircraftRegisters.map(r => r.id);
-    new AircraftRegisterOptionsModelValidation(aircraftRegisterOptions, dummyAircraftRegisterIds).throw('Invalid API input.');
+    const rawUsedAircraftRegisterIds: readonly { aircraftRegisterId: Id }[] = await runQuery(
+      `select f.[Id_AircraftRegister] as [aircraftRegisterId] from [Rpa].[Flight] as f join [Rpa].[FlightRequirement] as r on f.[Id_FlightRequirement] = r.[Id] where r.[Id_Preplan] = '${id}'`
+    );
+    const usedAircraftRegisterIds: readonly Id[] = rawUsedAircraftRegisterIds.map(i => i.aircraftRegisterId);
+    new AircraftRegisterOptionsModelValidation(aircraftRegisterOptions, dummyAircraftRegisterIds, usedAircraftRegisterIds).throw('Invalid API input.');
 
     // Check for removed dummy aircraft registers usage:
     const rawDummyAircraftRegistersXml: { dummyAircraftRegistersXml: Xml }[] = await runQuery(

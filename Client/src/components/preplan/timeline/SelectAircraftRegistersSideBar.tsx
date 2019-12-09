@@ -1,9 +1,9 @@
 import React, { FC, useState, Fragment, useContext } from 'react';
-import { Theme, Table, TableHead, TableBody, TableCell, TableRow, Typography, TextField, IconButton, FormControl, Select, Collapse } from '@material-ui/core';
+import { Theme, Table, TableHead, TableBody, TableCell, TableRow, Typography, IconButton, FormControl, Select, Collapse, FormHelperText } from '@material-ui/core';
 import { Clear as RemoveIcon, Check as CheckIcon } from '@material-ui/icons';
 import { makeStyles } from '@material-ui/styles';
 import classNames from 'classnames';
-import MasterData, { AircraftType } from '@core/master-data';
+import MasterData from '@core/master-data';
 import Search, { filterOnProperties } from 'src/components/Search';
 import useProperty from 'src/utils/useProperty';
 import AircraftRegisterOptionsStatus from '@core/types/AircraftRegisterOptionsStatus';
@@ -115,25 +115,27 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
 
   const classes = useStyles();
 
-  const validation = new ViewStateValidation(list);
+  const validation = new ViewStateValidation(list, preplan.flights);
   interface Errors {
     [typeId: string]: {
-      registers: { [registerId: string]: { baseAirport?: string } };
-      dummyRegisters: { [dummyRegisterId: string]: { name?: string; baseAirport?: string } };
+      registers: { [registerId: string]: { baseAirport?: string; status?: string } };
+      dummyRegisters: { [dummyRegisterId: string]: { name?: string; baseAirport?: string; status?: string } };
     };
   }
   const errors: Errors = list.reduce<Errors>((a, t) => {
     a[t.type.id] = {
       registers: t.registers.reduce<Errors[Id]['registers']>((a, r) => {
         a[r.id] = {
-          baseAirport: validation.$.aircraftRegistersPerTypeViewStateValidations[t.type.id].$.registerValidations[r.id].message('BASE_AIRPORT_*')
+          baseAirport: validation.$.aircraftRegistersPerTypeViewStateValidations[t.type.id].$.registerValidations[r.id].message('BASE_AIRPORT_*'),
+          status: validation.$.aircraftRegistersPerTypeViewStateValidations[t.type.id].$.registerValidations[r.id].message('STATUS_*')
         };
         return a;
       }, {}),
       dummyRegisters: t.dummyRegisters.reduce<Errors[Id]['dummyRegisters']>((a, r) => {
         a[r.id] = {
           name: validation.$.aircraftRegistersPerTypeViewStateValidations[t.type.id].$.dummyRegisterValidations[r.id].message('NAME_*'),
-          baseAirport: validation.$.aircraftRegistersPerTypeViewStateValidations[t.type.id].$.dummyRegisterValidations[r.id].message('BASE_AIRPORT_*')
+          baseAirport: validation.$.aircraftRegistersPerTypeViewStateValidations[t.type.id].$.dummyRegisterValidations[r.id].message('BASE_AIRPORT_*'),
+          status: validation.$.aircraftRegistersPerTypeViewStateValidations[t.type.id].$.dummyRegisterValidations[r.id].message('STATUS_*')
         };
         return a;
       }, {})
@@ -297,7 +299,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
         />
       </TableCell>
       <TableCell className={classes.stateCell}>
-        <FormControl fullWidth>
+        <FormControl fullWidth error={e.status !== undefined}>
           <Select
             native
             classes={{ select: classes.select, iconOutlined: classes.selectIcon }}
@@ -315,6 +317,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
               </option>
             ))}
           </Select>
+          {!!e.status && <FormHelperText>{e.status}</FormHelperText>}
         </FormControl>
       </TableCell>
       <TableCell colSpan={2}>
@@ -352,7 +355,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
         />
       </TableCell>
       <TableCell className={classes.stateCell}>
-        <FormControl fullWidth>
+        <FormControl fullWidth error={e.status !== undefined}>
           <Select
             native
             classes={{ select: classes.select, iconOutlined: classes.selectIcon }}
@@ -370,6 +373,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
               </option>
             ))}
           </Select>
+          {!!e.status && <FormHelperText>{e.status}</FormHelperText>}
         </FormControl>
       </TableCell>
       <TableCell />

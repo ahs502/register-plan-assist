@@ -12,7 +12,7 @@ export default interface AircraftRegisterOptionsModel {
 }
 
 export class AircraftRegisterOptionsModelValidation extends Validation {
-  constructor(data: AircraftRegisterOptionsModel, dummyAircraftRegisterIds: readonly Id[]) {
+  constructor(data: AircraftRegisterOptionsModel, dummyAircraftRegisterIds: readonly Id[], usedAircraftRegisterIds: readonly Id[]) {
     super(validator =>
       validator.object(data).then(({ options }) => {
         validator
@@ -22,10 +22,10 @@ export class AircraftRegisterOptionsModelValidation extends Validation {
             validator
               .must(typeof aircraftRegisterId === 'string', !!aircraftRegisterId)
               .must(() => aircraftRegisterId in MasterData.all.aircraftRegisters.id || dummyAircraftRegisterIds.includes(aircraftRegisterId));
-            validator
-              .must(AircraftRegisterOptionsStatuses.includes(status))
-              .if(() => status !== 'IGNORED')
-              .must(() => baseAirportId !== undefined);
+            validator.must(AircraftRegisterOptionsStatuses.includes(status)).then(() => {
+              validator.if(status !== 'IGNORED').must(() => baseAirportId !== undefined);
+              validator.if(status === 'IGNORED').must(() => !usedAircraftRegisterIds.includes(aircraftRegisterId));
+            });
             validator
               .if(baseAirportId !== undefined)
               .must(() => typeof baseAirportId === 'string')

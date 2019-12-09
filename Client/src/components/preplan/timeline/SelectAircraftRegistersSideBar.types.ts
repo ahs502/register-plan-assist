@@ -2,6 +2,7 @@ import AircraftRegisterOptionsStatus from '@core/types/AircraftRegisterOptionsSt
 import MasterData, { AircraftType } from '@core/master-data';
 import Validation from '@core/node_modules/@ahs502/validation/dist/Validation';
 import { dataTypes } from 'src/utils/DataType';
+import Flight from 'src/business/flight/Flight';
 
 export type ViewState = AircraftRegistersPerTypeViewState[];
 export class ViewStateValidation extends Validation<
@@ -12,14 +13,14 @@ export class ViewStateValidation extends Validation<
     };
   }
 > {
-  constructor(viewState: ViewState) {
+  constructor(viewState: ViewState, flights: readonly Flight[]) {
     super(validator => {
       validator
         .array(viewState)
         .each(aircraftRegistersPerTypeViewState =>
           validator.put(
             validator.$.aircraftRegistersPerTypeViewStateValidations[aircraftRegistersPerTypeViewState.type.id],
-            new AircraftRegistersPerTypeViewStateValidation(aircraftRegistersPerTypeViewState, viewState)
+            new AircraftRegistersPerTypeViewStateValidation(aircraftRegistersPerTypeViewState, viewState, flights)
           )
         );
     });
@@ -42,12 +43,14 @@ class AircraftRegistersPerTypeViewStateValidation extends Validation<
     };
   }
 > {
-  constructor({ registers, dummyRegisters }: AircraftRegistersPerTypeViewState, viewState: ViewState) {
+  constructor({ registers, dummyRegisters }: AircraftRegistersPerTypeViewState, viewState: ViewState, flights: readonly Flight[]) {
     super(validator => {
-      validator.array(registers).each(register => validator.put(validator.$.registerValidations[register.id], new AircraftRegisterViewStateValidation(register)));
+      validator.array(registers).each(register => validator.put(validator.$.registerValidations[register.id], new AircraftRegisterViewStateValidation(register, flights)));
       validator
         .array(dummyRegisters)
-        .each(dummyRegister => validator.put(validator.$.dummyRegisterValidations[dummyRegister.id], new DummyAircraftRegisterViewStateValidation(dummyRegister, viewState)));
+        .each(dummyRegister =>
+          validator.put(validator.$.dummyRegisterValidations[dummyRegister.id], new DummyAircraftRegisterViewStateValidation(dummyRegister, viewState, flights))
+        );
     });
   }
 }
@@ -59,13 +62,22 @@ export interface AircraftRegisterViewState {
   baseAirport: string;
   status: AircraftRegisterOptionsStatus;
 }
-export class AircraftRegisterViewStateValidation extends Validation<'BASE_AIRPORT_EXISTS' | 'BASE_AIRPORT_FORMAT_IS_CORRECT'> {
-  constructor({ baseAirport, status }: AircraftRegisterViewState) {
+export class AircraftRegisterViewStateValidation extends Validation<
+  'BASE_AIRPORT_EXISTS' | 'BASE_AIRPORT_FORMAT_IS_CORRECT' | 'STATUS_IS_NOT_IGNORED_OR_AIRCRAFT_REGISTER_IS_NOT_USED'
+> {
+  constructor({ id, baseAirport, status }: AircraftRegisterViewState, flights: readonly Flight[]) {
     super(validator => {
       validator
         .if(status === 'INCLUDED' || status === 'BACKUP' || !!baseAirport)
         .check('BASE_AIRPORT_EXISTS', !!baseAirport)
         .check('BASE_AIRPORT_FORMAT_IS_CORRECT', dataTypes.airport.checkView(baseAirport), 'Invalid.');
+      validator
+        .if(status === 'IGNORED')
+        .check(
+          'STATUS_IS_NOT_IGNORED_OR_AIRCRAFT_REGISTER_IS_NOT_USED',
+          () => flights.every(f => !f.aircraftRegister || f.aircraftRegister.dummy || f.aircraftRegister.id !== id),
+          'Aircraft is being used.'
+        );
     });
   }
 }
@@ -86,8 +98,9 @@ export class DummyAircraftRegisterViewStateValidation extends Validation<
   | 'NAME_HAS_AT_MOST_10_CHARACTERS'
   | 'BASE_AIRPORT_EXISTS'
   | 'BASE_AIRPORT_FORMAT_IS_CORRECT'
+  | 'STATUS_IS_NOT_IGNORED_OR_AIRCRAFT_REGISTER_IS_NOT_USED'
 > {
-  constructor({ name, baseAirport, status }: DummyAircraftRegisterViewState, viewState: ViewState) {
+  constructor({ id, name, baseAirport, status }: DummyAircraftRegisterViewState, viewState: ViewState, flights: readonly Flight[]) {
     super(validator => {
       const dummyAircraftRegisterNames = viewState.flatMap(t => t.dummyRegisters.flatMap(r => r.name.toUpperCase()));
       validator
@@ -115,6 +128,13 @@ export class DummyAircraftRegisterViewStateValidation extends Validation<
         .if(status === 'INCLUDED' || status === 'BACKUP' || !!baseAirport)
         .check('BASE_AIRPORT_EXISTS', !!baseAirport)
         .check('BASE_AIRPORT_FORMAT_IS_CORRECT', dataTypes.airport.checkView(baseAirport), 'Invalid.');
+      validator
+        .if(status === 'IGNORED')
+        .check(
+          'STATUS_IS_NOT_IGNORED_OR_AIRCRAFT_REGISTER_IS_NOT_USED',
+          () => flights.every(f => !f.aircraftRegister || !f.aircraftRegister.dummy || f.aircraftRegister.id !== id),
+          'Aircraft is being used.'
+        );
     });
   }
 }

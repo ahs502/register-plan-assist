@@ -39,7 +39,10 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
   select: {
     width: '100%',
-    paddingRight: 0
+    padding: '4px 0 4px 8px;'
+  },
+  selectIcon: {
+    right: 0
   },
   backupRegister: {
     backgroundColor: theme.palette.extraColors.backupRegister
@@ -205,8 +208,8 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
             <TableCell className={classes.stateCell}>
               <FormControl fullWidth>
                 <Select
-                  classes={{ select: classes.select }}
                   native
+                  classes={{ select: classes.select, iconOutlined: classes.selectIcon }}
                   variant="outlined"
                   value={addDummyRegisterFormState.status}
                   onChange={({ target: { value: status } }) => setAddDummyRegisterFormState({ ...addDummyRegisterFormState, status: status as AircraftRegisterOptionsStatus })}
@@ -296,8 +299,8 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
       <TableCell className={classes.stateCell}>
         <FormControl fullWidth>
           <Select
-            classes={{ select: classes.select }}
             native
+            classes={{ select: classes.select, iconOutlined: classes.selectIcon }}
             variant="outlined"
             disabled={loading}
             value={r.status}
@@ -351,15 +354,15 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
       <TableCell className={classes.stateCell}>
         <FormControl fullWidth>
           <Select
-            disabled={loading}
-            classes={{ select: classes.select }}
             native
+            classes={{ select: classes.select, iconOutlined: classes.selectIcon }}
             variant="outlined"
             value={r.status}
             onChange={event => {
               r.status = event.target.value as AircraftRegisterOptionsStatus;
               setList([...list]);
             }}
+            disabled={loading}
           >
             {aircraftRegisterOptionsStatusList.map(a => (
               <option key={a.value} value={a.value}>

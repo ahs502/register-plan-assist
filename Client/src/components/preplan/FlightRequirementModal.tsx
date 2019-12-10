@@ -401,18 +401,20 @@ const FlightRequirementModal: FC<FlightRequirementModalProps> = ({ state: [open,
                     f.extractModel(flightModel => ({
                       ...flightModel,
                       aircraftRegisterId: dataTypes.preplanAircraftRegister(preplan.aircraftRegisters).convertViewToModelOptional(viewState.days[f.day].aircraftRegister),
-                      legs: newFlightRequirementModel.route.map<FlightLegModel>((l, index) => {
-                        const oldLegIndex = viewState.route.findIndex(g => g.originalIndex === index);
-                        if (oldLegIndex === -1)
+                      legs: newFlightRequirementModel.days
+                        .find(dd => dd.day === f.day)!
+                        .route.map<FlightLegModel>((l, index) => {
+                          const oldLegIndex = viewState.route.findIndex(g => g.originalIndex === index);
+                          if (oldLegIndex === -1)
+                            return {
+                              std: l.stdLowerBound
+                            };
+                          const oldLeg = flightModel.legs[oldLegIndex];
                           return {
+                            ...oldLeg,
                             std: l.stdLowerBound
                           };
-                        const oldLeg = flightModel.legs[oldLegIndex];
-                        return {
-                          ...oldLeg,
-                          std: l.stdLowerBound
-                        };
-                      })
+                        })
                     }))
                   );
 

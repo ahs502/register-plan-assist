@@ -1,4 +1,4 @@
-import React, { FC, Fragment, useState, useContext } from 'react';
+import React, { FC, Fragment, useState, useContext, useEffect } from 'react';
 import { Theme, IconButton, Badge, Drawer, Portal, CircularProgress } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import { DoneAll as FinilizedIcon, Search as SearchIcon, SettingsOutlined as SettingsIcon } from '@material-ui/icons';
@@ -20,6 +20,7 @@ import FlightService from 'src/services/FlightService';
 import FlightLegModel from '@core/models/flight/FlightLegModel';
 import FlightModel from '@core/models/flight/FlightModel';
 import { dataTypes } from 'src/utils/DataType';
+import KeyboardHandler from 'src/utils/KeyboardHandler';
 
 const useStyles = makeStyles((theme: Theme) => ({
   sideBarBackdrop: {
@@ -80,6 +81,11 @@ const TimelinePage: FC<TimelinePageProps> = ({ onObjectionTargetClick, onEditFli
   const [statusBarProps, setStatusBarProps] = useState<StatusBarProps>({});
 
   const navBarToolsContainer = useContext(NavBarToolsContainerContext);
+
+  useEffect(() => {
+    const reference = KeyboardHandler.register({ alt: false, ctrl: true, shift: false }, 'Z', 'keydown', e => console.log('Ctrl+Z is pressed!', e));
+    return () => KeyboardHandler.unregister(reference);
+  }, []);
 
   const snackbar = useSnackbar();
   const classes = useStyles();

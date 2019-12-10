@@ -199,8 +199,8 @@ interface FlightInfo {
 
 const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, fromDate, toDate }) => {
   const allAirports = MasterData.all.airports.items;
-  const defaultWestAirport = ['BCN', 'DXB', 'ESB', 'EVN', 'GYD', 'IST', 'MXP', 'VKO'];
-  const defaultEastAirpot = ['BKK', 'CAN', 'DEL', 'BOM', 'KUL', 'LHE', 'PEK', 'PVG'];
+  const defaultWestAirport = ['BCN', 'DXB', 'ESB', 'IST', 'VKO'];
+  const defaultEastAirpot = ['BKK', 'CAN', 'DEL', 'KUL', 'LHE', 'PEK', 'PVG'];
   const [{ eastAirports, westAirports, startDate, endDate, baseDate, maxConnectionTime, minConnectionTime }, setViewState] = useState<ViewState>(() => ({
     eastAirports: allAirports.filter(a => defaultEastAirpot.indexOf(a.name) !== -1).orderBy('name'),
     westAirports: allAirports.filter(a => defaultWestAirport.indexOf(a.name) !== -1).orderBy('name'),

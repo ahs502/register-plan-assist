@@ -160,6 +160,7 @@ const FlightModal: FC<FlightModalProps> = ({ state: [open, { flight }], onOpenFl
           <Grid item xs={12}>
             <RefiningTextField
               fullWidth
+              autoFocus
               label="Aircraft Register"
               dataType={dataTypes.preplanAircraftRegister(preplan.aircraftRegisters)}
               value={viewState.aircraftRegister}

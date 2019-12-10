@@ -1,75 +1,79 @@
 import React, { FC } from 'react';
 import { Theme } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
-import BaseModal, { BaseModalProps, useModalState, useModalViewState } from 'src/components/BaseModal';
+import BaseModal, { BaseModalProps, useModalState, useModalViewState, createModalExtraViewState } from 'src/components/BaseModal';
 
 const useStyles = makeStyles((theme: Theme) => ({
   // The modal specific styles go here...
 }));
 
-export interface SampleModalState {
-  modalStateProperty: number;
+interface State {
+  stateProperty: number;
 }
 
-export interface SampleModalProps extends BaseModalProps<SampleModalState> {
+interface ViewState {
+  viewStateProperty: number;
+}
+
+export interface SampleModalProps extends BaseModalProps<State> {
   onSomeAction(someData: number): void;
   onSomeAsyncAction(someData: number): Promise<void>;
 }
 
-const SampleModal: FC<SampleModalProps> = ({ state: [open, { modalStateProperty }], onSomeAction, onSomeAsyncAction, ...others }) => {
-  const [viewState, setViewState, render] = useModalViewState<{ someViewStateProperty: number }>(
-    open,
-    {
-      someViewStateProperty: 10 // The default view model.
-    },
-    () => ({
-      someViewStateProperty: modalStateProperty // The initial view model based on props and model.
-    })
-  );
+const SampleModal: FC<SampleModalProps> = ({ state, onSomeAction, onSomeAsyncAction, ...others }) => {
+  const [viewState, setViewState] = useModalViewState<State, ViewState>(state, ({ stateProperty: modalStateProperty }) => ({
+    viewStateProperty: modalStateProperty
+  }));
 
   const classes = useStyles();
 
   return (
     <BaseModal
       {...others}
-      open={open}
-      title="This is the modal title!"
-      actions={[
+      state={state}
+      viewState={viewState}
+      supplementExtention={createModalExtraViewState(state, viewState, ({ state, viewState }) => ({ data: 100 }))}
+      title={({ state, viewState, data }) => 'This is the modal title!'}
+      actions={({ state, viewState, data }) => [
         {
           title: 'Cancel'
         },
         {
           title: 'Action',
           action: () => {
-            const someData = viewState.someViewStateProperty;
+            const someData = viewState.viewStateProperty;
             onSomeAction(someData);
           }
         },
         {
           title: 'Async Action',
           action: async () => {
-            const someData = viewState.someViewStateProperty;
+            const someData = viewState.viewStateProperty;
             await onSomeAsyncAction(someData);
           }
         }
       ]}
-    >
-      The modal body contents go here...
-      <input value={viewState.someViewStateProperty.toString()} onChange={e => setViewState({ someViewStateProperty: Number(e.target.value) })} />
-      {render && (
+      body={({ state, viewState, data, tryToSubmit }) => (
         <div>
-          Render state dependent content {modalStateProperty} conditionally by <code>render</code> trueness.
+          The modal body contents go here...
+          <input
+            title="Press Enter here to submit."
+            value={viewState.viewStateProperty.toString()}
+            onChange={e => setViewState({ viewStateProperty: Number(e.target.value) })}
+            onKeyDown={tryToSubmit}
+          />
+          ...
+          <button onClick={() => tryToSubmit()}>Submit Alternative</button>
         </div>
       )}
-      ...
-    </BaseModal>
+    />
   );
 };
 
 export default SampleModal;
 
 export function useSampleModalState() {
-  return useModalState<SampleModalState>();
+  return useModalState<State>();
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -80,7 +84,7 @@ const SomeComponent: FC = () => {
 
   return (
     <div>
-      <button onClick={e => openSimpleModal({ modalStateProperty: 10 })}>Open</button>
+      <button onClick={e => openSimpleModal({ stateProperty: 10 })}>Open</button>
 
       <SampleModal
         state={sampleModalState}

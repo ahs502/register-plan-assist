@@ -77,7 +77,10 @@
       return array.indexOf(item) === index;
     }
     Array.prototype.distinct = function Array_prototype_distinct<T>(areEqual?: (a: T, b: T) => boolean): T[] {
-      return this.filter(isNotDuplicatedBefore);
+      if (!areEqual) return this.filter(isNotDuplicatedBefore);
+      const result: T[] = [];
+      this.forEach(newItem => result.some(item => areEqual(item, newItem)) || result.push(newItem));
+      return result;
     };
 
     Array.prototype.flatten = function Array_prototype_flatten(): any[] {

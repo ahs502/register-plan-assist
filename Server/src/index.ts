@@ -29,15 +29,29 @@ app.use('/', express.static(path.join(__dirname, 'public')));
 const port = process.env.PORT || 3000;
 app.set('port', port);
 
-const server = http.createServer(app);
+import { withDbAccess } from 'src/utils/sqlServer';
+import { fetchAndCacheMasterData } from 'src/services/master-data-service';
+import MasterData from '@core/master-data';
+import MasterDataModel from '@core/models/master-data/MasterDataModel';
 
-server.listen(port);
+withDbAccess(({ runQuery }) => fetchAndCacheMasterData(Object.keys(MasterData.all) as (keyof MasterDataModel)[], runQuery)).then(
+  () => {
+    const server = http.createServer(app);
 
-server.on('error', error => {
-  if ((<any>error).code === 'EADDRINUSE') return console.error('Address in use.');
-  console.error(error.message || error.name || error);
-});
+    server.listen(port);
 
-server.on('listening', () => {
-  console.log(('>>'.bold + ` Server is listening on port ${String(port).bold}:\n`).green);
-});
+    server.on('error', error => {
+      if ((<any>error).code === 'EADDRINUSE') return console.error('Address in use.');
+      console.error(error.message || error.name || error);
+    });
+
+    server.on('listening', () => {
+      console.log(('>>'.bold + ` Server is listening on port ${String(port).bold}:\n`).green);
+    });
+  },
+  reason => {
+    console.error(reason);
+    console.info(('>>'.bold + ' Restart server in ' + '5'.bold + ' seconds...\n').green);
+    setTimeout(() => process.exit(1), 5000);
+  }
+);

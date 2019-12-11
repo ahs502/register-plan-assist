@@ -10,7 +10,9 @@ import { PreplanAircraftRegisters } from 'src/business/preplan/PreplanAircraftRe
 export interface ViewState {
   bypassValidation: boolean;
   label: string;
+  addingNewCategory: boolean;
   category: string;
+  categoryOption?: GeneralOptionViewState;
   stc: Stc;
   tabIndex: 'ALL' | Weekday;
   legIndex: number;
@@ -187,6 +189,10 @@ class LegViewStateValidation extends Validation<
       }
     );
   }
+}
+
+export interface GeneralOptionViewState {
+  name: string;
 }
 
 export interface AircraftIdentityOptionViewState {

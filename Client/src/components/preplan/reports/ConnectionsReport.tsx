@@ -223,11 +223,13 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
       const flightLegInfoModels: FlightLegInfoModel[] = [];
       const reportBaseDate = new Date(dataTypes.utcDate.convertViewToModel(baseDate));
 
-      const targetFlights = flights.filter(
-        f =>
-          eastAirports.some(a => a.id === f.departureAirport.id || a.id === f.arrivalAirport.id) ||
-          westAirports.some(a => a.id === f.departureAirport.id || a.id === f.arrivalAirport.id)
-      );
+      const targetFlights = flights
+        .filter(
+          f =>
+            eastAirports.some(a => a.id === f.departureAirport.id || a.id === f.arrivalAirport.id) ||
+            westAirports.some(a => a.id === f.departureAirport.id || a.id === f.arrivalAirport.id)
+        )
+        .filter(t => t.rsx === 'REAL');
 
       eastAirports.forEach(airport => {
         if (!flightLegInfoModels.some(f => f.airport === airport)) {
@@ -243,6 +245,8 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
 
       targetFlights.forEach(flight => {
         const isDepartureFromIKA = flight.departureAirport.name === 'IKA';
+        const isArrivalToIKA = flight.arrivalAirport.name === 'IKA';
+
         if (isDepartureFromIKA) {
           const utcStd = flight.actualStd.toDate(reportBaseDate);
           const localStd = flight.departureAirport.convertUtcToLocal(utcStd);
@@ -262,7 +266,7 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
               flightLegInfoModel.flightInfo.push({ weekday: departureWeekDay, arrivalTimeToIKA: [], departureTimeFromIKA: [localStd] });
             }
           }
-        } else {
+        } else if (isArrivalToIKA) {
           const utcStd = flight.actualStd.toDate(reportBaseDate);
           const localStd = flight.departureAirport.convertUtcToLocal(utcStd);
           const utcSta = flight.actualSta.toDate(reportBaseDate);

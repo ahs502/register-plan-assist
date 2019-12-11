@@ -1,4 +1,4 @@
-import React, { FC, ReactElement, useState, useEffect, Dispatch, SetStateAction, Fragment, PropsWithChildren } from 'react';
+import React, { FC, ReactElement, useState, KeyboardEvent } from 'react';
 import { Theme, DialogTitle, DialogContent, DialogActions, Button, CircularProgress, Paper, Typography } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import DraggableDialog, { DraggableDialogProps } from 'src/components/DraggableDialog';
@@ -32,45 +32,58 @@ const useStyles = makeStyles((theme: Theme) => ({
 
 export interface ModalAction {
   title: string;
-  action?(): void | Promise<void>;
+  submitter?: boolean;
+  canceler?: boolean;
+  notClosing?: boolean;
   invisible?: boolean;
   disabled?: boolean;
-  notClosing?: boolean;
+  action?(): void | Promise<void>;
 }
 
 export interface BaseModalProps<State> extends Omit<DraggableDialogProps, 'open' | 'title'> {
-  state: State | undefined;
+  state: State;
   onClose(): void | Promise<void>;
 }
 
-interface ActualBaseModalProps<State, ViewState> extends Omit<BaseModalProps<State>,'state'> {
-  state:State;
-  viewState: ViewState ;
+interface Supplement {
+  handleKeyboardEvent(e?: KeyboardEvent): void;
+  submit(): void;
+  cancel(): void;
+}
+interface ActualBaseModalProps extends Omit<BaseModalProps<any>, 'state'> {
   cancelable?: boolean;
-  title?: string ;
+  title?: string;
   complexTitle?: ReactElement | undefined | null | false;
+  body(supplement: Supplement): JSX.Element;
   actions?: ModalAction[];
 }
 
-const BaseModal = <State, ViewState>({
-  children,
-  state,
-  viewState,
-  cancelable,
-  title,
-  complexTitle,
-  onClose,
-  actions:modalActions,
-  ...others
-}: PropsWithChildren<ActualBaseModalProps<State, ViewState>>): ReactElement | null => {
+const BaseModal: FC<ActualBaseModalProps> = ({ cancelable, title, complexTitle, body, onClose, actions, ...others }) => {
   const [{ loading, errorMessage }, setViewState] = useState<{ loading: boolean; errorMessage: string }>({ loading: false, errorMessage: '' });
 
-  const open = !!viewState;
-
-  useEffect(() => {
-    if (!open || (!loading && !errorMessage)) return;
-    setViewState({ loading: false, errorMessage: '' });
-  }, [open]);
+  const supplement: Supplement = {
+    handleKeyboardEvent(e) {
+      if (e && (e.altKey || e.ctrlKey || e.shiftKey)) return;
+      switch (e?.which) {
+        case 13:
+          supplement.submit();
+          break;
+        case 27:
+          supplement.cancel();
+          break;
+      }
+    },
+    submit() {
+      const action = actions?.last(a => !a.disabled && !a.invisible && a.submitter);
+      if (!action) return;
+      handleLoader(fullAction(action))();
+    },
+    cancel() {
+      const action = actions?.last(a => !a.disabled && !a.invisible && a.canceler);
+      if (!action) return;
+      handleLoader(fullAction(action))();
+    }
+  };
 
   const classes = useStyles();
 
@@ -78,47 +91,35 @@ const BaseModal = <State, ViewState>({
     <DraggableDialog
       {...others}
       aria-labelledby="form-dialog-title"
-      open={open}
+      open={true}
       disableBackdropClick={loading || !cancelable}
       disableEscapeKeyDown={loading || !cancelable}
       onClose={handleLoader(onClose)}
     >
-      {open && (
-        <Fragment>
-          <DialogTitle className={loading ? classes.disable : ''} id="form-dialog-title">
-            {title||complexTitle}
-          </DialogTitle>
-          <DialogContent>
-            <div className={classNames(loading ? classes.disable : '')}>
-              {body({
-                ...supplement,
-                tryToSubmit: e => {
-                  if (e && (e.which !== 13 || e.altKey || e.ctrlKey || e.shiftKey)) return;
-                  handleLoader(modalActions && modalActions.length > 0 ? fullAction(modalActions[modalActions.length - 1]) : onClose);
-                }
-              })}
-            </div>
-            {loading && <CircularProgress size={24} className={classes.progress} />}
-            {errorMessage && (
-              <Paper className={classNames(classes.paperError, classes.marginTop2)}>
-                <Typography className={classes.error} component="p" variant="body1" color="error">
-                  {errorMessage}
-                </Typography>
-              </Paper>
-            )}
-          </DialogContent>
-          {modalActions && (
-            <DialogActions>
-              {modalActions
-                .filter(action => !action.invisible)
-                .map((modalAction, index) => (
-                  <Button key={index} color="primary" disabled={modalAction.disabled || loading} onClick={handleLoader(fullAction(modalAction))}>
-                    {modalAction.title}
-                  </Button>
-                ))}
-            </DialogActions>
-          )}
-        </Fragment>
+      <DialogTitle className={loading ? classes.disable : ''} id="form-dialog-title">
+        {title || complexTitle}
+      </DialogTitle>
+      <DialogContent>
+        <div className={classNames(loading ? classes.disable : '')}>{body(supplement)}</div>
+        {loading && <CircularProgress size={24} className={classes.progress} />}
+        {errorMessage && (
+          <Paper className={classNames(classes.paperError, classes.marginTop2)}>
+            <Typography className={classes.error} component="p" variant="body1" color="error">
+              {errorMessage}
+            </Typography>
+          </Paper>
+        )}
+      </DialogContent>
+      {actions && (
+        <DialogActions>
+          {actions
+            .filter(action => !action.invisible)
+            .map((action, index) => (
+              <Button key={index} color="primary" disabled={action.disabled || loading} onClick={handleLoader(fullAction(action))}>
+                {action.title}
+              </Button>
+            ))}
+        </DialogActions>
       )}
     </DraggableDialog>
   );
@@ -131,7 +132,7 @@ const BaseModal = <State, ViewState>({
         if (notClosing) return;
         return onClose();
       } catch (reason) {
-        // Do not close the modal when some exception occurs in the action.
+        // No need to close the modal when some exception occurs in the action.
         console.error(reason);
         throw reason;
       }
@@ -162,23 +163,6 @@ export function useModalState<State>(): [State | undefined, (state: State) => vo
   return [state, state => setState(state), () => setState(undefined)];
 }
 
-export function useModalViewState<State, ViewState>(
-  state: State | undefined,
-  viewStateProvider: (state: State) => ViewState | false | undefined | null
-): [ViewState | undefined, Dispatch<SetStateAction<ViewState>>] {
-  const [viewState, setViewState] = useState<ViewState | undefined>(undefined);
-
-  useEffect(() => {
-    setViewState((state && viewStateProvider(state)) || undefined);
-  }, [!!state]);
-
-  return [
-    viewState,
-    setViewStateAction =>
-      viewState && setViewState(typeof setViewStateAction === 'function' ? (setViewStateAction as (previousViewState: ViewState) => ViewState)(viewState) : setViewStateAction)
-  ];
-}
-
-export function createModal<State, ViewState>(state:State|undefined,viewState:ViewState|undefined,descriptor:(props:ActualBaseModalProps)):JSX.Element{
-  
+export function createModal<State, ModalProps extends BaseModalProps<State>>(Modal: FC<ModalProps>): FC<Omit<ModalProps, 'state'> & { state: State | undefined }> {
+  return ({ state, ...others }) => (state ? <Modal {...(others as any)} state={state} /> : <DraggableDialog open={false} />);
 }

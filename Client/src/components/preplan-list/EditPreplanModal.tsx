@@ -1,7 +1,7 @@
-import React, { FC } from 'react';
+import React, { useState } from 'react';
 import { Theme, Grid } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
-import BaseModal, { BaseModalProps, useModalViewState, useModalState, createModalExtraViewState } from 'src/components/BaseModal';
+import BaseModal, { BaseModalProps, useModalState, createModal } from 'src/components/BaseModal';
 import NewPreplanModel from '@core/models/preplan/NewPreplanModel';
 import PreplanHeader from 'src/business/preplan/PreplanHeader';
 import Id from '@core/types/Id';
@@ -11,10 +11,6 @@ import Validation from '@core/node_modules/@ahs502/validation/dist/Validation';
 import persistant from 'src/utils/persistant';
 
 const useStyles = makeStyles((theme: Theme) => ({}));
-
-interface State {
-  preplanHeader: PreplanHeader;
-}
 
 interface ViewState {
   name: string;
@@ -61,104 +57,104 @@ class ViewStateValidation extends Validation<
   }
 }
 
-export interface EditPreplanModalProps extends BaseModalProps<State> {
+export interface EditPreplanModalState {
+  preplanHeader: PreplanHeader;
+}
+
+export interface EditPreplanModalProps extends BaseModalProps<EditPreplanModalState> {
   onApply(sourcePreplanId: Id, newPreplanModel: NewPreplanModel): Promise<void>;
   preplanHeaders: readonly PreplanHeader[];
 }
 
-const EditPreplanModal: FC<EditPreplanModalProps> = ({ state, onApply, preplanHeaders, ...others }) => {
-  const [viewState, setViewState] = useModalViewState<State, ViewState>(state, ({ preplanHeader: { name, startDate, endDate } }) => ({
-    name: dataTypes.name.convertBusinessToView(name),
-    startDate: dataTypes.utcDate.convertBusinessToView(startDate),
-    endDate: dataTypes.utcDate.convertBusinessToView(endDate)
+const EditPreplanModal = createModal<EditPreplanModalState, EditPreplanModalProps>(({ state, onApply, preplanHeaders, ...others }) => {
+  const [viewState, setViewState] = useState<ViewState>(() => ({
+    name: dataTypes.name.convertBusinessToView(state.preplanHeader.name),
+    startDate: dataTypes.utcDate.convertBusinessToView(state.preplanHeader.startDate),
+    endDate: dataTypes.utcDate.convertBusinessToView(state.preplanHeader.endDate)
   }));
+
+  const validation = new ViewStateValidation(viewState, preplanHeaders);
+  const errors = {
+    name: validation.message('NAME_*'),
+    startDate: validation.message('START_DATE_*'),
+    endDate: validation.message('END_DATE_*')
+  };
 
   const classes = useStyles();
 
   return (
     <BaseModal
       {...others}
-      state={state}
-      viewState={viewState}
-      extraViewState={createModalExtraViewState(state, viewState, ({ viewState }) => {
-        const validation = new ViewStateValidation(viewState, preplanHeaders);
-        const errors = {
-          name: validation.message('NAME_*'),
-          startDate: validation.message('START_DATE_*'),
-          endDate: validation.message('END_DATE_*')
-        };
-        return { validation, errors };
-      })}
-      title={() => 'What are your intended modifications?'}
-      actions={({ state: { preplanHeader }, viewState: { name, startDate, endDate }, extraViewState: { validation } }) => [
+      title="What are your intended modifications?"
+      actions={[
         {
-          title: 'Cancel'
+          title: 'Cancel',
+          canceler: true
         },
         {
           title: 'Submit',
+          submitter: true,
+          disabled: !validation.ok,
           action: async () => {
             if (!validation.ok) throw 'Invalid form fields.';
 
             const newPreplanModel: NewPreplanModel = {
-              name: dataTypes.name.convertViewToModel(name),
-              startDate: dataTypes.utcDate.convertViewToModel(startDate),
-              endDate: dataTypes.utcDate.convertViewToModel(endDate)
+              name: dataTypes.name.convertViewToModel(viewState.name),
+              startDate: dataTypes.utcDate.convertViewToModel(viewState.startDate),
+              endDate: dataTypes.utcDate.convertViewToModel(viewState.endDate)
             };
 
-            await onApply(preplanHeader.id, newPreplanModel);
-          },
-          disabled: !validation.ok
+            await onApply(state.preplanHeader.id, newPreplanModel);
+          }
         }
       ]}
-      body={({ viewState, extraViewState: { errors }, tryToSubmit }) => {
-        return (
-          <Grid container spacing={2}>
-            <Grid item xs={12}>
-              <RefiningTextField
-                fullWidth
-                autoFocus
-                label="Name"
-                dataType={dataTypes.name}
-                value={viewState.name}
-                onChange={({ target: { value: name } }) => setViewState({ ...viewState, name })}
-                onKeyDown={tryToSubmit}
-                error={errors.name !== undefined}
-                helperText={errors.name}
-              />
-            </Grid>
-            <Grid item xs={6}>
-              <RefiningTextField
-                fullWidth
-                label="Start Date"
-                dataType={dataTypes.utcDate}
-                value={viewState.startDate}
-                onChange={({ target: { value: startDate } }) => setViewState({ ...viewState, startDate })}
-                onKeyDown={tryToSubmit}
-                error={errors.startDate !== undefined}
-                helperText={errors.startDate}
-              />
-            </Grid>
-            <Grid item xs={6}>
-              <RefiningTextField
-                fullWidth
-                label="End Date"
-                dataType={dataTypes.utcDate}
-                value={viewState.endDate}
-                onChange={({ target: { value: endDate } }) => setViewState({ ...viewState, endDate })}
-                onKeyDown={tryToSubmit}
-                error={errors.endDate !== undefined}
-                helperText={errors.endDate}
-              />
-            </Grid>
+      body={({ handleKeyboardEvent }) => (
+        <Grid container spacing={2}>
+          <Grid item xs={12}>
+            <RefiningTextField
+              fullWidth
+              autoFocus
+              label="Name"
+              dataType={dataTypes.name}
+              value={viewState.name}
+              onChange={({ target: { value: name } }) => setViewState({ ...viewState, name })}
+              onKeyDown={handleKeyboardEvent}
+              error={errors.name !== undefined}
+              helperText={errors.name}
+            />
           </Grid>
-        );
-      }}
+          <Grid item xs={6}>
+            <RefiningTextField
+              fullWidth
+              label="Start Date"
+              dataType={dataTypes.utcDate}
+              value={viewState.startDate}
+              onChange={({ target: { value: startDate } }) => setViewState({ ...viewState, startDate })}
+              onKeyDown={handleKeyboardEvent}
+              error={errors.startDate !== undefined}
+              helperText={errors.startDate}
+            />
+          </Grid>
+          <Grid item xs={6}>
+            <RefiningTextField
+              fullWidth
+              label="End Date"
+              dataType={dataTypes.utcDate}
+              value={viewState.endDate}
+              onChange={({ target: { value: endDate } }) => setViewState({ ...viewState, endDate })}
+              onKeyDown={handleKeyboardEvent}
+              error={errors.endDate !== undefined}
+              helperText={errors.endDate}
+            />
+          </Grid>
+        </Grid>
+      )}
     />
   );
-};
+});
 
 export default EditPreplanModal;
 
 export function useEditPreplanModalState() {
-  return useModalState<State>();
+  return useModalState<EditPreplanModalState>();
 }

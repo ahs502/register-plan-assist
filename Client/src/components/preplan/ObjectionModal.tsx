@@ -1,7 +1,7 @@
-import React, { FC } from 'react';
-import { Theme, Typography } from '@material-ui/core';
+import React, { Fragment } from 'react';
+import { Theme } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
-import BaseModal, { BaseModalProps, useModalState } from 'src/components/BaseModal';
+import BaseModal, { BaseModalProps, useModalState, createModal } from 'src/components/BaseModal';
 import Objectionable from 'src/business/constraints/Objectionable';
 
 const useStyles = makeStyles((theme: Theme) => ({}));
@@ -12,24 +12,24 @@ export interface ObjectionModalState {
 
 export interface ObjectionModalProps extends BaseModalProps<ObjectionModalState> {}
 
-const ObjectionModal: FC<ObjectionModalProps> = ({ state: [open, { target }], ...others }) => {
+const ObjectionModal = createModal<ObjectionModalState, ObjectionModalProps>(({ state, ...others }) => {
   const classes = useStyles();
 
   return (
     <BaseModal
       {...others}
-      open={open}
-      title={target ? `The list of objections on ${target.marker}:` : ''}
+      title={state.target ? `The list of objections on ${state.target.marker}:` : ''}
       actions={[
         {
-          title: 'Close'
+          title: 'Close',
+          submitter: true,
+          canceler: true
         }
       ]}
-    >
-      TODO: The list of objections...
-    </BaseModal>
+      body={() => <Fragment>TODO: The list of objections...</Fragment>}
+    />
   );
-};
+});
 
 export default ObjectionModal;
 

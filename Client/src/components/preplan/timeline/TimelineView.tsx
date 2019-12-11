@@ -783,7 +783,7 @@ const TimelineView: FC<TimelineViewProps> = ({
               if (registerFlights.length === 0) return onFreeSpaceMouseHover(register);
               if (registerFlights.length === 1) return onFreeSpaceMouseHover(register, registerFlights[0], registerFlights[0]);
               const firstFlight = registerFlights[0],
-                lastFlight = registerFlights[registerFlights.length - 1];
+                lastFlight = registerFlights.last()!;
               let previousFlight: Flight | undefined = undefined,
                 nextFlight: Flight | undefined = registerFlights.shift();
               do {

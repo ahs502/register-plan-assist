@@ -10,6 +10,12 @@ declare interface ArrayConstructor {
 
 declare interface Array<T> {
   /**
+   * Returns the last item of this array, satisfying the provided condition if any and returns `null` otherwise.
+   * @param predicate Optional, the conditions to be met.
+   */
+  last(predicate?: (item: T) => any): T | null;
+
+  /**
    * Removes all occurance of the specified item and returns the number of removed items.
    * @param item The item to be removed.
    */
@@ -78,6 +84,12 @@ declare interface Array<T> {
 }
 
 declare interface ReadonlyArray<T> {
+  /**
+   * Returns the last item of this array, satisfying the provided condition if any and returns `null` otherwise.
+   * @param predicate Optional, the conditions to be met.
+   */
+  last(predicate?: (item: T) => any): T | null;
+
   /**
    * Returns a sorted copy of this array by ascending order (immutable).
    * @param propertySelectors The list of names of the properties or mapper functions to sort on, prioritized by order.

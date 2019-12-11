@@ -577,7 +577,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
 
     function boarderBotoom(workbookSheetRows: WorkbookSheetRow[]) {
       if (!workbookSheetRows || workbookSheetRows.length === 0) return;
-      const lastRow = workbookSheetRows[workbookSheetRows.length - 1]!;
+      const lastRow = workbookSheetRows.last()!;
       lastRow.cells!.forEach((c, index) => {
         if (index === 0) return;
         c.borderBottom = { color: '#000000', size: 3 };
@@ -587,7 +587,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
     function removeHiddenColumn(workbookSheetRow: WorkbookSheetRow) {
       if (!workbookSheetRow || !workbookSheetRow.cells) return;
       for (let index = 0; index < numberOfHiddenColumn; index++) {
-        workbookSheetRow.cells.remove(workbookSheetRow.cells[workbookSheetRow.cells.length - 1]);
+        workbookSheetRow.cells.remove(workbookSheetRow.cells.last()!);
       }
     }
 
@@ -667,7 +667,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
       if (index > 0 && index < self.length - 1 && self && self[index - 1] && self[index - 1].cells) {
         const previousFlightRequirment = self[index - 1] as any;
         if (previousFlightRequirment.type === 'data' && previousFlightRequirment.cells) {
-          const currentLabel = r.cells[r.cells.length - 1].value;
+          const currentLabel = r.cells.last()!.value;
           const previousLabel = previousFlightRequirment.cells[previousFlightRequirment.cells.length - 1].value;
           if (currentLabel !== previousLabel) {
             const currenParentRoute = r.cells[r.cells.length - 2] && r.cells[r.cells.length - 2].value;

@@ -12,6 +12,7 @@ import FlightLeg from 'src/business/flight/FlightLeg';
 import { dataTypes } from 'src/utils/DataType';
 import RefiningTextField from 'src/components/RefiningTextField';
 import Validation from '@core/node_modules/@ahs502/validation/dist/Validation';
+import AutoComplete from 'src/components/AutoComplete';
 
 const errorPaperSize = 250;
 const character = {
@@ -93,6 +94,7 @@ const useStyles = makeStyles((theme: Theme) => ({
 }));
 
 interface ViewState {
+  airline: Airline;
   eastAirports: Airport[];
   westAirports: Airport[];
   startDate: string;
@@ -114,8 +116,9 @@ class ConnectionReportValidation extends Validation<
   | 'BASE_DATE_EXISTS'
   | 'BASE_DATE_IS_VALID'
   | 'BASE_DATE_BETWEEN_START_DATE_AND_END_DATE'
+  | 'AIRLINE_EXISTS'
 > {
-  constructor(startDate: string, endDate: string, baseDate: string, eastAirports: Airport[], westAirports: Airport[]) {
+  constructor({ airline, startDate, endDate, baseDate, eastAirports, westAirports }: ViewState) {
     super(
       validator => {
         validator.check('EAST_AIRPORT_EXISTS', eastAirports.length > 0);
@@ -136,6 +139,7 @@ class ConnectionReportValidation extends Validation<
                 dataTypes.utcDate.convertViewToModel(startDate) <= dataTypes.utcDate.convertViewToModel(baseDate),
               'Between start date and end date.'
             );
+          validator.check('AIRLINE_EXISTS', !!airline);
         });
       },
       {
@@ -157,7 +161,8 @@ class NumberOfConnectionValidation extends Validation<
   | 'MAX_CONNECTION_IS_NOT_LESS_THAN_MIN_CONNECTION_TIME',
   { connectionReportValidation: ConnectionReportValidation }
 > {
-  constructor(maxConnectionTime: string, minConnectionTime: string, startDate: string, endDate: string, baseDate: string, eastAirports: Airport[], westAirports: Airport[]) {
+  constructor(viewState: ViewState) {
+    const { maxConnectionTime, minConnectionTime } = viewState;
     super(
       validator => {
         validator.check('MAX_CONNECTION_TIME_EXISTS', !!maxConnectionTime).check('MAX_CONNECTION_TIME_IS_VALID', () => dataTypes.daytime.checkView(maxConnectionTime));
@@ -167,7 +172,7 @@ class NumberOfConnectionValidation extends Validation<
           validator.check('MIN_CONNECTION_IS_NOT_GREATER_THAN_MAX_CONNECTION_TIME', ok, 'Can not be grater than max connection.');
           validator.check('MAX_CONNECTION_IS_NOT_LESS_THAN_MIN_CONNECTION_TIME', ok, 'Can not be less than max connection.');
         });
-        validator.put(validator.$.connectionReportValidation, new ConnectionReportValidation(startDate, endDate, baseDate, eastAirports, westAirports));
+        validator.put(validator.$.connectionReportValidation, new ConnectionReportValidation(viewState));
       },
       {
         '*_EXISTS': 'Required.',
@@ -197,11 +202,25 @@ interface FlightInfo {
   arrivalTimeToIKA: Date[];
 }
 
+interface AutoCompleteOption {
+  label: string;
+  value: string;
+}
+
+interface Airline extends AutoCompleteOption {}
+
 const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, fromDate, toDate }) => {
   const allAirports = MasterData.all.airports.items;
+
+  const allAirline = flights
+    .map(f => f.flightNumber.airlineCode)
+    .distinct()
+    .map<Airline>(a => ({ label: a, value: a }));
+
   const defaultWestAirport = ['BCN', 'DXB', 'ESB', 'IST', 'VKO'];
   const defaultEastAirpot = ['BKK', 'CAN', 'DEL', 'KUL', 'LHE', 'PEK', 'PVG'];
-  const [{ eastAirports, westAirports, startDate, endDate, baseDate, maxConnectionTime, minConnectionTime }, setViewState] = useState<ViewState>(() => ({
+  const [viewState, setViewState] = useState<ViewState>(() => ({
+    airline: allAirline.find(z => z.value === 'W5') ?? allAirline[0],
     eastAirports: allAirports.filter(a => defaultEastAirpot.indexOf(a.name) !== -1).orderBy('name'),
     westAirports: allAirports.filter(a => defaultWestAirport.indexOf(a.name) !== -1).orderBy('name'),
     startDate: dataTypes.utcDate.convertBusinessToView(fromDate),
@@ -221,23 +240,23 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
   useEffect(() => {
     if (validation.ok) {
       const flightLegInfoModels: FlightLegInfoModel[] = [];
-      const reportBaseDate = new Date(dataTypes.utcDate.convertViewToModel(baseDate));
+      const reportBaseDate = new Date(dataTypes.utcDate.convertViewToModel(viewState.baseDate));
 
-      const targetFlights = flights
-        .filter(
-          f =>
-            eastAirports.some(a => a.id === f.departureAirport.id || a.id === f.arrivalAirport.id) ||
-            westAirports.some(a => a.id === f.departureAirport.id || a.id === f.arrivalAirport.id)
-        )
-        .filter(t => t.rsx === 'REAL');
+      const targetFlights = flights.filter(
+        f =>
+          f.rsx === 'REAL' &&
+          f.flightNumber.airlineCode === viewState.airline.value &&
+          (viewState.eastAirports.some(a => a.id === f.departureAirport.id || a.id === f.arrivalAirport.id) ||
+            viewState.westAirports.some(a => a.id === f.departureAirport.id || a.id === f.arrivalAirport.id))
+      );
 
-      eastAirports.forEach(airport => {
+      viewState.eastAirports.forEach(airport => {
         if (!flightLegInfoModels.some(f => f.airport === airport)) {
           flightLegInfoModels.push({ airport: airport, flightInfo: [] });
         }
       });
 
-      westAirports.forEach(airport => {
+      viewState.westAirports.forEach(airport => {
         if (!flightLegInfoModels.some(f => f.airport === airport)) {
           flightLegInfoModels.push({ airport: airport, flightInfo: [] });
         }
@@ -299,10 +318,10 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
         setConnectionNumberDataModel(generateConnectionNumberDataModel(flightLegInfoModels));
       }
     }
-  }, [eastAirports, westAirports, minConnectionTime, maxConnectionTime, baseDate]);
+  }, [viewState]);
 
-  const validation = new ConnectionReportValidation(startDate, endDate, baseDate, eastAirports, westAirports);
-  const numberOfConnectionValidation = new NumberOfConnectionValidation(maxConnectionTime, minConnectionTime, startDate, endDate, baseDate, eastAirports, westAirports);
+  const validation = new ConnectionReportValidation(viewState);
+  const numberOfConnectionValidation = new NumberOfConnectionValidation(viewState);
 
   const errors = {
     eastAirports: validation.message('EAST_AIRPORT_*'),
@@ -310,6 +329,7 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
     startDate: validation.message('START_DATE_*'),
     endDate: validation.message('END_DATE_*'),
     baseDate: validation.message('BASE_DATE_*'),
+    airline: validation.message('AIRLINE_*'),
     maxConnectionTime: numberOfConnectionValidation.message('MAX_CONNECTION_*'),
     minConnectionTime: numberOfConnectionValidation.message('MIN_CONNECTION_*')
   };
@@ -339,12 +359,12 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
 
   const generateConnectionNumberDataModel = (flightLegInfoModels: FlightLegInfoModel[]): { [index: number]: string | number }[] => {
     const result: { [index: number]: string | number }[] = [];
-    if (eastAirports && westAirports) {
-      eastAirports.forEach(ea => {
+    if (viewState.eastAirports && viewState.westAirports) {
+      viewState.eastAirports.forEach(ea => {
         const connection: any = {};
         connection['airport'] = ea.name;
 
-        westAirports.forEach(wa => {
+        viewState.westAirports.forEach(wa => {
           connection['to' + wa.name] =
             getNumberOfConnection(flightLegInfoModels.find(f => f.airport.id === ea.id)!, flightLegInfoModels.find(f => f.airport.id === wa.id)!) || character.zeroConnection;
           connection['from' + wa.name] =
@@ -359,12 +379,12 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
   const generateConnectionTableDataModel = (flightLegInfoModels: FlightLegInfoModel[]): { [index: number]: string | number }[] => {
     const result: { [index: string]: any }[] = [];
 
-    if (eastAirports && westAirports) {
+    if (viewState.eastAirports && viewState.westAirports) {
       weekDay.forEach(w => {
         const model: any = {};
         model['day'] = Weekday[w].toUpperCase().substring(0, 3);
 
-        eastAirports.forEach(airport => {
+        viewState.eastAirports.forEach(airport => {
           model['from' + airport.name] = model['to' + airport.name] = '';
           const flightLegInfoModel = flightLegInfoModels.find(f => f.airport.id === airport.id);
           if (flightLegInfoModel) {
@@ -382,7 +402,7 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
           }
         });
 
-        westAirports.forEach(airport => {
+        viewState.westAirports.forEach(airport => {
           model[airport.name] = '';
           const flightLegInfoModel = flightLegInfoModels.find(f => f.airport.id === airport.id);
 
@@ -428,7 +448,7 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
         fromFlightInfo.arrivalTimeToIKA.some(staToIka => {
           return toFlightInfo.departureTimeFromIKA.some(stdFromIka => {
             const diff = (stdFromIka.getUTCHours() - staToIka.getUTCHours()) * 60 + (stdFromIka.getUTCMinutes() - staToIka.getUTCMinutes());
-            return diff <= converteHHMMtoTotalMinute(maxConnectionTime) && diff >= converteHHMMtoTotalMinute(minConnectionTime);
+            return diff <= converteHHMMtoTotalMinute(viewState.maxConnectionTime) && diff >= converteHHMMtoTotalMinute(viewState.minConnectionTime);
           });
         })
       ) {
@@ -521,7 +541,7 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
         />
 
         <ExcelExportColumnGroup title="Arrival to IKA" headerCellOptions={columnGroupCellOptions}>
-          {eastAirports.map(airport => (
+          {viewState.eastAirports.map(airport => (
             <ExcelExportColumn
               key={airport.id}
               field={'from' + airport.name}
@@ -536,7 +556,7 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
           ))}
         </ExcelExportColumnGroup>
         <ExcelExportColumnGroup title={preplanName + ' CONNECTIONS'} headerCellOptions={columnGroupCellOptions}>
-          {westAirports.map(airport => (
+          {viewState.westAirports.map(airport => (
             <ExcelExportColumn
               key={airport.id}
               field={airport.name}
@@ -555,7 +575,7 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
           ))}
         </ExcelExportColumnGroup>
         <ExcelExportColumnGroup title="Departure from IKA" headerCellOptions={columnGroupCellOptions}>
-          {eastAirports.map(airport => (
+          {viewState.eastAirports.map(airport => (
             <ExcelExportColumn
               key={airport.id}
               field={'to' + airport.name}
@@ -578,28 +598,28 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
       <TableHead>
         <TableRow className={classes.header}>
           <TableCell className={classes.boarder} />
-          <TableCell colSpan={eastAirports.length} align="center" className={classes.boarder}>
+          <TableCell colSpan={viewState.eastAirports.length} align="center" className={classes.boarder}>
             Arrival to IKA
           </TableCell>
-          <TableCell colSpan={westAirports.length} className={classes.boarder} />
+          <TableCell colSpan={viewState.westAirports.length} className={classes.boarder} />
 
-          <TableCell colSpan={eastAirports.length} align="center" className={classes.boarder}>
+          <TableCell colSpan={viewState.eastAirports.length} align="center" className={classes.boarder}>
             Departure from IKA
           </TableCell>
         </TableRow>
         <TableRow className={classes.airportHeader}>
           <TableCell className={classNames(classes.header, classes.boarder)} />
-          {eastAirports.map(airport => (
+          {viewState.eastAirports.map(airport => (
             <TableCell key={airport.id} className={classes.boarder}>
               {airport.name}
             </TableCell>
           ))}
-          {westAirports.map(airport => (
+          {viewState.westAirports.map(airport => (
             <TableCell key={airport.id} className={classNames(classes.boarder)}>
               {airport.name}
             </TableCell>
           ))}
-          {eastAirports.map(airport => (
+          {viewState.eastAirports.map(airport => (
             <TableCell key={airport.id} className={classes.boarder}>
               {airport.name}
             </TableCell>
@@ -610,12 +630,12 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
         {connectionTableDataModel.map((ct, index) => (
           <TableRow key={index}>
             <TableCell className={classNames(classes.header, classes.boarder)}>{ct['day']}</TableCell>
-            {eastAirports.map(a => (
+            {viewState.eastAirports.map(a => (
               <TableCell key={'from' + a.name} className={classes.boarder}>
                 <Fragment>{ct['from' + a.name] && ct['from' + a.name].split('\r\n').map((n: any) => <div>{n}</div>)}</Fragment>
               </TableCell>
             ))}
-            {westAirports.map(a => (
+            {viewState.westAirports.map(a => (
               <TableCell className={classNames(classes.west, classes.boarder)} key={a.name}>
                 <Fragment>
                   {ct[a.name] &&
@@ -627,7 +647,7 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
                 </Fragment>
               </TableCell>
             ))}
-            {eastAirports.map(a => (
+            {viewState.eastAirports.map(a => (
               <TableCell key={'to' + a.name} className={classes.boarder}>
                 <Fragment>{ct['to' + a.name] && ct['to' + a.name].split('\r\n').map((n: any) => <div>{n}</div>)}</Fragment>
               </TableCell>
@@ -690,10 +710,10 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
         />
 
         <ExcelExportColumnGroup
-          title={preplanName + ' Number of Connection (Minimum Connection Time: ' + minConnectionTime + ' Maximum Connection Time: ' + maxConnectionTime + ')'}
+          title={preplanName + ' Number of Connection (Minimum Connection Time: ' + viewState.minConnectionTime + ' Maximum Connection Time: ' + viewState.maxConnectionTime + ')'}
           headerCellOptions={numberOfConnectionExcelStyle.headerCellOption}
         >
-          {westAirports.map(wa => (
+          {viewState.westAirports.map(wa => (
             <ExcelExportColumnGroup
               title={wa.name}
               key={wa.id}
@@ -748,7 +768,7 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
       <TableBody>
         <TableRow>
           <TableCell className={classNames(classes.connectionHeader, classes.boarder)} />
-          {westAirports.map(wa => (
+          {viewState.westAirports.map(wa => (
             <TableCell className={classNames(classes.connectionHeader, classes.boarder)} key={wa.id} colSpan={2} align="center">
               <ConnectionIcon className={classes.connectionFrom} />
               {wa.name}
@@ -761,7 +781,7 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
             <TableCell className={classNames(classes.connectionHeader, classes.boarder)} align="center">
               {cn['airport']}
             </TableCell>
-            {westAirports.map(wa => (
+            {viewState.westAirports.map(wa => (
               <Fragment key={wa.id}>
                 <TableCell
                   className={classNames(classes.boarder, classes.removeRightBoarder, cn['to' + wa.name] === character.zeroConnection ? classes.zeroNumberOfConnection : '')}
@@ -785,17 +805,32 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
 
   return (
     <Fragment>
+      <InputLabel htmlFor="flight-type" className={classes.marginBottom1}>
+        Airline
+      </InputLabel>
+
+      <AutoComplete
+        id="airline"
+        options={allAirline}
+        value={viewState.airline}
+        onSelect={airline => {
+          setViewState({ ...viewState, airline });
+        }}
+        error={errors.airline !== undefined}
+        helperText={errors.airline}
+      />
+      <br />
       <InputLabel error={errors.eastAirports !== undefined} htmlFor="east-airport" className={classes.marginBottom1}>
         East Airport
       </InputLabel>
       <MultiSelect
         id="east-airport"
-        value={eastAirports}
+        value={viewState.eastAirports}
         options={allAirports}
         getOptionLabel={r => r.name}
         getOptionValue={r => r.id}
         onSelect={value => {
-          setViewState({ eastAirports: value ? value.orderBy('name') : [], westAirports, endDate, startDate, baseDate, maxConnectionTime, minConnectionTime });
+          setViewState({ ...viewState, eastAirports: value ? value.orderBy('name') : [] });
         }}
         className={classes.marginBottom1}
         error={errors.eastAirports !== undefined}
@@ -807,12 +842,12 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
       </InputLabel>
       <MultiSelect
         id="west-airport"
-        value={westAirports}
+        value={viewState.westAirports}
         options={allAirports}
         getOptionLabel={r => r.name}
         getOptionValue={r => r.id}
         onSelect={value => {
-          setViewState({ eastAirports, westAirports: value ? value.orderBy('name') : [], endDate, startDate, baseDate, maxConnectionTime, minConnectionTime });
+          setViewState({ ...viewState, westAirports: value ? value.orderBy('name') : [] });
         }}
         error={errors.westAirports !== undefined}
         helperText={errors.westAirports}
@@ -821,8 +856,8 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
       <RefiningTextField
         label="Start Date"
         dataType={dataTypes.utcDate}
-        value={startDate}
-        onChange={({ target: { value: startDate } }) => setViewState({ eastAirports, westAirports, endDate, startDate, baseDate, maxConnectionTime, minConnectionTime })}
+        value={viewState.startDate}
+        onChange={({ target: { value: startDate } }) => setViewState({ ...viewState, startDate })}
         error={errors.startDate !== undefined}
         helperText={errors.startDate}
         disabled
@@ -831,8 +866,8 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
       <RefiningTextField
         label="End Date"
         dataType={dataTypes.utcDate}
-        value={endDate}
-        onChange={({ target: { value: endDate } }) => setViewState({ eastAirports, westAirports, endDate, startDate, baseDate, maxConnectionTime, minConnectionTime })}
+        value={viewState.endDate}
+        onChange={({ target: { value: endDate } }) => setViewState({ ...viewState, endDate })}
         error={errors.endDate !== undefined}
         helperText={errors.endDate}
         disabled
@@ -841,8 +876,8 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
       <RefiningTextField
         label="Base Date"
         dataType={dataTypes.utcDate}
-        value={baseDate}
-        onChange={({ target: { value: baseDate } }) => setViewState({ eastAirports, westAirports, endDate, startDate, baseDate, maxConnectionTime, minConnectionTime })}
+        value={viewState.baseDate}
+        onChange={({ target: { value: baseDate } }) => setViewState({ ...viewState, baseDate })}
         error={errors.baseDate !== undefined}
         helperText={errors.baseDate}
       />
@@ -867,8 +902,8 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
       <RefiningTextField
         label="Minimum Connection Time"
         dataType={dataTypes.daytime}
-        value={minConnectionTime}
-        onChange={({ target: { value: minConnectionTime } }) => setViewState({ eastAirports, westAirports, endDate, startDate, baseDate, maxConnectionTime, minConnectionTime })}
+        value={viewState.minConnectionTime}
+        onChange={({ target: { value: minConnectionTime } }) => setViewState({ ...viewState, minConnectionTime })}
         error={errors.minConnectionTime !== undefined}
         helperText={errors.minConnectionTime}
       />
@@ -876,8 +911,8 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
       <RefiningTextField
         label="Maximum Connection Time"
         dataType={dataTypes.daytime}
-        value={maxConnectionTime}
-        onChange={({ target: { value: maxConnectionTime } }) => setViewState({ eastAirports, westAirports, endDate, startDate, baseDate, maxConnectionTime, minConnectionTime })}
+        value={viewState.maxConnectionTime}
+        onChange={({ target: { value: maxConnectionTime } }) => setViewState({ ...viewState, maxConnectionTime })}
         error={errors.maxConnectionTime !== undefined}
         helperText={errors.maxConnectionTime}
       />

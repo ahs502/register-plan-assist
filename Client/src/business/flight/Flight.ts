@@ -9,7 +9,7 @@ import Rsx from '@core/types/Rsx';
 import Weekday from '@core/types/Weekday';
 import Id from '@core/types/Id';
 import ModelConvertable from 'src/business/ModelConvertable';
-import { dataTypes } from 'src/utils/DataType';
+import { dataTypes, NameBusinessDataType } from 'src/utils/DataType';
 
 export default class Flight implements ModelConvertable<FlightModel> {
   // Original:
@@ -18,7 +18,7 @@ export default class Flight implements ModelConvertable<FlightModel> {
 
   // Duplicates:
   readonly label: string;
-  readonly category: string;
+  readonly category: NameBusinessDataType;
   readonly stc: Stc;
   readonly rsx: Rsx;
   readonly ignored: boolean;

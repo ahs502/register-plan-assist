@@ -20,6 +20,9 @@ import FlightService from 'src/services/FlightService';
 import FlightLegModel from '@core/models/flight/FlightLegModel';
 import FlightModel from '@core/models/flight/FlightModel';
 import { dataTypes } from 'src/utils/DataType';
+import DayFlightRequirementModel from '@core/models/flight-requirement/DayFlightRequirementModel';
+import DayFlightRequirementLegModel from '@core/models/flight-requirement/DayFlightRequirementLegModel';
+import FlightRequirementService from 'src/services/FlightRequirementService';
 import KeyboardHandler from 'src/utils/KeyboardHandler';
 
 const useStyles = makeStyles((theme: Theme) => ({
@@ -195,7 +198,23 @@ const TimelinePage: FC<TimelinePageProps> = ({ onObjectionTargetClick, onEditFli
                       }))
                     : f.extractModel()
                 );
-              const newPreplanModel = await FlightService.edit(preplan.id, ...flightModels);
+              // const newPreplanModel = await FlightService.edit(preplan.id, ...flightModels);
+              const newFlightRequirementModel = flight.flightRequirement.extractModel(flightRequirementModel => ({
+                ...flightRequirementModel,
+                days: flightRequirementModel.days.map<DayFlightRequirementModel>(d =>
+                  d.day === flight.day || allWeekdays
+                    ? {
+                        ...d,
+                        route: d.route.map<DayFlightRequirementLegModel>(l => ({
+                          ...l,
+                          stdLowerBound: l.stdLowerBound + deltaStd,
+                          stdUpperBound: undefined
+                        }))
+                      }
+                    : d
+                )
+              }));
+              const newPreplanModel = await FlightRequirementService.edit(preplan.id, newFlightRequirementModel, flightModels, []);
               await reloadPreplan(newPreplanModel);
             } catch (reason) {
               snackbar.enqueueSnackbar(String(reason), { variant: 'error' });

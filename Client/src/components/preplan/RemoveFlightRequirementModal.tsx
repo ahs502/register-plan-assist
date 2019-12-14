@@ -1,7 +1,7 @@
-import React, { FC, useContext } from 'react';
+import React, { useContext } from 'react';
 import { Theme, Typography } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
-import BaseModal, { BaseModalProps, useModalState } from 'src/components/BaseModal';
+import BaseModal, { BaseModalProps, useModalState, createModal } from 'src/components/BaseModal';
 import FlightRequirement from 'src/business/flight-requirement/FlightRequirement';
 import { ReloadPreplanContext, PreplanContext } from 'src/pages/preplan';
 import FlightRequirementService from 'src/services/FlightRequirementService';
@@ -14,7 +14,7 @@ export interface RemoveFlightRequirementModalState {
 
 export interface RemoveFlightRequirementModalProps extends BaseModalProps<RemoveFlightRequirementModalState> {}
 
-const RemoveFlightRequirementModal: FC<RemoveFlightRequirementModalProps> = ({ state: [open, { flightRequirement }], ...others }) => {
+const RemoveFlightRequirementModal = createModal<RemoveFlightRequirementModalState, RemoveFlightRequirementModalProps>(({ state, ...others }) => {
   const preplan = useContext(PreplanContext);
   const reloadPreplan = useContext(ReloadPreplanContext);
 
@@ -23,26 +23,26 @@ const RemoveFlightRequirementModal: FC<RemoveFlightRequirementModalProps> = ({ s
   return (
     <BaseModal
       {...others}
-      open={open}
-      title={flightRequirement ? `Are you sure to remove ${flightRequirement.marker}?` : ''}
+      title={state.flightRequirement ? `Are you sure to remove ${state.flightRequirement.marker}?` : ''}
       actions={[
         {
-          title: 'Cancel'
+          title: 'Cancel',
+          canceler: true
         },
         {
           title: 'Remove',
+          submitter: true,
           action: async () => {
-            const newPreplanModel = await FlightRequirementService.remove(preplan.id, flightRequirement.id);
+            const newPreplanModel = await FlightRequirementService.remove(preplan.id, state.flightRequirement.id);
             await reloadPreplan(newPreplanModel);
             return others.onClose();
           }
         }
       ]}
-    >
-      <Typography variant="body1">If you continue to remove this flight requirement, all its related flights will be removed too.</Typography>
-    </BaseModal>
+      body={() => <Typography variant="body1">If you continue to remove this flight requirement, all its related flights will be removed too.</Typography>}
+    />
   );
-};
+});
 
 export default RemoveFlightRequirementModal;
 

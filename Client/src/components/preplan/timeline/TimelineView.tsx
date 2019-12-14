@@ -279,8 +279,8 @@ const TimelineView: FC<TimelineViewProps> = ({
       editable: {
         add: false,
         remove: false,
-        updateGroup: true,
-        updateTime: true,
+        updateGroup: !preplan.readonly,
+        updateTime: !preplan.readonly,
         overrideItems: false
       },
       end: startDate.clone().addDays(7),
@@ -735,7 +735,7 @@ const TimelineView: FC<TimelineViewProps> = ({
           </div>
         `;
     }
-  }, [startDate.getTime(), preplan.flights, timelineOptions, timelineGroups]);
+  }, [startDate.getTime(), preplan, timelineOptions, timelineGroups]);
 
   const [flightContextMenuModel, setFlightContextMenuModel] = useState<FlightContextMenuModel>({});
   const flightContextMenuRef = useRef<HTMLDivElement>(null);

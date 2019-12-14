@@ -274,12 +274,12 @@ export function withTransactionalDbAccess(task: (dbAccess: DbAccess) => Promise<
           try {
             const boundRunQuery = runQuery.bind(null, connection);
             const boundRunSp = runSp.bind(null, connection);
-            await task({
+            const result = await task({
               types: TYPES,
               runQuery: attachHelperFunctions(boundRunQuery),
               runSp: attachHelperFunctions(boundRunSp)
             });
-            done(null, err => (err ? reject(err) : resolve()));
+            done(null, err => (err ? reject(err) : resolve(result)));
           } catch (error) {
             done(error, err => reject(err || error));
           }

@@ -1,7 +1,7 @@
-import React, { FC } from 'react';
+import React from 'react';
 import { Theme, Typography } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
-import BaseModal, { BaseModalProps, useModalState } from 'src/components/BaseModal';
+import BaseModal, { BaseModalProps, useModalState, createModal } from 'src/components/BaseModal';
 import PreplanHeader from 'src/business/preplan/PreplanHeader';
 import Id from '@core/types/Id';
 
@@ -15,28 +15,28 @@ export interface RemovePreplanModalProps extends BaseModalProps<RemovePreplanMod
   onRemove(sourcePreplanId: Id): Promise<void>;
 }
 
-const RemovePreplanModal: FC<RemovePreplanModalProps> = ({ state: [open, { preplanHeader }], onRemove, ...others }) => {
+const RemovePreplanModal = createModal<RemovePreplanModalState, RemovePreplanModalProps>(({ state, onRemove, ...others }) => {
   const classes = useStyles();
 
   return (
     <BaseModal
       {...others}
-      open={open}
       title="Would you like to remove your preplan?"
       actions={[
         {
-          title: 'Cancel'
+          title: 'Cancel',
+          canceler: true
         },
         {
           title: 'Remove',
-          action: async () => await onRemove(preplanHeader.id)
+          submitter: true,
+          action: async () => await onRemove(state.preplanHeader.id)
         }
       ]}
-    >
-      {open && <Typography variant="body1">All of data about preplan {preplanHeader.name} will be removed.</Typography>}
-    </BaseModal>
+      body={() => <Typography variant="body1">All of data about preplan {state.preplanHeader.name} will be removed.</Typography>}
+    />
   );
-};
+});
 
 export default RemovePreplanModal;
 

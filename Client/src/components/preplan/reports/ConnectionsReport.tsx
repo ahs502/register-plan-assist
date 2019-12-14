@@ -678,7 +678,7 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
                 }
               });
 
-              const lastRowCells = rows[rows.length - 1].cells!;
+              const lastRowCells = rows.last()!.cells!;
               for (let index = 1; index < lastRowCells.length; index++) {
                 const cell = lastRowCells[index];
                 cell.borderBottom = { color: '#000000', size: 2 };

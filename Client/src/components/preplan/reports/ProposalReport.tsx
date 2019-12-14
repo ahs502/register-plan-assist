@@ -158,6 +158,7 @@ interface ProposalReportProps {
 
 interface FlattenFlightRequirment {
   id: string;
+  baseFlightId: string;
   flightNumber: string;
   fullFlightNumber: string;
   departureAirport: Airport;
@@ -590,7 +591,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
 
     function boarderBotoom(workbookSheetRows: WorkbookSheetRow[]) {
       if (!workbookSheetRows || workbookSheetRows.length === 0) return;
-      const lastRow = workbookSheetRows[workbookSheetRows.length - 1]!;
+      const lastRow = workbookSheetRows.last()!;
       lastRow.cells!.forEach((c, index) => {
         if (index === 0) return;
         c.borderBottom = { color: '#000000', size: 3 };
@@ -600,7 +601,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
     function removeHiddenColumn(workbookSheetRow: WorkbookSheetRow) {
       if (!workbookSheetRow || !workbookSheetRow.cells) return;
       for (let index = 0; index < numberOfHiddenColumn; index++) {
-        workbookSheetRow.cells.remove(workbookSheetRow.cells[workbookSheetRow.cells.length - 1]);
+        workbookSheetRow.cells.remove(workbookSheetRow.cells.last()!);
       }
     }
 
@@ -680,7 +681,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
       if (index > 0 && index < self.length - 1 && self && self[index - 1] && self[index - 1].cells) {
         const previousFlightRequirment = self[index - 1] as any;
         if (previousFlightRequirment.type === 'data' && previousFlightRequirment.cells) {
-          const currentLabel = r.cells[r.cells.length - 1].value;
+          const currentLabel = r.cells.last()!.value;
           const previousLabel = previousFlightRequirment.cells[previousFlightRequirment.cells.length - 1].value;
           if (currentLabel !== previousLabel) {
             const currenParentRoute = r.cells[r.cells.length - 2] && r.cells[r.cells.length - 2].value;
@@ -1857,23 +1858,24 @@ function sortFlattenFlightRequirment(flattenFlightRequirmentList: FlattenFlightR
 
 function createFlattenFlightRequirmentsFromDailyFlightRequirment(flights: Flight[], baseDate: Date): FlattenFlightRequirment[] {
   const result: FlattenFlightRequirment[] = [];
-  let existFlight: boolean = false;
+  let existFlightId: string = '';
   flights.sortBy(f => f.legs[0]?.actualStd);
   for (let flightIndex = 0; flightIndex < flights.length; flightIndex++) {
     const flight = flights[flightIndex];
     if (flightIndex > 0) {
       for (let index = 0; index < flightIndex; index++) {
-        existFlight = true;
+        existFlightId = '';
         const prevFlight = flights[index];
-        for (let legIndex = 0; legIndex < flight.legs.length; legIndex++) {
-          const leg = flight.legs[legIndex];
-          const prevLeg = prevFlight.legs[legIndex];
-          if (leg.actualStd.minutes !== prevLeg.actualStd.minutes || leg.blockTime.minutes !== prevLeg.blockTime.minutes) {
-            existFlight = false;
-            break;
-          }
+
+        const existFlight = prevFlight.legs.every((l, index) => {
+          const leg = flight.legs[index];
+          return leg.actualStd.minutes === l.actualStd.minutes && leg.blockTime.minutes === l.blockTime.minutes;
+        });
+
+        if (existFlight) {
+          existFlightId = prevFlight.id;
+          break;
         }
-        if (existFlight) break;
       }
     }
 
@@ -1881,9 +1883,10 @@ function createFlattenFlightRequirmentsFromDailyFlightRequirment(flights: Flight
     for (let legIndex = 0; legIndex < legs.length; legIndex++) {
       const leg = legs[legIndex];
 
-      if (existFlight) {
+      if (!!existFlightId) {
         const existFlatten = result.find(
           f =>
+            f.baseFlightId === existFlightId &&
             f.arrivalAirport.id === leg.arrivalAirport.id &&
             f.departureAirport.id === leg.departureAirport.id &&
             f.blocktime === leg.blockTime.minutes &&
@@ -1929,6 +1932,7 @@ function createFlattenFlightRequirment(leg: FlightLeg, date: Date): FlattenFligh
       Math.random()
         .toString(36)
         .substring(2) + Date.now().toString(36),
+    baseFlightId: leg.flight.id,
     flightNumber: normalizeFlightNumber(leg.flightNumber),
     fullFlightNumber: leg.flightNumber.toString(),
     arrivalAirport: leg.arrivalAirport,

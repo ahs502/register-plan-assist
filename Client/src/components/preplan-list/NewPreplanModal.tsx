@@ -1,7 +1,7 @@
-import React, { FC } from 'react';
+import React, { useState } from 'react';
 import { Theme, Grid } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
-import BaseModal, { BaseModalProps, useModalViewState, useModalState } from 'src/components/BaseModal';
+import BaseModal, { BaseModalProps, useModalState, createModal } from 'src/components/BaseModal';
 import NewPreplanModel from '@core/models/preplan/NewPreplanModel';
 import { dataTypes } from 'src/utils/DataType';
 import RefiningTextField from 'src/components/RefiningTextField';
@@ -64,8 +64,8 @@ export interface NewPreplanModalProps extends BaseModalProps<NewPreplanModalStat
   preplanHeaders: readonly PreplanHeader[];
 }
 
-const NewPreplanModal: FC<NewPreplanModalProps> = ({ state: [open], onCreate, preplanHeaders, ...others }) => {
-  const [viewState, setViewState, render] = useModalViewState<ViewState>(open, {
+const NewPreplanModal = createModal<NewPreplanModalState, NewPreplanModalProps>(({ state, onCreate, preplanHeaders, ...others }) => {
+  const [viewState, setViewState] = useState<ViewState>({
     bypassValidation: true,
     name: '',
     startDate: '',
@@ -73,7 +73,6 @@ const NewPreplanModal: FC<NewPreplanModalProps> = ({ state: [open], onCreate, pr
   });
 
   const validation = new ViewStateValidation(viewState, preplanHeaders);
-
   const errors = {
     name: viewState.bypassValidation ? undefined : validation.message('NAME_*'),
     startDate: viewState.bypassValidation ? undefined : validation.message('START_DATE_*'),
@@ -85,14 +84,16 @@ const NewPreplanModal: FC<NewPreplanModalProps> = ({ state: [open], onCreate, pr
   return (
     <BaseModal
       {...others}
-      open={open}
       title="What are the new preplan specifications?"
       actions={[
         {
-          title: 'Cancel'
+          title: 'Cancel',
+          canceler: true
         },
         {
           title: 'Create',
+          submitter: true,
+          disabled: !viewState.bypassValidation && !validation.ok,
           action: async () => {
             viewState.bypassValidation && setViewState({ ...viewState, bypassValidation: false });
 
@@ -105,49 +106,53 @@ const NewPreplanModal: FC<NewPreplanModalProps> = ({ state: [open], onCreate, pr
             };
 
             await onCreate(newPreplanModel);
-          },
-          disabled: !viewState.bypassValidation && !validation.ok
+          }
         }
       ]}
-    >
-      <Grid container spacing={2}>
-        <Grid item xs={12}>
-          <RefiningTextField
-            label="Name"
-            fullWidth
-            dataType={dataTypes.name}
-            value={viewState.name}
-            onChange={({ target: { value: name } }) => setViewState({ ...viewState, name })}
-            error={errors.name !== undefined}
-            helperText={errors.name}
-          />
+      body={({ handleKeyboardEvent }) => (
+        <Grid container spacing={2}>
+          <Grid item xs={12}>
+            <RefiningTextField
+              fullWidth
+              autoFocus
+              label="Name"
+              dataType={dataTypes.name}
+              value={viewState.name}
+              onChange={({ target: { value: name } }) => setViewState({ ...viewState, name })}
+              onKeyDown={handleKeyboardEvent}
+              error={errors.name !== undefined}
+              helperText={errors.name}
+            />
+          </Grid>
+          <Grid item xs={6}>
+            <RefiningTextField
+              fullWidth
+              label="Start Date"
+              dataType={dataTypes.utcDate}
+              value={viewState.startDate}
+              onChange={({ target: { value: startDate } }) => setViewState({ ...viewState, startDate })}
+              onKeyDown={handleKeyboardEvent}
+              error={errors.startDate !== undefined}
+              helperText={errors.startDate}
+            />
+          </Grid>
+          <Grid item xs={6}>
+            <RefiningTextField
+              fullWidth
+              label="End Date"
+              dataType={dataTypes.utcDate}
+              value={viewState.endDate}
+              onChange={({ target: { value: endDate } }) => setViewState({ ...viewState, endDate })}
+              onKeyDown={handleKeyboardEvent}
+              error={errors.endDate !== undefined}
+              helperText={errors.endDate}
+            />
+          </Grid>
         </Grid>
-        <Grid item xs={6}>
-          <RefiningTextField
-            label="Start Date"
-            fullWidth
-            dataType={dataTypes.utcDate}
-            value={viewState.startDate}
-            onChange={({ target: { value: startDate } }) => setViewState({ ...viewState, startDate })}
-            error={errors.startDate !== undefined}
-            helperText={errors.startDate}
-          />
-        </Grid>
-        <Grid item xs={6}>
-          <RefiningTextField
-            label="End Date"
-            fullWidth
-            dataType={dataTypes.utcDate}
-            value={viewState.endDate}
-            onChange={({ target: { value: endDate } }) => setViewState({ ...viewState, endDate })}
-            error={errors.endDate !== undefined}
-            helperText={errors.endDate}
-          />
-        </Grid>
-      </Grid>
-    </BaseModal>
+      )}
+    />
   );
-};
+});
 
 export default NewPreplanModal;
 

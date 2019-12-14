@@ -23,6 +23,11 @@
       return result;
     };
 
+    Array.prototype.last = function Array_prototype_last<T>(predicate?: (item: T) => any): T | null {
+      for (let i = this.length - 1; i >= 0; --i) if (!predicate || predicate(this[i])) return this[i];
+      return null;
+    };
+
     Array.prototype.remove = function Array_prototype_remove<T>(item: T): number {
       let result = 0;
       let index = 0;
@@ -77,7 +82,10 @@
       return array.indexOf(item) === index;
     }
     Array.prototype.distinct = function Array_prototype_distinct<T>(areEqual?: (a: T, b: T) => boolean): T[] {
-      return this.filter(isNotDuplicatedBefore);
+      if (!areEqual) return this.filter(isNotDuplicatedBefore);
+      const result: T[] = [];
+      this.forEach(newItem => result.some(item => areEqual(item, newItem)) || result.push(newItem));
+      return result;
     };
 
     Array.prototype.flatten = function Array_prototype_flatten(): any[] {

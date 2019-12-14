@@ -1,4 +1,4 @@
-import React, { FC, Fragment, useState, useContext } from 'react';
+import React, { FC, Fragment, useState, useContext, useEffect } from 'react';
 import { Theme, IconButton, Badge, Drawer, Portal, CircularProgress } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import { DoneAll as FinilizedIcon, Search as SearchIcon, SettingsOutlined as SettingsIcon } from '@material-ui/icons';
@@ -20,6 +20,10 @@ import FlightService from 'src/services/FlightService';
 import FlightLegModel from '@core/models/flight/FlightLegModel';
 import FlightModel from '@core/models/flight/FlightModel';
 import { dataTypes } from 'src/utils/DataType';
+import DayFlightRequirementModel from '@core/models/flight-requirement/DayFlightRequirementModel';
+import DayFlightRequirementLegModel from '@core/models/flight-requirement/DayFlightRequirementLegModel';
+import FlightRequirementService from 'src/services/FlightRequirementService';
+import KeyboardHandler from 'src/utils/KeyboardHandler';
 
 const useStyles = makeStyles((theme: Theme) => ({
   sideBarBackdrop: {
@@ -80,6 +84,11 @@ const TimelinePage: FC<TimelinePageProps> = ({ onObjectionTargetClick, onEditFli
   const [statusBarProps, setStatusBarProps] = useState<StatusBarProps>({});
 
   const navBarToolsContainer = useContext(NavBarToolsContainerContext);
+
+  useEffect(() => {
+    const reference = KeyboardHandler.register({ alt: false, ctrl: true, shift: false }, 'Z', 'keydown', e => console.log('Ctrl+Z is pressed!', e));
+    return () => KeyboardHandler.unregister(reference);
+  }, []);
 
   const snackbar = useSnackbar();
   const classes = useStyles();
@@ -189,7 +198,23 @@ const TimelinePage: FC<TimelinePageProps> = ({ onObjectionTargetClick, onEditFli
                       }))
                     : f.extractModel()
                 );
-              const newPreplanModel = await FlightService.edit(preplan.id, ...flightModels);
+              // const newPreplanModel = await FlightService.edit(preplan.id, ...flightModels);
+              const newFlightRequirementModel = flight.flightRequirement.extractModel(flightRequirementModel => ({
+                ...flightRequirementModel,
+                days: flightRequirementModel.days.map<DayFlightRequirementModel>(d =>
+                  d.day === flight.day || allWeekdays
+                    ? {
+                        ...d,
+                        route: d.route.map<DayFlightRequirementLegModel>(l => ({
+                          ...l,
+                          stdLowerBound: l.stdLowerBound + deltaStd,
+                          stdUpperBound: undefined
+                        }))
+                      }
+                    : d
+                )
+              }));
+              const newPreplanModel = await FlightRequirementService.edit(preplan.id, newFlightRequirementModel, flightModels, []);
               await reloadPreplan(newPreplanModel);
             } catch (reason) {
               snackbar.enqueueSnackbar(String(reason), { variant: 'error' });

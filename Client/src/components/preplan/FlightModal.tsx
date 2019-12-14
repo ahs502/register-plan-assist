@@ -1,7 +1,7 @@
-import React, { FC, Fragment, useContext } from 'react';
+import React, { Fragment, useContext, useState } from 'react';
 import { Theme, Typography, Grid, Table, TableHead, TableRow, TableCell, TableBody } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
-import BaseModal, { BaseModalProps, useModalViewState, useModalState } from 'src/components/BaseModal';
+import BaseModal, { BaseModalProps, useModalState, createModal } from 'src/components/BaseModal';
 import Flight from 'src/business/flight/Flight';
 import FlightRequirement from 'src/business/flight-requirement/FlightRequirement';
 import Weekday from '@core/types/Weekday';
@@ -65,26 +65,18 @@ export interface FlightModalProps extends BaseModalProps<FlightModalState> {
   onOpenFlightRequirementModal(flightRequirement: FlightRequirement, day: Weekday): void;
 }
 
-const FlightModal: FC<FlightModalProps> = ({ state: [open, { flight }], onOpenFlightRequirementModal, ...others }) => {
+const FlightModal = createModal<FlightModalState, FlightModalProps>(({ state, onOpenFlightRequirementModal, ...others }) => {
   const preplan = useContext(PreplanContext);
   const reloadPreplan = useContext(ReloadPreplanContext);
 
-  const [viewState, setViewState, render] = useModalViewState<ViewState>(
-    open,
-    {
-      aircraftRegister: '',
-      legs: []
-    },
-    () => ({
-      aircraftRegister: dataTypes.preplanAircraftRegister(preplan.aircraftRegisters).convertBusinessToViewOptional(flight.aircraftRegister),
-      legs: flight.legs.map<LegViewState>(l => ({
-        std: dataTypes.daytime.convertBusinessToView(l.std)
-      }))
-    })
-  );
+  const [viewState, setViewState] = useState<ViewState>(() => ({
+    aircraftRegister: dataTypes.preplanAircraftRegister(preplan.aircraftRegisters).convertBusinessToViewOptional(state.flight.aircraftRegister),
+    legs: state.flight.legs.map<LegViewState>(l => ({
+      std: dataTypes.daytime.convertBusinessToView(l.std)
+    }))
+  }));
 
   const validation = new ViewStateValidation(viewState, preplan.aircraftRegisters);
-
   const errors = {
     aircraftRegister: validation.message('AIRCRAFT_REGISTER_*'),
     stds: validation.$.legValidations?.map(v => v.message('STD_*'))
@@ -95,47 +87,47 @@ const FlightModal: FC<FlightModalProps> = ({ state: [open, { flight }], onOpenFl
   return (
     <BaseModal
       {...others}
-      open={open}
       maxWidth="sm"
       complexTitle={
-        render && (
-          <Fragment>
-            <Typography variant="h6" display="inline">
-              {flight.label}
+        <Fragment>
+          <Typography variant="h6" display="inline">
+            {state.flight.label}
+          </Typography>
+          {!!state.flight.category && (
+            <Typography variant="body2" display="inline">
+              &nbsp;&nbsp;&nbsp;{state.flight.category}
             </Typography>
-            {!!flight.category && (
-              <Typography variant="body2" display="inline">
-                &nbsp;&nbsp;&nbsp;{flight.category}
-              </Typography>
-            )}
-            <Typography variant="h6" display="inline">
-              &nbsp;&nbsp;{flight.stc.name}&nbsp;&nbsp;
+          )}
+          <Typography variant="h6" display="inline">
+            &nbsp;&nbsp;{state.flight.stc.name}&nbsp;&nbsp;
+          </Typography>
+          <Typography variant="subtitle1" display="inline">
+            {Weekday[state.flight.day]}s&nbsp;&nbsp;
+          </Typography>
+          {state.flight.rsx !== 'REAL' && (
+            <Typography variant="overline" display="inline">
+              {state.flight.rsx}
             </Typography>
-            <Typography variant="subtitle1" display="inline">
-              {Weekday[flight.day]}s&nbsp;&nbsp;
-            </Typography>
-            {flight.rsx !== 'REAL' && (
-              <Typography variant="overline" display="inline">
-                {flight.rsx}
-              </Typography>
-            )}
-          </Fragment>
-        )
+          )}
+        </Fragment>
       }
       actions={[
         {
-          title: 'Cancel'
+          title: 'Cancel',
+          canceler: true
         },
         {
           title: 'Flight Requirement',
-          action: () => onOpenFlightRequirementModal(flight.flightRequirement, flight.day)
+          action: () => onOpenFlightRequirementModal(state.flight.flightRequirement, state.flight.day)
         },
         {
           title: 'Submit',
+          submitter: true,
+          disabled: !validation.ok,
           action: async () => {
             if (!validation.ok) throw 'Invalid form fields.';
 
-            const flightModel: FlightModel = flight.extractModel(flightModel => ({
+            const flightModel: FlightModel = state.flight.extractModel(flightModel => ({
               ...flightModel,
               aircraftRegisterId: dataTypes.preplanAircraftRegister(preplan.aircraftRegisters).convertViewToModelOptional(viewState.aircraftRegister),
               legs: viewState.legs.map<FlightLegModel>(l => ({
@@ -145,25 +137,25 @@ const FlightModal: FC<FlightModalProps> = ({ state: [open, { flight }], onOpenFl
             }));
 
             const otherFlightModels: FlightModel[] = preplan.flights
-              .filter(f => f.flightRequirement.id === flight.flightRequirement.id && f.id !== flight.id)
+              .filter(f => f.flightRequirement.id === state.flight.flightRequirement.id && f.id !== state.flight.id)
               .map<FlightModel>(f => f.extractModel());
 
             const newPreplanModel = await FlightService.edit(preplan.id, flightModel, ...otherFlightModels);
             await reloadPreplan(newPreplanModel);
-          },
-          disabled: !validation.ok
+          }
         }
       ]}
-    >
-      {render && (
+      body={({ handleKeyboardEvent }) => (
         <Grid container spacing={2}>
           <Grid item xs={12}>
             <RefiningTextField
               fullWidth
+              autoFocus
               label="Aircraft Register"
               dataType={dataTypes.preplanAircraftRegister(preplan.aircraftRegisters)}
               value={viewState.aircraftRegister}
               onChange={({ target: { value: aircraftRegister } }) => setViewState({ ...viewState, aircraftRegister })}
+              onKeyDown={handleKeyboardEvent}
               error={errors.aircraftRegister !== undefined}
               helperText={errors.aircraftRegister}
             />
@@ -182,7 +174,7 @@ const FlightModal: FC<FlightModalProps> = ({ state: [open, { flight }], onOpenFl
                 </TableRow>
               </TableHead>
               <TableBody>
-                {flight.legs.map((l, index) => (
+                {state.flight.legs.map((l, index) => (
                   <TableRow key={index}>
                     <TableCell align="center">{index + 1}</TableCell>
                     <TableCell align="center">{dataTypes.flightNumber.convertBusinessToView(l.flightNumber)}</TableCell>
@@ -207,6 +199,7 @@ const FlightModal: FC<FlightModalProps> = ({ state: [open, { flight }], onOpenFl
                             ]
                           })
                         }
+                        onKeyDown={handleKeyboardEvent}
                         error={errors.stds[index] !== undefined}
                         helperText={errors.stds[index]}
                       />
@@ -225,9 +218,9 @@ const FlightModal: FC<FlightModalProps> = ({ state: [open, { flight }], onOpenFl
           </Grid>
         </Grid>
       )}
-    </BaseModal>
+    />
   );
-};
+});
 
 export default FlightModal;
 

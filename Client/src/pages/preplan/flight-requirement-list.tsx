@@ -4,7 +4,7 @@ import { makeStyles } from '@material-ui/styles';
 import { PreplanContext, ReloadPreplanContext } from 'src/pages/preplan';
 import { fade } from '@material-ui/core/styles';
 import Search, { filterOnProperties } from 'src/components/Search';
-import { Add as AddIcon, Edit as EditIcon, Clear as ClearIcon, TrendingFlat as TrendingFlatIcon } from '@material-ui/icons';
+import { Add as AddIcon, Edit as EditIcon, Clear as ClearIcon, TrendingFlat as TrendingFlatIcon, Visibility as VisibilityIcon } from '@material-ui/icons';
 import classNames from 'classnames';
 import Weekday from '@core/types/Weekday';
 import TablePagination from '@material-ui/core/TablePagination';
@@ -104,7 +104,7 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = React.memo
         <Tab value="INCLUDED" label={`Included (${numberOfIncludedFlightRequirements})`} />
         <Tab value="IGNORED" label={`Ignored (${numberOfIgnoredFlightRequirements})`} />
         <Search outlined onQueryChange={setQuery} />
-        <IconButton color="primary" title="Add Flight" onClick={onAddFlightRequirement}>
+        <IconButton color="primary" title="Add Flight" onClick={onAddFlightRequirement} disabled={preplan.readonly}>
           <AddIcon fontSize="large" />
         </IconButton>
       </Tabs>
@@ -184,16 +184,17 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = React.memo
                     }}
                     color="primary"
                     inputProps={{ 'aria-label': 'primary checkbox' }}
+                    disabled={preplan.readonly}
                   />
                 </Grid>
 
                 <Grid item className={classNames(flightRequirement.ignored && classes.disableOpacityStyle)}>
                   <IconButton size="small" disabled={flightRequirement.ignored} onClick={() => onEditFlightRequirement(flightRequirement)}>
-                    <EditIcon fontSize="large" />
+                    {preplan.readonly ? <VisibilityIcon fontSize="large" /> : <EditIcon fontSize="large" />}
                   </IconButton>
                 </Grid>
                 <Grid item className={classNames(flightRequirement.ignored && classes.disableOpacityStyle)}>
-                  <IconButton size="small" disabled={flightRequirement.ignored} onClick={() => onRemoveFlightRequirement(flightRequirement)}>
+                  <IconButton size="small" disabled={flightRequirement.ignored || preplan.readonly} onClick={() => onRemoveFlightRequirement(flightRequirement)}>
                     <ClearIcon fontSize="large" />
                   </IconButton>
                 </Grid>

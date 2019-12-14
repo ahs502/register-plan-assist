@@ -47,6 +47,6 @@ export default class Preplan extends PreplanHeader {
 
     this.constraintSystem = new ConstraintSystem(this, oldPreplan && oldPreplan.constraintSystem);
 
-    this.readonly = this.finalized || this.user.id !== persistant.user!.id;
+    this.readonly = this.user.id !== persistant.user!.id;
   }
 }

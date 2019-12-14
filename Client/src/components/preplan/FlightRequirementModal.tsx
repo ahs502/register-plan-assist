@@ -311,13 +311,14 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
       title={state.flightRequirement ? 'What are your intended changes?' : 'What is the new flight?'}
       actions={[
         {
-          title: 'Cancel',
+          title: preplan.readonly ? 'Close' : 'Cancel',
           canceler: true
         },
         {
           title: 'Submit',
           submitter: true,
           disabled: !viewState.bypassValidation && !validation.ok,
+          invisible: preplan.readonly,
           action: async () => {
             viewState.bypassValidation && setViewState({ ...viewState, bypassValidation: false });
 
@@ -441,6 +442,7 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
               onKeyDown={handleKeyboardEvent}
               error={errors.label !== undefined}
               helperText={errors.label}
+              disabled={preplan.readonly}
             />
           </Grid>
           <Grid item xs={4}>
@@ -460,6 +462,7 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                 onKeyDown={handleKeyboardEvent}
                 error={errors.category !== undefined}
                 helperText={errors.category}
+                disabled={preplan.readonly}
               />
             ) : (
               <AutoComplete
@@ -469,16 +472,25 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                 getOptionValue={o => o.name}
                 value={viewState.categoryOption}
                 onSelect={categoryOption => setViewState({ ...viewState, category: categoryOption === categoryOptions[0] ? '' : categoryOption.name, categoryOption })}
+                isDisabled={preplan.readonly}
               />
             )}
           </Grid>
           <Grid item xs={1}>
             {viewState.addingNewCategory ? (
-              <IconButton title="Select Category" onClick={() => setViewState({ ...viewState, addingNewCategory: false, category: '', categoryOption: categoryOptions[0] })}>
+              <IconButton
+                disabled={preplan.readonly}
+                title="Select Category"
+                onClick={() => setViewState({ ...viewState, addingNewCategory: false, category: '', categoryOption: categoryOptions[0] })}
+              >
                 <ClearIcon />
               </IconButton>
             ) : (
-              <IconButton title="New Category" onClick={() => setViewState({ ...viewState, addingNewCategory: true, category: '', categoryOption: categoryOptions[0] })}>
+              <IconButton
+                disabled={preplan.readonly}
+                title="New Category"
+                onClick={() => setViewState({ ...viewState, addingNewCategory: true, category: '', categoryOption: categoryOptions[0] })}
+              >
                 <AddIcon />
               </IconButton>
             )}
@@ -491,6 +503,7 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
               getOptionValue={s => s.id}
               value={viewState.stc}
               onSelect={stc => setViewState({ ...viewState, stc })}
+              isDisabled={preplan.readonly}
             />
           </Grid>
 
@@ -508,6 +521,7 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                     setViewState({ ...viewState, days: Weekdays.map(d => ({ ...viewState.default, selected })) });
                   }}
                   color="primary"
+                  disabled={preplan.readonly}
                 />
               </div>
               {Weekdays.map(d => (
@@ -516,6 +530,7 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                     icon={errors.daySelects === undefined ? <CheckBoxOutlineBlankIcon /> : <CheckBoxOutlineBlankIcon color="error" />}
                     checked={viewState.days[d].selected}
                     onChange={e => setViewState({ ...viewState, days: daysButOne(d, { ...viewState.default, selected: e.target.checked }) })}
+                    disabled={preplan.readonly}
                   />
                 </div>
               ))}
@@ -570,7 +585,7 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                             : { ...viewState, days: daysButOne(viewState.tabIndex, day => ({ ...day, rsx })) }
                         )
                       }
-                      isDisabled={viewState.tabIndex !== 'ALL' && !viewState.days[viewState.tabIndex].selected}
+                      isDisabled={(viewState.tabIndex !== 'ALL' && !viewState.days[viewState.tabIndex].selected) || preplan.readonly}
                     />
                   </Grid>
                   <Grid item xs={10}>
@@ -587,7 +602,7 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                         )
                       }
                       onKeyDown={handleKeyboardEvent}
-                      disabled={viewState.tabIndex !== 'ALL' && !viewState.days[viewState.tabIndex].selected}
+                      disabled={(viewState.tabIndex !== 'ALL' && !viewState.days[viewState.tabIndex].selected) || preplan.readonly}
                       error={errors.notes !== undefined}
                       helperText={errors.notes}
                     />
@@ -613,7 +628,7 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                               }
                         )
                       }
-                      isDisabled={viewState.tabIndex !== 'ALL' && !viewState.days[viewState.tabIndex].selected}
+                      isDisabled={(viewState.tabIndex !== 'ALL' && !viewState.days[viewState.tabIndex].selected) || preplan.readonly}
                       error={errors.allowedAircrafts !== undefined}
                       helperText={errors.allowedAircrafts}
                     ></MultiSelect>
@@ -642,7 +657,7 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                               }
                         )
                       }
-                      isDisabled={viewState.tabIndex !== 'ALL' && !viewState.days[viewState.tabIndex].selected}
+                      isDisabled={(viewState.tabIndex !== 'ALL' && !viewState.days[viewState.tabIndex].selected) || preplan.readonly}
                     ></MultiSelect>
                   </Grid>
                   <Grid item xs={2}>
@@ -677,7 +692,7 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                         );
                       }}
                       onKeyDown={handleKeyboardEvent}
-                      disabled={viewState.tabIndex !== 'ALL' && !viewState.days[viewState.tabIndex].selected}
+                      disabled={(viewState.tabIndex !== 'ALL' && !viewState.days[viewState.tabIndex].selected) || preplan.readonly}
                       error={errors.aircraftRegister !== undefined}
                       helperText={errors.aircraftRegister}
                     />
@@ -723,6 +738,7 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                                           days: viewState.days.map(day => ({ ...day, legs: [...day.legs.slice(0, legIndex), ...day.legs.slice(legIndex + 1)] }))
                                         });
                                       }}
+                                      disabled={preplan.readonly}
                                     >
                                       <ClearIcon />
                                     </IconButton>
@@ -739,7 +755,7 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                         <Fragment>
                           <div>
                             <IconButton
-                              disabled={!dataTypes.airport.checkView(viewState.route[viewState.route.length - 1].arrivalAirport)}
+                              disabled={!dataTypes.airport.checkView(viewState.route[viewState.route.length - 1].arrivalAirport) || preplan.readonly}
                               onClick={e =>
                                 setViewState({
                                   ...viewState,
@@ -771,7 +787,8 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                               disabled={
                                 viewState.route.some(l => !dataTypes.airport.checkView(l.departureAirport) || !dataTypes.airport.checkView(l.arrivalAirport)) ||
                                 dataTypes.airport.refineView(viewState.route[0].departureAirport) ===
-                                  dataTypes.airport.refineView(viewState.route[viewState.route.length - 1].arrivalAirport)
+                                  dataTypes.airport.refineView(viewState.route[viewState.route.length - 1].arrivalAirport) ||
+                                preplan.readonly
                               }
                               onClick={e => {
                                 const path: string[] = [viewState.route[0].departureAirport, ...viewState.route.map(l => l.arrivalAirport)].map(a =>
@@ -819,7 +836,7 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                             value={routeLegViewState.flightNumber}
                             onChange={({ target: { value: flightNumber } }) => setViewState({ ...viewState, route: routeButOne(routeLeg => ({ ...routeLeg, flightNumber })) })}
                             onKeyDown={handleKeyboardEvent}
-                            disabled={viewState.tabIndex !== 'ALL'}
+                            disabled={viewState.tabIndex !== 'ALL' || preplan.readonly}
                             error={errors.flightNumber !== undefined}
                             helperText={errors.flightNumber}
                           />
@@ -834,7 +851,7 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                               setViewState({ ...viewState, route: routeButOne(routeLeg => ({ ...routeLeg, departureAirport })) })
                             }
                             onKeyDown={handleKeyboardEvent}
-                            disabled={viewState.tabIndex !== 'ALL'}
+                            disabled={viewState.tabIndex !== 'ALL' || preplan.readonly}
                             error={errors.departureAirport !== undefined}
                             helperText={errors.departureAirport}
                           />
@@ -847,7 +864,7 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                             value={routeLegViewState.arrivalAirport}
                             onChange={({ target: { value: arrivalAirport } }) => setViewState({ ...viewState, route: routeButOne(routeLeg => ({ ...routeLeg, arrivalAirport })) })}
                             onKeyDown={handleKeyboardEvent}
-                            disabled={viewState.tabIndex !== 'ALL'}
+                            disabled={viewState.tabIndex !== 'ALL' || preplan.readonly}
                             error={errors.arrivalAirport !== undefined}
                             helperText={errors.arrivalAirport}
                           />
@@ -905,7 +922,7 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                               )
                             }
                             onKeyDown={handleKeyboardEvent}
-                            disabled={viewState.tabIndex !== 'ALL' && !viewState.days[viewState.tabIndex].selected}
+                            disabled={(viewState.tabIndex !== 'ALL' && !viewState.days[viewState.tabIndex].selected) || preplan.readonly}
                             error={errors.stdLowerBound !== undefined}
                             helperText={errors.stdLowerBound}
                           />
@@ -960,7 +977,7 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                               )
                             }
                             onKeyDown={handleKeyboardEvent}
-                            disabled={viewState.tabIndex !== 'ALL' && !viewState.days[viewState.tabIndex].selected}
+                            disabled={(viewState.tabIndex !== 'ALL' && !viewState.days[viewState.tabIndex].selected) || preplan.readonly}
                             error={errors.blockTime !== undefined}
                             helperText={errors.blockTime}
                           />
@@ -1006,7 +1023,7 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                                 }
                               />
                             }
-                            disabled={viewState.tabIndex !== 'ALL' && !viewState.days[viewState.tabIndex].selected}
+                            disabled={(viewState.tabIndex !== 'ALL' && !viewState.days[viewState.tabIndex].selected) || preplan.readonly}
                           />
                         </Grid>
                         <Grid item xs={4}>
@@ -1035,7 +1052,7 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                                 }
                               />
                             }
-                            disabled={viewState.tabIndex !== 'ALL' && !viewState.days[viewState.tabIndex].selected}
+                            disabled={(viewState.tabIndex !== 'ALL' && !viewState.days[viewState.tabIndex].selected) || preplan.readonly}
                           />
                         </Grid>
                       </Grid>

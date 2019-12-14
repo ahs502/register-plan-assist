@@ -1889,9 +1889,7 @@ function createFlattenFlightRequirmentsFromDailyFlightRequirment(flights: Flight
             f.baseFlightId === existFlightId &&
             f.arrivalAirport.id === leg.arrivalAirport.id &&
             f.departureAirport.id === leg.departureAirport.id &&
-            f.blocktime === leg.blockTime.minutes &&
-            f.flightNumber === normalizeFlightNumber(leg.flightNumber) &&
-            f.std.minutes === leg.std.minutes
+            f.flightNumber === normalizeFlightNumber(leg.flightNumber)
         )!;
         updateFlattenFlightRequirment(existFlatten, leg);
       } else {

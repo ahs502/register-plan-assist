@@ -15,6 +15,7 @@ import FlightModal, { useFlightModalState } from 'src/components/preplan/FlightM
 import PreplanModel from '@core/models/preplan/PreplanModel';
 import { useThrowApplicationError } from 'src/pages/error';
 import MasterData from '@core/master-data';
+import persistant from 'src/utils/persistant';
 
 const useStyles = makeStyles((theme: Theme) => ({}));
 
@@ -65,7 +66,7 @@ const PreplanPage: FC = () => {
             link: '/preplan-list'
           },
           preplan && {
-            title: preplan.name,
+            title: preplan.user.id === persistant.user!.id ? preplan.name : `${preplan.name} (${preplan.user.displayName})`,
             link: routeMatch.url
           },
           flightRequirementListPageSelected && {

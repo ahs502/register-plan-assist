@@ -50,6 +50,10 @@ const useStyles = makeStyles((theme: Theme) => ({
     position: 'relative',
     right: 10
   },
+  connectionEastAirline: {
+    top: 16,
+    position: 'relative'
+  },
   boarder: {
     borderColor: theme.palette.grey[400],
     borderStyle: 'solid',
@@ -626,6 +630,19 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
             Departure from IKA
           </TableCell>
         </TableRow>
+        <TableRow className={classes.header}>
+          <TableCell className={classes.boarder} />
+          <TableCell colSpan={viewState.eastAirports.length} align="center" className={classes.boarder}>
+            {viewState.eastAirportsAirline.label}
+          </TableCell>
+          <TableCell colSpan={viewState.westAirports.length} align="center" className={classes.boarder}>
+            {viewState.westAirportsAirline.label}
+          </TableCell>
+
+          <TableCell colSpan={viewState.eastAirports.length} align="center" className={classes.boarder}>
+            {viewState.eastAirportsAirline.label}
+          </TableCell>
+        </TableRow>
         <TableRow className={classes.airportHeader}>
           <TableCell className={classNames(classes.header, classes.boarder)} />
           {viewState.eastAirports.map(airport => (
@@ -789,6 +806,14 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
       <TableBody>
         <TableRow>
           <TableCell className={classNames(classes.connectionHeader, classes.boarder)} />
+          <TableCell colSpan={viewState.westAirports.length * 2} align="center" className={classNames(classes.connectionHeader, classes.boarder)}>
+            {viewState.westAirportsAirline.label}
+          </TableCell>
+        </TableRow>
+        <TableRow>
+          <TableCell align="center" className={classNames(classes.connectionHeader, classes.boarder)}>
+            <div className={classes.connectionEastAirline}>{viewState.eastAirportsAirline.label}</div>
+          </TableCell>
           {viewState.westAirports.map(wa => (
             <TableCell className={classNames(classes.connectionHeader, classes.boarder)} key={wa.id} colSpan={2} align="center">
               <ConnectionIcon className={classes.connectionFrom} />

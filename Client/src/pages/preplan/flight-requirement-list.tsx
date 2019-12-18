@@ -4,7 +4,7 @@ import { makeStyles } from '@material-ui/styles';
 import { PreplanContext, ReloadPreplanContext } from 'src/pages/preplan';
 import { fade } from '@material-ui/core/styles';
 import Search, { filterOnProperties } from 'src/components/Search';
-import { Add as AddIcon, Edit as EditIcon, Clear as ClearIcon, TrendingFlat as TrendingFlatIcon, OpenInNewOutlined as OpenIcon } from '@material-ui/icons';
+import { Add as AddIcon, Clear as ClearIcon, TrendingFlat as TrendingFlatIcon } from '@material-ui/icons';
 import classNames from 'classnames';
 import Weekday from '@core/types/Weekday';
 import TablePagination from '@material-ui/core/TablePagination';
@@ -131,74 +131,66 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = React.memo
                 <TargetObjectionStatus target={flightRequirement}></TargetObjectionStatus>
               </Grid>
             </Grid>
-            <Grid item xs={4}>
-              <Grid container direction="row" justify="center" alignItems="center" spacing={1}>
-                <Grid item xs={5}>
-                  {Array.range(0, 6).map(n => {
-                    const dayFlightRequirement = flightRequirement.days.find(d => d.day === n);
-                    return (
-                      <Typography
-                        color={!dayFlightRequirement || dayFlightRequirement.rsx === 'REAL' || dayFlightRequirement.rsx === 'STB1' ? 'primary' : 'secondary'}
-                        className={classNames({ [classes.disableDaysOpacityStyle]: !dayFlightRequirement })}
-                        variant="subtitle1"
-                        key={n}
-                        display="inline"
-                      >
-                        {Weekday[n][0]}&nbsp;&nbsp;
-                      </Typography>
-                    );
-                  })}
-                </Grid>
-                <Grid item>Include</Grid>
-                <Grid item>
-                  <ProgressSwitch
-                    checked={!flightRequirement.ignored}
-                    loading={flightRequirementIncludeSwitchLoadingStatus[flightRequirement.id]}
-                    onChange={async () => {
-                      if (flightRequirementIncludeSwitchLoadingStatus[flightRequirement.id]) return;
-                      setFlightRequirementIncludeSwitchLoadingStatus({ ...flightRequirementIncludeSwitchLoadingStatus, [flightRequirement.id]: true });
-                      try {
-                        const newPreplanModel = await FlightRequirementService.edit(
-                          preplan.id,
-                          flightRequirement.extractModel(flightRequirementModel => ({ ...flightRequirementModel, ignored: !flightRequirement.ignored })),
-                          [],
-                          flightRequirement.ignored
-                            ? flightRequirement.days.map<NewFlightModel>(d => ({
-                                day: d.day,
-                                aircraftRegisterId: dataTypes
-                                  .preplanAircraftRegister(preplan.aircraftRegisters)
-                                  .convertBusinessToModelOptional(d.aircraftSelection.backupAircraftRegister),
-                                legs: d.route.map<FlightLegModel>(l => ({
-                                  std: l.stdLowerBound.minutes
-                                }))
+            <Grid item xs={4} container justify="flex-end" alignItems="center" spacing={1}>
+              <Grid item xs={5}>
+                {Array.range(0, 6).map(n => {
+                  const dayFlightRequirement = flightRequirement.days.find(d => d.day === n);
+                  return (
+                    <Typography
+                      color={!dayFlightRequirement || dayFlightRequirement.rsx === 'REAL' || dayFlightRequirement.rsx === 'STB1' ? 'primary' : 'secondary'}
+                      className={classNames({ [classes.disableDaysOpacityStyle]: !dayFlightRequirement })}
+                      variant="subtitle1"
+                      key={n}
+                      display="inline"
+                    >
+                      {Weekday[n][0]}&nbsp;&nbsp;
+                    </Typography>
+                  );
+                })}
+              </Grid>
+              <Grid item>Include</Grid>
+              <Grid item>
+                <ProgressSwitch
+                  checked={!flightRequirement.ignored}
+                  loading={flightRequirementIncludeSwitchLoadingStatus[flightRequirement.id]}
+                  onChange={async () => {
+                    if (flightRequirementIncludeSwitchLoadingStatus[flightRequirement.id]) return;
+                    setFlightRequirementIncludeSwitchLoadingStatus({ ...flightRequirementIncludeSwitchLoadingStatus, [flightRequirement.id]: true });
+                    try {
+                      const newPreplanModel = await FlightRequirementService.edit(
+                        preplan.id,
+                        flightRequirement.extractModel(flightRequirementModel => ({ ...flightRequirementModel, ignored: !flightRequirement.ignored })),
+                        [],
+                        flightRequirement.ignored
+                          ? flightRequirement.days.map<NewFlightModel>(d => ({
+                              day: d.day,
+                              aircraftRegisterId: dataTypes
+                                .preplanAircraftRegister(preplan.aircraftRegisters)
+                                .convertBusinessToModelOptional(d.aircraftSelection.backupAircraftRegister),
+                              legs: d.route.map<FlightLegModel>(l => ({
+                                std: l.stdLowerBound.minutes
                               }))
-                            : []
-                        );
-                        await reloadPreplan(newPreplanModel);
-                      } catch (reason) {
-                        enqueueSnackbar(String(reason), { variant: 'error' });
-                      }
-                      setFlightRequirementIncludeSwitchLoadingStatus(flightRequirementIncludeSwitchLoadingStatus => ({
-                        ...flightRequirementIncludeSwitchLoadingStatus,
-                        [flightRequirement.id]: false
-                      }));
-                    }}
-                    color="primary"
-                    inputProps={{ 'aria-label': 'primary checkbox' }}
-                    disabled={preplan.readonly}
-                  />
-                </Grid>
-
-                <Grid item className={classNames(flightRequirement.ignored && classes.disableOpacityStyle)}>
-                  <IconButton size="small" disabled={flightRequirement.ignored} onClick={() => onEditFlightRequirement(flightRequirement)}>
-                    {preplan.readonly ? <OpenIcon fontSize="default" /> : <EditIcon fontSize="large" />}
-                  </IconButton>
-                </Grid>
-                <Grid item className={classNames(flightRequirement.ignored && classes.disableOpacityStyle)}>
-                  <IconButton size="small" disabled={flightRequirement.ignored || preplan.readonly} onClick={() => onRemoveFlightRequirement(flightRequirement)}>
-                    <ClearIcon fontSize="large" />
-                  </IconButton>
-                </Grid>
+                            }))
+                          : []
+                      );
+                      await reloadPreplan(newPreplanModel);
+                    } catch (reason) {
+                      enqueueSnackbar(String(reason), { variant: 'error' });
+                    }
+                    setFlightRequirementIncludeSwitchLoadingStatus(flightRequirementIncludeSwitchLoadingStatus => ({
+                      ...flightRequirementIncludeSwitchLoadingStatus,
+                      [flightRequirement.id]: false
+                    }));
+                  }}
+                  color="primary"
+                  inputProps={{ 'aria-label': 'primary checkbox' }}
+                  disabled={preplan.readonly}
+                />
+              </Grid>
+              <Grid item className={classNames(flightRequirement.ignored && classes.disableOpacityStyle)}>
+                <IconButton size="small" disabled={flightRequirement.ignored || preplan.readonly} onClick={() => onRemoveFlightRequirement(flightRequirement)}>
+                  <ClearIcon fontSize="large" />
+                </IconButton>
               </Grid>
             </Grid>
           </Grid>

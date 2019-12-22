@@ -1,4 +1,4 @@
-import MasterData, { Airport } from '@core/master-data';
+import { Airport } from 'src/business/master-data';
 import AircraftRegisterOptionsStatus from '@core/types/AircraftRegisterOptionsStatus';
 import AircraftRegisterOptionsModel from '@core/models/preplan/AircraftRegisterOptionsModel';
 import { dataTypes } from 'src/utils/DataType';

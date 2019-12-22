@@ -17,7 +17,7 @@ import EditPreplanModal, { useEditPreplanModalState } from 'src/components/prepl
 import RemovePreplanModal, { useRemovePreplanModalState } from 'src/components/preplan-list/RemovePreplanModal';
 import { useHistory } from 'react-router-dom';
 import { useThrowApplicationError } from 'src/pages/error';
-import MasterData from '@core/master-data';
+import MasterData from 'src/business/master-data';
 
 const waitingPaperSize = 250;
 const useStyles = makeStyles((theme: Theme) => ({

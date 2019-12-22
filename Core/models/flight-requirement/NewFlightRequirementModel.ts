@@ -4,8 +4,9 @@ import FlightRequirementLegModel, { FlightRequirementLegModelValidation } from '
 import DayFlightRequirementModel, { DayFlightRequirementModelValidation } from './DayFlightRequirementModel';
 import Id from '@core/types/Id';
 import Validation from '@ahs502/validation';
-import MasterData from '@core/master-data';
 import FlightRequirementChangeModel, { FlightRequirementChangeModelValidation } from '@core/models/flight-requirement/FlightRequirementChangeModel';
+import MasterDataCollection from '@core/types/MasterDataCollection';
+import StcModel from '@core/models/master-data/StcModel';
 
 export default interface NewFlightRequirementModel {
   readonly label: string;
@@ -29,7 +30,14 @@ export class NewFlightRequirementModelValidation extends Validation<
     changes: FlightRequirementChangeModelValidation[];
   }
 > {
-  constructor(data: NewFlightRequirementModel, otherExistingLabels: readonly string[], dummyAircraftRegisterIds: readonly Id[], preplanStartDate: Date, preplanEndDate: Date) {
+  constructor(
+    data: NewFlightRequirementModel,
+    stcs: MasterDataCollection<StcModel>,
+    otherExistingLabels: readonly string[],
+    dummyAircraftRegisterIds: readonly Id[],
+    preplanStartDate: Date,
+    preplanEndDate: Date
+  ) {
     super(validator =>
       validator.object(data).then(({ label, category, stcId, aircraftSelection, rsx, notes, ignored, route, days, changes }) => {
         validator
@@ -41,7 +49,7 @@ export class NewFlightRequirementModelValidation extends Validation<
           .must(typeof category === 'string')
           .must(() => category === category.trim())
           .must(() => category.length <= 100);
-        validator.must(typeof stcId === 'string').must(() => stcId in MasterData.all.stcs.id);
+        validator.must(typeof stcId === 'string').must(() => stcId in stcs.id);
         validator.put(validator.$.aircraftSelection, new AircraftSelectionModelValidation(aircraftSelection, dummyAircraftRegisterIds));
         validator.must(Rsxes.includes(rsx));
         validator.must(typeof notes === 'string').must(() => notes.length <= 1000);

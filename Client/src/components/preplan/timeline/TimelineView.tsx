@@ -9,7 +9,7 @@ import Weekday from '@core/types/Weekday';
 import VisTimeline from 'src/components/preplan/timeline/VisTimeline';
 import moment from 'moment';
 import useProperty from 'src/utils/useProperty';
-import { AircraftType } from '@core/master-data';
+import { AircraftType } from 'src/business/master-data';
 import persistant from 'src/utils/persistant';
 import chroma from 'chroma-js';
 import Flight from 'src/business/flight/Flight';

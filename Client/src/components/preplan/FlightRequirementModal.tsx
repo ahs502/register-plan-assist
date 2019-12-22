@@ -7,7 +7,7 @@ import FlightRequirement from 'src/business/flight-requirement/FlightRequirement
 import Weekday, { Weekdays } from '@core/types/Weekday';
 import AutoComplete from 'src/components/AutoComplete';
 import MultiSelect from 'src/components/MultiSelect';
-import MasterData from '@core/master-data';
+import MasterData from 'src/business/master-data';
 import { Rsxes } from '@core/types/Rsx';
 import AircraftIdentityType from '@core/types/AircraftIdentityType';
 import { PreplanContext, ReloadPreplanContext } from 'src/pages/preplan';

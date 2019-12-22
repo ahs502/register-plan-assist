@@ -1,7 +1,7 @@
 import React, { FC, useState, Fragment, useEffect } from 'react';
 import { Theme, InputLabel, TextField, TableHead, TableCell, Table, TableRow, TableBody, Button, Paper, Typography, Grid } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
-import MasterData, { Airport } from '@core/master-data';
+import MasterData, { Airport } from 'src/business/master-data';
 import Weekday from '@core/types/Weekday';
 import MultiSelect from 'src/components/MultiSelect';
 import classNames from 'classnames';

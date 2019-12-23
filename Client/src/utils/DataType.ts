@@ -82,9 +82,7 @@ export default abstract class DataType<Model, Business> {
   }
 }
 
-export type NameModelDataType = string;
-export type NameBusinessDataType = string;
-class NameDataType extends DataType<NameModelDataType, NameBusinessDataType> {
+class NameDataType extends DataType<string, string> {
   refineView(value: string): string {
     return value.trim();
   }

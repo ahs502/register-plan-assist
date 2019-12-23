@@ -9,7 +9,7 @@ import Weekday from '@core/types/Weekday';
 import VisTimeline from 'src/components/preplan/timeline/VisTimeline';
 import moment from 'moment';
 import useProperty from 'src/utils/useProperty';
-import { AircraftType } from '@core/master-data';
+import { AircraftType } from 'src/business/master-data';
 import persistant from 'src/utils/persistant';
 import chroma from 'chroma-js';
 import Flight from 'src/business/flight/Flight';
@@ -279,8 +279,8 @@ const TimelineView: FC<TimelineViewProps> = ({
       editable: {
         add: false,
         remove: false,
-        updateGroup: true,
-        updateTime: true,
+        updateGroup: !preplan.readonly,
+        updateTime: !preplan.readonly,
         overrideItems: false
       },
       end: startDate.clone().addDays(7),
@@ -735,7 +735,7 @@ const TimelineView: FC<TimelineViewProps> = ({
           </div>
         `;
     }
-  }, [startDate.getTime(), preplan.flights, timelineOptions, timelineGroups]);
+  }, [startDate.getTime(), preplan, timelineOptions, timelineGroups]);
 
   const [flightContextMenuModel, setFlightContextMenuModel] = useState<FlightContextMenuModel>({});
   const flightContextMenuRef = useRef<HTMLDivElement>(null);
@@ -783,7 +783,7 @@ const TimelineView: FC<TimelineViewProps> = ({
               if (registerFlights.length === 0) return onFreeSpaceMouseHover(register);
               if (registerFlights.length === 1) return onFreeSpaceMouseHover(register, registerFlights[0], registerFlights[0]);
               const firstFlight = registerFlights[0],
-                lastFlight = registerFlights[registerFlights.length - 1];
+                lastFlight = registerFlights.last()!;
               let previousFlight: Flight | undefined = undefined,
                 nextFlight: Flight | undefined = registerFlights.shift();
               do {

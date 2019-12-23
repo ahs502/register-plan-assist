@@ -1,5 +1,5 @@
 import FlightRequirementLegModel from '@core/models/flight-requirement/FlightRequirementLegModel';
-import MasterData, { Airport } from '@core/master-data';
+import { Airport } from 'src/business/master-data';
 import Daytime from '@core/types/Daytime';
 import FlightNumber from '@core/types/FlightNumber';
 import FlightRequirement from 'src/business/flight-requirement/FlightRequirement';

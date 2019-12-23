@@ -1,6 +1,6 @@
 import FlightRequirementModel from '@core/models/flight-requirement/FlightRequirementModel';
 import Id from '@core/types/Id';
-import { Stc } from '@core/master-data';
+import { Stc } from 'src/business/master-data';
 import Rsx from '@core/types/Rsx';
 import FlightRequirementLeg from './FlightRequirementLeg';
 import DayFlightRequirement from './DayFlightRequirement';

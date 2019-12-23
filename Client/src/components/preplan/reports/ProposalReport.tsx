@@ -2,7 +2,7 @@ import React, { FC, Fragment, useState, useEffect, useMemo } from 'react';
 import { Theme, InputLabel, TextField, TableHead, TableCell, Table, TableRow, TableBody, Button, Grid, FormControlLabel, Checkbox, Paper, Typography } from '@material-ui/core';
 import { red, grey } from '@material-ui/core/colors';
 import { makeStyles } from '@material-ui/styles';
-import MasterData, { Airport } from '@core/master-data';
+import MasterData, { Airport } from 'src/business/master-data';
 import Daytime from '@core/types/Daytime';
 import { Publish as ExportToExcelIcon } from '@material-ui/icons';
 import { ExcelExport, ExcelExportColumn, ExcelExportColumnGroup } from '@progress/kendo-react-excel-export';
@@ -22,6 +22,7 @@ import PreplanService from 'src/services/PreplanService';
 import MultiSelect from 'src/components/MultiSelect';
 import Preplan from 'src/business/preplan/Preplan';
 import persistant from 'src/utils/persistant';
+import FlightNumber from '@core/types/FlightNumber';
 
 const errorPaperSize = 250;
 const notAvailable = 'N/A';
@@ -140,10 +141,13 @@ const character = {
   rightHalfBlackCircle: '◑'
 };
 
-interface FlightType {
+interface AutoCompleteOption {
   label: string;
   value: string;
 }
+interface FlightType extends AutoCompleteOption {}
+
+interface Airline extends AutoCompleteOption {}
 
 interface ProposalReportProps {
   flights: readonly Flight[];
@@ -254,6 +258,7 @@ interface DataProvider {
 }
 
 interface ViewState {
+  airline: Airline;
   baseAirports: Airport[];
   categories: string[];
   startDate: string;
@@ -283,8 +288,9 @@ class ViewStateValidation extends Validation<
   | 'BASE_DATE_BETWEEN_START_DATE_AND_END_DATE'
   | 'BASE_AIRPORT_EXISTS'
   | 'CATEGORY_EXISTS'
+  | 'AIRLINE_EXISTS'
 > {
-  constructor({ baseAirports, categories, startDate, endDate, baseDate }: ViewState) {
+  constructor({ airline, baseAirports, categories, startDate, endDate, baseDate }: ViewState) {
     super(
       validator => {
         validator.check('START_DATE_EXISTS', !!startDate).check('START_DATE_IS_VALID', () => dataTypes.utcDate.checkView(startDate));
@@ -306,6 +312,7 @@ class ViewStateValidation extends Validation<
         });
         validator.check('BASE_AIRPORT_EXISTS', !!baseAirports && baseAirports.length > 0);
         validator.check('CATEGORY_EXISTS', !!categories && categories.length > 0);
+        validator.check('AIRLINE_EXISTS', !!airline);
       },
       {
         '*_EXISTS': 'Required.',
@@ -328,6 +335,10 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
     .filter(n => !!n)
     .distinct();
   allCategory.unshift(notAvailable);
+  const allAirline = flights
+    .flatMap(f => f.legs.map(l => l.flightNumber.airlineCode))
+    .distinct()
+    .map<Airline>(a => ({ label: a, value: a }));
   const [dataProvider, setDataProvider] = useState<DataProvider[]>([]);
   const [preplanHeaders, setPreplanHeaders] = useState<PreplanHeader[]>([]);
   const preplanHeaderOptions = useMemo(
@@ -349,6 +360,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
   const [flattenFlightRequirments, setFlattenFlightRequirments] = useState<FlattenFlightRequirment[]>([]);
 
   const [viewState, setViewState] = useState<ViewState>(() => ({
+    airline: allAirline.find(z => z.value === 'W5') ?? allAirline[0],
     baseAirports: [ika],
     categories: allCategory,
     startDate: dataTypes.utcDate.convertBusinessToView(fromDate),
@@ -416,7 +428,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
   };
 
   const filterFlight = (
-    { baseAirports, categories, startDate, endDate, flightType, showReal, showSTB1, showSTB2, showExtra }: ViewState,
+    { airline, baseAirports, categories, startDate, endDate, flightType, showReal, showSTB1, showSTB2, showExtra }: ViewState,
     flights: readonly Flight[],
     generateRealFlight: boolean
   ) => {
@@ -425,7 +437,8 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
         baseAirports.some(a => a.id === f.flightRequirement.route[0].departureAirport.id) &&
         (flightType.value === 'All' || f.legs.some(l => l.international === (flightType.value === 'International'))) &&
         categories.some(c => c.toUpperCase() === f.category.toUpperCase() || (c === notAvailable && !f.category)) &&
-        (generateRealFlight ? (showReal && f.rsx === 'REAL') || (showSTB1 && f.rsx === 'STB1') : (showSTB2 && f.rsx === 'STB2') || (showExtra && f.rsx === 'EXT'))
+        (generateRealFlight ? (showReal && f.rsx === 'REAL') || (showSTB1 && f.rsx === 'STB1') : (showSTB2 && f.rsx === 'STB2') || (showExtra && f.rsx === 'EXT')) &&
+        f.legs.some(l => l.flightNumber.airlineCode === airline.value)
       );
     });
   };
@@ -578,7 +591,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
 
     function boarderBotoom(workbookSheetRows: WorkbookSheetRow[]) {
       if (!workbookSheetRows || workbookSheetRows.length === 0) return;
-      const lastRow = workbookSheetRows[workbookSheetRows.length - 1]!;
+      const lastRow = workbookSheetRows.last()!;
       lastRow.cells!.forEach((c, index) => {
         if (index === 0) return;
         c.borderBottom = { color: '#000000', size: 3 };
@@ -588,7 +601,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
     function removeHiddenColumn(workbookSheetRow: WorkbookSheetRow) {
       if (!workbookSheetRow || !workbookSheetRow.cells) return;
       for (let index = 0; index < numberOfHiddenColumn; index++) {
-        workbookSheetRow.cells.remove(workbookSheetRow.cells[workbookSheetRow.cells.length - 1]);
+        workbookSheetRow.cells.remove(workbookSheetRow.cells.last()!);
       }
     }
 
@@ -668,7 +681,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
       if (index > 0 && index < self.length - 1 && self && self[index - 1] && self[index - 1].cells) {
         const previousFlightRequirment = self[index - 1] as any;
         if (previousFlightRequirment.type === 'data' && previousFlightRequirment.cells) {
-          const currentLabel = r.cells[r.cells.length - 1].value;
+          const currentLabel = r.cells.last()!.value;
           const previousLabel = previousFlightRequirment.cells[previousFlightRequirment.cells.length - 1].value;
           if (currentLabel !== previousLabel) {
             const currenParentRoute = r.cells[r.cells.length - 2] && r.cells[r.cells.length - 2].value;
@@ -710,7 +723,8 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
     endDate: validation.message('END_DATE_*'),
     baseDate: validation.message('BASE_DATE_*'),
     baseAirport: validation.message('BASE_AIRPORT_*'),
-    categories: validation.message('CATEGORY_*')
+    categories: validation.message('CATEGORY_*'),
+    airline: validation.message('AIRLINE_*')
   };
 
   const color = makeColor();
@@ -721,6 +735,23 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
       <Grid container spacing={2}>
         <Grid item xs={12}>
           <Grid container spacing={1}>
+            <Grid item xs={1}>
+              <InputLabel htmlFor="flight-type" className={classes.marginBottom1}>
+                Airline
+              </InputLabel>
+
+              <AutoComplete
+                id="airline"
+                options={allAirline}
+                value={viewState.airline}
+                onSelect={s => {
+                  setViewState({ ...viewState, airline: s });
+                }}
+                error={errors.airline !== undefined}
+                helperText={errors.airline}
+                isDisabled={renderReport}
+              />
+            </Grid>
             <Grid item xs={3}>
               <InputLabel htmlFor="base-airport" className={classes.marginBottom1}>
                 Base Airport
@@ -1858,7 +1889,7 @@ function createFlattenFlightRequirmentsFromDailyFlightRequirment(flights: Flight
             f.baseFlightId === existFlightId &&
             f.arrivalAirport.id === leg.arrivalAirport.id &&
             f.departureAirport.id === leg.departureAirport.id &&
-            f.flightNumber === normalizeFlightNumber(leg.flightNumber.standardFormat)
+            f.flightNumber === normalizeFlightNumber(leg.flightNumber)
         )!;
         updateFlattenFlightRequirment(existFlatten, leg);
       } else {
@@ -1900,7 +1931,7 @@ function createFlattenFlightRequirment(leg: FlightLeg, date: Date): FlattenFligh
         .toString(36)
         .substring(2) + Date.now().toString(36),
     baseFlightId: leg.flight.id,
-    flightNumber: normalizeFlightNumber(leg.flightNumber.standardFormat),
+    flightNumber: normalizeFlightNumber(leg.flightNumber),
     fullFlightNumber: leg.flightNumber.toString(),
     arrivalAirport: leg.arrivalAirport,
     departureAirport: leg.departureAirport,
@@ -1992,14 +2023,12 @@ function updateFlattenFlightRequirment(flattenFlight: FlattenFlightRequirment, l
   }
 }
 
-function normalizeFlightNumber(flightNumber: string) {
-  if (flightNumber && flightNumber.toUpperCase().startsWith('W5 ')) {
-    const flightNumberWithOutW5 = flightNumber.substring(3);
-    if (flightNumberWithOutW5.startsWith('0')) return flightNumberWithOutW5.substring(1);
-    return flightNumberWithOutW5;
+function normalizeFlightNumber(flightNumber: FlightNumber): string {
+  if (!flightNumber) return '';
+  if (flightNumber.airlineCode === 'W5') {
+    return flightNumber.shortNumber;
   }
-
-  return flightNumber;
+  return flightNumber.standardFormat;
 }
 
 function formatDateToHHMM(date: Date) {

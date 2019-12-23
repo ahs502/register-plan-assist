@@ -4,7 +4,7 @@ import FlightRequirement from 'src/business/flight-requirement/FlightRequirement
 import FlightLeg from 'src/business/flight/FlightLeg';
 import Daytime from '@core/types/Daytime';
 import PreplanAircraftRegister, { PreplanAircraftRegisters } from 'src/business/preplan/PreplanAircraftRegister';
-import { Stc } from '@core/master-data';
+import { Stc } from 'src/business/master-data';
 import Rsx from '@core/types/Rsx';
 import Weekday from '@core/types/Weekday';
 import Id from '@core/types/Id';

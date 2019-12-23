@@ -29,12 +29,8 @@ app.use('/', express.static(path.join(__dirname, 'public')));
 const port = process.env.PORT || 3000;
 app.set('port', port);
 
-import { withDbAccess } from 'src/utils/sqlServer';
-import { fetchAndCacheMasterData } from 'src/services/master-data-service';
-import MasterData from '@core/master-data';
-import MasterDataModel from '@core/models/master-data/MasterDataModel';
-
-withDbAccess(({ runQuery }) => fetchAndCacheMasterData(Object.keys(MasterData.all) as (keyof MasterDataModel)[], runQuery)).then(
+import MasterData from 'src/utils/masterData';
+MasterData.initialize().then(
   () => {
     const server = http.createServer(app);
 

@@ -23,6 +23,11 @@
       return result;
     };
 
+    Array.prototype.last = function Array_prototype_last<T>(predicate?: (item: T) => any): T | null {
+      for (let i = this.length - 1; i >= 0; --i) if (!predicate || predicate(this[i])) return this[i];
+      return null;
+    };
+
     Array.prototype.remove = function Array_prototype_remove<T>(item: T): number {
       let result = 0;
       let index = 0;

@@ -1,14 +1,18 @@
-import React, { FC } from 'react';
+import React, { useState } from 'react';
 import { Theme } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
-import BaseModal, { BaseModalProps, useModalState, useModalViewState } from 'src/components/BaseModal';
+import BaseModal, { BaseModalProps, useModalState, createModal } from 'src/components/BaseModal';
 
 const useStyles = makeStyles((theme: Theme) => ({
   // The modal specific styles go here...
 }));
 
+interface ViewState {
+  viewStateProperty: number;
+}
+
 export interface SampleModalState {
-  modalStateProperty: number;
+  stateProperty: number;
 }
 
 export interface SampleModalProps extends BaseModalProps<SampleModalState> {
@@ -16,82 +20,57 @@ export interface SampleModalProps extends BaseModalProps<SampleModalState> {
   onSomeAsyncAction(someData: number): Promise<void>;
 }
 
-const SampleModal: FC<SampleModalProps> = ({ state: [open, { modalStateProperty }], onSomeAction, onSomeAsyncAction, ...others }) => {
-  const [viewState, setViewState, render] = useModalViewState<{ someViewStateProperty: number }>(
-    open,
-    {
-      someViewStateProperty: 10 // The default view model.
-    },
-    () => ({
-      someViewStateProperty: modalStateProperty // The initial view model based on props and model.
-    })
-  );
+const SampleModal = createModal<SampleModalState, SampleModalProps>(({ state, onSomeAction, onSomeAsyncAction, ...others }) => {
+  const [viewState, setViewState] = useState<ViewState>(() => ({
+    viewStateProperty: state.stateProperty
+  }));
 
   const classes = useStyles();
 
   return (
     <BaseModal
       {...others}
-      open={open}
       title="This is the modal title!"
       actions={[
         {
-          title: 'Cancel'
+          title: 'Cancel',
+          canceler: true
         },
         {
           title: 'Action',
           action: () => {
-            const someData = viewState.someViewStateProperty;
+            const someData = viewState.viewStateProperty;
             onSomeAction(someData);
           }
         },
         {
           title: 'Async Action',
+          submitter: true,
           action: async () => {
-            const someData = viewState.someViewStateProperty;
+            const someData = viewState.viewStateProperty;
             await onSomeAsyncAction(someData);
           }
         }
       ]}
-    >
-      The modal body contents go here...
-      <input value={viewState.someViewStateProperty.toString()} onChange={e => setViewState({ someViewStateProperty: Number(e.target.value) })} />
-      {render && (
+      body={({ handleKeyboardEvent }) => (
         <div>
-          Render state dependent content {modalStateProperty} conditionally by <code>render</code> trueness.
+          The modal body contents go here...
+          <input
+            title="Press Enter here to submit."
+            value={viewState.viewStateProperty.toString()}
+            onChange={e => setViewState({ viewStateProperty: Number(e.target.value) })}
+            onKeyDown={handleKeyboardEvent}
+          />
+          ...
+          <button onClick={() => handleKeyboardEvent()}>Submit Alternative</button>
         </div>
       )}
-      ...
-    </BaseModal>
+    />
   );
-};
+});
 
 export default SampleModal;
 
 export function useSampleModalState() {
   return useModalState<SampleModalState>();
 }
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Usage in another component:
-
-const SomeComponent: FC = () => {
-  const [sampleModalState, openSimpleModal, closeSimpleModal] = useSampleModalState();
-
-  return (
-    <div>
-      <button onClick={e => openSimpleModal({ modalStateProperty: 10 })}>Open</button>
-
-      <SampleModal
-        state={sampleModalState}
-        onClose={() => closeSimpleModal()}
-        onSomeAction={someData => {
-          /* ... */
-        }}
-        onSomeAsyncAction={async someData => {
-          /* ... */
-        }}
-      />
-    </div>
-  );
-};

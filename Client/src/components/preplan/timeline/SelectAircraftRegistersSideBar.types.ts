@@ -1,5 +1,5 @@
 import AircraftRegisterOptionsStatus from '@core/types/AircraftRegisterOptionsStatus';
-import MasterData, { AircraftType } from '@core/master-data';
+import MasterData, { AircraftType } from 'src/business/master-data';
 import Validation from '@core/node_modules/@ahs502/validation/dist/Validation';
 import { dataTypes } from 'src/utils/DataType';
 import Flight from 'src/business/flight/Flight';

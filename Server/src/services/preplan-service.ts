@@ -18,6 +18,7 @@ import DummyAircraftRegisterModel, { DummyAircraftRegisterModelArrayValidation }
 import AircraftRegisterOptionsModel, { AircraftRegisterOptionsModelValidation } from '@core/models/preplan/AircraftRegisterOptionsModel';
 import FlightEntity from 'src/entities/flight/FlightEntity';
 import { DbAccess } from 'src/utils/sqlServer';
+import MasterData from 'src/utils/masterData';
 
 const router = Router();
 export default router;
@@ -137,13 +138,19 @@ router.post(
     },
     PreplanModel
   >(async (userId, { id, dummyAircraftRegisters, aircraftRegisterOptions }, { runQuery, runSp }) => {
-    new DummyAircraftRegisterModelArrayValidation(dummyAircraftRegisters).throw('Invalid API input.');
+    new DummyAircraftRegisterModelArrayValidation(dummyAircraftRegisters, MasterData.all.aircraftTypes).throw('Invalid API input.');
     const dummyAircraftRegisterIds = dummyAircraftRegisters.map(r => r.id);
     const rawUsedAircraftRegisterIds: readonly { aircraftRegisterId: Id }[] = await runQuery(
       `select f.[Id_AircraftRegister] as [aircraftRegisterId] from [Rpa].[Flight] as f join [Rpa].[FlightRequirement] as r on f.[Id_FlightRequirement] = r.[Id] where r.[Id_Preplan] = '${id}'`
     );
     const usedAircraftRegisterIds: readonly Id[] = rawUsedAircraftRegisterIds.map(i => i.aircraftRegisterId);
-    new AircraftRegisterOptionsModelValidation(aircraftRegisterOptions, dummyAircraftRegisterIds, usedAircraftRegisterIds).throw('Invalid API input.');
+    new AircraftRegisterOptionsModelValidation(
+      aircraftRegisterOptions,
+      MasterData.all.aircraftRegisters,
+      MasterData.all.airports,
+      dummyAircraftRegisterIds,
+      usedAircraftRegisterIds
+    ).throw('Invalid API input.');
 
     // Check for removed dummy aircraft registers usage:
     const rawDummyAircraftRegistersXml: { dummyAircraftRegistersXml: Xml }[] = await runQuery(

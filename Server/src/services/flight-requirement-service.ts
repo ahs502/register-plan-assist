@@ -13,6 +13,7 @@ import { convertNewFlightModelToEntity } from 'src/entities/flight/NewFlightEnti
 import { convertFlightModelToEntity } from 'src/entities/flight/FlightEntity';
 import PreplanModel from '@core/models/preplan/PreplanModel';
 import { getPreplanModel } from 'src/services/preplan-service';
+import MasterData from 'src/utils/masterData';
 
 const router = Router();
 export default router;
@@ -23,12 +24,16 @@ router.post(
     async (userId, { preplanId, newFlightRequirement, newFlights }, { runQuery, runSp }) => {
       const rawOtherExistingLabels: { label: string }[] = await runQuery(`select [Label] as [label] from [Rpa].[FlightRequirement] where [Id_Preplan] = '${preplanId}'`);
       const otherExistingLabels = rawOtherExistingLabels.map(l => l.label);
-      const rawDummyAircraftRegistersXml: { dummyAircraftRegistersXml: Xml }[] = await runQuery(
+      const rawPartialPreplanEntity: { dummyAircraftRegistersXml: Xml; startDate: string; endDate: string }[] = await runQuery(
         `select [DummyAircraftRegisters] as [dummyAircraftRegistersXml] from [Rpa].[Preplan] where [Id] = '${preplanId}'`
       );
-      if (rawDummyAircraftRegistersXml.length === 0) throw 'Preplan is not found.';
-      const dummyAircraftRegisterIds: Id[] = parsePreplanDummyAircraftRegistersXml(rawDummyAircraftRegistersXml[0].dummyAircraftRegistersXml).map(r => r.id);
-      new NewFlightRequirementModelValidation(newFlightRequirement, otherExistingLabels, dummyAircraftRegisterIds).throw('Invalid API input.');
+      if (rawPartialPreplanEntity.length === 0) throw 'Preplan is not found.';
+      const dummyAircraftRegisterIds: Id[] = parsePreplanDummyAircraftRegistersXml(rawPartialPreplanEntity[0].dummyAircraftRegistersXml).map(r => r.id);
+      const preplanStartDate = new Date(rawPartialPreplanEntity[0].startDate);
+      const preplanEndDate = new Date(rawPartialPreplanEntity[0].endDate);
+      new NewFlightRequirementModelValidation(newFlightRequirement, MasterData.all.stcs, otherExistingLabels, dummyAircraftRegisterIds, preplanStartDate, preplanEndDate).throw(
+        'Invalid API input.'
+      );
 
       const rawAircraftRegisterOptionsXml: { aircraftRegisterOptionsXml: Xml }[] = await runQuery(
         `select [AircraftRegisterOptions] as [aircraftRegisterOptionsXml] from [Rpa].[Preplan] where [Id] = '${preplanId}'`

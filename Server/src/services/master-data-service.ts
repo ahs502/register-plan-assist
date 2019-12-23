@@ -5,8 +5,9 @@ import Id from '@core/types/Id';
 import ConstraintTemplateType from '@core/types/ConstraintTemplateType';
 import ConstraintTemplateDataFieldType from '@core/types/ConstraintTemplateDataFieldType';
 import { xmlParse, xmlArray } from 'src/utils/xml';
+import { DbAccess } from 'src/utils/sqlServer';
 
-import MasterData from '@core/master-data';
+import MasterData from 'src/utils/masterData';
 import MasterDataModel from '@core/models/master-data/MasterDataModel';
 
 import AircraftTypeModel from '@core/models/master-data/AircraftTypeModel';
@@ -18,7 +19,6 @@ import StcModel from '@core/models/master-data/StcModel';
 import AircraftRegisterGroupModel from '@core/models/master-data/AircraftRegisterGroupModel';
 import ConstraintTemplateModel from '@core/models/master-data/ConstraintTemplateModel';
 import ConstraintModel from '@core/models/master-data/ConstraintModel';
-import { DbAccess } from 'src/utils/sqlServer';
 
 const router = Router();
 export default router;

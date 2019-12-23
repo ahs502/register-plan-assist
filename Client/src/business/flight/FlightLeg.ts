@@ -1,5 +1,5 @@
 import Daytime from '@core/types/Daytime';
-import { Stc, Airport } from '@core/master-data';
+import { Stc, Airport } from 'src/business/master-data';
 import FlightRequirement from 'src/business/flight-requirement/FlightRequirement';
 import FlightRequirementLeg from 'src/business/flight-requirement/FlightRequirementLeg';
 import DayFlightRequirement from 'src/business/flight-requirement/DayFlightRequirement';

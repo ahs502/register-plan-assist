@@ -2,7 +2,7 @@ import Objection, { ObjectionType } from 'src/business/constraints/Objection';
 import FlightLeg from 'src/business/flight/FlightLeg';
 import Checker from 'src/business/constraints/Checker';
 import Preplan from 'src/business/preplan/Preplan';
-import MasterData, { ConstraintTemplate, Constraint } from '@core/master-data';
+import MasterData, { ConstraintTemplate, Constraint } from 'src/business/master-data';
 import Objectionable from 'src/business/constraints/Objectionable';
 
 import NoConflictionOnFlightsChecker from './checkers/NoConflictionOnFlightsChecker';

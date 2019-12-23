@@ -9,7 +9,7 @@ import MasterData, {
   AircraftRegisterGroup,
   ConstraintTemplate,
   Constraint
-} from '@core/master-data';
+} from 'src/business/master-data';
 import Id from '@core/types/Id';
 import Daytime from '@core/types/Daytime';
 import FlightNumber from '@core/types/FlightNumber';

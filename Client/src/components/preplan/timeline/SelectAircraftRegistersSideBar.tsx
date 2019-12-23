@@ -3,7 +3,7 @@ import { Theme, Table, TableHead, TableBody, TableCell, TableRow, Typography, Ic
 import { Clear as RemoveIcon, Check as CheckIcon } from '@material-ui/icons';
 import { makeStyles } from '@material-ui/styles';
 import classNames from 'classnames';
-import MasterData from '@core/master-data';
+import MasterData from 'src/business/master-data';
 import Search, { filterOnProperties } from 'src/components/Search';
 import useProperty from 'src/utils/useProperty';
 import AircraftRegisterOptionsStatus from '@core/types/AircraftRegisterOptionsStatus';
@@ -187,6 +187,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
                 onChange={({ target: { value: name } }) => setAddDummyRegisterFormState({ ...addDummyRegisterFormState, name })}
                 error={dummyRegistewrFromErrors.register !== undefined}
                 helperText={dummyRegistewrFromErrors.register}
+                disabled={preplan.readonly}
               />
             </TableCell>
             <TableCell>
@@ -196,6 +197,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
                 onChange={({ target: { value: aircraftType } }) => setAddDummyRegisterFormState({ ...addDummyRegisterFormState, aircraftType })}
                 error={dummyRegistewrFromErrors.type !== undefined}
                 helperText={dummyRegistewrFromErrors.type}
+                disabled={preplan.readonly}
               />
             </TableCell>
             <TableCell className={classes.baseAirportCell}>
@@ -205,12 +207,14 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
                 onChange={({ target: { value: baseAirport } }) => setAddDummyRegisterFormState({ ...addDummyRegisterFormState, baseAirport })}
                 error={dummyRegistewrFromErrors.baseAirport !== undefined}
                 helperText={dummyRegistewrFromErrors.baseAirport}
+                disabled={preplan.readonly}
               />
             </TableCell>
             <TableCell className={classes.stateCell}>
               <FormControl fullWidth>
                 <Select
                   native
+                  disabled={preplan.readonly}
                   classes={{ select: classes.select, iconOutlined: classes.selectIcon }}
                   variant="outlined"
                   value={addDummyRegisterFormState.status}
@@ -247,7 +251,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
                     });
                   setAddDummyRegisterFormState({ ...addDummyRegisterFormState, show: false });
                 }}
-                disabled={!addDummyRegisterFormState.bypassValidation && !dummyRegisterFormValidation.ok}
+                disabled={(!addDummyRegisterFormState.bypassValidation && !dummyRegisterFormValidation.ok) || preplan.readonly}
               >
                 <CheckIcon />
               </IconButton>
@@ -288,7 +292,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
       <TableCell className={classes.baseAirportCell}>
         <RefiningTextField
           dataType={dataTypes.airport}
-          disabled={loading}
+          disabled={loading || preplan.readonly}
           value={r.baseAirport}
           onChange={event => {
             r.baseAirport = event.target.value;
@@ -304,7 +308,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
             native
             classes={{ select: classes.select, iconOutlined: classes.selectIcon }}
             variant="outlined"
-            disabled={loading}
+            disabled={loading || preplan.readonly}
             value={r.status}
             onChange={event => {
               r.status = event.target.value as AircraftRegisterOptionsStatus;
@@ -332,7 +336,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
         <RefiningTextField
           dataType={dataTypes.label}
           value={r.name}
-          disabled={loading}
+          disabled={loading || preplan.readonly}
           onChange={event => {
             r.name = event.target.value;
             setList([...list]);
@@ -345,7 +349,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
         <RefiningTextField
           dataType={dataTypes.airport}
           value={r.baseAirport}
-          disabled={loading}
+          disabled={loading || preplan.readonly}
           onChange={event => {
             r.baseAirport = event.target.value;
             setList([...list]);
@@ -365,7 +369,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
               r.status = event.target.value as AircraftRegisterOptionsStatus;
               setList([...list]);
             }}
-            disabled={loading}
+            disabled={loading || preplan.readonly}
           >
             {aircraftRegisterOptionsStatusList.map(a => (
               <option key={a.value} value={a.value}>
@@ -384,6 +388,7 @@ const SelectAircraftRegistersSideBar: FC<SelectAircraftRegistersSideBarProps> = 
             t.dummyRegisters.remove(r);
             setList([...list]);
           }}
+          disabled={preplan.readonly}
         >
           <RemoveIcon />
         </IconButton>

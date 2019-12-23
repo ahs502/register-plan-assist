@@ -1,25 +1,21 @@
-import PreplanHeaderEntity, { convertPreplanHeaderEntityToModel } from './PreplanHeaderEntity';
 import { Xml, xmlParse, xmlArray, xmlStringify } from 'src/utils/xml';
 import PreplanModel from '@core/models/preplan/PreplanModel';
 import { convertDummyAircraftRegisterEntityToModel, convertDummyAircraftRegisterModelToEntity } from './DummyAircraftRegisterEntity';
 import { convertAircraftRegisterOptionsEntityToModel, convertAircraftRegisterOptionsModelToEntity } from './AircraftRegisterOptionsEntity';
 import DummyAircraftRegisterModel from '@core/models/preplan/DummyAircraftRegisterModel';
 import AircraftRegisterOptionsModel from '@core/models/preplan/AircraftRegisterOptionsModel';
-import FlightRequirementEntity, { convertFlightRequirementEntityToModel } from 'src/entities/flight-requirement/FlightRequirementEntity';
-import FlightEntity, { convertFlightEntityToModel } from 'src/entities/flight/FlightEntity';
+import PreplanVersionEntity, { convertPreplanVersionEntityToModel } from 'src/entities/preplan/PreplanVersionEntity';
 
-export default interface PreplanEntity extends PreplanHeaderEntity {
+export default interface PreplanEntity extends PreplanVersionEntity {
   readonly dummyAircraftRegistersXml: Xml;
   readonly aircraftRegisterOptionsXml: Xml;
 }
 
-export function convertPreplanEntityToModel(data: PreplanEntity, flightRequirements: readonly FlightRequirementEntity[], flights: readonly FlightEntity[]): PreplanModel {
+export function convertPreplanEntityToModel(data: PreplanEntity): PreplanModel {
   return {
-    ...convertPreplanHeaderEntityToModel(data),
+    ...convertPreplanVersionEntityToModel(data),
     dummyAircraftRegisters: parsePreplanDummyAircraftRegistersXml(data.dummyAircraftRegistersXml),
-    aircraftRegisterOptions: parsePreplanAircraftRegisterOptionsXml(data.aircraftRegisterOptionsXml),
-    flightRequirements: flightRequirements.map(convertFlightRequirementEntityToModel),
-    flights: flights.map(convertFlightEntityToModel)
+    aircraftRegisterOptions: parsePreplanAircraftRegisterOptionsXml(data.aircraftRegisterOptionsXml)
   };
 }
 

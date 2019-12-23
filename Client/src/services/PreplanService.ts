@@ -5,6 +5,8 @@ import NewPreplanModel from '@core/models/preplan/NewPreplanModel';
 import PreplanModel from '@core/models/preplan/PreplanModel';
 import DummyAircraftRegisterModel from '@core/models/preplan/DummyAircraftRegisterModel';
 import AircraftRegisterOptionsModel from '@core/models/preplan/AircraftRegisterOptionsModel';
+import PreplanHeaderDataModel from '@core/models/preplan/PreplanHeaderDataModel';
+import PreplanDataModel from '@core/models/preplan/PreplanDataModel';
 
 const request = RequestManager.makeRequester('preplan');
 
@@ -12,7 +14,7 @@ export default class PreplanService {
   /**
    * Provides all user related or public preplan headers.
    */
-  static async getAllHeaders(): Promise<PreplanHeaderModel[]> {
+  static async getAllHeaders(): Promise<PreplanHeaderDataModel[]> {
     return await request('get-all-headers');
   }
 
@@ -31,49 +33,56 @@ export default class PreplanService {
   }
 
   /**
+   * Commits a new version of the specified preplan and provides the complete peplan model.
+   */
+  static async commit(id: Id, description: string): Promise<PreplanDataModel> {
+    return await request('commit', { id, description });
+  }
+
+  /**
    * Updates the header of a specific preplan and
    * provides the list of all user related or public preplan headers.
    */
-  static async editHeader(id: Id, newPreplan: NewPreplanModel): Promise<PreplanHeaderModel[]> {
+  static async editHeader(id: Id, newPreplan: NewPreplanModel): Promise<PreplanHeaderDataModel[]> {
     return await request('edit-header', { id, newPreplan });
   }
 
   /**
    * Publishes/unpublshes a preplan and provides the list of all user related or public preplan headers.
    */
-  static async setPublished(id: Id, published: boolean): Promise<PreplanHeaderModel[]> {
+  static async setPublished(id: Id, published: boolean): Promise<PreplanHeaderDataModel[]> {
     return await request('set-published', { id, published });
   }
 
   /**
    * Removes a preplan completely and provides the list of all user related or public preplan headers.
    */
-  static async remove(id: Id): Promise<PreplanHeaderModel[]> {
+  static async remove(id: Id): Promise<PreplanHeaderDataModel[]> {
     return await request('remove', { id });
   }
 
   /**
    * Provides the complete model of a preplan by its id.
    */
-  static async get(id: Id): Promise<PreplanModel> {
+  static async get(id: Id): Promise<PreplanDataModel> {
     return await request('get', { id });
   }
 
   /**
-   * Finalizes some specific preplan and provides its complete model.
+   * Finalizes some specific preplan and provides the complete peplan model.
    */
-  static async finalize(id: Id): Promise<PreplanModel> {
-    return await request('finalize', { id });
+  static async accepted(id: Id): Promise<PreplanDataModel> {
+    return await request('accepted', { id });
   }
 
   /**
-   * Sets the status of aircraft registers.
+   * Sets the status of aircraft registers and provides the complete preplan model.
    */
   static async setAircraftRegisters(
     id: Id,
     dummyAircraftRegisters: readonly DummyAircraftRegisterModel[],
     aircraftRegisterOptions: AircraftRegisterOptionsModel
-  ): Promise<PreplanModel> {
+  ): Promise<PreplanDataModel> {
     return await request('set-aircraft-registers', { id, dummyAircraftRegisters, aircraftRegisterOptions });
   }
 }

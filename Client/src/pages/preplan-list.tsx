@@ -142,7 +142,7 @@ const PreplanListPage: FC = () => {
                   <TableCell className={classes.preplanTableCell}>Last Modified</TableCell>
                   <TableCell className={classes.preplanTableCell}>Created at</TableCell>
                   <TableCell className={classes.preplanTableCell}>Copy Source</TableCell>
-                  <TableCell className={classes.preplanTableCell}>Finalized</TableCell>
+                  <TableCell className={classes.preplanTableCell}>Accepted</TableCell>
                   <TableCell className={classes.preplanTableCell}>Simulation Name</TableCell>
                   {tab === 'USER' && <TableCell className={classNames(classes.preplanTableCell, classes.publicHeader)}>Public</TableCell>}
                   <TableCell className={classes.preplanTableCell} align="center">
@@ -166,13 +166,13 @@ const PreplanListPage: FC = () => {
                       </TableCell>
 
                       {tab === 'PUBLIC' && <TableCell className={classes.preplanTableCell}>{preplanHeader.user.displayName}</TableCell>}
-                      <TableCell className={classes.preplanTableCell}>{preplanHeader.lastEditDateTime.format('d')}</TableCell>
+                      <TableCell className={classes.preplanTableCell}>{preplanHeader.current.lastEditDateTime.format('d')}</TableCell>
                       <TableCell className={classes.preplanTableCell}>{preplanHeader.creationDateTime.format('d')}</TableCell>
-                      <TableCell className={classes.preplanTableCell}>{preplanHeader.parentPreplan && preplanHeader.parentPreplan.name}</TableCell>
+                      <TableCell className={classes.preplanTableCell}>{preplanHeader.parentPreplanHeader && preplanHeader.parentPreplanHeader.name}</TableCell>
                       <TableCell className={classes.preplanTableCell} align="center">
-                        {preplanHeader.finalized ? <FinilizedIcon /> : ''}
+                        {preplanHeader.accepted ? <FinilizedIcon /> : ''}
                       </TableCell>
-                      <TableCell className={classes.preplanTableCell}>{preplanHeader.simulation && preplanHeader.simulation.name}</TableCell>
+                      <TableCell className={classes.preplanTableCell}>{preplanHeader.current.simulation && preplanHeader.current.simulation.name}</TableCell>
 
                       {tab === 'USER' && (
                         <TableCell className={classes.preplanTableCell} align="center">

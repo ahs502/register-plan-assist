@@ -291,14 +291,16 @@ export function withTransactionalDbAccess(task: (dbAccess: DbAccess) => Promise<
   });
 }
 
-export function select<E>(selectors: { [K in keyof E]: string }) {
+export function select<E>(runQuery: DbAccess['runQuery'], selectors: { [K in keyof E]: string }) {
   return {
     from(source: string) {
       return {
-        where(condition?: string) {
-          return `select ${Object.keys(selectors)
-            .map(property => `${selectors[property]} as [${property}]`)
-            .join(' ')} from ${source}${condition ? `where ${condition};` : ''}`;
+        async where(condition?: string) {
+          return (await runQuery(
+            `select ${(Object.keys(selectors) as (keyof E)[]).map(property => `${selectors[property]} as [${property}]`).join(', ')} from ${source}${
+              condition ? ` where ${condition};` : ''
+            }`
+          )) as E[];
         }
       };
     }

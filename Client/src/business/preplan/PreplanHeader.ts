@@ -23,16 +23,19 @@ export default class PreplanHeader {
   readonly startDate: Date;
   readonly endDate: Date;
 
-  readonly current: {
+  readonly versions: readonly {
     readonly id: Id;
 
+    readonly current: boolean;
     readonly lastEditDateTime: Date;
+    readonly description: string;
 
     readonly simulation?: {
       readonly id: Id;
       readonly name: string;
     };
-  };
+  }[];
+  readonly current: Omit<PreplanHeader['versions'][number], 'current' | 'description'>;
 
   constructor(raw: PreplanHeaderDataModel) {
     this.id = raw.id;
@@ -48,13 +51,16 @@ export default class PreplanHeader {
     this.creationDateTime = dataTypes.utcDate.convertModelToBusiness(raw.creationDateTime);
     this.startDate = dataTypes.utcDate.convertModelToBusiness(raw.startDate);
     this.endDate = dataTypes.utcDate.convertModelToBusiness(raw.endDate);
-    this.current = {
-      id: raw.current.id,
-      lastEditDateTime: dataTypes.utcDate.convertModelToBusiness(raw.current.lastEditDateTime),
-      simulation: raw.current.simulation && {
-        id: raw.current.simulation.id,
-        name: dataTypes.name.convertModelToBusiness(raw.current.simulation.name)
+    this.versions = raw.versions.map<PreplanHeader['versions'][number]>(v => ({
+      id: v.id,
+      current: v.current,
+      lastEditDateTime: dataTypes.utcDate.convertModelToBusiness(v.lastEditDateTime),
+      description: dataTypes.name.convertModelToBusiness(v.description),
+      simulation: v.simulation && {
+        id: v.simulation.id,
+        name: dataTypes.name.convertModelToBusiness(v.simulation.name)
       }
-    };
+    }));
+    this.current = this.versions.find(v => v.current)!;
   }
 }

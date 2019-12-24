@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { requestMiddlewareWithDbAccess, requestMiddlewareWithTransactionalDbAccess } from 'src/utils/requestMiddleware';
 import { Xml } from 'src/utils/xml';
 import Id from '@core/types/Id';
-import NewPreplanModel, { NewPreplanModelValidation } from '@core/models/preplan/NewPreplanModel';
+import NewPreplanHeaderModel, { NewPreplanHeaderModelValidation } from '@core/models/preplan/NewPreplanHeaderModel';
 import PreplanHeaderEntity, { convertPreplanHeaderEntityToModel } from 'src/entities/preplan/PreplanHeaderEntity';
 import PreplanModel from '@core/models/preplan/PreplanModel';
 import PreplanEntity, {
@@ -12,15 +12,15 @@ import PreplanEntity, {
   stringifyPreplanAircraftRegisterOptionsXml
 } from 'src/entities/preplan/PreplanEntity';
 import FlightRequirementEntity, { convertFlightRequirementEntityToModel } from 'src/entities/flight-requirement/FlightRequirementEntity';
-import { convertNewPreplanModelToEntity } from 'src/entities/preplan/NewPreplanEntity';
+import { convertNewPreplanHeaderModelToEntity } from 'src/entities/preplan/NewPreplanHeaderEntity';
 import DummyAircraftRegisterModel, { DummyAircraftRegisterModelArrayValidation } from '@core/models/preplan/DummyAircraftRegisterModel';
 import AircraftRegisterOptionsModel, { AircraftRegisterOptionsModelValidation } from '@core/models/preplan/AircraftRegisterOptionsModel';
 import FlightEntity, { convertFlightEntityToModel } from 'src/entities/flight/FlightEntity';
-import { DbAccess } from 'src/utils/sqlServer';
+import { DbAccess, select } from 'src/utils/sqlServer';
 import MasterData from 'src/utils/masterData';
 import PreplanHeaderDataModel from '@core/models/preplan/PreplanHeaderDataModel';
 import PreplanDataModel from '@core/models/preplan/PreplanDataModel';
-import PreplanHeaderDataEntity, { convertPreplanHeaderDataEntityToModel } from 'src/entities/preplan/PreplanHeaderDataEntity';
+import PreplanHeaderVersionEntity, { convertPreplanHeaderVersionEntityToDataModel } from 'src/entities/preplan/PreplanHeaderVersionEntity';
 import PreplanVersionEntity, { convertPreplanVersionEntityToModel } from 'src/entities/preplan/PreplanVersionEntity';
 
 const router = Router();
@@ -35,12 +35,16 @@ router.post(
 
 router.post(
   '/create-empty',
-  requestMiddlewareWithDbAccess<{ newPreplan: NewPreplanModel }, Id>(async (userId, { newPreplan }, { runQuery, runSp }) => {
-    const rawUserPreplanNames: { name: string }[] = await runQuery(`select [Name] as [name] from [Rpa].[Preplan] where [Id_User] = '${userId}'`);
-    const userPreplanNames = rawUserPreplanNames.map(item => item.name);
-    new NewPreplanModelValidation(newPreplan, userPreplanNames).throw('Invalid API input.');
+  requestMiddlewareWithDbAccess<{ newPreplan: NewPreplanHeaderModel }, Id>(async (userId, { newPreplan }, { runQuery, runSp }) => {
+    const rawUserPreplanHeaderNames = await select<{ name: string }>(runQuery, {
+      name: '[Name]'
+    })
+      .from('[Rpa].[PreplanHeader]')
+      .where(`[Id_User] = '${userId}'`);
+    const userPreplanHeaderNames = rawUserPreplanHeaderNames.map(item => item.name);
+    new NewPreplanHeaderModelValidation(newPreplan, userPreplanHeaderNames).throw('Invalid API input.');
 
-    const newPreplanEntity = convertNewPreplanModelToEntity(newPreplan);
+    const newPreplanEntity = convertNewPreplanHeaderModelToEntity(newPreplan);
     const result: { id: Id }[] = await runSp(
       '[Rpa].[SP_InsertEmptyPreplan]',
       runSp.bigIntParam('userId', userId),
@@ -56,12 +60,12 @@ router.post(
 
 router.post(
   '/clone',
-  requestMiddlewareWithTransactionalDbAccess<{ id: Id; newPreplan: NewPreplanModel }, Id>(async (userId, { id, newPreplan }, { runQuery, runSp }) => {
+  requestMiddlewareWithTransactionalDbAccess<{ id: Id; newPreplan: NewPreplanHeaderModel }, Id>(async (userId, { id, newPreplan }, { runQuery, runSp }) => {
     const rawUserPreplanNames: { name: string }[] = await runQuery(`select [Name] as [name] from [Rpa].[Preplan] where [Id_User] = '${userId}'`);
     const userPreplanNames = rawUserPreplanNames.map(item => item.name);
-    new NewPreplanModelValidation(newPreplan, userPreplanNames).throw('Invalid API input.');
+    new NewPreplanHeaderModelValidation(newPreplan, userPreplanNames).throw('Invalid API input.');
 
-    const newPreplanEntity = convertNewPreplanModelToEntity(newPreplan);
+    const newPreplanEntity = convertNewPreplanHeaderModelToEntity(newPreplan);
     const result: { id: Id }[] = await runSp(
       '[Rpa].[SP_ClonePreplan]',
       runSp.bigIntParam('userId', userId),
@@ -87,12 +91,12 @@ router.post(
 
 router.post(
   '/edit-header',
-  requestMiddlewareWithDbAccess<{ id: Id; newPreplan: NewPreplanModel }, PreplanHeaderDataModel[]>(async (userId, { id, newPreplan }, { runQuery, runSp }) => {
+  requestMiddlewareWithDbAccess<{ id: Id; newPreplan: NewPreplanHeaderModel }, PreplanHeaderDataModel[]>(async (userId, { id, newPreplan }, { runQuery, runSp }) => {
     const rawUserPreplanNames: { name: string }[] = await runQuery(`select [Name] as [name] from [Rpa].[Preplan] where [Id_User] = '${userId}' and [Id] <> '${id}'`);
     const userPreplanNames = rawUserPreplanNames.map(item => item.name);
-    new NewPreplanModelValidation(newPreplan, userPreplanNames).throw('Invalid API input.');
+    new NewPreplanHeaderModelValidation(newPreplan, userPreplanNames).throw('Invalid API input.');
 
-    const newPreplanEntity = convertNewPreplanModelToEntity(newPreplan);
+    const newPreplanEntity = convertNewPreplanHeaderModelToEntity(newPreplan);
     await runSp(
       '[Rpa].[SP_UpdatePreplanHeader]',
       runSp.bigIntParam('userId', userId),
@@ -208,8 +212,8 @@ router.post(
 );
 
 export async function getPreplanHeaderDataModels(runSp: DbAccess['runSp'], userId: Id): Promise<PreplanHeaderDataModel[]> {
-  const preplanHeaderDataEntities: PreplanHeaderDataEntity[] = await runSp('[Rpa].[SP_GetPreplanHeaderData]', runSp.bigIntParam('userId', userId));
-  const preplanHeaderDataModels = preplanHeaderDataEntities.map(convertPreplanHeaderDataEntityToModel);
+  const preplanHeaderDataEntities: PreplanHeaderVersionEntity[] = await runSp('[Rpa].[SP_GetPreplanHeaderData]', runSp.bigIntParam('userId', userId));
+  const preplanHeaderDataModels = preplanHeaderDataEntities.map(convertPreplanHeaderVersionEntityToDataModel);
   return preplanHeaderDataModels;
 }
 

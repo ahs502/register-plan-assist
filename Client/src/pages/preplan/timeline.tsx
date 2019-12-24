@@ -1,5 +1,5 @@
 import React, { FC, Fragment, useState, useContext, useEffect } from 'react';
-import { Theme, IconButton, Badge, Drawer, Portal, CircularProgress } from '@material-ui/core';
+import { Theme, IconButton, Badge, Drawer, Portal, CircularProgress, Button } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import { DoneAll as FinilizedIcon, Search as SearchIcon, SettingsOutlined as SettingsIcon } from '@material-ui/icons';
 import MahanIcon, { MahanIconType } from 'src/components/MahanIcon';
@@ -24,6 +24,7 @@ import DayFlightRequirementModel from '@core/models/flight-requirement/DayFlight
 import DayFlightRequirementLegModel from '@core/models/flight-requirement/DayFlightRequirementLegModel';
 import FlightRequirementService from 'src/services/FlightRequirementService';
 import KeyboardHandler from 'src/utils/KeyboardHandler';
+import PerplanVersionsModal, { usePerplanVersionsModalState, PerplanVersionsModalState } from 'src/components/preplan/PerplanVersionsModal';
 
 const useStyles = makeStyles((theme: Theme) => ({
   sideBarBackdrop: {
@@ -90,6 +91,8 @@ const TimelinePage: FC<TimelinePageProps> = ({ onObjectionTargetClick, onEditFli
     return () => KeyboardHandler.unregister(reference);
   }, []);
 
+  const [preplanVersionsModalState, openPreplanVersionsModal, closePreplanVersionsModal] = usePerplanVersionsModalState();
+
   const snackbar = useSnackbar();
   const classes = useStyles();
 
@@ -99,7 +102,8 @@ const TimelinePage: FC<TimelinePageProps> = ({ onObjectionTargetClick, onEditFli
 
       <Portal container={navBarToolsContainer}>
         <div className={timelineViewState.loading ? classes.disable : ''}>
-          <IconButton disabled={timelineViewState.loading} color="inherit" title="Finilize Preplan">
+          <Button onClick={() => openPreplanVersionsModal({ perplan: preplan } as PerplanVersionsModalState)}>Current</Button>
+          <IconButton disabled={timelineViewState.loading} color="inherit" title="Accept Preplan">
             <FinilizedIcon />
           </IconButton>
           <LinkIconButton disabled={timelineViewState.loading} color="inherit" to={`/preplan/${preplan.id}/flight-requirement-list`} title="Flights">
@@ -230,6 +234,8 @@ const TimelinePage: FC<TimelinePageProps> = ({ onObjectionTargetClick, onEditFli
           <StatusBar {...statusBarProps} />
         </div>
       </div>
+
+      <PerplanVersionsModal state={preplanVersionsModalState} onClose={closePreplanVersionsModal} loadVersions={versionId => {}} deleteVersion={versionId => {}} />
     </Fragment>
   );
 };

@@ -4,7 +4,7 @@ import NewFlightRequirementModel from '@core/models/flight-requirement/NewFlight
 import FlightRequirementModel from '@core/models/flight-requirement/FlightRequirementModel';
 import NewFlightModel from '@core/models/flight/NewFlightModel';
 import FlightModel from '@core/models/flight/FlightModel';
-import PreplanModel from '@core/models/preplan/PreplanModel';
+import PreplanDataModel from '@core/models/preplan/PreplanDataModel';
 
 const request = RequestManager.makeRequester('flight-requirement');
 
@@ -12,21 +12,21 @@ export default class FlightRequirementService {
   /**
    * Adds a new flight requirement including its flights per day.
    */
-  static async add(preplanId: Id, newFlightRequirement: NewFlightRequirementModel, newFlights: readonly NewFlightModel[]): Promise<PreplanModel> {
+  static async add(preplanId: Id, newFlightRequirement: NewFlightRequirementModel, newFlights: readonly NewFlightModel[]): Promise<PreplanDataModel> {
     return await request('add', { preplanId, newFlightRequirement, newFlights });
   }
 
   /**
    * Removes a flight requirement and its flights per day.
    */
-  static async remove(preplanId: Id, id: Id): Promise<PreplanModel> {
+  static async remove(preplanId: Id, id: Id): Promise<PreplanDataModel> {
     return await request('remove', { preplanId, id });
   }
 
   /**
    * Edits all the given flight requirements and its related flights, adding new created flights and removing droped ones..
    */
-  static async edit(preplanId: Id, flightRequirement: FlightRequirementModel, flights: readonly FlightModel[], newFlights: readonly NewFlightModel[]): Promise<PreplanModel> {
+  static async edit(preplanId: Id, flightRequirement: FlightRequirementModel, flights: readonly FlightModel[], newFlights: readonly NewFlightModel[]): Promise<PreplanDataModel> {
     return await request('edit', { preplanId, flightRequirement, flights, newFlights });
   }
 }

@@ -6,24 +6,18 @@ export default interface PreplanHeaderModel {
 
   readonly name: string;
   readonly published: boolean;
-  readonly finalized: boolean;
+  readonly accepted: boolean;
 
   readonly user: UserModel;
 
-  readonly parentPreplan?: {
+  readonly parentPreplanHeader?: {
     readonly id: Id;
     readonly name: string;
     readonly user: UserModel;
   };
 
   readonly creationDateTime: string;
-  readonly lastEditDateTime: string;
 
   readonly startDate: string;
   readonly endDate: string;
-
-  readonly simulation?: {
-    readonly id: Id;
-    readonly name: string;
-  };
 }

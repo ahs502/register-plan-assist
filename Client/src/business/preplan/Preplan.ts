@@ -1,13 +1,49 @@
-import PreplanHeader from 'src/business/preplan/PreplanHeader';
 import { PreplanAircraftRegisters } from 'src/business/preplan/PreplanAircraftRegister';
 import FlightRequirement from 'src/business/flight-requirement/FlightRequirement';
 import Flight from 'src/business/flight/Flight';
 import ConstraintSystem from 'src/business/constraints/ConstraintSystem';
-import PreplanModel from '@core/models/preplan/PreplanModel';
 import FlightLeg from 'src/business/flight/FlightLeg';
 import persistant from 'src/utils/persistant';
+import Id from '@core/types/Id';
+import User from 'src/business/User';
+import PreplanDataModel from '@core/models/preplan/PreplanDataModel';
+import { dataTypes } from 'src/utils/DataType';
 
-export default class Preplan extends PreplanHeader {
+export default class Preplan {
+  readonly id: Id;
+  readonly headerId: Id;
+
+  readonly name: string;
+  readonly published: boolean;
+  readonly accepted: boolean;
+
+  readonly user: User;
+
+  readonly parentPreplanHeader?: {
+    readonly id: Id;
+    readonly name: string;
+    readonly user: User;
+  };
+
+  readonly current: boolean;
+  readonly creationDateTime: Date;
+  readonly lastEditDateTime: Date;
+  readonly description: string;
+
+  readonly startDate: Date;
+  readonly endDate: Date;
+
+  readonly versions: readonly {
+    readonly id: Id;
+    readonly lastEditDateTime: Date;
+    readonly description: string;
+  }[];
+
+  readonly simulation?: {
+    readonly id: Id;
+    readonly name: string;
+  };
+
   /**
    * The enhanced aircraft registers for this preplan.
    * It must be used instead of the similar collection within MasterData.
@@ -25,8 +61,24 @@ export default class Preplan extends PreplanHeader {
 
   readonly readonly: boolean;
 
-  constructor(raw: PreplanModel, oldPreplan?: Preplan) {
-    super(raw);
+  constructor(raw: PreplanDataModel, oldPreplan?: Preplan) {
+    this.id = raw.id;
+    this.headerId = raw.header.id;
+    this.name = raw.header.name;
+    this.published = raw.header.published;
+    this.accepted = raw.header.accepted;
+    this.user = new User(raw.header.user);
+    this.current = raw.current;
+    this.creationDateTime = dataTypes.utcDate.convertModelToBusiness(raw.header.creationDateTime);
+    this.lastEditDateTime = dataTypes.utcDate.convertModelToBusiness(raw.lastEditDateTime);
+    this.description = dataTypes.name.convertModelToBusiness(raw.description);
+    this.startDate = dataTypes.utcDate.convertModelToBusiness(raw.header.startDate);
+    this.endDate = dataTypes.utcDate.convertModelToBusiness(raw.header.endDate);
+    this.versions = raw.versions.map<Preplan['versions'][number]>(version => ({
+      id: version.id,
+      lastEditDateTime: dataTypes.utcDate.convertModelToBusiness(version.lastEditDateTime),
+      description: dataTypes.name.convertModelToBusiness(version.description)
+    }));
     this.aircraftRegisters = new PreplanAircraftRegisters(raw.dummyAircraftRegisters, raw.aircraftRegisterOptions, this);
     this.flightRequirements = raw.flightRequirements.map(f => new FlightRequirement(f, this.aircraftRegisters));
     const flightRequirementDictionary = this.flightRequirements.toDictionary('id');
@@ -47,6 +99,6 @@ export default class Preplan extends PreplanHeader {
 
     this.constraintSystem = new ConstraintSystem(this, oldPreplan && oldPreplan.constraintSystem);
 
-    this.readonly = this.user.id !== persistant.user!.id;
+    this.readonly = this.user.id !== persistant.user!.id || !this.current;
   }
 }

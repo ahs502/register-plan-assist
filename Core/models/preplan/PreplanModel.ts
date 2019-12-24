@@ -1,12 +1,9 @@
-import PreplanHeaderModel from '@core/models/preplan/PreplanHeaderModel';
+import Id from '@core/types/Id';
+import PreplanVersionModel from '@core/models/preplan/PreplanVersionModel';
 import DummyAircraftRegisterModel from '@core/models/preplan/DummyAircraftRegisterModel';
 import AircraftRegisterOptionsModel from '@core/models/preplan/AircraftRegisterOptionsModel';
-import FlightRequirementModel from '@core/models/flight-requirement/FlightRequirementModel';
-import FlightModel from '@core/models/flight/FlightModel';
 
-export default interface PreplanModel extends PreplanHeaderModel {
+export default interface PreplanModel extends PreplanVersionModel {
   readonly dummyAircraftRegisters: readonly DummyAircraftRegisterModel[];
   readonly aircraftRegisterOptions: AircraftRegisterOptionsModel;
-  readonly flightRequirements: readonly FlightRequirementModel[];
-  readonly flights: readonly FlightModel[];
 }

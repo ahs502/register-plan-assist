@@ -6,14 +6,15 @@ import { parsePreplanAircraftRegisterOptionsXml } from 'src/entities/preplan/Pre
 import FlightModel, { FlightModelArrayValidation } from '@core/models/flight/FlightModel';
 import { convertFlightModelToEntity } from 'src/entities/flight/FlightEntity';
 import PreplanModel from '@core/models/preplan/PreplanModel';
-import { getPreplanModel } from 'src/services/preplan-service';
+import { getPreplanDataModel } from 'src/services/preplan-service';
+import PreplanDataModel from '@core/models/preplan/PreplanDataModel';
 
 const router = Router();
 export default router;
 
 router.post(
   '/edit',
-  requestMiddlewareWithDbAccess<{ preplanId: Id; flights: readonly FlightModel[] }, PreplanModel>(async (userId, { preplanId, flights }, { runQuery, runSp }) => {
+  requestMiddlewareWithDbAccess<{ preplanId: Id; flights: readonly FlightModel[] }, PreplanDataModel>(async (userId, { preplanId, flights }, { runQuery, runSp }) => {
     const rawFlightIds: { id: Id }[] = await runQuery(
       `select convert(varchar(30), f.[Id]) as [id] from [Rpa].[Flight] as f join [Rpa].[FlightRequirement] as r on f.[Id_FlightRequirement] = r.[Id] where r.[Id_Preplan] = '${preplanId}'`
     );
@@ -40,6 +41,6 @@ router.post(
       )
     );
 
-    return await getPreplanModel(runSp, userId, preplanId);
+    return await getPreplanDataModel(runSp, userId, preplanId);
   })
 );

@@ -5,6 +5,7 @@ import NewFlightRequirementModel from '@core/models/flight-requirement/NewFlight
 import { convertAircraftSelectionModelToEntity, convertAircraftSelectionEntityToModel } from '../AircraftSelectionEntity';
 import { convertFlightRequirementLegModelToEntity, convertFlightRequirementLegEntityToModel } from './FlightRequirementLegEntity';
 import { convertDayFlightRequirementModelToEntity, convertDayFlightRequirementEntityToModel } from './DayFlightRequirementEntity';
+import { convertFlightRequirementChangeModelToEntity, convertFlightRequirementChangeEntityToModel } from 'src/entities/flight-requirement/FlightRequirementChangeEntity';
 
 export default interface NewFlightRequirementEntity {
   readonly label: string;
@@ -16,6 +17,7 @@ export default interface NewFlightRequirementEntity {
   readonly ignored: boolean;
   readonly routeXml: Xml;
   readonly daysXml: Xml;
+  readonly changesXml: Xml;
 }
 
 export function convertNewFlightRequirementModelToEntity(data: NewFlightRequirementModel): NewFlightRequirementEntity {
@@ -28,7 +30,8 @@ export function convertNewFlightRequirementModelToEntity(data: NewFlightRequirem
     notes: data.notes,
     ignored: data.ignored,
     routeXml: xmlStringify({ FlightRequirementLeg: data.route.map(convertFlightRequirementLegModelToEntity) }, 'Route'),
-    daysXml: xmlStringify({ DayFlightRequirement: data.days.map(convertDayFlightRequirementModelToEntity) }, 'Days')
+    daysXml: xmlStringify({ DayFlightRequirement: data.days.map(convertDayFlightRequirementModelToEntity) }, 'Days'),
+    changesXml: xmlStringify({ FlightRequirementChange: data.changes.map(convertFlightRequirementChangeModelToEntity) }, 'Changes')
   };
 }
 export function convertNewFlightRequirementEntityToModel(data: NewFlightRequirementEntity): NewFlightRequirementModel {
@@ -41,6 +44,7 @@ export function convertNewFlightRequirementEntityToModel(data: NewFlightRequirem
     notes: data.notes,
     ignored: data.ignored,
     route: xmlArray(xmlParse(data.routeXml, 'Route').FlightRequirementLeg).map(convertFlightRequirementLegEntityToModel),
-    days: xmlArray(xmlParse(data.daysXml, 'Days').DayFlightRequirement).map(convertDayFlightRequirementEntityToModel)
+    days: xmlArray(xmlParse(data.daysXml, 'Days').DayFlightRequirement).map(convertDayFlightRequirementEntityToModel),
+    changes: xmlArray(xmlParse(data.changesXml, 'Changes').FlightRequirementChange).map(convertFlightRequirementChangeEntityToModel)
   };
 }

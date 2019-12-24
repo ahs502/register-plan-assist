@@ -39,11 +39,13 @@ export class FlightRequirementChangeModelValidation extends Validation<
               () => start.toJSON() === startDate,
               () => end.toJSON() === endDate
             )
-            .must(() => start <= end)
+            .must(() => start <= end);
+          /* Commented because we don't want to restrict preplan date change in the future:
             .must(
               () => start >= preplanStartDate.getDatePart(),
               () => end <= preplanEndDate.getDatePart()
-            );
+            )
+          */
         });
         validator.put(validator.$.aircraftSelection, new AircraftSelectionModelValidation(aircraftSelection, dummyAircraftRegisterIds));
         validator.must(Rsxes.includes(rsx));

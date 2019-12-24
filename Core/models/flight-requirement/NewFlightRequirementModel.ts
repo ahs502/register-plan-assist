@@ -7,6 +7,7 @@ import Validation from '@ahs502/validation';
 import FlightRequirementChangeModel, { FlightRequirementChangeModelValidation } from '@core/models/flight-requirement/FlightRequirementChangeModel';
 import MasterDataCollection from '@core/types/MasterDataCollection';
 import StcModel from '@core/models/master-data/StcModel';
+import AirportModel from '@core/models/master-data/AirportModel';
 
 export default interface NewFlightRequirementModel {
   readonly label: string;
@@ -33,6 +34,7 @@ export class NewFlightRequirementModelValidation extends Validation<
   constructor(
     data: NewFlightRequirementModel,
     stcs: MasterDataCollection<StcModel>,
+    airports: MasterDataCollection<AirportModel>,
     otherExistingLabels: readonly string[],
     dummyAircraftRegisterIds: readonly Id[],
     preplanStartDate: Date,
@@ -57,13 +59,16 @@ export class NewFlightRequirementModelValidation extends Validation<
         validator
           .array(route)
           .must(() => route.length > 0)
-          .each((leg, index) => validator.put(validator.$.route[index], new FlightRequirementLegModelValidation(leg)));
+          .each((leg, index) => validator.put(validator.$.route[index], new FlightRequirementLegModelValidation(leg, airports)));
         validator.array(days).each((day, index) => validator.put(validator.$.days[index], new DayFlightRequirementModelValidation(day, dummyAircraftRegisterIds)));
         validator
           .array(changes)
           .each((change, index) =>
             validator.put(validator.$.changes[index], new FlightRequirementChangeModelValidation(change, preplanStartDate, preplanEndDate, dummyAircraftRegisterIds))
-          );
+          )
+          .if(validations => validations.every(v => v.ok))
+          .then(() => changes.orderBy('startDate'))
+          .each((change, index, changes) => validator.must(index === changes.length - 1 ? true : change.endDate <= changes[index + 1].startDate));
       })
     );
   }

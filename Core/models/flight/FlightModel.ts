@@ -14,10 +14,17 @@ export class FlightModelValidation extends Validation<
     newFlight: NewFlightModelValidation;
   }
 > {
-  constructor(data: FlightModel, flightIds: readonly Id[], flightRequirementIds: readonly Id[], aircraftRegisterOptions: AircraftRegisterOptionsModel) {
+  constructor(
+    data: FlightModel,
+    flightIds: readonly Id[],
+    flightRequirementIds: readonly Id[],
+    aircraftRegisterOptions: AircraftRegisterOptionsModel,
+    preplanStartDate: Date,
+    preplanEndDate: Date
+  ) {
     super(validator =>
       validator
-        .put(validator.$.newFlight, new NewFlightModelValidation(data, aircraftRegisterOptions))
+        .put(validator.$.newFlight, new NewFlightModelValidation(data, aircraftRegisterOptions, preplanStartDate, preplanEndDate))
         .object(data)
         .then(({ id, flightRequirementId }) => {
           validator.must(typeof id === 'string', !!id).must(() => flightIds.includes(id));
@@ -33,11 +40,20 @@ export class FlightModelArrayValidation extends Validation<
     flights: FlightModelValidation[];
   }
 > {
-  constructor(data: readonly FlightModel[], flightIds: readonly Id[], flightRequirementIds: readonly Id[], aircraftRegisterOptions: AircraftRegisterOptionsModel) {
+  constructor(
+    data: readonly FlightModel[],
+    flightIds: readonly Id[],
+    flightRequirementIds: readonly Id[],
+    aircraftRegisterOptions: AircraftRegisterOptionsModel,
+    preplanStartDate: Date,
+    preplanEndDate: Date
+  ) {
     super(validator =>
       validator
         .array(data)
-        .each((flight, index) => validator.put(validator.$.flights[index], new FlightModelValidation(flight, flightIds, flightRequirementIds, aircraftRegisterOptions)))
+        .each((flight, index) =>
+          validator.put(validator.$.flights[index], new FlightModelValidation(flight, flightIds, flightRequirementIds, aircraftRegisterOptions, preplanStartDate, preplanEndDate))
+        )
         .must(() => data.map(f => f.day).distinct().length === data.length)
         .must(() => data.map(f => f.flightRequirementId).distinct().length <= 1)
     );

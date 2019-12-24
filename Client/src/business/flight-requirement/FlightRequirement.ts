@@ -11,6 +11,7 @@ import Objection, { ObjectionType } from 'src/business/constraints/Objection';
 import Checker from 'src/business/constraints/Checker';
 import ModelConvertable from 'src/business/ModelConvertable';
 import { dataTypes } from 'src/utils/DataType';
+import FlightRequirementChange from 'src/business/flight-requirement/FlightRequirementChange';
 
 export default class FlightRequirement implements ModelConvertable<FlightRequirementModel>, Objectionable {
   readonly id: Id;
@@ -23,6 +24,7 @@ export default class FlightRequirement implements ModelConvertable<FlightRequire
   readonly ignored: boolean;
   readonly route: readonly FlightRequirementLeg[];
   readonly days: readonly DayFlightRequirement[];
+  readonly changes: readonly FlightRequirementChange[];
 
   readonly objectionStatusDependencies: readonly Objectionable[];
 
@@ -37,6 +39,7 @@ export default class FlightRequirement implements ModelConvertable<FlightRequire
     this.ignored = raw.ignored;
     this.route = raw.route.map((l, index) => new FlightRequirementLeg(l, index, this));
     this.days = raw.days.map(d => new DayFlightRequirement(d, aircraftRegisters, this));
+    this.changes = raw.changes.map(c => new FlightRequirementChange(c, aircraftRegisters, this));
 
     this.objectionStatusDependencies = this.days;
   }
@@ -52,7 +55,8 @@ export default class FlightRequirement implements ModelConvertable<FlightRequire
       notes: dataTypes.label.convertBusinessToModel(this.notes),
       ignored: this.ignored,
       route: this.route.map(l => l.extractModel()),
-      days: this.days.map(d => d.extractModel())
+      days: this.days.map(d => d.extractModel()),
+      changes: this.changes.map(c => c.extractModel())
     };
     return override?.(flightRequirementModel) ?? flightRequirementModel;
   }

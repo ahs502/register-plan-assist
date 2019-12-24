@@ -10,11 +10,14 @@ import Weekday from '@core/types/Weekday';
 import Id from '@core/types/Id';
 import ModelConvertable from 'src/business/ModelConvertable';
 import { dataTypes } from 'src/utils/DataType';
+import FlightChange from 'src/business/flight/FlightChange';
 
 export default class Flight implements ModelConvertable<FlightModel> {
   // Original:
   readonly id: Id;
   readonly aircraftRegister?: PreplanAircraftRegister;
+  readonly changes: readonly FlightChange[];
+  readonly legs: readonly FlightLeg[];
 
   // Duplicates:
   readonly label: string;
@@ -31,7 +34,6 @@ export default class Flight implements ModelConvertable<FlightModel> {
   readonly flightRequirement: FlightRequirement;
   readonly dayFlightRequirement: DayFlightRequirement;
   readonly aircraftRegisters: PreplanAircraftRegisters;
-  readonly legs: readonly FlightLeg[];
 
   // Computational:
   readonly start: Daytime;
@@ -47,7 +49,8 @@ export default class Flight implements ModelConvertable<FlightModel> {
 
   constructor(raw: FlightModel, dayFlightRequirement: DayFlightRequirement, aircraftRegisters: PreplanAircraftRegisters) {
     this.id = raw.id;
-    this.aircraftRegister = raw.aircraftRegisterId === undefined ? undefined : aircraftRegisters.id[raw.aircraftRegisterId];
+    this.aircraftRegister = dataTypes.preplanAircraftRegister(aircraftRegisters).convertModelToBusinessOptional(raw.aircraftRegisterId);
+    this.changes = raw.changes.map(c => new FlightChange(c, this, aircraftRegisters));
 
     this.label = dayFlightRequirement.flightRequirement.label;
     this.category = dayFlightRequirement.flightRequirement.category;
@@ -96,7 +99,8 @@ export default class Flight implements ModelConvertable<FlightModel> {
       flightRequirementId: this.flightRequirement.id,
       day: this.day,
       aircraftRegisterId: dataTypes.preplanAircraftRegister(this.aircraftRegisters).convertBusinessToModelOptional(this.aircraftRegister),
-      legs: this.legs.map(l => l.extractModel())
+      legs: this.legs.map(l => l.extractModel()),
+      changes: this.changes.map(c => c.extractModel())
     };
     return override?.(flightModel) ?? flightModel;
   }

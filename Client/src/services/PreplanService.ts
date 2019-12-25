@@ -29,6 +29,13 @@ export default class PreplanService {
   }
 
   /**
+   * Removes a certain preplan version and provides the peplan data model.
+   */
+  static async remove(id: Id): Promise<PreplanDataModel> {
+    return await request('remove', { id });
+  }
+
+  /**
    * Sets the status of aircraft registers and provides the preplan data model.
    */
   static async setAircraftRegisters(

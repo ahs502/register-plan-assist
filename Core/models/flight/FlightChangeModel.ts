@@ -33,13 +33,11 @@ export class FlightChangeModelValidation extends Validation<
               () => start.toJSON() === startDate,
               () => end.toJSON() === endDate
             )
-            .must(() => start <= end);
-          /* Commented because we don't want to restrict preplan date change in the future:
+            .must(() => start <= end)
             .must(
               () => start >= preplanStartDate.getDatePart(),
               () => end <= preplanEndDate.getDatePart()
-            )
-          */
+            );
         });
         validator
           .if(aircraftRegisterId !== undefined)

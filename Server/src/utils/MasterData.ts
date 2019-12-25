@@ -1,7 +1,7 @@
 import MasterDataModel from '@core/models/master-data/MasterDataModel';
 import MasterDataItemModel from '@core/models/master-data/MasterDataItemModel';
 import MasterDataCollection from '@core/types/MasterDataCollection';
-import { withDbAccess } from 'src/utils/sqlServer';
+import { withDb } from 'src/utils/sqlServer';
 import { fetchAndCacheMasterData } from 'src/services/master-data-service';
 
 type WritableMasterDataAll = {
@@ -30,7 +30,7 @@ const MasterData: {
     (Object.keys(masterData) as (keyof MasterDataModel)[]).forEach(name => (all[name] = createCollection(masterData[name]) as any));
   },
   initialize() {
-    return withDbAccess(({ runQuery }) => fetchAndCacheMasterData(Object.keys(MasterData.all) as (keyof MasterDataModel)[], runQuery));
+    return withDb(db => fetchAndCacheMasterData(Object.keys(MasterData.all) as (keyof MasterDataModel)[], db));
   }
 };
 

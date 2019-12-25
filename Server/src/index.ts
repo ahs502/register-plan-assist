@@ -17,7 +17,7 @@ app.set('env', env);
 
 app.use(express.json());
 
-import apiService from './api-service';
+import apiService from 'src/api-service';
 app.use('/api', apiService);
 
 app.get('/env', (req, res, next) => {
@@ -37,8 +37,8 @@ MasterData.initialize().then(
     server.listen(port);
 
     server.on('error', error => {
-      if ((<any>error).code === 'EADDRINUSE') return console.error('Address in use.');
-      console.error(error.message || error.name || error);
+      console.error((<any>error).code === 'EADDRINUSE' ? `Port ${port} is in use.` : error.message || error.name || error);
+      exitProcess();
     });
 
     server.on('listening', () => {
@@ -46,8 +46,12 @@ MasterData.initialize().then(
     });
   },
   reason => {
-    console.error(reason);
-    console.info(('>>'.bold + ' Restart server in ' + '5'.bold + ' seconds...\n').green);
-    setTimeout(() => process.exit(1), 5000);
+    console.error('Unable to fetch master data.\n', reason);
+    exitProcess();
   }
 );
+
+function exitProcess(): void {
+  console.info(('>>'.bold + ' Terminating server in ' + '5'.bold + ' seconds...\n').green);
+  setTimeout(() => process.exit(1), 5000);
+}

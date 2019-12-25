@@ -20,43 +20,187 @@ function createConnection() {
   });
 }
 
-export interface Parameter {
+interface Parameter {
   name: string;
   type: TediousType;
   value: any;
   options?: ParameterOptions;
 }
-export interface TableColumn extends ParameterOptions {
+interface TableColumn extends ParameterOptions {
   name: string;
   type: TediousType;
 }
 
-function getJsonResult(rows: { value: any; metadata: { colName: string } }[][]): any[] {
-  return rows.map(row => {
-    const record: any = {};
-    row.forEach(field => (record[field.metadata.colName] = field.value));
-    return record;
-  });
+function createDb(connection: Connection) {
+  const db = {
+    types: TYPES,
+
+    param(name: string, type: TediousType, value: any, options?: ParameterOptions): Parameter {
+      return { name, type, value, options };
+    },
+    bitParam(name: string, value: boolean | null): Parameter {
+      return { name, type: TYPES.Bit, value };
+    },
+    intParam(name: string, value: string | number | null): Parameter {
+      return { name, type: TYPES.Int, value };
+    },
+    bigIntParam(name: string, value: bigint | string | null): Parameter {
+      return { name, type: TYPES.VarChar, value, options: { length: 30 } }; // Do not use TYPES.BigInt, it does not work with large numbers.
+    },
+    varCharParam(name: string, value: string | null, length: number | 'max'): Parameter {
+      return { name, type: TYPES.VarChar, value, options: { length } };
+    },
+    nVarCharParam(name: string, value: string | null, length: number | 'max'): Parameter {
+      return { name, type: TYPES.NVarChar, value, options: { length } };
+    },
+    dateTimeParam(name: string, value: Date | string | null, scale?: number): Parameter {
+      return { name, type: TYPES.VarChar, value: typeof value === 'string' ? value : value.toJSON(), options: { scale } };
+    },
+    xmlParam(name: string, value: Xml | null): Parameter {
+      return { name, type: TYPES.VarBinary, options: { length: 'max' }, value: value && Buffer.from(value, 'utf-8') }; // Do not use TYPES.Xml or TYPES.NText, tedious does not accept those type for input parameters.
+    },
+
+    tableParam(name: string, columns: readonly TableColumn[], rows: readonly any[][]): Parameter {
+      return { name, type: TYPES.TVP, value: { columns, rows } };
+    },
+
+    column(name: string, type: TediousType, options?: ParameterOptions): TableColumn {
+      return { name, type, ...options };
+    },
+    bitColumn(name: string): TableColumn {
+      return { name, type: TYPES.Bit };
+    },
+    intColumn(name: string): TableColumn {
+      return { name, type: TYPES.Int };
+    },
+    bigIntColumn(name: string): TableColumn {
+      return { name, type: TYPES.VarChar, length: 30 }; // Do not use TYPES.BigInt, it does not work with large numbers.
+    },
+    varCharColumn(name: string, length: number | 'max'): TableColumn {
+      return { name, type: TYPES.VarChar, length };
+    },
+    nVarCharColumn(name: string, length: number | 'max'): TableColumn {
+      return { name, type: TYPES.NVarChar, length };
+    },
+    dateTimeColumn(name: string, scale?: number): TableColumn {
+      return { name, type: TYPES.VarChar, scale };
+    },
+    xmlColumn(name: string): TableColumn {
+      return { name, type: TYPES.NVarChar, length: 'max' }; // Do not use TYPES.Xml or TYPES.Text, tedious does not support them as column types of a TVP.
+    },
+
+    query<E = any>(query: string, ...parameters: Parameter[]) {
+      return makeAccessToResult(
+        () =>
+          new Promise<E[]>((resolve, reject) => {
+            const request = new TediousRequest(query, (error, rowCount, rows) => {
+              if (error) return reject(error);
+              resolve(getJsonResult(rows));
+            });
+            parameters.forEach(p => request.addParameter(p.name, p.type, p.value, p.options));
+            connection.execSql(request);
+          })
+      );
+    },
+
+    sp<E = any>(sp: string, ...parameters: Parameter[]) {
+      return makeAccessToResult(
+        () =>
+          new Promise<E[]>((resolve, reject) => {
+            const request = new TediousRequest(sp, (error, rowCount, rows) => {
+              if (error) return reject(error);
+              resolve(getJsonResult(rows));
+            });
+            parameters.forEach(p => request.addParameter(p.name, p.type, p.value, p.options));
+            connection.callProcedure(request);
+          })
+      );
+    },
+
+    select<E = any>(selectors?: { [K in keyof E]: string }) {
+      return {
+        from(source: string) {
+          const selection = ((selectors ? Object.keys(selectors) : []) as (keyof E)[]).map(p => `${selectors[p]} as [${p}]`).join(', ');
+          return {
+            where(condition: string) {
+              return db.query<E>(`select ${selection} from ${source} where ${condition};`);
+            }
+          };
+        }
+      };
+    }
+  };
+
+  return db;
+
+  function makeAccessToResult<E>(getData: () => Promise<E[]>) {
+    return {
+      async all(errorMessage?: string): Promise<E[]> {
+        const data = await getData();
+        if (errorMessage !== undefined && data.length === 0) throw errorMessage;
+        return data;
+      },
+      async map<T>(mapper: (item: E) => T, errorMessage?: string): Promise<T[]> {
+        const data = await getData();
+        if (errorMessage !== undefined && data.length === 0) throw errorMessage;
+        return data.map(mapper);
+      },
+      async one(errorMessage?: string): Promise<E> {
+        const data = await getData();
+        if (errorMessage !== undefined && data.length !== 1) throw errorMessage;
+        return data[0];
+      },
+      async pick<T>(mapper: (item: E) => T, errorMessage?: string): Promise<T> {
+        const data = await getData();
+        if (errorMessage !== undefined && data.length !== 1) throw errorMessage;
+        return mapper(data[0]);
+      }
+    };
+  }
+  function getJsonResult<E>(rows: { value: any; metadata: { colName: string } }[][]): E[] {
+    return rows.map(row => {
+      const record: any = {};
+      row.forEach(field => (record[field.metadata.colName] = field.value));
+      return record;
+    });
+  }
 }
 
-function runQuery<T extends any = any>(connection: Connection, query: string, ...parameters: Parameter[]): Promise<T[]> {
+export type Db = typeof createDb extends (connection: Connection) => infer T ? T : any;
+
+export function withDb(task: (db: Db) => Promise<any>): Promise<any> {
   return new Promise((resolve, reject) => {
-    const request = new TediousRequest(query, (error, rowCount, rows) => {
+    const connection = createConnection();
+    connection.on('connect', async error => {
       if (error) return reject(error);
-      resolve(getJsonResult(rows));
+      try {
+        const result = await task(createDb(connection));
+        resolve(result);
+      } catch (error) {
+        reject(error);
+      }
     });
-    parameters.forEach(p => request.addParameter(p.name, p.type, p.value, p.options));
-    connection.execSql(request);
   });
 }
-function runSp<T extends any = any>(connection: Connection, sp: string, ...parameters: Parameter[]): Promise<T[]> {
+export function withTransactionalDb(task: (db: Db) => Promise<any>, isolationLevel: IsolationLevel = IsolationLevel.RepeatableRead): Promise<any> {
   return new Promise((resolve, reject) => {
-    const request = new TediousRequest(sp, (error, rowCount, rows) => {
+    const connection = createConnection();
+    connection.on('connect', async error => {
       if (error) return reject(error);
-      resolve(getJsonResult(rows));
+      connection.transaction(
+        async (error, done) => {
+          if (error) return reject(error);
+          try {
+            const result = await task(createDb(connection));
+            done(null, err => (err ? reject(err) : resolve(result)));
+          } catch (error) {
+            done(error, err => reject(err || error));
+          }
+        },
+        undefined,
+        (isolationLevel as any) as ISOLATION_LEVEL
+      );
     });
-    parameters.forEach(p => request.addParameter(p.name, p.type, p.value, p.options));
-    connection.callProcedure(request);
   });
 }
 
@@ -131,180 +275,6 @@ export enum IsolationLevel {
    * nonrepeatable reads and phantom reads. However, it is susceptible to concurrent update errors. (not ANSI/ISO SQL standard)
    */
   Snapshot = ISOLATION_LEVEL.SNAPSHOT
-}
-
-interface DbAccessQueryParams {
-  param(name: string, type: TediousType, value: any, options?: ParameterOptions): Parameter;
-  bitParam(name: string, value: boolean | null): Parameter;
-  intParam(name: string, value: string | number | null): Parameter;
-  bigIntParam(name: string, value: bigint | string | null): Parameter;
-  varCharParam(name: string, value: string | null, length: number | 'max'): Parameter;
-  nVarCharParam(name: string, value: string | null, length: number | 'max'): Parameter;
-  dateTimeParam(name: string, value: Date | string | null, scale?: number): Parameter;
-  xmlParam(name: string, value: Xml | null): Parameter;
-
-  tableParam(name: string, columns: readonly TableColumn[], rows: readonly any[][]): Parameter;
-
-  column(name: string, type: TediousType, options?: ParameterOptions): TableColumn;
-  bitColumn(name: string): TableColumn;
-  intColumn(name: string): TableColumn;
-  bigIntColumn(name: string): TableColumn;
-  varCharColumn(name: string, length: number | 'max'): TableColumn;
-  nVarCharColumn(name: string, length: number | 'max'): TableColumn;
-  dateTimeColumn(name: string, scale?: number): TableColumn;
-  xmlColumn(name: string): TableColumn;
-}
-export interface DbAccess {
-  types: TediousTypes;
-  runQuery: {
-    (query: string, ...parameters: Parameter[]): Promise<any[]>;
-  } & DbAccessQueryParams;
-  runSp: {
-    (sp: string, ...parameters: Parameter[]): Promise<any[]>;
-  } & DbAccessQueryParams;
-}
-
-function attachHelperFunctions(f: any): any {
-  f.param = param;
-  f.bitParam = bitParam;
-  f.intParam = intParam;
-  f.bigIntParam = bigIntParam;
-  f.varCharParam = varCharParam;
-  f.nVarCharParam = nVarCharParam;
-  f.dateTimeParam = dateTimeParam;
-  f.xmlParam = xmlParam;
-
-  f.tableParam = tableParam;
-
-  f.column = column;
-  f.bitColumn = bitColumn;
-  f.intColumn = intColumn;
-  f.bigIntColumn = bigIntColumn;
-  f.varCharColumn = varCharColumn;
-  f.nVarCharColumn = nVarCharColumn;
-  f.dateTimeColumn = dateTimeColumn;
-  f.xmlColumn = xmlColumn;
-
-  return f;
-
-  function param(name: string, type: TediousType, value: any, options?: ParameterOptions): Parameter {
-    return { name, type, value, options };
-  }
-  function bitParam(name: string, value: boolean | null): Parameter {
-    return { name, type: TYPES.Bit, value };
-  }
-  function intParam(name: string, value: string | number | null): Parameter {
-    return { name, type: TYPES.Int, value };
-  }
-  function bigIntParam(name: string, value: bigint | string | null): Parameter {
-    return { name, type: TYPES.VarChar, value, options: { length: 30 } }; // Do not use TYPES.BigInt, it does not work with large numbers.
-  }
-  function varCharParam(name: string, value: string | null, length: number | 'max'): Parameter {
-    return { name, type: TYPES.VarChar, value, options: { length } };
-  }
-  function nVarCharParam(name: string, value: string | null, length: number | 'max'): Parameter {
-    return { name, type: TYPES.NVarChar, value, options: { length } };
-  }
-  function dateTimeParam(name: string, value: Date | string | null, scale?: number): Parameter {
-    return { name, type: TYPES.VarChar, value: typeof value === 'string' ? value : value.toJSON(), options: { scale } };
-  }
-  function xmlParam(name: string, value: Xml | null): Parameter {
-    return { name, type: TYPES.VarBinary, options: { length: 'max' }, value: value && Buffer.from(value, 'utf-8') }; // Do not use TYPES.Xml or TYPES.NText, tedious does not accept those type for input parameters.
-  }
-
-  function tableParam(name: string, columns: readonly TableColumn[], rows: readonly any[][]): Parameter {
-    return { name, type: TYPES.TVP, value: { columns, rows } };
-  }
-
-  function column(name: string, type: TediousType, options?: ParameterOptions): TableColumn {
-    return { name, type, ...options };
-  }
-  function bitColumn(name: string): TableColumn {
-    return { name, type: TYPES.Bit };
-  }
-  function intColumn(name: string): TableColumn {
-    return { name, type: TYPES.Int };
-  }
-  function bigIntColumn(name: string): TableColumn {
-    return { name, type: TYPES.VarChar, length: 30 }; // Do not use TYPES.BigInt, it does not work with large numbers.
-  }
-  function varCharColumn(name: string, length: number | 'max'): TableColumn {
-    return { name, type: TYPES.VarChar, length };
-  }
-  function nVarCharColumn(name: string, length: number | 'max'): TableColumn {
-    return { name, type: TYPES.NVarChar, length };
-  }
-  function dateTimeColumn(name: string, scale?: number): TableColumn {
-    return { name, type: TYPES.VarChar, scale };
-  }
-  function xmlColumn(name: string): TableColumn {
-    return { name, type: TYPES.NVarChar, length: 'max' }; // Do not use TYPES.Xml or TYPES.Text, tedious does not support them as column types of a TVP.
-  }
-}
-
-export function withDbAccess(task: (dbAccess: DbAccess) => Promise<any>): Promise<any> {
-  return new Promise((resolve, reject) => {
-    const connection = createConnection();
-    connection.on('connect', async error => {
-      if (error) return reject(error);
-      try {
-        const boundRunQuery = runQuery.bind(null, connection);
-        const boundRunSp = runSp.bind(null, connection);
-        const result = await task({
-          types: TYPES,
-          runQuery: attachHelperFunctions(boundRunQuery),
-          runSp: attachHelperFunctions(boundRunSp)
-        });
-        resolve(result);
-      } catch (error) {
-        reject(error);
-      }
-    });
-  });
-}
-
-export function withTransactionalDbAccess(task: (dbAccess: DbAccess) => Promise<any>, isolationLevel: IsolationLevel = IsolationLevel.RepeatableRead): Promise<any> {
-  return new Promise((resolve, reject) => {
-    const connection = createConnection();
-    connection.on('connect', async error => {
-      if (error) return reject(error);
-      connection.transaction(
-        async (error, done) => {
-          if (error) return reject(error);
-          try {
-            const boundRunQuery = runQuery.bind(null, connection);
-            const boundRunSp = runSp.bind(null, connection);
-            const result = await task({
-              types: TYPES,
-              runQuery: attachHelperFunctions(boundRunQuery),
-              runSp: attachHelperFunctions(boundRunSp)
-            });
-            done(null, err => (err ? reject(err) : resolve(result)));
-          } catch (error) {
-            done(error, err => reject(err || error));
-          }
-        },
-        undefined,
-        (isolationLevel as any) as ISOLATION_LEVEL
-      );
-    });
-  });
-}
-
-export function select<E>(runQuery: DbAccess['runQuery'], selectors: { [K in keyof E]: string }) {
-  return {
-    from(source: string) {
-      return {
-        async where(condition?: string) {
-          return (await runQuery(
-            `select ${(Object.keys(selectors) as (keyof E)[]).map(property => `${selectors[property]} as [${property}]`).join(', ')} from ${source}${
-              condition ? ` where ${condition};` : ''
-            }`
-          )) as E[];
-        }
-      };
-    }
-  };
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////

@@ -13,15 +13,22 @@ export class ClonePreplanHeaderModelValidation extends Validation<
     newPreplanHeader: NewPreplanHeaderModelValidation;
   }
 > {
-  constructor(data: ClonePreplanHeaderModel, userPreplanIds: readonly Id[], otherPreplanHeaderNames: readonly string[]) {
-    super(validator =>
+  constructor(data: ClonePreplanHeaderModel, userPreplanIds: readonly Id[], otherPreplanHeaderNames: readonly string[], originalStartDate: Date, originalEndDate: Date) {
+    super(validator => {
+      const newPreplanHeaderModelValidation = new NewPreplanHeaderModelValidation(data, otherPreplanHeaderNames);
       validator
-        .put(validator.$.newPreplanHeader, new NewPreplanHeaderModelValidation(data, otherPreplanHeaderNames))
+        .put(validator.$.newPreplanHeader, newPreplanHeaderModelValidation)
         .object(data)
-        .then(({ sourcePreplanId, includeChanges }) => {
+        .then(({ startDate, endDate, sourcePreplanId, includeChanges }) => {
           validator.must(userPreplanIds.includes(sourcePreplanId));
-          validator.must(typeof includeChanges === 'boolean');
-        })
-    );
+          validator
+            .must(typeof includeChanges === 'boolean')
+            .if(newPreplanHeaderModelValidation.ok, () => includeChanges)
+            .must(
+              () => new Date(startDate) <= originalStartDate,
+              () => new Date(endDate) >= originalEndDate
+            );
+        });
+    });
   }
 }

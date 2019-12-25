@@ -14,7 +14,7 @@ export default interface PreplanHeaderVersionEntity extends PreplanHeaderEntity 
   readonly versionSimulationName?: string;
 }
 
-export function convertPreplanHeaderVersionEntityToDataModel(data: readonly PreplanHeaderVersionEntity[]): PreplanHeaderDataModel[] {
+export function convertPreplanHeaderVersionEntitiesToDataModels(data: readonly PreplanHeaderVersionEntity[]): PreplanHeaderDataModel[] {
   return Object.values(data.groupBy('id')).map<PreplanHeaderDataModel>(p => ({
     ...convertPreplanHeaderEntityToModel(p[0]),
     versions: p.map(v =>

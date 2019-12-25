@@ -3,7 +3,7 @@ import fetch, { Response } from 'node-fetch';
 import * as https from 'https';
 import * as querystring from 'querystring';
 import config from 'src/config';
-import { withDbAccess } from 'src/utils/sqlServer';
+import { withDb } from 'src/utils/sqlServer';
 import { jwtDecodeRawToken, RawToken, cryptr } from 'src/utils/oauth';
 import UserModel from '@core/models/UserModel';
 import AuthenticationModel from '@core/models/authentication/AuthenticationModel';
@@ -74,7 +74,7 @@ router.post('/get-authentication', async (req, res, next) => {
   }
 
   async function getUser(userName: string): Promise<UserModel> {
-    const users: readonly UserModel[] = await withDbAccess(({ runQuery }) =>
+    const users: readonly UserModel[] = await withDb(({ query: runQuery }) =>
       runQuery(
         `
           select top 1
@@ -99,7 +99,7 @@ router.post('/get-authentication', async (req, res, next) => {
   }
 
   async function getUserSettings(userName: string): Promise<UserSettingsModel> {
-    const rawUserSettings: readonly { Key: string; Value: string }[] = await withDbAccess(({ runSp }) =>
+    const rawUserSettings: readonly { Key: string; Value: string }[] = await withDb(({ runSp }) =>
       runSp('[System].[SP_GetUserSettings]', runSp.nVarCharParam('username', userName, 200))
     );
 

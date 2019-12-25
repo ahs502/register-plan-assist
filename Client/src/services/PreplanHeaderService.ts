@@ -3,6 +3,7 @@ import Id from '@core/types/Id';
 import PreplanHeaderDataModel from '@core/models/preplan/PreplanHeaderDataModel';
 import NewPreplanHeaderModel from '@core/models/preplan/NewPreplanHeaderModel';
 import ClonePreplanHeaderModel from '@core/models/preplan/ClonePreplanHeaderModel';
+import EditPreplanHeaderModel from '@core/models/preplan/EditPreplanHeaderModel';
 
 const request = RequestManager.makeRequester('preplan-header');
 
@@ -31,8 +32,8 @@ export default class PreplanHeaderService {
   /**
    * Updates the preplan header and provides the list of all user related or public preplan data headers.
    */
-  static async edit(id: Id, newPreplanHeader: NewPreplanHeaderModel): Promise<PreplanHeaderDataModel[]> {
-    return await request('edit', { id, newPreplanHeader });
+  static async edit(editPreplanHeader: EditPreplanHeaderModel): Promise<PreplanHeaderDataModel[]> {
+    return await request('edit', { editPreplanHeader });
   }
 
   /**

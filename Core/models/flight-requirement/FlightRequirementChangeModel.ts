@@ -4,6 +4,10 @@ import FlightRequirementLegChangeModel, { FlightRequirementLegChangeModelValidat
 import DayFlightRequirementChangeModel, { DayFlightRequirementChangeModelValidation } from '@core/models/flight-requirement/DayFlightRequirementChangeModel';
 import Validation from '@ahs502/validation';
 import Id from '@core/types/Id';
+import MasterDataCollection from '@core/types/MasterDataCollection';
+import AircraftTypeModel from '@core/models/master-data/AircraftTypeModel';
+import AircraftRegisterModel from '@core/models/master-data/AircraftRegisterModel';
+import AircraftRegisterGroupModel from '@core/models/master-data/AircraftRegisterGroupModel';
 
 export default interface FlightRequirementChangeModel {
   readonly startDate: string;
@@ -23,7 +27,15 @@ export class FlightRequirementChangeModelValidation extends Validation<
     days: DayFlightRequirementChangeModelValidation[];
   }
 > {
-  constructor(data: FlightRequirementChangeModel, preplanStartDate: Date, preplanEndDate: Date, dummyAircraftRegisterIds: readonly Id[]) {
+  constructor(
+    data: FlightRequirementChangeModel,
+    aircraftTypes: MasterDataCollection<AircraftTypeModel>,
+    aircraftRegisters: MasterDataCollection<AircraftRegisterModel>,
+    aircraftRegisterGroups: MasterDataCollection<AircraftRegisterGroupModel>,
+    preplanStartDate: Date,
+    preplanEndDate: Date,
+    dummyAircraftRegisterIds: readonly Id[]
+  ) {
     super(validator =>
       validator.object(data).then(({ startDate, endDate, aircraftSelection, rsx, notes, route, days }) => {
         validator.must(!!startDate, typeof startDate === 'string', !!endDate, typeof endDate === 'string').then(() => {
@@ -45,7 +57,10 @@ export class FlightRequirementChangeModelValidation extends Validation<
               () => end <= preplanEndDate.getDatePart()
             );
         });
-        validator.put(validator.$.aircraftSelection, new AircraftSelectionModelValidation(aircraftSelection, dummyAircraftRegisterIds));
+        validator.put(
+          validator.$.aircraftSelection,
+          new AircraftSelectionModelValidation(aircraftSelection, aircraftTypes, aircraftRegisters, aircraftRegisterGroups, dummyAircraftRegisterIds)
+        );
         validator.must(Rsxes.includes(rsx));
         validator.must(typeof notes === 'string').must(() => notes.length <= 1000);
         validator
@@ -55,7 +70,12 @@ export class FlightRequirementChangeModelValidation extends Validation<
         validator
           .array(days)
           .must(() => days.length > 0)
-          .each((day, index) => validator.put(validator.$.days[index], new DayFlightRequirementChangeModelValidation(day, dummyAircraftRegisterIds)));
+          .each((day, index) =>
+            validator.put(
+              validator.$.days[index],
+              new DayFlightRequirementChangeModelValidation(day, aircraftTypes, aircraftRegisters, aircraftRegisterGroups, dummyAircraftRegisterIds)
+            )
+          );
       })
     );
   }

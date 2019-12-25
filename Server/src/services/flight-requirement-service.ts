@@ -49,8 +49,11 @@ router.post(
 
       new NewFlightRequirementModelValidation(
         newFlightRequirement,
-        MasterData.all.stcs,
+        MasterData.all.aircraftTypes,
+        MasterData.all.aircraftRegisters,
+        MasterData.all.aircraftRegisterGroups,
         MasterData.all.airports,
+        MasterData.all.stcs,
         otherExistingLabels,
         dummyAircraftRegisterIds,
         preplanStartDate,
@@ -151,8 +154,11 @@ router.post(
       );
     new FlightRequirementModelValidation(
       flightRequirement,
-      MasterData.all.stcs,
+      MasterData.all.aircraftTypes,
+      MasterData.all.aircraftRegisters,
+      MasterData.all.aircraftRegisterGroups,
       MasterData.all.airports,
+      MasterData.all.stcs,
       flightRequirementIds,
       otherExistingLabels,
       dummyAircraftRegisterIds,

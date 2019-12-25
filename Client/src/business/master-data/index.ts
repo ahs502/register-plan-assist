@@ -1,17 +1,18 @@
-export { default as MasterDataItem, MasterDataItems } from './MasterDataItem';
+import MasterData from 'src/business/master-data/MasterData';
 
-import MasterData from './MasterData';
+export { default as MasterDataItem, MasterDataItems } from 'src/business/master-data/MasterDataItem';
+
 export default MasterData;
 
-export { default as AircraftIdentity } from './AircraftIdentity';
-export { default as AircraftSelection } from './AircraftSelection';
+export { default as AircraftIdentity } from 'src/business/master-data/AircraftIdentity';
+export { default as AircraftSelection } from 'src/business/master-data/AircraftSelection';
 
-export { default as AircraftType, AircraftTypes } from './AircraftType';
-export { default as AircraftRegister, AircraftRegisters } from './AircraftRegister';
-export { default as Airport, Airports } from './Airport';
-export { default as SeasonType, SeasonTypes } from './SeasonType';
-export { default as Season, Seasons } from './Season';
-export { default as Stc, Stcs } from './Stc';
-export { default as AircraftRegisterGroup, AircraftRegisterGroups } from './AircraftRegisterGroup';
-export { default as ConstraintTemplate, ConstraintTemplates } from './ConstraintTemplate';
-export { default as Constraint, Constraints } from './Constraint';
+export { default as AircraftType, AircraftTypes } from 'src/business/master-data/AircraftType';
+export { default as AircraftRegister, AircraftRegisters } from 'src/business/master-data/AircraftRegister';
+export { default as Airport, Airports } from 'src/business/master-data/Airport';
+export { default as SeasonType, SeasonTypes } from 'src/business/master-data/SeasonType';
+export { default as Season, Seasons } from 'src/business/master-data/Season';
+export { default as Stc, Stcs } from 'src/business/master-data/Stc';
+export { default as AircraftRegisterGroup, AircraftRegisterGroups } from 'src/business/master-data/AircraftRegisterGroup';
+export { default as ConstraintTemplate, ConstraintTemplates } from 'src/business/master-data/ConstraintTemplate';
+export { default as Constraint, Constraints } from 'src/business/master-data/Constraint';

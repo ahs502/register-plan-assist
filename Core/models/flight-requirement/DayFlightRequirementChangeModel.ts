@@ -4,6 +4,10 @@ import Weekday from '@core/types/Weekday';
 import DayFlightRequirementLegChangeModel, { DayFlightRequirementLegChangeModelValidation } from '@core/models/flight-requirement/DayFlightRequirementLegChangeModel';
 import Validation from '@ahs502/validation';
 import Id from '@core/types/Id';
+import MasterDataCollection from '@core/types/MasterDataCollection';
+import AircraftTypeModel from '@core/models/master-data/AircraftTypeModel';
+import AircraftRegisterModel from '@core/models/master-data/AircraftRegisterModel';
+import AircraftRegisterGroupModel from '@core/models/master-data/AircraftRegisterGroupModel';
 
 export default interface DayFlightRequirementChangeModel {
   readonly aircraftSelection: AircraftSelectionModel;
@@ -20,10 +24,19 @@ export class DayFlightRequirementChangeModelValidation extends Validation<
     route: DayFlightRequirementLegChangeModelValidation[];
   }
 > {
-  constructor(data: DayFlightRequirementChangeModel, dummyAircraftRegisterIds: readonly Id[]) {
+  constructor(
+    data: DayFlightRequirementChangeModel,
+    aircraftTypes: MasterDataCollection<AircraftTypeModel>,
+    aircraftRegisters: MasterDataCollection<AircraftRegisterModel>,
+    aircraftRegisterGroups: MasterDataCollection<AircraftRegisterGroupModel>,
+    dummyAircraftRegisterIds: readonly Id[]
+  ) {
     super(validator =>
       validator.object(data).then(({ aircraftSelection, rsx, day, notes, route }) => {
-        validator.put(validator.$.aircraftSelection, new AircraftSelectionModelValidation(aircraftSelection, dummyAircraftRegisterIds));
+        validator.put(
+          validator.$.aircraftSelection,
+          new AircraftSelectionModelValidation(aircraftSelection, aircraftTypes, aircraftRegisters, aircraftRegisterGroups, dummyAircraftRegisterIds)
+        );
         validator.must(Rsxes.includes(rsx));
         validator.must(typeof day === 'number', !isNaN(day)).must(() => day === Math.round(day) && day >= 0 && day < 7);
         validator.must(typeof notes === 'string');

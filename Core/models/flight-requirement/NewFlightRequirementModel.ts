@@ -8,6 +8,9 @@ import FlightRequirementChangeModel, { FlightRequirementChangeModelValidation } 
 import MasterDataCollection from '@core/types/MasterDataCollection';
 import StcModel from '@core/models/master-data/StcModel';
 import AirportModel from '@core/models/master-data/AirportModel';
+import AircraftTypeModel from '@core/models/master-data/AircraftTypeModel';
+import AircraftRegisterModel from '@core/models/master-data/AircraftRegisterModel';
+import AircraftRegisterGroupModel from '@core/models/master-data/AircraftRegisterGroupModel';
 
 export default interface NewFlightRequirementModel {
   readonly label: string;
@@ -33,8 +36,11 @@ export class NewFlightRequirementModelValidation extends Validation<
 > {
   constructor(
     data: NewFlightRequirementModel,
-    stcs: MasterDataCollection<StcModel>,
+    aircraftTypes: MasterDataCollection<AircraftTypeModel>,
+    aircraftRegisters: MasterDataCollection<AircraftRegisterModel>,
+    aircraftRegisterGroups: MasterDataCollection<AircraftRegisterGroupModel>,
     airports: MasterDataCollection<AirportModel>,
+    stcs: MasterDataCollection<StcModel>,
     otherExistingLabels: readonly string[],
     dummyAircraftRegisterIds: readonly Id[],
     preplanStartDate: Date,
@@ -52,7 +58,10 @@ export class NewFlightRequirementModelValidation extends Validation<
           .must(() => category === category.trim())
           .must(() => category.length <= 100);
         validator.must(typeof stcId === 'string').must(() => stcId in stcs.id);
-        validator.put(validator.$.aircraftSelection, new AircraftSelectionModelValidation(aircraftSelection, dummyAircraftRegisterIds));
+        validator.put(
+          validator.$.aircraftSelection,
+          new AircraftSelectionModelValidation(aircraftSelection, aircraftTypes, aircraftRegisters, aircraftRegisterGroups, dummyAircraftRegisterIds)
+        );
         validator.must(Rsxes.includes(rsx));
         validator.must(typeof notes === 'string').must(() => notes.length <= 1000);
         validator.must(typeof ignored === 'boolean');
@@ -60,11 +69,26 @@ export class NewFlightRequirementModelValidation extends Validation<
           .array(route)
           .must(() => route.length > 0)
           .each((leg, index) => validator.put(validator.$.route[index], new FlightRequirementLegModelValidation(leg, airports)));
-        validator.array(days).each((day, index) => validator.put(validator.$.days[index], new DayFlightRequirementModelValidation(day, dummyAircraftRegisterIds)));
+        validator
+          .array(days)
+          .each((day, index) =>
+            validator.put(validator.$.days[index], new DayFlightRequirementModelValidation(day, aircraftTypes, aircraftRegisters, aircraftRegisterGroups, dummyAircraftRegisterIds))
+          );
         validator
           .array(changes)
           .each((change, index) =>
-            validator.put(validator.$.changes[index], new FlightRequirementChangeModelValidation(change, preplanStartDate, preplanEndDate, dummyAircraftRegisterIds))
+            validator.put(
+              validator.$.changes[index],
+              new FlightRequirementChangeModelValidation(
+                change,
+                aircraftTypes,
+                aircraftRegisters,
+                aircraftRegisterGroups,
+                preplanStartDate,
+                preplanEndDate,
+                dummyAircraftRegisterIds
+              )
+            )
           )
           .if(validations => validations.every(v => v.ok))
           .then(() => changes.orderBy('startDate'))

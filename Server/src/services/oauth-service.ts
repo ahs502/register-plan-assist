@@ -22,8 +22,7 @@ router.post('/get-authentication', async (req, res, next) => {
 
     const rawToken = await getRawToken(oauthCode, refreshToken);
     const token = jwtDecodeRawToken(rawToken);
-    const user = await getUser(token.userName);
-    const userSettings = await getUserSettings(token.userName); //TODO: Improve efficiency by doing all queries in one connection.
+    const { user, userSettings } = await getUserData(token.userName);
     const authenticationHeader: AuthenticationHeaderModel = {
       ip: req.ip,
       userAgent: req.headers['user-agent'],
@@ -73,46 +72,38 @@ router.post('/get-authentication', async (req, res, next) => {
     return rawToken;
   }
 
-  async function getUser(userName: string): Promise<UserModel> {
-    const users: readonly UserModel[] = await withDb(({ query: runQuery }) =>
-      runQuery(
-        `
-          select top 1
-            u.[Id]                        as [id],
-            u.[Username]                  as [name],
-            u.[DisplayName]               as [displayName]
-          from
-            [AccessMgmt].[User]              as u
-          where
-            u.[Username] = @username
-            and
-              u.[IsActive] = 1
-        `,
-        runQuery.nVarCharParam('username', userName, 200)
-      )
-    );
-
-    if (users.length === 0) throw 'User is not found.';
-
-    const user = users[0];
-    return user;
-  }
-
-  async function getUserSettings(userName: string): Promise<UserSettingsModel> {
-    const rawUserSettings: readonly { Key: string; Value: string }[] = await withDb(({ runSp }) =>
-      runSp('[System].[SP_GetUserSettings]', runSp.nVarCharParam('username', userName, 200))
-    );
-
-    const stcColorsPrefix = 'fp:stcColors:STC ';
-    const userSettings: UserSettingsModel = {
-      stcColors: rawUserSettings
-        .filter(({ Key, Value }) => Key.startsWith(stcColorsPrefix) && Value)
-        .toDictionary(
-          ({ Key }) => Key.slice(stcColorsPrefix.length),
-          ({ Value }) => Value
+  async function getUserData(userName: string): Promise<{ user: UserModel; userSettings: UserSettingsModel }> {
+    return await withDb(async db => {
+      const user = await db
+        .query<UserModel>(
+          `
+            select top 1
+              u.[Id]                        as [id],
+              u.[Username]                  as [name],
+              u.[DisplayName]               as [displayName]
+            from
+              [AccessMgmt].[User]              as u
+            where
+              u.[Username] = @username
+              and
+                u.[IsActive] = 1
+          `,
+          db.nVarCharParam('username', userName, 200)
         )
-    };
+        .one('User is not found.');
 
-    return userSettings;
+      const rawUserSettings = await db.sp<{ Key: string; Value: string }>('[System].[SP_GetUserSettings]', db.nVarCharParam('username', userName, 200)).all();
+      const stcColorsPrefix = 'fp:stcColors:STC ';
+      const userSettings: UserSettingsModel = {
+        stcColors: rawUserSettings
+          .filter(({ Key, Value }) => Key.startsWith(stcColorsPrefix) && Value)
+          .toDictionary(
+            ({ Key }) => Key.slice(stcColorsPrefix.length),
+            ({ Value }) => Value
+          )
+      };
+
+      return { user, userSettings };
+    });
   }
 });

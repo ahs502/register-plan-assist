@@ -297,7 +297,7 @@ export async function fetchAndCacheMasterData(collections: (keyof MasterDataMode
   }
 
   async function getAircraftRegisterGroups(): Promise<readonly AircraftRegisterGroupModel[]> {
-    interface AircraftRegisterGroupEntity {
+    interface AircraftRegisterGroupEntity extends MasterDataItemEntity {
       readonly aircraftRegistersXml: string;
     }
 

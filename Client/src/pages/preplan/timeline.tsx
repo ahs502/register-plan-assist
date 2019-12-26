@@ -194,7 +194,10 @@ const TimelinePage: FC<TimelinePageProps> = ({ onObjectionTargetClick, onEditFli
                   f.id === flight.id || allWeekdays
                     ? f.extractModel(flightModel => ({
                         ...flightModel,
-                        aircraftRegisterId: dataTypes.preplanAircraftRegister(preplan.aircraftRegisters).convertBusinessToModelOptional(newAircraftRegister),
+                        aircraftRegisterId:
+                          newAircraftRegister?.id !== flight.aircraftRegister?.id || f.id === flight.id
+                            ? dataTypes.preplanAircraftRegister(preplan.aircraftRegisters).convertBusinessToModelOptional(newAircraftRegister)
+                            : flightModel.aircraftRegisterId,
                         legs: flightModel.legs.map<FlightLegModel>(l => ({
                           ...l,
                           std: l.std + deltaStd

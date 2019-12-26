@@ -5,8 +5,8 @@ import FlightChangeModel from '@core/models/flight/FlightChangeModel';
 
 export default interface FlightChangeEntity {
   readonly _attributes: {
-    readonly startDate: string;
-    readonly endDate: string;
+    readonly StartDate: string;
+    readonly EndDate: string;
     readonly Id_AircraftRegister: Id;
   };
   readonly Legs: {
@@ -17,8 +17,8 @@ export default interface FlightChangeEntity {
 export function convertFlightChangeModelToEntity(data: FlightChangeModel): FlightChangeEntity {
   return {
     _attributes: {
-      startDate: new Date(data.startDate).toJSON(),
-      endDate: new Date(data.endDate).toJSON(),
+      StartDate: new Date(data.startDate).toJSON(),
+      EndDate: new Date(data.endDate).toJSON(),
       Id_AircraftRegister: data.aircraftRegisterId
     },
     Legs: {
@@ -29,8 +29,8 @@ export function convertFlightChangeModelToEntity(data: FlightChangeModel): Fligh
 
 export function convertFlightChangeEntityToModel(data: FlightChangeEntity): FlightChangeModel {
   return {
-    startDate: new Date(data._attributes.startDate).toJSON(),
-    endDate: new Date(data._attributes.endDate).toJSON(),
+    startDate: new Date(data._attributes.StartDate).toJSON(),
+    endDate: new Date(data._attributes.EndDate).toJSON(),
     aircraftRegisterId: data._attributes.Id_AircraftRegister,
     legs: xmlArray(data.Legs.Leg).map(convertFlightLegChangeEntityToModel)
   };

@@ -33,7 +33,7 @@ router.post(
           dummyAircraftRegistersXml: 'p.[DummyAircraftRegisters]',
           aircraftRegisterOptionsXml: 'p.[AircraftRegisterOptions]',
           startDate: 'h.[StartDate]',
-          endDate: 'h.[StartDate]'
+          endDate: 'h.[EndDate]'
         })
         .from('[Rpa].[Preplan] as p join [Rpa].[PreplanHeader] as h on h.[Id] = p.[Id_PreplanHeader]')
         .where(`p.[Id] = '${preplanId}'`)
@@ -142,7 +142,7 @@ router.post(
         endDate: 'h.[EndDate]'
       })
       .from('[Rpa].[Preplan] as p join [Rpa].[PreplanHeader] as h on h.[Id] = p.[Id_PreplanHeader]')
-      .where(`[Id] = '${preplanId}'`)
+      .where(`p.[Id] = '${preplanId}'`)
       .pick(
         ({ dummyAircraftRegistersXml, aircraftRegisterOptionsXml, startDate, endDate }) => ({
           dummyAircraftRegisterIds: parsePreplanDummyAircraftRegistersXml(dummyAircraftRegistersXml).map(({ id }) => id),

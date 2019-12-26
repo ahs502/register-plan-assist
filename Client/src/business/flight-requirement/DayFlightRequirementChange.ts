@@ -8,6 +8,7 @@ import { PreplanAircraftRegisters } from 'src/business/preplan/PreplanAircraftRe
 import { dataTypes } from 'src/utils/DataType';
 import FlightRequirement from 'src/business/flight-requirement/FlightRequirement';
 import FlightRequirementChange from 'src/business/flight-requirement/FlightRequirementChange';
+import DayFlightRequirement from 'src/business/flight-requirement/DayFlightRequirement';
 
 export default class DayFlightRequirementChange implements ModelConvertable<DayFlightRequirementChangeModel> {
   readonly aircraftSelection: PreplanAircraftSelection;
@@ -20,7 +21,8 @@ export default class DayFlightRequirementChange implements ModelConvertable<DayF
     raw: DayFlightRequirementChangeModel,
     aircraftRegisters: PreplanAircraftRegisters,
     readonly flightRequirement: FlightRequirement,
-    readonly flightRequirementChange: FlightRequirementChange
+    readonly flightRequirementChange: FlightRequirementChange,
+    readonly dayFlightRequirement: DayFlightRequirement
   ) {
     this.aircraftSelection = new PreplanAircraftSelection(raw.aircraftSelection, aircraftRegisters);
     this.rsx = raw.rsx;
@@ -51,7 +53,8 @@ export default class DayFlightRequirementChange implements ModelConvertable<DayF
           flightRequirement.route[index],
           flightRequirementChange.route[index],
           flightRequirement.days.find(d => d.day === this.day)!,
-          this
+          this,
+          dayFlightRequirement.route[index]
         )
       );
       previousStaLowerBound = stdLowerBound + leg.blockTime;

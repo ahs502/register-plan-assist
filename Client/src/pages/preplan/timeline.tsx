@@ -25,6 +25,7 @@ import DayFlightRequirementLegModel from '@core/models/flight-requirement/DayFli
 import FlightRequirementService from 'src/services/FlightRequirementService';
 import KeyboardHandler from 'src/utils/KeyboardHandler';
 import PerplanVersionsModal, { usePerplanVersionsModalState, PerplanVersionsModalState } from 'src/components/preplan/PerplanVersionsModal';
+import SelectWeek from 'src/components/preplan/SelectWeek';
 
 const useStyles = makeStyles((theme: Theme) => ({
   sideBarBackdrop: {
@@ -34,10 +35,17 @@ const useStyles = makeStyles((theme: Theme) => ({
     top: 105,
     height: 'calc(100% - 105px)'
   },
-  statusBarWrapper: {
-    height: 54,
+  selectWeekWrapper: {
+    height: 80,
     margin: 0,
-    padding: theme.spacing(2),
+    padding: 0,
+    backgroundColor: theme.palette.common.white,
+    border: '1px solid orange'
+  },
+  statusBarWrapper: {
+    height: 30,
+    margin: 0,
+    padding: theme.spacing(0.5, 0, 0.5, 1),
     backgroundColor: theme.palette.common.white,
     whiteSpace: 'pre'
   },
@@ -233,6 +241,9 @@ const TimelinePage: FC<TimelinePageProps> = ({ onObjectionTargetClick, onEditFli
           onFreeSpaceMouseHover={(aircraftRegister, previousFlight, nextFlight) => setStatusBarProps({ mode: 'FREE_SPACE', aircraftRegister, previousFlight, nextFlight })}
           onNowhereMouseHover={() => setStatusBarProps({})}
         />
+        <div className={classes.selectWeekWrapper}>
+          <SelectWeek preplan={preplan} />
+        </div>
         <div className={classes.statusBarWrapper}>
           <StatusBar {...statusBarProps} />
         </div>

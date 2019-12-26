@@ -138,6 +138,10 @@ export async function getPreplanDataModel(db: Db, userId: Id, preplanId: Id): Pr
     .pick(convertPreplanHeaderEntityToModel, 'Preplan is not found.');
   if (header.user.id !== userId && !header.published) throw 'User does not have access to this preplan.';
 
+  const preplan = await db
+    .sp<PreplanEntity>('[Rpa].[SP_GetPreplan]', db.bigIntParam('userId', userId), db.intParam('id', preplanId))
+    .pick(convertPreplanEntityToModel, 'Preplan is not found.');
+
   const versions = await db
     .sp<PreplanVersionEntity>('[Rpa].[SP_GetPreplanVersions]', db.bigIntParam('userId', userId), db.intParam('id', preplanId))
     .map(convertPreplanVersionEntityToModel, 'Preplan is not found.');
@@ -148,13 +152,9 @@ export async function getPreplanDataModel(db: Db, userId: Id, preplanId: Id): Pr
 
   const flights = await db.sp<FlightEntity>('[Rpa].[SP_GetFlights]', db.bigIntParam('userId', userId), db.intParam('preplanId', preplanId)).map(convertFlightEntityToModel);
 
-  const preplanModel = await db
-    .sp<PreplanEntity>('[Rpa].[SP_GetPreplan]', db.bigIntParam('userId', userId), db.intParam('id', preplanId))
-    .pick(convertPreplanEntityToModel, 'Preplan is not found.');
-
   const preplanDataModel: PreplanDataModel = {
-    ...preplanModel,
     header,
+    preplan,
     versions,
     flightRequirements,
     flights

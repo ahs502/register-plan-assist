@@ -4,6 +4,7 @@ import { dataTypes } from 'src/utils/DataType';
 import FlightRequirementLegChangeModel from '@core/models/flight-requirement/FlightRequirementLegChangeModel';
 import FlightRequirement from 'src/business/flight-requirement/FlightRequirement';
 import FlightRequirementChange from 'src/business/flight-requirement/FlightRequirementChange';
+import FlightRequirementLeg from 'src/business/flight-requirement/FlightRequirementLeg';
 
 export default class FlightRequirementLegChange implements ModelConvertable<FlightRequirementLegChangeModel> {
   readonly blockTime: Daytime;
@@ -16,7 +17,8 @@ export default class FlightRequirementLegChange implements ModelConvertable<Flig
     raw: FlightRequirementLegChangeModel,
     readonly index: number,
     readonly flightRequirement: FlightRequirement,
-    readonly flightRequirementChange: FlightRequirementChange
+    readonly flightRequirementChange: FlightRequirementChange,
+    readonly flightRequirementLeg: FlightRequirementLeg
   ) {
     this.blockTime = dataTypes.daytime.convertModelToBusiness(raw.blockTime);
     this.stdLowerBound = dataTypes.daytime.convertModelToBusiness(raw.stdLowerBound);

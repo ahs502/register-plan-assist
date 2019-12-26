@@ -4,8 +4,9 @@ import FlightModel from '@core/models/flight/FlightModel';
 import PreplanHeaderModel from '@core/models/preplan/PreplanHeaderModel';
 import PreplanVersionModel from '@core/models/preplan/PreplanVersionModel';
 
-export default interface PreplanDataModel extends PreplanModel {
+export default interface PreplanDataModel {
   readonly header: PreplanHeaderModel;
+  readonly preplan: PreplanModel;
   readonly versions: readonly PreplanVersionModel[];
 
   readonly flightRequirements: readonly FlightRequirementModel[];

@@ -52,15 +52,8 @@ router.post(
         db.intParam('flightRequirementId', flights[0].flightRequirementId),
         db.tableParam(
           'flights',
-          [
-            db.intColumn('id'),
-            db.intColumn('flightRequirementId'),
-            db.intColumn('day'),
-            db.bigIntColumn('aircraftRegisterId'),
-            db.xmlColumn('legsXml'),
-            db.xmlColumn('changesXml')
-          ],
-          flightEntities.map(f => [f.id, f.flightRequirementId, f.day, f.aircraftRegisterId, f.legsXml, f.changesXml])
+          [db.intColumn('id'), db.intColumn('date'), db.bigIntColumn('aircraftRegisterId'), db.xmlColumn('legsXml')],
+          flightEntities.map(f => [f.id, f.date, f.aircraftRegisterId, f.legsXml])
         )
       )
       .all();

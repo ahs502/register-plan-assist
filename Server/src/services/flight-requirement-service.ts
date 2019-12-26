@@ -7,20 +7,20 @@ import { convertFlightRequirementModelToEntity } from 'src/entities/flight-requi
 import FlightRequirementModel, { FlightRequirementModelValidation } from '@core/models/flight-requirement/FlightRequirementModel';
 import NewFlightRequirementModel, { NewFlightRequirementModelValidation } from '@core/models/flight-requirement/NewFlightRequirementModel';
 import { convertNewFlightRequirementModelToEntity } from 'src/entities/flight-requirement/NewFlightRequirementEntity';
-import NewFlightModel, { NewFlightModelArrayValidation } from '@core/models/flight/NewFlightModel';
 import FlightModel, { FlightModelArrayValidation } from '@core/models/flight/FlightModel';
-import { convertNewFlightModelToEntity } from 'src/entities/flight/NewFlightEntity';
 import { convertFlightModelToEntity } from 'src/entities/flight/FlightEntity';
 import MasterData from 'src/utils/masterData';
 import { getPreplanDataModel } from 'src/services/preplan-service';
 import PreplanDataModel from '@core/models/preplan/PreplanDataModel';
+import EditFlightModel, { EditFlightModelArrayValidation } from '@core/models/flight/EditFlightModel';
+import { convertEditFlightModelToEntity } from 'src/entities/flight/EditFlightEntity';
 
 const router = Router();
 export default router;
 
 router.post(
   '/add',
-  requestMiddlewareWithTransactionalDb<{ preplanId: Id; newFlightRequirement: NewFlightRequirementModel; newFlights: readonly NewFlightModel[] }, PreplanDataModel>(
+  requestMiddlewareWithTransactionalDb<{ preplanId: Id; newFlightRequirement: NewFlightRequirementModel; newFlights: readonly EditFlightModel[] }, PreplanDataModel>(
     async (userId, { preplanId, newFlightRequirement, newFlights }, db) => {
       const otherExistingLabels = await db
         .select<{ label: string }>({ label: '[Label]' })
@@ -60,7 +60,7 @@ router.post(
         preplanEndDate
       ).throw('Invalid API input.');
 
-      new NewFlightModelArrayValidation(newFlights, aircraftRegisterOptions, preplanStartDate, preplanEndDate).throw('Invalid API input.');
+      new EditFlightModelArrayValidation(newFlights, [], aircraftRegisterOptions, preplanStartDate, preplanEndDate).throw('Invalid API input.');
 
       const newFlightRequirementEntity = convertNewFlightRequirementModelToEntity(newFlightRequirement);
       const flightRequirementId = await db
@@ -81,15 +81,16 @@ router.post(
         )
         .pick(({ id }) => id);
 
-      const newFlightEntities = newFlights.map(convertNewFlightModelToEntity);
+      const newFlightEntities = newFlights.map(convertEditFlightModelToEntity);
       await db
         .sp(
-          '[Rpa].[SP_InsertFlights]',
+          '[Rpa].[SP_UpdateFlights]',
           db.bigIntParam('userId', userId),
+          db.intParam('flightRequirementId', flightRequirementId),
           db.tableParam(
             'flights',
-            [db.intColumn('flightRequirementId'), db.intColumn('day'), db.bigIntColumn('aircraftRegisterId'), db.xmlColumn('legsXml')],
-            newFlightEntities.map(f => [flightRequirementId, f.day, f.aircraftRegisterId, f.legsXml])
+            [db.intColumn('id'), db.intColumn('date'), db.bigIntColumn('aircraftRegisterId'), db.xmlColumn('legsXml')],
+            newFlightEntities.map(f => [null, f.date, f.aircraftRegisterId, f.legsXml])
           )
         )
         .all();
@@ -120,110 +121,93 @@ router.post(
 
 router.post(
   '/edit',
-  requestMiddlewareWithTransactionalDb<
-    { preplanId: Id; flightRequirement: FlightRequirementModel; flights: readonly FlightModel[]; newFlights: readonly NewFlightModel[] },
-    PreplanDataModel
-  >(async (userId, { preplanId, flightRequirement, flights, newFlights }, db) => {
-    const flightRequirementIds = await db
-      .select<{ id: Id }>({ id: 'convert(varchar(30), [Id])' })
-      .from('[Rpa].[FlightRequirement]')
-      .where(`[Id_Preplan] = '${preplanId}'`)
-      .map(({ id }) => id, 'Flight requirement is not found.');
-    const otherExistingLabels = await db
-      .select<{ label: string }>({ label: '[Label]' })
-      .from('[Rpa].[FlightRequirement]')
-      .where(`[Id_Preplan] = '${preplanId}' and [Id] <> '${flightRequirement.id}'`)
-      .map(({ label }) => label);
-    const { dummyAircraftRegisterIds, aircraftRegisterOptions, preplanStartDate, preplanEndDate } = await db
-      .select<{ dummyAircraftRegistersXml: Xml; aircraftRegisterOptionsXml: Xml; startDate: string; endDate: string }>({
-        dummyAircraftRegistersXml: 'p.[DummyAircraftRegisters]',
-        aircraftRegisterOptionsXml: 'p.[AircraftRegisterOptions]',
-        startDate: 'h.[StartDate]',
-        endDate: 'h.[EndDate]'
-      })
-      .from('[Rpa].[Preplan] as p join [Rpa].[PreplanHeader] as h on h.[Id] = p.[Id_PreplanHeader]')
-      .where(`p.[Id] = '${preplanId}'`)
-      .pick(
-        ({ dummyAircraftRegistersXml, aircraftRegisterOptionsXml, startDate, endDate }) => ({
-          dummyAircraftRegisterIds: parsePreplanDummyAircraftRegistersXml(dummyAircraftRegistersXml).map(({ id }) => id),
-          aircraftRegisterOptions: parsePreplanAircraftRegisterOptionsXml(aircraftRegisterOptionsXml),
-          preplanStartDate: new Date(startDate),
-          preplanEndDate: new Date(endDate)
-        }),
-        'Preplan is not found.'
-      );
-    new FlightRequirementModelValidation(
-      flightRequirement,
-      MasterData.all.aircraftTypes,
-      MasterData.all.aircraftRegisters,
-      MasterData.all.aircraftRegisterGroups,
-      MasterData.all.airports,
-      MasterData.all.stcs,
-      flightRequirementIds,
-      otherExistingLabels,
-      dummyAircraftRegisterIds,
-      preplanStartDate,
-      preplanEndDate
-    ).throw('Invalid API input.');
+  requestMiddlewareWithTransactionalDb<{ preplanId: Id; flightRequirement: FlightRequirementModel; flights: readonly EditFlightModel[] }, PreplanDataModel>(
+    async (userId, { preplanId, flightRequirement, flights }, db) => {
+      const flightRequirementIds = await db
+        .select<{ id: Id }>({ id: 'convert(varchar(30), [Id])' })
+        .from('[Rpa].[FlightRequirement]')
+        .where(`[Id_Preplan] = '${preplanId}'`)
+        .map(({ id }) => id, 'Flight requirement is not found.');
+      const otherExistingLabels = await db
+        .select<{ label: string }>({ label: '[Label]' })
+        .from('[Rpa].[FlightRequirement]')
+        .where(`[Id_Preplan] = '${preplanId}' and [Id] <> '${flightRequirement.id}'`)
+        .map(({ label }) => label);
+      const { dummyAircraftRegisterIds, aircraftRegisterOptions, preplanStartDate, preplanEndDate } = await db
+        .select<{ dummyAircraftRegistersXml: Xml; aircraftRegisterOptionsXml: Xml; startDate: string; endDate: string }>({
+          dummyAircraftRegistersXml: 'p.[DummyAircraftRegisters]',
+          aircraftRegisterOptionsXml: 'p.[AircraftRegisterOptions]',
+          startDate: 'h.[StartDate]',
+          endDate: 'h.[EndDate]'
+        })
+        .from('[Rpa].[Preplan] as p join [Rpa].[PreplanHeader] as h on h.[Id] = p.[Id_PreplanHeader]')
+        .where(`p.[Id] = '${preplanId}'`)
+        .pick(
+          ({ dummyAircraftRegistersXml, aircraftRegisterOptionsXml, startDate, endDate }) => ({
+            dummyAircraftRegisterIds: parsePreplanDummyAircraftRegistersXml(dummyAircraftRegistersXml).map(({ id }) => id),
+            aircraftRegisterOptions: parsePreplanAircraftRegisterOptionsXml(aircraftRegisterOptionsXml),
+            preplanStartDate: new Date(startDate),
+            preplanEndDate: new Date(endDate)
+          }),
+          'Preplan is not found.'
+        );
+      new FlightRequirementModelValidation(
+        flightRequirement,
+        MasterData.all.aircraftTypes,
+        MasterData.all.aircraftRegisters,
+        MasterData.all.aircraftRegisterGroups,
+        MasterData.all.airports,
+        MasterData.all.stcs,
+        flightRequirementIds,
+        otherExistingLabels,
+        dummyAircraftRegisterIds,
+        preplanStartDate,
+        preplanEndDate
+      ).throw('Invalid API input.');
 
-    const flightIds = await db
-      .select<{ id: Id }>({ id: 'convert(varchar(30), f.[Id])' })
-      .from('[Rpa].[Flight] as f join [Rpa].[FlightRequirement] as r on r.[Id] = f.[Id_FlightRequirement]')
-      .where(`r.[Id_Preplan] = '${preplanId}'`)
-      .map(({ id }) => id);
-    new FlightModelArrayValidation(flights, flightIds, flightRequirementIds, aircraftRegisterOptions, preplanStartDate, preplanEndDate).throw('Invalid API input.');
+      const flightIds = await db
+        .select<{ id: Id }>({ id: 'convert(varchar(30), f.[Id])' })
+        .from('[Rpa].[Flight] as f join [Rpa].[FlightRequirement] as r on r.[Id] = f.[Id_FlightRequirement]')
+        .where(`r.[Id_Preplan] = '${preplanId}'`)
+        .map(({ id }) => id);
+      new EditFlightModelArrayValidation(flights, flightIds, aircraftRegisterOptions, preplanStartDate, preplanEndDate).throw('Invalid API input.');
 
-    new NewFlightModelArrayValidation(newFlights, aircraftRegisterOptions, preplanStartDate, preplanEndDate).throw('Invalid API input.');
-
-    const allFlights = [...flights, ...newFlights];
-    if (allFlights.map(({ day }) => day).distinct().length !== allFlights.length) throw 'Invalid API input.';
-
-    const flightRequirementEntity = convertFlightRequirementModelToEntity(flightRequirement);
-    await db
-      .sp(
-        '[Rpa].[SP_UpdateFlightRequirement]',
-        db.bigIntParam('userId', userId),
-        db.intParam('id', flightRequirementEntity.id),
-        db.nVarCharParam('label', flightRequirementEntity.label, 100),
-        db.nVarCharParam('category', flightRequirementEntity.category, 100),
-        db.intParam('stcId', flightRequirementEntity.stcId),
-        db.xmlParam('aircraftSelectionXml', flightRequirementEntity.aircraftSelectionXml),
-        db.varCharParam('rsx', flightRequirementEntity.rsx, 10),
-        db.nVarCharParam('notes', flightRequirementEntity.notes, 1000),
-        db.bitParam('ignored', flightRequirementEntity.ignored),
-        db.xmlParam('routeXml', flightRequirementEntity.routeXml),
-        db.xmlParam('daysXml', flightRequirementEntity.daysXml),
-        db.xmlParam('changesXml', flightRequirementEntity.changesXml)
-      )
-      .all();
-
-    const flightEntities = flights.map(convertFlightModelToEntity);
-    const newFlightEntities = newFlights.map(convertNewFlightModelToEntity);
-    await db
-      .sp(
-        '[Rpa].[SP_UpdateFlights]',
-        db.bigIntParam('userId', userId),
-        db.intParam('flightRequirementId', flightRequirementEntity.id),
-        db.tableParam(
-          'flights',
-          [
-            db.intColumn('id'),
-            db.intColumn('flightRequirementId'),
-            db.intColumn('day'),
-            db.bigIntColumn('aircraftRegisterId'),
-            db.xmlColumn('legsXml'),
-            db.xmlColumn('changesXml')
-          ],
-          [
-            ...flightEntities.map(f => [f.id, f.flightRequirementId, f.day, f.aircraftRegisterId, f.legsXml, f.changesXml]),
-            ...newFlightEntities.map(f => ['', flightRequirementEntity.id, f.day, f.aircraftRegisterId, f.legsXml, f.changesXml])
-          ]
+      const flightRequirementEntity = convertFlightRequirementModelToEntity(flightRequirement);
+      await db
+        .sp(
+          '[Rpa].[SP_UpdateFlightRequirement]',
+          db.bigIntParam('userId', userId),
+          db.intParam('id', flightRequirementEntity.id),
+          db.nVarCharParam('label', flightRequirementEntity.label, 100),
+          db.nVarCharParam('category', flightRequirementEntity.category, 100),
+          db.intParam('stcId', flightRequirementEntity.stcId),
+          db.xmlParam('aircraftSelectionXml', flightRequirementEntity.aircraftSelectionXml),
+          db.varCharParam('rsx', flightRequirementEntity.rsx, 10),
+          db.nVarCharParam('notes', flightRequirementEntity.notes, 1000),
+          db.bitParam('ignored', flightRequirementEntity.ignored),
+          db.xmlParam('routeXml', flightRequirementEntity.routeXml),
+          db.xmlParam('daysXml', flightRequirementEntity.daysXml),
+          db.xmlParam('changesXml', flightRequirementEntity.changesXml)
         )
-      )
-      .all();
+        .all();
 
-    await db.sp('[Rpa].[SP_UpdatePreplanLastEditDateTime]', db.bigIntParam('userId', userId), db.intParam('id', preplanId)).all();
+      const flightEntities = flights.map(convertEditFlightModelToEntity);
+      await db
+        .sp(
+          '[Rpa].[SP_UpdateFlights]',
+          db.bigIntParam('userId', userId),
+          db.intParam('flightRequirementId', flightRequirementEntity.id),
+          db.tableParam(
+            'flights',
+            [db.intColumn('id'), db.intColumn('date'), db.bigIntColumn('aircraftRegisterId'), db.xmlColumn('legsXml')],
+            flightEntities.map(f => [f.id, f.date, f.aircraftRegisterId, f.legsXml])
+          )
+        )
+        .all();
 
-    return await getPreplanDataModel(db, userId, preplanId);
-  })
+      await db.sp('[Rpa].[SP_UpdatePreplanLastEditDateTime]', db.bigIntParam('userId', userId), db.intParam('id', preplanId)).all();
+
+      return await getPreplanDataModel(db, userId, preplanId);
+    }
+  )
 );

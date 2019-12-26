@@ -8,6 +8,7 @@ import DayFlightRequirement from 'src/business/flight-requirement/DayFlightRequi
 import DayFlightRequirementChange from 'src/business/flight-requirement/DayFlightRequirementChange';
 import FlightRequirementLegChange from 'src/business/flight-requirement/FlightRequirementLegChange';
 import FlightRequirementChange from 'src/business/flight-requirement/FlightRequirementChange';
+import DayFlightRequirementLeg from 'src/business/flight-requirement/DayFlightRequirementLeg';
 
 export default class DayFlightRequirementLegChange implements ModelConvertable<DayFlightRequirementLegChangeModel> {
   readonly blockTime: Daytime;
@@ -27,7 +28,8 @@ export default class DayFlightRequirementLegChange implements ModelConvertable<D
     readonly flightRequirementLeg: FlightRequirementLeg,
     readonly flightRequirementLegChange: FlightRequirementLegChange,
     readonly dayFlightRequirement: DayFlightRequirement,
-    readonly dayFlightRequirementChange: DayFlightRequirementChange
+    readonly dayFlightRequirementChange: DayFlightRequirementChange,
+    readonly dayFlightRequirementLeg: DayFlightRequirementLeg
   ) {
     this.blockTime = dataTypes.daytime.convertModelToBusiness(raw.blockTime);
     this.stdLowerBound = dataTypes.daytime.convertModelToBusiness(raw.stdLowerBound);

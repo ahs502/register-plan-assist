@@ -230,6 +230,11 @@ declare interface Date {
   getTimePart(): Date;
 
   /**
+   * Returns the weekday of this starting from Saturday as 0.
+   */
+  getWeekday(): import('@core/types/Weekday').default;
+
+  /**
    * Returns true iff the two dates are pointing to the same moment in history.
    * @param date The other date comparison partner.
    */

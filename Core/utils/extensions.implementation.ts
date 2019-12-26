@@ -1,3 +1,5 @@
+import Weekday from '@core/types/Weekday';
+
 /*eslint no-extend-native: "off", no-self-compare: "off"*/
 
 (function() {
@@ -243,6 +245,10 @@
       const result = new Date(0);
       result.setUTCHours(this.getUTCHours(), this.getUTCMinutes(), this.getUTCSeconds(), this.getUTCMilliseconds());
       return result;
+    };
+
+    Date.prototype.getWeekday = function Date_prototype_getWeekday(): Weekday {
+      return (this.getUTCDay() + 1) % 7;
     };
 
     Date.prototype.equals = function Date_prototype_equals(date: Date | string | number): boolean {

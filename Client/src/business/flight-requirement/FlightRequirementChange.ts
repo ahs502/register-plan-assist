@@ -23,8 +23,8 @@ export default class FlightRequirementChange implements ModelConvertable<FlightR
     this.aircraftSelection = new PreplanAircraftSelection(raw.aircraftSelection, aircraftRegisters);
     this.rsx = raw.rsx;
     this.notes = dataTypes.label.convertModelToBusiness(raw.notes);
-    this.route = raw.route.map((l, index) => new FlightRequirementLegChange(l, index, flightRequirement, this));
-    this.days = raw.days.map(d => new DayFlightRequirementChange(d, aircraftRegisters, flightRequirement, this));
+    this.route = raw.route.map((l, index) => new FlightRequirementLegChange(l, index, flightRequirement, this, flightRequirement.route[index]));
+    this.days = raw.days.map((d, index) => new DayFlightRequirementChange(d, aircraftRegisters, flightRequirement, this, flightRequirement.days[index]));
   }
 
   extractModel(override?: (flightRequirementChangeModel: FlightRequirementChangeModel) => FlightRequirementChangeModel): FlightRequirementChangeModel {

@@ -378,7 +378,8 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                   }
                 }))
                 .filter(x => x.selected)
-                .map(x => x.model)
+                .map(x => x.model),
+              changes: [] //TODO: Implement this.
             };
 
             const flights: Flight[] = state.flightRequirement ? preplan.flights.filter(f => f.flightRequirement === state.flightRequirement) : [];
@@ -391,7 +392,8 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                 aircraftRegisterId: dataTypes.preplanAircraftRegister(preplan.aircraftRegisters).convertViewToModelOptional(viewState.days[d.day].aircraftRegister),
                 legs: d.route.map<FlightLegModel>(l => ({
                   std: l.stdLowerBound
-                }))
+                })),
+                changes: [] //TODO: Implement this.
               }));
 
             // const flightModels: FlightModel[] = flights.filter(f => newFlightRequirementModel.days.some(d => d.day === f.day)).map(f => f.extractModel());

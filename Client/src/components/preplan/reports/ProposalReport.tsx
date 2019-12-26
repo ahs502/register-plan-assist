@@ -1,5 +1,5 @@
 import React, { FC, Fragment, useState, useEffect, useMemo } from 'react';
-import { Theme, InputLabel, TextField, TableHead, TableCell, Table, TableRow, TableBody, Button, Grid, FormControlLabel, Checkbox, Paper, Typography } from '@material-ui/core';
+import { Theme, InputLabel, TableHead, TableCell, Table, TableRow, TableBody, Button, Grid, FormControlLabel, Checkbox, Paper, Typography } from '@material-ui/core';
 import { red, grey } from '@material-ui/core/colors';
 import { makeStyles } from '@material-ui/styles';
 import MasterData, { Airport } from 'src/business/master-data';
@@ -23,6 +23,7 @@ import MultiSelect from 'src/components/MultiSelect';
 import Preplan from 'src/business/preplan/Preplan';
 import persistant from 'src/utils/persistant';
 import FlightNumber from '@core/types/FlightNumber';
+import PreplanHeaderService from 'src/services/PreplanHeaderService';
 
 const errorPaperSize = 250;
 const notAvailable = 'N/A';
@@ -444,8 +445,8 @@ const ProposalReport: FC<ProposalReportProps> = ({ flights: flights, preplanName
   };
 
   useEffect(() => {
-    PreplanService.getAllHeaders().then(preplanHeaderModels => {
-      const preplanHeaders = preplanHeaderModels.map(p => new PreplanHeader(p));
+    PreplanHeaderService.getAll().then(preplanHeaderDataModels => {
+      const preplanHeaders = preplanHeaderDataModels.map(p => new PreplanHeader(p));
       setPreplanHeaders(preplanHeaders);
     });
   }, []);

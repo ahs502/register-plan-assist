@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { DbAccess, withDbAccess, withTransactionalDbAccess, IsolationLevel } from './sqlServer';
+import { Db, withDb, withTransactionalDb, IsolationLevel } from './sqlServer';
 import AuthenticationHeaderModel from '@core/models/authentication/AuthenticationHeaderModel';
 import { cryptr } from './oauth';
 import ServerResult from '@core/types/ServerResult';
@@ -35,13 +35,13 @@ export default function requestMiddleware<B extends {}, R>(task: (userId: Id, bo
   };
 }
 
-export function requestMiddlewareWithDbAccess<B extends {}, R>(task: (userId: Id, body: B, dbAccess: DbAccess) => Promise<R>) {
-  return requestMiddleware<B, R>((userId, body) => withDbAccess(dbAccess => task(userId, body, dbAccess)));
+export function requestMiddlewareWithDb<B extends {}, R>(task: (userId: Id, body: B, db: Db) => Promise<R>) {
+  return requestMiddleware<B, R>((userId, body) => withDb(db => task(userId, body, db)));
 }
 
-export function requestMiddlewareWithTransactionalDbAccess<B extends {}, R>(
-  task: (userId: Id, body: B, dbAccess: DbAccess) => Promise<R>,
+export function requestMiddlewareWithTransactionalDb<B extends {}, R>(
+  task: (userId: Id, body: B, db: Db) => Promise<R>,
   isolationLevel: IsolationLevel = IsolationLevel.RepeatableRead
 ) {
-  return requestMiddleware<B, R>((userId, body) => withTransactionalDbAccess(dbAccess => task(userId, body, dbAccess), isolationLevel));
+  return requestMiddleware<B, R>((userId, body) => withTransactionalDb(db => task(userId, body, db), isolationLevel));
 }

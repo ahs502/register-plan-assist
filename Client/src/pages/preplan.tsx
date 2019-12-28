@@ -14,14 +14,15 @@ import RemoveFlightRequirementModal, { useRemoveFlightRequirementModalState } fr
 import FlightModal, { useFlightModalState } from 'src/components/preplan/FlightModal';
 import PreplanModel from '@core/models/preplan/PreplanModel';
 import { useThrowApplicationError } from 'src/pages/error';
-import MasterData from '@core/master-data';
+import MasterData from 'src/business/master-data';
 import persistant from 'src/utils/persistant';
+import PreplanDataModel from '@core/models/preplan/PreplanDataModel';
 
 const useStyles = makeStyles((theme: Theme) => ({}));
 
 export const NavBarToolsContainerContext = createContext<HTMLDivElement | null>(null);
 export const PreplanContext = createContext<Preplan>(null as any);
-export const ReloadPreplanContext = createContext<(newPreplanModel?: PreplanModel) => Promise<void>>(null as any);
+export const ReloadPreplanContext = createContext<(newPreplanDataModel?: PreplanDataModel) => Promise<void>>(null as any);
 
 const PreplanPage: FC = () => {
   const [preplan, setPreplan] = useState<Preplan | null>(null);

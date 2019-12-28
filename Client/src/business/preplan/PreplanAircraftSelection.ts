@@ -1,7 +1,7 @@
 import PreplanAircraftIdentity from './PreplanAircraftIdentity';
 import PreplanAircraftRegister, { PreplanAircraftRegisters } from './PreplanAircraftRegister';
 import AircraftSelectionModel from '@core/models/AircraftSelectionModel';
-import { AircraftSelection } from '@core/master-data';
+import { AircraftSelection } from 'src/business/master-data';
 import ModelConvertable from 'src/business/ModelConvertable';
 
 /**

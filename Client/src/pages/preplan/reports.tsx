@@ -45,7 +45,7 @@ const ReportsPage: FC<ReportsPageProps> = ({}) => {
   return (
     <Fragment>
       <Portal container={navBarToolsContainer}>
-        <Fragment>Preplan {preplan.name} Reports</Fragment>
+        <span />
       </Portal>
       <SectionList
         sections={preplanReports}

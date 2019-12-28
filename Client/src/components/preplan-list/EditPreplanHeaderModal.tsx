@@ -2,13 +2,13 @@ import React, { useState } from 'react';
 import { Theme, Grid } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import BaseModal, { BaseModalProps, useModalState, createModal } from 'src/components/BaseModal';
-import NewPreplanModel from '@core/models/preplan/NewPreplanModel';
 import PreplanHeader from 'src/business/preplan/PreplanHeader';
 import Id from '@core/types/Id';
 import { dataTypes } from 'src/utils/DataType';
 import RefiningTextField from 'src/components/RefiningTextField';
 import Validation from '@core/node_modules/@ahs502/validation/dist/Validation';
 import persistant from 'src/utils/persistant';
+import EditPreplanHeaderModel from '@core/models/preplan/EditPreplanHeaderModel';
 
 const useStyles = makeStyles((theme: Theme) => ({}));
 
@@ -57,16 +57,16 @@ class ViewStateValidation extends Validation<
   }
 }
 
-export interface EditPreplanModalState {
+export interface EditPreplanHeaderModalState {
   preplanHeader: PreplanHeader;
 }
 
-export interface EditPreplanModalProps extends BaseModalProps<EditPreplanModalState> {
-  onApply(sourcePreplanId: Id, newPreplanModel: NewPreplanModel): Promise<void>;
+export interface EditPreplanHeaderModalProps extends BaseModalProps<EditPreplanHeaderModalState> {
+  onApply(editPreplanHeaderModel: EditPreplanHeaderModel): Promise<void>;
   preplanHeaders: readonly PreplanHeader[];
 }
 
-const EditPreplanModal = createModal<EditPreplanModalState, EditPreplanModalProps>(({ state, onApply, preplanHeaders, ...others }) => {
+const EditPreplanHeaderModal = createModal<EditPreplanHeaderModalState, EditPreplanHeaderModalProps>(({ state, onApply, preplanHeaders, ...others }) => {
   const [viewState, setViewState] = useState<ViewState>(() => ({
     name: dataTypes.name.convertBusinessToView(state.preplanHeader.name),
     startDate: dataTypes.utcDate.convertBusinessToView(state.preplanHeader.startDate),
@@ -98,13 +98,14 @@ const EditPreplanModal = createModal<EditPreplanModalState, EditPreplanModalProp
           action: async () => {
             if (!validation.ok) throw 'Invalid form fields.';
 
-            const newPreplanModel: NewPreplanModel = {
+            const editPreplanHeaderModel: EditPreplanHeaderModel = {
               name: dataTypes.name.convertViewToModel(viewState.name),
               startDate: dataTypes.utcDate.convertViewToModel(viewState.startDate),
-              endDate: dataTypes.utcDate.convertViewToModel(viewState.endDate)
+              endDate: dataTypes.utcDate.convertViewToModel(viewState.endDate),
+              id: state.preplanHeader.id
             };
 
-            await onApply(state.preplanHeader.id, newPreplanModel);
+            await onApply(editPreplanHeaderModel);
           }
         }
       ]}
@@ -153,8 +154,8 @@ const EditPreplanModal = createModal<EditPreplanModalState, EditPreplanModalProp
   );
 });
 
-export default EditPreplanModal;
+export default EditPreplanHeaderModal;
 
-export function useEditPreplanModalState() {
-  return useModalState<EditPreplanModalState>();
+export function useEditPreplanHeaderModalState() {
+  return useModalState<EditPreplanHeaderModalState>();
 }

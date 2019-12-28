@@ -6,18 +6,18 @@ import MahanIcon, { MahanIconType } from 'src/components/MahanIcon';
 import Search, { filterOnProperties } from 'src/components/Search';
 import NavBar from 'src/components/NavBar';
 import persistant from 'src/utils/persistant';
-import PreplanService from 'src/services/PreplanService';
 import { useSnackbar } from 'notistack';
 import ProgressSwitch from 'src/components/ProgressSwitch';
 import classNames from 'classnames';
 import PreplanHeader from 'src/business/preplan/PreplanHeader';
-import NewPreplanModal, { useNewPreplanModalState } from 'src/components/preplan-list/NewPreplanModal';
-import ClonePreplanModal, { useClonePreplanModalState } from 'src/components/preplan-list/ClonePreplanModal';
-import EditPreplanModal, { useEditPreplanModalState } from 'src/components/preplan-list/EditPreplanModal';
-import RemovePreplanModal, { useRemovePreplanModalState } from 'src/components/preplan-list/RemovePreplanModal';
+import NewPreplanHeaderModal, { useNewPreplanHeaderModalState } from 'src/components/preplan-list/NewPreplanHeaderModal';
+import ClonePreplanHeaderModal, { useClonePreplanHeaderModalState } from 'src/components/preplan-list/ClonePreplanHeaderModal';
+import EditPreplanHeaderModal, { useEditPreplanHeaderModalState } from 'src/components/preplan-list/EditPreplanHeaderModal';
+import RemovePreplanHeaderModal, { useRemovePreplanHeaderModalState } from 'src/components/preplan-list/RemovePreplanHeaderModal';
 import { useHistory } from 'react-router-dom';
 import { useThrowApplicationError } from 'src/pages/error';
-import MasterData from '@core/master-data';
+import MasterData from 'src/business/master-data';
+import PreplanHeaderService from 'src/services/PreplanHeaderService';
 
 const waitingPaperSize = 250;
 const useStyles = makeStyles((theme: Theme) => ({
@@ -85,19 +85,19 @@ const PreplanListPage: FC = () => {
   const [preplanPublishSwitchLoadingStatus, setPreplanPublishSwitchLoadingStatus] = useState<PreplanPublishSwitchLoadingStatus>({});
   const [query, setQuery] = useState<readonly string[]>([]);
 
-  const [newPreplanModalState, openNewPreplanModal, closeNewPreplanModal] = useNewPreplanModalState();
-  const [clonePreplanModalState, openClonePreplanModal, closeClonePreplanModal] = useClonePreplanModalState();
-  const [editPreplanModalState, openEditPreplanModal, closeEditPreplanModal] = useEditPreplanModalState();
-  const [removePreplanModalState, openRemovePreplanModal, closeRemovePreplanModal] = useRemovePreplanModalState();
+  const [newPreplanHeaderModalState, openNewPreplanHeaderModal, closeNewPreplanHeaderModal] = useNewPreplanHeaderModalState();
+  const [clonePreplanHeaderModalState, openClonePreplanHeaderModal, closeClonePreplanHeaderModal] = useClonePreplanHeaderModalState();
+  const [editPreplanHeaderModalState, openEditPreplanHeaderModal, closeEditPreplanHeaderModal] = useEditPreplanHeaderModalState();
+  const [removePreplanHeaderModalState, openRemovePreplanHeaderModal, closeRemovePreplanHeaderModal] = useRemovePreplanHeaderModalState();
 
   const { enqueueSnackbar } = useSnackbar();
   const throwApplicationError = useThrowApplicationError();
 
   useEffect(() => {
     setPrePlanLoading(true);
-    PreplanService.getAllHeaders()
-      .then(preplanHeaderModels => {
-        const preplanHeaders = preplanHeaderModels.map(p => new PreplanHeader(p));
+    PreplanHeaderService.getAll()
+      .then(preplanHeaderDataModels => {
+        const preplanHeaders = preplanHeaderDataModels.map(p => new PreplanHeader(p));
         setPreplanHeaders(preplanHeaders);
       }, throwApplicationError.withTitle('Unable to fetch the list of preplans.'))
       .then(() => setPrePlanLoading(false));
@@ -126,7 +126,7 @@ const PreplanListPage: FC = () => {
           <Tab value="USER" label="Current User" />
           <Tab value="PUBLIC" label="Public" />
           <Search onQueryChange={query => setQuery(query)} outlined />
-          <IconButton color="primary" title="Add Preplan" onClick={() => openNewPreplanModal({})}>
+          <IconButton color="primary" title="Add Preplan" onClick={() => openNewPreplanHeaderModal({})}>
             <AddIcon fontSize="large" />
           </IconButton>
         </Tabs>
@@ -142,7 +142,7 @@ const PreplanListPage: FC = () => {
                   <TableCell className={classes.preplanTableCell}>Last Modified</TableCell>
                   <TableCell className={classes.preplanTableCell}>Created at</TableCell>
                   <TableCell className={classes.preplanTableCell}>Copy Source</TableCell>
-                  <TableCell className={classes.preplanTableCell}>Finalized</TableCell>
+                  <TableCell className={classes.preplanTableCell}>Accepted</TableCell>
                   <TableCell className={classes.preplanTableCell}>Simulation Name</TableCell>
                   {tab === 'USER' && <TableCell className={classNames(classes.preplanTableCell, classes.publicHeader)}>Public</TableCell>}
                   <TableCell className={classes.preplanTableCell} align="center">
@@ -166,13 +166,13 @@ const PreplanListPage: FC = () => {
                       </TableCell>
 
                       {tab === 'PUBLIC' && <TableCell className={classes.preplanTableCell}>{preplanHeader.user.displayName}</TableCell>}
-                      <TableCell className={classes.preplanTableCell}>{preplanHeader.lastEditDateTime.format('d')}</TableCell>
+                      <TableCell className={classes.preplanTableCell}>{preplanHeader.current.lastEditDateTime.format('d')}</TableCell>
                       <TableCell className={classes.preplanTableCell}>{preplanHeader.creationDateTime.format('d')}</TableCell>
-                      <TableCell className={classes.preplanTableCell}>{preplanHeader.parentPreplan && preplanHeader.parentPreplan.name}</TableCell>
+                      <TableCell className={classes.preplanTableCell}>{preplanHeader.parentPreplanHeader && preplanHeader.parentPreplanHeader.name}</TableCell>
                       <TableCell className={classes.preplanTableCell} align="center">
-                        {preplanHeader.finalized ? <FinilizedIcon /> : ''}
+                        {preplanHeader.accepted ? <FinilizedIcon /> : ''}
                       </TableCell>
-                      <TableCell className={classes.preplanTableCell}>{preplanHeader.simulation && preplanHeader.simulation.name}</TableCell>
+                      <TableCell className={classes.preplanTableCell}>{preplanHeader.current.simulation && preplanHeader.current.simulation.name}</TableCell>
 
                       {tab === 'USER' && (
                         <TableCell className={classes.preplanTableCell} align="center">
@@ -183,7 +183,7 @@ const PreplanListPage: FC = () => {
                               if (preplanPublishSwitchLoadingStatus[preplanHeader.id]) return;
                               setPreplanPublishSwitchLoadingStatus(state => ({ ...state, [preplanHeader.id]: true }));
                               try {
-                                const preplanHeaderModels = await PreplanService.setPublished(preplanHeader.id, checked);
+                                const preplanHeaderModels = await PreplanHeaderService.setPublished(preplanHeader.id, checked);
                                 const preplanHeaders = preplanHeaderModels.map(p => new PreplanHeader(p));
                                 setPreplanHeaders(preplanHeaders);
                               } catch (reason) {
@@ -198,15 +198,15 @@ const PreplanListPage: FC = () => {
                       )}
 
                       <TableCell className={classes.preplanTableCell} align="center">
-                        <IconButton title="Copy Preplan" onClick={() => openClonePreplanModal({ preplanHeader })}>
+                        <IconButton title="Copy Preplan" onClick={() => openClonePreplanHeaderModal({ preplanHeader })}>
                           <MahanIcon type={MahanIconType.CopyContent} />
                         </IconButton>
                         {tab === 'USER' && (
                           <Fragment>
-                            <IconButton title="Edit Preplan" onClick={() => openEditPreplanModal({ preplanHeader })}>
+                            <IconButton title="Edit Preplan" onClick={() => openEditPreplanHeaderModal({ preplanHeader })}>
                               <EditIcon />
                             </IconButton>
-                            <IconButton title="Remove Preplan" onClick={() => openRemovePreplanModal({ preplanHeader })}>
+                            <IconButton title="Remove Preplan" onClick={() => openRemovePreplanHeaderModal({ preplanHeader })}>
                               <ClearIcon />
                             </IconButton>
                           </Fragment>
@@ -230,46 +230,46 @@ const PreplanListPage: FC = () => {
         </Paper>
       </div>
 
-      <NewPreplanModal
+      <NewPreplanHeaderModal
         preplanHeaders={preplanHeaders}
-        state={newPreplanModalState}
-        onClose={closeNewPreplanModal}
-        onCreate={async newPreplanModel => {
-          const newPreplanId = await PreplanService.createEmpty(newPreplanModel);
+        state={newPreplanHeaderModalState}
+        onClose={closeNewPreplanHeaderModal}
+        onCreate={async newPreplanHeaderModel => {
+          const newPreplanId = await PreplanHeaderService.createEmpty(newPreplanHeaderModel);
           history.push(`/preplan/${newPreplanId}`);
         }}
       />
 
-      <ClonePreplanModal
+      <ClonePreplanHeaderModal
         preplanHeaders={preplanHeaders}
-        state={clonePreplanModalState}
-        onClose={closeClonePreplanModal}
-        onClone={async (sourcePreplanId, newPreplanModel) => {
-          const newPreplanId = await PreplanService.clone(sourcePreplanId, newPreplanModel);
+        state={clonePreplanHeaderModalState}
+        onClose={closeClonePreplanHeaderModal}
+        onClone={async clonePreplanHeaderModel => {
+          const newPreplanId = await PreplanHeaderService.clone(clonePreplanHeaderModel);
           history.push(`/preplan/${newPreplanId}`);
         }}
       />
 
-      <EditPreplanModal
+      <EditPreplanHeaderModal
         preplanHeaders={preplanHeaders}
-        state={editPreplanModalState}
-        onClose={closeEditPreplanModal}
-        onApply={async (sourcePreplanId, newPreplanModel) => {
-          const preplanHeaderModels = await PreplanService.editHeader(sourcePreplanId, newPreplanModel);
-          const preplanHeaders = preplanHeaderModels.map(p => new PreplanHeader(p));
+        state={editPreplanHeaderModalState}
+        onClose={closeEditPreplanHeaderModal}
+        onApply={async editPreplanHeaderModel => {
+          const preplanHeaderDataModels = await PreplanHeaderService.edit(editPreplanHeaderModel);
+          const preplanHeaders = preplanHeaderDataModels.map(p => new PreplanHeader(p));
           setPreplanHeaders(preplanHeaders);
-          closeEditPreplanModal();
+          closeEditPreplanHeaderModal();
         }}
       />
 
-      <RemovePreplanModal
-        state={removePreplanModalState}
-        onClose={closeRemovePreplanModal}
-        onRemove={async sourcePreplanId => {
-          const preplanHeaderModels = await PreplanService.remove(sourcePreplanId);
-          const preplanHeaders = preplanHeaderModels.map(p => new PreplanHeader(p));
+      <RemovePreplanHeaderModal
+        state={removePreplanHeaderModalState}
+        onClose={closeRemovePreplanHeaderModal}
+        onRemove={async preplanHeaderId => {
+          const preplanHeaderDataModels = await PreplanHeaderService.remove(preplanHeaderId);
+          const preplanHeaders = preplanHeaderDataModels.map(p => new PreplanHeader(p));
           setPreplanHeaders(preplanHeaders);
-          closeRemovePreplanModal();
+          closeRemovePreplanHeaderModal();
         }}
       />
     </Fragment>

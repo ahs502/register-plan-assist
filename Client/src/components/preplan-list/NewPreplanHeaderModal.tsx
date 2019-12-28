@@ -2,12 +2,12 @@ import React, { useState } from 'react';
 import { Theme, Grid } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import BaseModal, { BaseModalProps, useModalState, createModal } from 'src/components/BaseModal';
-import NewPreplanModel from '@core/models/preplan/NewPreplanModel';
 import { dataTypes } from 'src/utils/DataType';
 import RefiningTextField from 'src/components/RefiningTextField';
 import Validation from '@core/node_modules/@ahs502/validation/dist/Validation';
 import PreplanHeader from 'src/business/preplan/PreplanHeader';
 import persistant from 'src/utils/persistant';
+import NewPreplanHeaderModel from '@core/models/preplan/NewPreplanHeaderModel';
 
 const useStyles = makeStyles((theme: Theme) => ({}));
 
@@ -57,14 +57,14 @@ class ViewStateValidation extends Validation<
   }
 }
 
-export interface NewPreplanModalState {}
+export interface NewPreplanHeaderModalState {}
 
-export interface NewPreplanModalProps extends BaseModalProps<NewPreplanModalState> {
-  onCreate(newPreplanModel: NewPreplanModel): Promise<void>;
+export interface NewPreplanHeaderModalProps extends BaseModalProps<NewPreplanHeaderModalState> {
+  onCreate(newPreplanHeaderModel: NewPreplanHeaderModel): Promise<void>;
   preplanHeaders: readonly PreplanHeader[];
 }
 
-const NewPreplanModal = createModal<NewPreplanModalState, NewPreplanModalProps>(({ state, onCreate, preplanHeaders, ...others }) => {
+const NewPreplanHeaderModal = createModal<NewPreplanHeaderModalState, NewPreplanHeaderModalProps>(({ state, onCreate, preplanHeaders, ...others }) => {
   const [viewState, setViewState] = useState<ViewState>({
     bypassValidation: true,
     name: '',
@@ -99,13 +99,13 @@ const NewPreplanModal = createModal<NewPreplanModalState, NewPreplanModalProps>(
 
             if (!validation.ok) throw 'Invalid form fields.';
 
-            const newPreplanModel: NewPreplanModel = {
+            const newPreplanHeaderModel: NewPreplanHeaderModel = {
               name: dataTypes.name.convertViewToModel(viewState.name),
               startDate: dataTypes.utcDate.convertViewToModel(viewState.startDate),
               endDate: dataTypes.utcDate.convertViewToModel(viewState.endDate)
             };
 
-            await onCreate(newPreplanModel);
+            await onCreate(newPreplanHeaderModel);
           }
         }
       ]}
@@ -154,8 +154,8 @@ const NewPreplanModal = createModal<NewPreplanModalState, NewPreplanModalProps>(
   );
 });
 
-export default NewPreplanModal;
+export default NewPreplanHeaderModal;
 
-export function useNewPreplanModalState() {
-  return useModalState<NewPreplanModalState>();
+export function useNewPreplanHeaderModalState() {
+  return useModalState<NewPreplanHeaderModalState>();
 }

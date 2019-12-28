@@ -169,7 +169,8 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = React.memo
                                 .convertBusinessToModelOptional(d.aircraftSelection.backupAircraftRegister),
                               legs: d.route.map<FlightLegModel>(l => ({
                                 std: l.stdLowerBound.minutes
-                              }))
+                              })),
+                              changes: [] //TODO: Implement this.
                             }))
                           : []
                       );

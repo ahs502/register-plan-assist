@@ -1,7 +1,7 @@
 import Id from '@core/types/Id';
 import AircraftIdentityType from '@core/types/AircraftIdentityType';
 import Rsx from '@core/types/Rsx';
-import { Stc } from '@core/master-data';
+import { Stc } from 'src/business/master-data';
 import Weekday from '@core/types/Weekday';
 import Validation from '@ahs502/validation';
 import { dataTypes } from 'src/utils/DataType';

@@ -7,7 +7,7 @@ import FlightRequirement from 'src/business/flight-requirement/FlightRequirement
 import Weekday, { Weekdays } from '@core/types/Weekday';
 import AutoComplete from 'src/components/AutoComplete';
 import MultiSelect from 'src/components/MultiSelect';
-import MasterData from '@core/master-data';
+import MasterData from 'src/business/master-data';
 import { Rsxes } from '@core/types/Rsx';
 import AircraftIdentityType from '@core/types/AircraftIdentityType';
 import { PreplanContext, ReloadPreplanContext } from 'src/pages/preplan';
@@ -378,7 +378,8 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                   }
                 }))
                 .filter(x => x.selected)
-                .map(x => x.model)
+                .map(x => x.model),
+              changes: [] //TODO: Implement this.
             };
 
             const flights: Flight[] = state.flightRequirement ? preplan.flights.filter(f => f.flightRequirement === state.flightRequirement) : [];
@@ -391,7 +392,8 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                 aircraftRegisterId: dataTypes.preplanAircraftRegister(preplan.aircraftRegisters).convertViewToModelOptional(viewState.days[d.day].aircraftRegister),
                 legs: d.route.map<FlightLegModel>(l => ({
                   std: l.stdLowerBound
-                }))
+                })),
+                changes: [] //TODO: Implement this.
               }));
 
             // const flightModels: FlightModel[] = flights.filter(f => newFlightRequirementModel.days.some(d => d.day === f.day)).map(f => f.extractModel());

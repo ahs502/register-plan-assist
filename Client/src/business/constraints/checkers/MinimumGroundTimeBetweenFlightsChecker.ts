@@ -1,7 +1,7 @@
 import Checker from 'src/business/constraints/Checker';
 import Preplan from 'src/business/preplan/Preplan';
 import ConstraintSystem from 'src/business/constraints/ConstraintSystem';
-import { ConstraintTemplate } from '@core/master-data';
+import { ConstraintTemplate } from 'src/business/master-data';
 
 export default class MinimumGroundTimeBetweenFlightsChecker extends Checker {
   constructor(preplan: Preplan, constraintSystem: ConstraintSystem, constraintTemplate: ConstraintTemplate) {

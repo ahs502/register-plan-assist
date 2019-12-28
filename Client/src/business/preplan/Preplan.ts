@@ -77,7 +77,6 @@ export default class Preplan {
     this.description = dataTypes.name.convertModelToBusiness(raw.preplan.description);
     this.startDate = dataTypes.utcDate.convertModelToBusiness(raw.header.startDate);
     this.endDate = dataTypes.utcDate.convertModelToBusiness(raw.header.endDate);
-    this.weeks = new Weeks(this.startDate, this.endDate);
     this.versions = raw.versions.map<Preplan['versions'][number]>(version => ({
       id: version.id,
       lastEditDateTime: dataTypes.utcDate.convertModelToBusiness(version.lastEditDateTime),
@@ -102,6 +101,36 @@ export default class Preplan {
     ['???', ...this.aircraftRegisters.items.filter(a => a.options.status !== 'IGNORED').map(a => a.id)].forEach(id => {
       id in this.flightsByAircraftRegisterId || ((this.flightsByAircraftRegisterId as { [aircraftRegisterId: string]: readonly Flight[] })[id] = []);
       id in this.flightLegsByAircraftRegisterId || ((this.flightLegsByAircraftRegisterId as { [aircraftRegisterId: string]: readonly FlightLeg[] })[id] = []);
+    });
+
+    const flightsGrouppedByWeekStartTime = this.flights.groupBy(f => String(Week.getWeekStartDate(f.date).getTime()));
+    this.weeks = new Weeks(this.startDate, this.endDate, (previousWeek, nextWeek) => {
+      const previousFlightsByWeek = flightsGrouppedByWeekStartTime[String(previousWeek.startDate.getTime())];
+      const nextFlightsByWeek = flightsGrouppedByWeekStartTime[String(nextWeek.startDate.getTime())];
+      if (!previousFlightsByWeek && !nextFlightsByWeek) return false;
+      if (!previousFlightsByWeek || !nextFlightsByWeek) return true;
+      const grouppedPreviousFlightByWeek = previousFlightsByWeek.groupBy('label', g => g.groupBy('day', h => h[0]));
+      const grouppedNextFlightByWeek = nextFlightsByWeek.groupBy('label', g => g.groupBy('day', h => h[0]));
+      for (let label in grouppedPreviousFlightByWeek) {
+        const previousFlightsByWeekAndLabel = grouppedPreviousFlightByWeek[label];
+        const nextFlightsByWeekAndLabel = grouppedNextFlightByWeek[label];
+        if (!nextFlightsByWeekAndLabel) return true;
+        for (let day in previousFlightsByWeekAndLabel) {
+          const previousFlight = previousFlightsByWeekAndLabel[day];
+          const nextFlight = nextFlightsByWeekAndLabel[day];
+          if (
+            !nextFlight ||
+            previousFlight.aircraftRegister !== nextFlight.aircraftRegister ||
+            previousFlight.legs.some((l, index) => l.std.compare(nextFlight.legs[index].std) !== 0) ||
+            previousFlight.rsx !== nextFlight.rsx ||
+            previousFlight.notes !== nextFlight.notes ||
+            previousFlight.originPermission !== nextFlight.originPermission ||
+            previousFlight.destinationPermission !== nextFlight.destinationPermission
+          )
+            return true;
+        }
+      }
+      return false;
     });
 
     this.constraintSystem = new ConstraintSystem(this, oldPreplan && oldPreplan.constraintSystem);

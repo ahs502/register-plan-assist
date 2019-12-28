@@ -14,9 +14,9 @@ import TargetObjectionStatus from 'src/components/preplan/TargetObjectionStatus'
 import FlightRequirement from 'src/business/flight-requirement/FlightRequirement';
 import TablePaginationActions from 'src/components/TablePaginationActions';
 import FlightRequirementService from 'src/services/FlightRequirementService';
-import NewFlightModel from '@core/models/flight/NewFlightModel';
 import FlightLegModel from '@core/models/flight/FlightLegModel';
 import { dataTypes } from 'src/utils/DataType';
+import EditFlightModel from '@core/models/flight/EditFlightModel';
 
 const useStyles = makeStyles((theme: Theme) => ({
   contentPage: {
@@ -157,24 +157,22 @@ const FlightRequirementListPage: FC<FlightRequirementListPageProps> = React.memo
                     if (flightRequirementIncludeSwitchLoadingStatus[flightRequirement.id]) return;
                     setFlightRequirementIncludeSwitchLoadingStatus({ ...flightRequirementIncludeSwitchLoadingStatus, [flightRequirement.id]: true });
                     try {
-                      const newPreplanModel = await FlightRequirementService.edit(
+                      const newPreplanDataModel = await FlightRequirementService.edit(
                         preplan.id,
                         flightRequirement.extractModel(flightRequirementModel => ({ ...flightRequirementModel, ignored: !flightRequirement.ignored })),
-                        [],
                         flightRequirement.ignored
-                          ? flightRequirement.days.map<NewFlightModel>(d => ({
-                              day: d.day,
+                          ? flightRequirement.days.map<EditFlightModel>(d => ({
+                              date: new Date().toJSON(), //TODO: Not implemented.
                               aircraftRegisterId: dataTypes
                                 .preplanAircraftRegister(preplan.aircraftRegisters)
                                 .convertBusinessToModelOptional(d.aircraftSelection.backupAircraftRegister),
                               legs: d.route.map<FlightLegModel>(l => ({
                                 std: l.stdLowerBound.minutes
-                              })),
-                              changes: [] //TODO: Implement this.
+                              }))
                             }))
                           : []
                       );
-                      await reloadPreplan(newPreplanModel);
+                      await reloadPreplan(newPreplanDataModel);
                     } catch (reason) {
                       enqueueSnackbar(String(reason), { variant: 'error' });
                     }

@@ -13,8 +13,6 @@ import AircraftIdentityType from '@core/types/AircraftIdentityType';
 import { PreplanContext, ReloadPreplanContext } from 'src/pages/preplan';
 import NewFlightRequirementModel from '@core/models/flight-requirement/NewFlightRequirementModel';
 import FlightModel from '@core/models/flight/FlightModel';
-import NewFlightModel from '@core/models/flight/NewFlightModel';
-import PreplanAircraftSelection from 'src/business/preplan/PreplanAircraftSelection';
 import FlightLegModel from '@core/models/flight/FlightLegModel';
 import AircraftIdentityModel from '@core/models/AircraftIdentityModel';
 import FlightRequirementLegModel from '@core/models/flight-requirement/FlightRequirementLegModel';
@@ -33,6 +31,7 @@ import {
   ViewStateValidation
 } from 'src/components/preplan/FlightRequirementModal.types';
 import classNames from 'classnames';
+import EditFlightModel from '@core/models/flight/EditFlightModel';
 
 const useStyles = makeStyles((theme: Theme) => ({
   dayTab: {
@@ -384,20 +383,19 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
 
             const flights: Flight[] = state.flightRequirement ? preplan.flights.filter(f => f.flightRequirement === state.flightRequirement) : [];
 
-            const newFlightModels: NewFlightModel[] = newFlightRequirementModel.days
+            const newFlightModels: EditFlightModel[] = newFlightRequirementModel.days
               .filter(d => !flights.some(f => f.day === d.day))
-              .map<NewFlightModel>(d => ({
-                day: d.day,
+              .map<EditFlightModel>(d => ({
+                date: new Date().toJSON(), //TODO: Not implemented.
                 // aircraftRegisterId: (new PreplanAircraftSelection(d.aircraftSelection, preplan.aircraftRegisters).backupAircraftRegister || { id: undefined }).id,
                 aircraftRegisterId: dataTypes.preplanAircraftRegister(preplan.aircraftRegisters).convertViewToModelOptional(viewState.days[d.day].aircraftRegister),
                 legs: d.route.map<FlightLegModel>(l => ({
                   std: l.stdLowerBound
-                })),
-                changes: [] //TODO: Implement this.
+                }))
               }));
 
-            // const flightModels: FlightModel[] = flights.filter(f => newFlightRequirementModel.days.some(d => d.day === f.day)).map(f => f.extractModel());
-            const flightModels: FlightModel[] = !state.flightRequirement
+            // const flightModels: EditFlightModel[] = flights.filter(f => newFlightRequirementModel.days.some(d => d.day === f.day)).map(f => f.extractModel());
+            const flightModels: EditFlightModel[] = !state.flightRequirement
               ? []
               : flights
                   .filter(f => newFlightRequirementModel.days.some(d => d.day === f.day))
@@ -423,7 +421,7 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                   );
 
             const newPreplanModel = state.flightRequirement
-              ? await FlightRequirementService.edit(preplan.id, { id: state.flightRequirement.id, ...newFlightRequirementModel }, flightModels, newFlightModels)
+              ? await FlightRequirementService.edit(preplan.id, { id: state.flightRequirement.id, ...newFlightRequirementModel }, flightModels.concat(newFlightModels))
               : await FlightRequirementService.add(preplan.id, newFlightRequirementModel, newFlightModels);
             await reloadPreplan(newPreplanModel);
             return others.onClose();

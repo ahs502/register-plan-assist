@@ -318,10 +318,10 @@ const TimelineView: FC<TimelineViewProps> = ({
         }
       },
       max: startDate.clone().addDays(8),
-      maxHeight: 'calc(100vh - 215px)',
+      maxHeight: 'calc(100vh - 219px)',
       maxMinorChars: 5,
       min: startDate,
-      minHeight: 'calc(100vh - 216px)',
+      minHeight: 'calc(100vh - 220px)',
       moveable: true,
       multiselect: false,
       multiselectPerGroup: false,

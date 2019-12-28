@@ -25,7 +25,7 @@ import DayFlightRequirementLegModel from '@core/models/flight-requirement/DayFli
 import FlightRequirementService from 'src/services/FlightRequirementService';
 import KeyboardHandler from 'src/utils/KeyboardHandler';
 import PerplanVersionsModal, { usePerplanVersionsModalState, PerplanVersionsModalState } from 'src/components/preplan/PerplanVersionsModal';
-import SelectWeek from 'src/components/preplan/SelectWeek';
+import SelectWeeks from 'src/components/preplan/SelectWeeks';
 
 const useStyles = makeStyles((theme: Theme) => ({
   sideBarBackdrop: {
@@ -36,16 +36,15 @@ const useStyles = makeStyles((theme: Theme) => ({
     height: 'calc(100% - 105px)'
   },
   selectWeekWrapper: {
-    height: 80,
     margin: 0,
     padding: 0,
-    backgroundColor: theme.palette.common.white,
-    border: '1px solid orange'
+    backgroundColor: theme.palette.common.white
   },
   statusBarWrapper: {
-    height: 30,
+    borderTop: `1px solid ${theme.palette.grey[300]}`,
+    height: 29,
     margin: 0,
-    padding: theme.spacing(0.5, 0, 0.5, 1),
+    padding: theme.spacing(0.4, 0, 0.5, 1),
     backgroundColor: theme.palette.common.white,
     whiteSpace: 'pre'
   },
@@ -242,7 +241,10 @@ const TimelinePage: FC<TimelinePageProps> = ({ onObjectionTargetClick, onEditFli
           onNowhereMouseHover={() => setStatusBarProps({})}
         />
         <div className={classes.selectWeekWrapper}>
-          <SelectWeek preplan={preplan} />
+          <SelectWeeks
+            weekSelection={{ previousStartIndex: 0, startIndex: 0, endIndex: preplan.weeks.all.length, nextEndIndex: preplan.weeks.all.length }}
+            onSelectWeeks={weekSelection => {}}
+          />
         </div>
         <div className={classes.statusBarWrapper}>
           <StatusBar {...statusBarProps} />

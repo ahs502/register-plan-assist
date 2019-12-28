@@ -229,7 +229,7 @@ const TimelinePage: FC<TimelinePageProps> = ({ onObjectionTargetClick, onEditFli
                     : d
                 )
               }));
-              const newPreplanModel = await FlightRequirementService.edit(preplan.id, newFlightRequirementModel, flightModels, []);
+              const newPreplanModel = await FlightRequirementService.edit(preplan.id, newFlightRequirementModel, flightModels);
               await reloadPreplan(newPreplanModel);
             } catch (reason) {
               snackbar.enqueueSnackbar(String(reason), { variant: 'error' });

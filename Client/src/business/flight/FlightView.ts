@@ -1,14 +1,11 @@
-import FlightModel from '@core/models/flight/FlightModel';
 import DayFlightRequirement from 'src/business/flight-requirement/DayFlightRequirement';
 import FlightRequirement from 'src/business/flight-requirement/FlightRequirement';
-import FlightLeg from 'src/business/flight/FlightLeg';
 import Daytime from '@core/types/Daytime';
 import PreplanAircraftRegister, { PreplanAircraftRegisters } from 'src/business/preplan/PreplanAircraftRegister';
 import { Stc } from 'src/business/master-data';
 import Rsx from '@core/types/Rsx';
 import Weekday from '@core/types/Weekday';
 import Id from '@core/types/Id';
-import { dataTypes } from 'src/utils/DataType';
 import FlightLegView from 'src/business/flight/FlightLegView';
 import Week from 'src/business/Week';
 import Flight from 'src/business/flight/Flight';
@@ -22,6 +19,7 @@ export default class FlightView {
   readonly aircraftRegisters: PreplanAircraftRegisters;
   readonly flightRequirement: FlightRequirement;
   readonly dayFlightRequirement: DayFlightRequirement;
+  readonly sourceFlight: Flight;
   readonly flights: readonly Flight[];
 
   // Duplicates:
@@ -44,55 +42,46 @@ export default class FlightView {
     readonly start: number;
     readonly end: number;
   }[];
+  readonly startDateTime: Date;
+  readonly endDateTime: Date;
   readonly icons: readonly string[]; //TODO: Check if it is really required.
 
   constructor(flights: readonly Flight[], startWeek: Week, endWeek: Week) {
-    this.aircraftRegister = dataTypes.preplanAircraftRegister(aircraftRegisters).convertModelToBusinessOptional(raw.aircraftRegisterId);
+    const { sourceFlight, notes } = flights.map(sourceFlight => ({ sourceFlight, notes: createNotes(flights, sourceFlight) })).sortBy(({ notes }) => notes.length)[0];
 
-    this.label = dayFlightRequirement.flightRequirement.label;
-    this.category = dayFlightRequirement.flightRequirement.category;
-    this.stc = dayFlightRequirement.flightRequirement.stc;
-    this.rsx = dayFlightRequirement.rsx;
-    this.day = dayFlightRequirement.day;
-    this.notes = dayFlightRequirement.notes;
-    const originPermissions = dayFlightRequirement.route.map(l => l.originPermission).distinct();
-    this.originPermission = originPermissions.length === 2 ? undefined : originPermissions.length === 1 ? originPermissions[0] : false;
-    const destinationPermissions = dayFlightRequirement.route.map(l => l.destinationPermission).distinct();
-    this.destinationPermission = destinationPermissions.length === 2 ? undefined : destinationPermissions.length === 1 ? destinationPermissions[0] : false;
+    this.sourceFlight = sourceFlight;
 
-    this.flightRequirement = dayFlightRequirement.flightRequirement;
-    this.dayFlightRequirement = dayFlightRequirement;
-    this.aircraftRegisters = aircraftRegisters;
+    this.aircraftRegister = this.sourceFlight.aircraftRegister;
+    this.legs = this.sourceFlight.legs.map(l => new FlightLegView(l, this, startWeek, endWeek));
 
-    let dayOffset = 0;
-    let previousSta = Number.NEGATIVE_INFINITY;
-    const legs: FlightLeg[] = (this.legs = []);
-    raw.legs.forEach((leg, index) => {
-      let std = leg.std + dayOffset * 24 * 60;
-      while (std <= previousSta) {
-        dayOffset++;
-        std += 24 * 60;
-      }
-      legs.push(new FlightLeg(leg, dayOffset, this, dayFlightRequirement.route[index]));
-      previousSta = std + dayFlightRequirement.route[index].blockTime.minutes;
-    });
+    this.aircraftRegisters = this.sourceFlight.aircraftRegisters;
+    this.flightRequirement = this.sourceFlight.flightRequirement;
+    this.dayFlightRequirement = this.sourceFlight.dayFlightRequirement;
+    this.flights = flights;
 
-    this.derivedId = raw.id;
-    this.start = this.legs[0].actualStd;
-    this.end = this.legs[this.legs.length - 1].actualSta;
-    this.weekStart = this.day * 24 * 60 + this.start.minutes;
-    this.weekEnd = this.day * 24 * 60 + this.end.minutes;
-    this.sections = this.legs.map(l => ({
-      start: (l.weekStd - this.weekStart) / (this.weekEnd - this.weekStart),
-      end: (l.weekSta - this.weekStart) / (this.weekEnd - this.weekStart)
-    }));
+    this.label = this.sourceFlight.label;
+    this.category = this.sourceFlight.category;
+    this.stc = this.sourceFlight.stc;
+    this.rsx = this.sourceFlight.rsx;
+    this.day = this.sourceFlight.day;
+    this.notes = notes;
+    this.originPermission = this.sourceFlight.originPermission;
+    this.destinationPermission = this.sourceFlight.destinationPermission;
+
+    this.derivedId = this.sourceFlight.id;
+    this.start = this.sourceFlight.start;
+    this.end = this.sourceFlight.end;
+    this.weekStart = this.sourceFlight.weekStart;
+    this.weekEnd = this.sourceFlight.weekEnd;
+    this.sections = this.sourceFlight.sections;
+
+    // Fields which should be calculated for view:
+    this.startDateTime = new Date(startWeek.startDate.getTime() + this.weekStart * 60 * 1000);
+    this.endDateTime = new Date(startWeek.startDate.getTime() + this.weekEnd * 60 * 1000);
     this.icons = [];
-  }
 
-  startDateTime(week: Week): Date {
-    return new Date(week.startDate.getTime() + this.weekStart * 60 * 1000);
-  }
-  endDateTime(week: Week): Date {
-    return new Date(week.startDate.getTime() + this.weekEnd * 60 * 1000);
+    function createNotes(flights: readonly Flight[], sourceFlight: Flight): string {
+      return ''; //TODO: Not implemented.
+    }
   }
 }

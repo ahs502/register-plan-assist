@@ -11,6 +11,7 @@ import ModelConvertable from 'src/business/ModelConvertable';
 import { dataTypes } from 'src/utils/DataType';
 import FlightRequirementChange from 'src/business/flight-requirement/FlightRequirementChange';
 import DayFlightRequirementChange from 'src/business/flight-requirement/DayFlightRequirementChange';
+import Daytime from '@core/types/Daytime';
 
 export default class Flight implements ModelConvertable<FlightModel> {
   // Original:
@@ -38,11 +39,23 @@ export default class Flight implements ModelConvertable<FlightModel> {
   readonly originPermission: boolean | undefined;
   readonly destinationPermission: boolean | undefined;
 
+  // Computational:
+  readonly start: Daytime;
+  readonly end: Daytime;
+  readonly weekStart: number;
+  readonly weekEnd: number;
+  readonly sections: readonly {
+    readonly start: number;
+    readonly end: number;
+  }[];
+  readonly startDateTime: Date;
+  readonly endDateTime: Date;
+  readonly icons: readonly string[]; //TODO: Check if it is really required.
+
   constructor(raw: FlightModel, aircraftRegisters: PreplanAircraftRegisters, dayFlightRequirement: DayFlightRequirement, dayFlightRequirementChange?: DayFlightRequirementChange) {
     this.id = raw.id;
     this.date = dataTypes.utcDate.convertModelToBusiness(raw.date);
     this.aircraftRegister = dataTypes.preplanAircraftRegister(aircraftRegisters).convertModelToBusinessOptional(raw.aircraftRegisterId);
-    this.legs = raw.legs.map((l, index) => new FlightLeg(l, this, dayFlightRequirement.route[index], dayFlightRequirementChange && dayFlightRequirementChange.route[index]));
 
     this.aircraftRegisters = aircraftRegisters;
     this.flightRequirement = dayFlightRequirement.flightRequirement;
@@ -64,6 +77,31 @@ export default class Flight implements ModelConvertable<FlightModel> {
       this.change?.dayFlightRequirement.route.map(l => l.destinationPermission) ?? dayFlightRequirement.route.map(l => l.destinationPermission)
     ).distinct();
     this.destinationPermission = destinationPermissions.length === 2 ? undefined : destinationPermissions.length === 1 ? destinationPermissions[0] : false;
+
+    let dayOffset = 0;
+    let previousSta = Number.NEGATIVE_INFINITY;
+    const legs: FlightLeg[] = (this.legs = []);
+    raw.legs.forEach((l, index) => {
+      let std = l.std + dayOffset * 24 * 60;
+      while (std <= previousSta) {
+        dayOffset++;
+        std += 24 * 60;
+      }
+      legs.push(new FlightLeg(l, dayOffset, this, dayFlightRequirement.route[index], dayFlightRequirementChange && dayFlightRequirementChange.route[index]));
+      previousSta = std + dayFlightRequirement.route[index].blockTime.minutes;
+    });
+
+    this.start = this.legs[0].actualStd;
+    this.end = this.legs[this.legs.length - 1].actualSta;
+    this.weekStart = this.day * 24 * 60 + this.start.minutes;
+    this.weekEnd = this.day * 24 * 60 + this.end.minutes;
+    this.sections = this.legs.map(l => ({
+      start: (l.weekStd - this.weekStart) / (this.weekEnd - this.weekStart),
+      end: (l.weekSta - this.weekStart) / (this.weekEnd - this.weekStart)
+    }));
+    this.startDateTime = new Date(this.date.getTime() + this.start.minutes * 60 * 1000);
+    this.endDateTime = new Date(this.date.getTime() + this.end.minutes * 60 * 1000);
+    this.icons = [];
   }
 
   extractModel(override?: (flightModel: FlightModel) => FlightModel): FlightModel {

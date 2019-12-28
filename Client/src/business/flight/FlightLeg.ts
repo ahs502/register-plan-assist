@@ -45,6 +45,7 @@ export default class FlightLeg implements ModelConvertable<FlightLegModel>, Obje
   readonly aircraftRegister?: PreplanAircraftRegister;
   readonly rsx: Rsx;
   readonly day: Weekday;
+  readonly date: Date;
   readonly notes: string;
   readonly index: number;
   readonly flightNumber: FlightNumber;
@@ -59,11 +60,24 @@ export default class FlightLeg implements ModelConvertable<FlightLegModel>, Obje
   readonly sta: Daytime;
   readonly transit: boolean;
   readonly international: boolean;
+  readonly dayOffset: number;
+  readonly actualStd: Daytime;
+  readonly actualSta: Daytime;
+  readonly weekStd: number;
+  readonly weekSta: number;
+  readonly stdDateTime: Date;
+  readonly staDateTime: Date;
 
   // Inherited:
   readonly objectionStatusDependencies: readonly Objectionable[];
 
-  constructor(raw: FlightLegModel, flight: Flight, dayFlightRequirementLeg: DayFlightRequirementLeg, dayFlightRequirementLegChange?: DayFlightRequirementLegChange) {
+  constructor(
+    raw: FlightLegModel,
+    dayOffset: number,
+    flight: Flight,
+    dayFlightRequirementLeg: DayFlightRequirementLeg,
+    dayFlightRequirementLegChange?: DayFlightRequirementLegChange
+  ) {
     this.std = dataTypes.daytime.convertModelToBusiness(raw.std);
 
     this.flight = flight;
@@ -84,6 +98,7 @@ export default class FlightLeg implements ModelConvertable<FlightLegModel>, Obje
     this.aircraftRegister = flight.aircraftRegister;
     this.rsx = flight.rsx;
     this.day = flight.day;
+    this.date = flight.date;
     this.notes = flight.notes;
     this.index = dayFlightRequirementLeg.index;
     this.flightNumber = dayFlightRequirementLeg.flightRequirementLeg.flightNumber;
@@ -97,6 +112,17 @@ export default class FlightLeg implements ModelConvertable<FlightLegModel>, Obje
     this.sta = new Daytime(this.std.minutes + this.blockTime.minutes);
     this.transit = this.index > 0; //TODO: Ask Saleh.
     this.international = this.departureAirport.international || this.arrivalAirport.international;
+    this.dayOffset = dayOffset;
+    this.actualStd = new Daytime(this.std.minutes + this.dayOffset * 24 * 60);
+    let actualStaMinutes = this.sta.minutes + this.dayOffset * 24 * 60;
+    while (actualStaMinutes < this.actualStd.minutes) {
+      actualStaMinutes += 24 * 60;
+    }
+    this.actualSta = new Daytime(actualStaMinutes);
+    this.weekStd = this.day * 24 * 60 + this.actualStd.minutes;
+    this.weekSta = this.day * 24 * 60 + this.actualSta.minutes;
+    this.stdDateTime = new Date(this.date.getTime() + this.actualStd.minutes * 60 * 1000);
+    this.staDateTime = new Date(this.date.getTime() + this.actualSta.minutes * 60 * 1000);
 
     this.objectionStatusDependencies = [this.flightRequirement, this.dayFlightRequirement];
   }

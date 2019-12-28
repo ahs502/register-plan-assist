@@ -332,7 +332,7 @@ const TimelineView: FC<TimelineViewProps> = ({
       onMove(item, callback) {
         const flight: Flight = item.data;
         const newAircraftRegister = preplan.aircraftRegisters.id[item.group as any];
-        const deltaStd = Math.round((new Date(item.start).getTime() - flight.startDateTime(startDate).getTime()) / (5 * 60 * 1000)) * 5;
+        const deltaStd = Math.round((new Date(item.start).getTime() - flight.startDateTime.getTime()) / (5 * 60 * 1000)) * 5;
         const allWeekdays = KeyboardHandler.status.ctrl;
         onFlightDragAndDrop(flight, newAircraftRegister === flight.aircraftRegister ? deltaStd : 0, newAircraftRegister, allWeekdays);
         callback(item);
@@ -343,8 +343,8 @@ const TimelineView: FC<TimelineViewProps> = ({
 
         // To convert item resize to item move:
         const flight: Flight = item.data;
-        const originalStart = flight.startDateTime(startDate).getTime();
-        const originalEnd = flight.endDateTime(startDate).getTime();
+        const originalStart = flight.startDateTime.getTime();
+        const originalEnd = flight.endDateTime.getTime();
         const calclulatedStart = Date.parse(item.start as any);
         const calculatedEnd = Date.parse(item.end as any);
         if (calculatedEnd - calclulatedStart !== originalEnd - originalStart) {
@@ -355,8 +355,8 @@ const TimelineView: FC<TimelineViewProps> = ({
         // To prevent time change when register changes:
         const newAircraftRegister = preplan.aircraftRegisters.id[item.group as any];
         if (newAircraftRegister !== flight.aircraftRegister) {
-          item.start = flight.startDateTime(startDate);
-          item.end = flight.endDateTime(startDate);
+          item.start = flight.startDateTime;
+          item.end = flight.endDateTime;
         }
 
         callback(item);
@@ -456,7 +456,7 @@ const TimelineView: FC<TimelineViewProps> = ({
             </div>
           </div>
           <div class="rpa-item-body
-          ${flight.knownAircraftRegister ? ' rpa-known-aircraft-register' : ' rpa-unknown-aircraft-register'}
+          ${true ? ' rpa-known-aircraft-register' : ' rpa-unknown-aircraft-register'}
           ${
             flight.originPermission === true
               ? ' rpa-origin-permission rpa-origin-permission-full'

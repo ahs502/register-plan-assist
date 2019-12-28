@@ -91,7 +91,8 @@ export default class Preplan {
       const weekday = date.getWeekday();
       const flightRequirement = flightRequirementDictionary[f.flightRequirementId];
       const dayFlightRequirement = flightRequirement.days.find(d => d.day === weekday)!;
-      const dayFlightRequirementChange = flightRequirement.changes.find(c => c.startDate <= date && date <= c.endDate)?.days.find(d => d.day === weekday) ?? undefined;
+      const days = flightRequirement.changes.find(c => c.startDate <= date && date <= c.endDate)?.days;
+      const dayFlightRequirementChange = !days ? undefined : days.find(d => d.day === weekday);
       return new Flight(f, this.aircraftRegisters, dayFlightRequirement, dayFlightRequirementChange);
     });
 

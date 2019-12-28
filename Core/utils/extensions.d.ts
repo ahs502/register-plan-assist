@@ -232,7 +232,7 @@ declare interface Date {
   /**
    * Returns the weekday of this starting from Saturday as 0.
    */
-  getWeekday(): import('@core/types/Weekday').default;
+  getWeekday(): import('../types/Weekday').default;
 
   /**
    * Returns true iff the two dates are pointing to the same moment in history.

@@ -104,8 +104,6 @@ interface ViewState {
   eastAirportsAirline: Airline;
   eastAirports: Airport[];
   westAirports: Airport[];
-  startDate: string;
-  endDate: string;
   baseDate: string;
   maxConnectionTime: string;
   minConnectionTime: string;
@@ -131,7 +129,7 @@ class ConnectionReportValidation extends Validation<
   | 'EAST_AIRLINE_EXISTS'
   | 'WEST_AIRLINE_EXISTS'
 > {
-  constructor({ eastAirportsAirline, westAirportsAirline, startDate, endDate, baseDate, eastAirports, westAirports }: ViewState) {
+  constructor({ eastAirportsAirline, westAirportsAirline, baseDate, eastAirports, westAirports }: ViewState, { startDate, endDate }: ReportDateRangeState) {
     super(
       validator => {
         validator.check('EAST_AIRPORT_EXISTS', eastAirports.length > 0);
@@ -175,7 +173,7 @@ class NumberOfConnectionValidation extends Validation<
   | 'MAX_CONNECTION_IS_NOT_LESS_THAN_MIN_CONNECTION_TIME',
   { connectionReportValidation: ConnectionReportValidation }
 > {
-  constructor(viewState: ViewState) {
+  constructor(viewState: ViewState, reportDateRangeState: ReportDateRangeState) {
     const { maxConnectionTime, minConnectionTime } = viewState;
     super(
       validator => {
@@ -186,7 +184,7 @@ class NumberOfConnectionValidation extends Validation<
           validator.check('MIN_CONNECTION_IS_NOT_GREATER_THAN_MAX_CONNECTION_TIME', ok, 'Can not be grater than max connection.');
           validator.check('MAX_CONNECTION_IS_NOT_LESS_THAN_MIN_CONNECTION_TIME', ok, 'Can not be less than max connection.');
         });
-        validator.put(validator.$.connectionReportValidation, new ConnectionReportValidation(viewState));
+        validator.put(validator.$.connectionReportValidation, new ConnectionReportValidation(viewState, reportDateRangeState));
       },
       {
         '*_EXISTS': 'Required.',
@@ -366,8 +364,8 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ preplanName, fromDate, 
     }
   }, [viewState]);
 
-  const validation = new ConnectionReportValidation(viewState);
-  const numberOfConnectionValidation = new NumberOfConnectionValidation(viewState);
+  const validation = new ConnectionReportValidation(viewState, reportDateRange);
+  const numberOfConnectionValidation = new NumberOfConnectionValidation(viewState, reportDateRange);
 
   const errors = {
     eastAirports: validation.message('EAST_AIRPORT_*'),
@@ -938,8 +936,8 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ preplanName, fromDate, 
       <RefiningTextField
         label="Start Date"
         dataType={dataTypes.utcDate}
-        value={viewState.startDate}
-        onChange={({ target: { value: startDate } }) => setViewState({ ...viewState, startDate })}
+        value={reportDateRange.startDate}
+        onChange={({ target: { value: startDate } }) => setReportDateRange({ ...reportDateRange, startDate })}
         error={errors.startDate !== undefined}
         helperText={errors.startDate}
         disabled
@@ -948,8 +946,8 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ preplanName, fromDate, 
       <RefiningTextField
         label="End Date"
         dataType={dataTypes.utcDate}
-        value={viewState.endDate}
-        onChange={({ target: { value: endDate } }) => setViewState({ ...viewState, endDate })}
+        value={reportDateRange.endDate}
+        onChange={({ target: { value: endDate } }) => setReportDateRange({ ...reportDateRange, endDate })}
         error={errors.endDate !== undefined}
         helperText={errors.endDate}
         disabled
@@ -967,7 +965,7 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ preplanName, fromDate, 
       <br />
       <br />
 
-      {/* <div className={classNames(classes.export, classes.marginBottom1)}>{exportConnectionTable}</div> */}
+      {<div className={classNames(classes.export, classes.marginBottom1)}>{exportConnectionTable}</div>}
       {validation.ok ? (
         <div className={classes.tableContainer}>{connectionTable}</div>
       ) : (
@@ -1002,7 +1000,7 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ preplanName, fromDate, 
       <br />
       <br />
 
-      {/* <div className={classNames(classes.export, classes.marginBottom1)}>{exportConnectionNumber}</div> */}
+      {<div className={classNames(classes.export, classes.marginBottom1)}>{exportConnectionNumber}</div>}
       {numberOfConnectionValidation.ok ? (
         <div className={classes.tableContainer}>{connectionNumber}</div>
       ) : (

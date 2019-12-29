@@ -1,4 +1,4 @@
-import React, { FC, useState, Fragment, useEffect } from 'react';
+import React, { FC, useState, Fragment, useEffect, useMemo, useContext } from 'react';
 import { Theme, InputLabel, TextField, TableHead, TableCell, Table, TableRow, TableBody, Button, Paper, Typography, Grid } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import MasterData, { Airport } from 'src/business/master-data';
@@ -13,6 +13,8 @@ import { dataTypes } from 'src/utils/DataType';
 import RefiningTextField from 'src/components/RefiningTextField';
 import Validation from '@core/node_modules/@ahs502/validation/dist/Validation';
 import AutoComplete from 'src/components/AutoComplete';
+import { PreplanContext } from 'src/pages/preplan';
+import Week from 'src/business/Week';
 
 const errorPaperSize = 250;
 const character = {
@@ -102,11 +104,14 @@ interface ViewState {
   eastAirportsAirline: Airline;
   eastAirports: Airport[];
   westAirports: Airport[];
-  startDate: string;
-  endDate: string;
   baseDate: string;
   maxConnectionTime: string;
   minConnectionTime: string;
+}
+
+interface ReportDateRangeState {
+  startDate: string;
+  endDate: string;
 }
 
 class ConnectionReportValidation extends Validation<
@@ -124,7 +129,7 @@ class ConnectionReportValidation extends Validation<
   | 'EAST_AIRLINE_EXISTS'
   | 'WEST_AIRLINE_EXISTS'
 > {
-  constructor({ eastAirportsAirline, westAirportsAirline, startDate, endDate, baseDate, eastAirports, westAirports }: ViewState) {
+  constructor({ eastAirportsAirline, westAirportsAirline, baseDate, eastAirports, westAirports }: ViewState, { startDate, endDate }: ReportDateRangeState) {
     super(
       validator => {
         validator.check('EAST_AIRPORT_EXISTS', eastAirports.length > 0);
@@ -168,7 +173,7 @@ class NumberOfConnectionValidation extends Validation<
   | 'MAX_CONNECTION_IS_NOT_LESS_THAN_MIN_CONNECTION_TIME',
   { connectionReportValidation: ConnectionReportValidation }
 > {
-  constructor(viewState: ViewState) {
+  constructor(viewState: ViewState, reportDateRangeState: ReportDateRangeState) {
     const { maxConnectionTime, minConnectionTime } = viewState;
     super(
       validator => {
@@ -179,7 +184,7 @@ class NumberOfConnectionValidation extends Validation<
           validator.check('MIN_CONNECTION_IS_NOT_GREATER_THAN_MAX_CONNECTION_TIME', ok, 'Can not be grater than max connection.');
           validator.check('MAX_CONNECTION_IS_NOT_LESS_THAN_MIN_CONNECTION_TIME', ok, 'Can not be less than max connection.');
         });
-        validator.put(validator.$.connectionReportValidation, new ConnectionReportValidation(viewState));
+        validator.put(validator.$.connectionReportValidation, new ConnectionReportValidation(viewState, reportDateRangeState));
       },
       {
         '*_EXISTS': 'Required.',
@@ -192,7 +197,6 @@ class NumberOfConnectionValidation extends Validation<
 }
 
 interface ConnectionsReportProps {
-  flights: readonly FlightLeg[];
   preplanName: string;
   fromDate: Date;
   toDate: Date;
@@ -216,10 +220,26 @@ interface AutoCompleteOption {
 
 interface Airline extends AutoCompleteOption {}
 
-const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, fromDate, toDate }) => {
+const ConnectionsReport: FC<ConnectionsReportProps> = ({ preplanName, fromDate, toDate }) => {
+  const preplan = useContext(PreplanContext);
+
+  const [reportDateRange, setReportDateRange] = useState<ReportDateRangeState>({
+    startDate: dataTypes.utcDate.convertBusinessToView(fromDate),
+    endDate: dataTypes.utcDate.convertBusinessToView(toDate)
+  });
+
+  const flightViews = useMemo(() => {
+    return preplan.getFlightViews(
+      new Week(dataTypes.utcDate.convertViewToBusiness(reportDateRange.startDate)),
+      new Week(dataTypes.utcDate.convertViewToBusiness(reportDateRange.endDate))
+    );
+  }, [reportDateRange]);
+
+  const flightLegViews = flightViews.flatMap(f => f.legs);
+
   const allAirports = MasterData.all.airports.items;
 
-  const allAirline = flights
+  const allAirline = flightLegViews
     .map(f => f.flightNumber.airlineCode)
     .distinct()
     .map<Airline>(a => ({ label: a, value: a }));
@@ -250,14 +270,14 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
       const flightLegInfoModels: FlightLegInfoModel[] = [];
       const reportBaseDate = new Date(dataTypes.utcDate.convertViewToModel(viewState.baseDate));
 
-      const eastFlight = flights.filter(
+      const eastFlight = flightLegViews.filter(
         f =>
           f.rsx === 'REAL' &&
           f.flightNumber.airlineCode === viewState.eastAirportsAirline.value &&
           viewState.eastAirports.some(a => a.id === f.departureAirport.id || a.id === f.arrivalAirport.id)
       );
 
-      const westFlight = flights.filter(
+      const westFlight = flightLegViews.filter(
         f =>
           f.rsx === 'REAL' &&
           f.flightNumber.airlineCode === viewState.westAirportsAirline.value &&
@@ -344,8 +364,8 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
     }
   }, [viewState]);
 
-  const validation = new ConnectionReportValidation(viewState);
-  const numberOfConnectionValidation = new NumberOfConnectionValidation(viewState);
+  const validation = new ConnectionReportValidation(viewState, reportDateRange);
+  const numberOfConnectionValidation = new NumberOfConnectionValidation(viewState, reportDateRange);
 
   const errors = {
     eastAirports: validation.message('EAST_AIRPORT_*'),
@@ -916,8 +936,8 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
       <RefiningTextField
         label="Start Date"
         dataType={dataTypes.utcDate}
-        value={viewState.startDate}
-        onChange={({ target: { value: startDate } }) => setViewState({ ...viewState, startDate })}
+        value={reportDateRange.startDate}
+        onChange={({ target: { value: startDate } }) => setReportDateRange({ ...reportDateRange, startDate })}
         error={errors.startDate !== undefined}
         helperText={errors.startDate}
         disabled
@@ -926,8 +946,8 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
       <RefiningTextField
         label="End Date"
         dataType={dataTypes.utcDate}
-        value={viewState.endDate}
-        onChange={({ target: { value: endDate } }) => setViewState({ ...viewState, endDate })}
+        value={reportDateRange.endDate}
+        onChange={({ target: { value: endDate } }) => setReportDateRange({ ...reportDateRange, endDate })}
         error={errors.endDate !== undefined}
         helperText={errors.endDate}
         disabled
@@ -945,7 +965,7 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
       <br />
       <br />
 
-      <div className={classNames(classes.export, classes.marginBottom1)}>{exportConnectionTable}</div>
+      {<div className={classNames(classes.export, classes.marginBottom1)}>{exportConnectionTable}</div>}
       {validation.ok ? (
         <div className={classes.tableContainer}>{connectionTable}</div>
       ) : (
@@ -980,7 +1000,7 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
       <br />
       <br />
 
-      <div className={classNames(classes.export, classes.marginBottom1)}>{exportConnectionNumber}</div>
+      {<div className={classNames(classes.export, classes.marginBottom1)}>{exportConnectionNumber}</div>}
       {numberOfConnectionValidation.ok ? (
         <div className={classes.tableContainer}>{connectionNumber}</div>
       ) : (

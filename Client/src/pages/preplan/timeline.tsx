@@ -1,4 +1,4 @@
-import React, { FC, Fragment, useState, useContext, useEffect } from 'react';
+import React, { FC, Fragment, useState, useContext, useEffect, useMemo } from 'react';
 import { Theme, IconButton, Badge, Drawer, Portal, CircularProgress, Button } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import { DoneAll as FinilizedIcon, Search as SearchIcon, SettingsOutlined as SettingsIcon } from '@material-ui/icons';
@@ -12,7 +12,6 @@ import TimelineView from 'src/components/preplan/timeline/TimelineView';
 import PreplanService from 'src/services/PreplanService';
 import { useSnackbar } from 'notistack';
 import StatusBar, { StatusBarProps } from 'src/components/preplan/timeline/StatusBar';
-import Flight from 'src/business/flight/Flight';
 import FlightRequirement from 'src/business/flight-requirement/FlightRequirement';
 import DayFlightRequirement from 'src/business/flight-requirement/DayFlightRequirement';
 import Objectionable from 'src/business/constraints/Objectionable';
@@ -25,7 +24,10 @@ import DayFlightRequirementLegModel from '@core/models/flight-requirement/DayFli
 import FlightRequirementService from 'src/services/FlightRequirementService';
 import KeyboardHandler from 'src/utils/KeyboardHandler';
 import PerplanVersionsModal, { usePerplanVersionsModalState, PerplanVersionsModalState } from 'src/components/preplan/PerplanVersionsModal';
-import SelectWeek from 'src/components/preplan/SelectWeek';
+import SelectWeeks, { WeekSelection } from 'src/components/preplan/SelectWeeks';
+import FlightView from 'src/business/flight/FlightView';
+import Rsx from '@core/types/Rsx';
+import Week from 'src/business/Week';
 
 const useStyles = makeStyles((theme: Theme) => ({
   sideBarBackdrop: {
@@ -36,16 +38,16 @@ const useStyles = makeStyles((theme: Theme) => ({
     height: 'calc(100% - 105px)'
   },
   selectWeekWrapper: {
-    height: 80,
     margin: 0,
     padding: 0,
-    backgroundColor: theme.palette.common.white,
-    border: '1px solid orange'
+    backgroundColor: theme.palette.common.white
   },
   statusBarWrapper: {
+    // borderTop: `1px solid ${theme.palette.grey[300]}`,
+    // height: 29,
     height: 30,
     margin: 0,
-    padding: theme.spacing(0.5, 0, 0.5, 1),
+    padding: theme.spacing(0.4, 0, 0.5, 1),
     backgroundColor: theme.palette.common.white,
     whiteSpace: 'pre'
   },
@@ -73,7 +75,7 @@ interface SideBarState {
 }
 
 interface TimelineViewState {
-  selectedFlight?: Flight;
+  selectedFlightView?: FlightView;
   loading?: boolean;
 }
 
@@ -81,16 +83,64 @@ export interface TimelinePageProps {
   onObjectionTargetClick(target: Objectionable): void;
   onEditFlightRequirement(flightRequirement: FlightRequirement): void;
   onEditDayFlightRequirement(dayFlightRequirement: DayFlightRequirement): void;
-  onEditFlight(flight: Flight): void;
+  onEditFlightView(flightView: FlightView): void;
 }
 
-const TimelinePage: FC<TimelinePageProps> = ({ onObjectionTargetClick, onEditFlightRequirement, onEditDayFlightRequirement, onEditFlight }) => {
+const TimelinePage: FC<TimelinePageProps> = ({ onObjectionTargetClick, onEditFlightRequirement, onEditDayFlightRequirement, onEditFlightView }) => {
+  //TODO: This should be the result of SettingsSideBar component:
+  const settings: {
+    readonly viewFilters: {
+      readonly rsx: readonly Rsx[];
+    };
+    readonly viewOptions: {
+      readonly extraDays: boolean;
+      readonly numberOfExtraDays: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
+    };
+  } = {
+    viewFilters: {
+      rsx: ['REAL', 'STB1']
+    },
+    viewOptions: {
+      extraDays: true,
+      numberOfExtraDays: 3
+    }
+  };
+
   const preplan = useContext(PreplanContext);
   const reloadPreplan = useContext(ReloadPreplanContext);
 
   const [sideBarState, setSideBarState] = useState<SideBarState>({ open: false, loading: false, errorMessage: undefined });
   const [timelineViewState, setTimelineViewState] = useState<TimelineViewState>({ loading: false });
+  const [weekSelection, setWeekSelection] = useState<WeekSelection>({
+    previousStartIndex: 0,
+    startIndex: 0,
+    endIndex: preplan.weeks.all.length,
+    nextEndIndex: preplan.weeks.all.length
+  });
   const [statusBarProps, setStatusBarProps] = useState<StatusBarProps>({});
+
+  const weekStart = preplan.weeks.all[weekSelection.startIndex];
+  const weekEnd = preplan.weeks.all[weekSelection.endIndex - 1];
+  const week = weekStart;
+  const flightViews = useMemo<readonly FlightView[]>(() => preplan.getFlightViews(weekStart, weekEnd).filter(f => settings.viewFilters.rsx.includes(f.rsx)), [
+    preplan,
+    weekSelection.startIndex,
+    weekSelection.endIndex
+  ]);
+  const previousWeekStart = preplan.weeks.all[weekSelection.previousStartIndex];
+  const previousWeekEnd = preplan.weeks.all[weekSelection.previousStartIndex < weekSelection.startIndex ? weekSelection.startIndex - 1 : weekSelection.endIndex - 1];
+  const previousWeek = new Week(week.startDate.clone().addDays(-7));
+  const previousFlightViews = useMemo<readonly FlightView[]>(
+    () => (!settings.viewOptions.extraDays ? [] : preplan.getFlightViews(previousWeekStart, previousWeekEnd, previousWeek).filter(f => settings.viewFilters.rsx.includes(f.rsx))),
+    [preplan, ...Object.values(weekSelection), settings.viewOptions.extraDays]
+  );
+  const nextWeekStart = preplan.weeks.all[weekSelection.nextEndIndex > weekSelection.endIndex ? weekSelection.endIndex : weekSelection.startIndex];
+  const nextWeekEnd = preplan.weeks.all[weekSelection.nextEndIndex - 1];
+  const nextWeek = new Week(week.startDate.clone().addDays(7));
+  const nextFlightViews = useMemo<readonly FlightView[]>(
+    () => (!settings.viewOptions.extraDays ? [] : preplan.getFlightViews(nextWeekStart, nextWeekEnd, nextWeek).filter(f => settings.viewFilters.rsx.includes(f.rsx))),
+    [preplan, ...Object.values(weekSelection), settings.viewOptions.extraDays]
+  );
 
   const navBarToolsContainer = useContext(NavBarToolsContainerContext);
 
@@ -180,30 +230,54 @@ const TimelinePage: FC<TimelinePageProps> = ({ onObjectionTargetClick, onEditFli
         {sideBarState.sideBar === 'SEARCH_FLIGHTS' && (
           <SearchFlightsSideBar
             initialSearch={sideBarState.initialSearch}
-            onClick={flightLeg => setTimelineViewState({ ...timelineViewState, selectedFlight: flightLeg.flight })}
+            flightViews={flightViews}
+            onClick={flightLegView => setTimelineViewState({ ...timelineViewState, selectedFlightView: flightLegView.flightView })}
           />
         )}
         {sideBarState.sideBar === 'OBJECTIONS' && <ObjectionsSideBar initialSearch={sideBarState.initialSearch} onClick={onObjectionTargetClick} />}
       </Drawer>
 
       <div className={timelineViewState.loading ? classes.disable : ''}>
+        <div className={classes.selectWeekWrapper}>
+          <SelectWeeks includeSides={true} weekSelection={weekSelection} onSelectWeeks={weekSelection => setWeekSelection(weekSelection)} />
+        </div>
         <TimelineView
-          selectedFlight={timelineViewState.selectedFlight}
-          onSelectFlight={flight => setTimelineViewState({ ...timelineViewState, selectedFlight: flight })}
+          week={week}
+          flightViews={flightViews}
+          previous={
+            !settings.viewOptions.extraDays
+              ? undefined
+              : {
+                  week: previousWeek,
+                  numberOfDays: settings.viewOptions.numberOfExtraDays,
+                  flightViews: previousFlightViews
+                }
+          }
+          next={
+            !settings.viewOptions.extraDays
+              ? undefined
+              : {
+                  week: nextWeek,
+                  numberOfDays: settings.viewOptions.numberOfExtraDays,
+                  flightViews: nextFlightViews
+                }
+          }
+          selectedFlightView={timelineViewState.selectedFlightView}
+          onSelectFlightView={flightView => setTimelineViewState({ ...timelineViewState, selectedFlightView: flightView })}
           onEditFlightRequirement={onEditFlightRequirement}
           onEditDayFlightRequirement={onEditDayFlightRequirement}
-          onEditFlight={onEditFlight}
-          onFlightDragAndDrop={async (flight, deltaStd, newAircraftRegister, allWeekdays) => {
+          onEditFlightView={onEditFlightView}
+          onFlightViewDragAndDrop={async (flightView, deltaStd, newAircraftRegister, allWeekdays) => {
             setTimelineViewState({ ...timelineViewState, loading: true });
             try {
               const flightModels: FlightModel[] = preplan.flights
-                .filter(f => f.flightRequirement.id === flight.flightRequirement.id)
+                .filter(f => f.flightRequirement.id === flightView.flightRequirement.id)
                 .map(f =>
-                  f.id === flight.id || allWeekdays
+                  flightView.flights.includes(f) || allWeekdays
                     ? f.extractModel(flightModel => ({
                         ...flightModel,
                         aircraftRegisterId:
-                          newAircraftRegister?.id !== flight.aircraftRegister?.id || f.id === flight.id
+                          newAircraftRegister?.id !== flightView.aircraftRegister?.id || f.day === flightView.day
                             ? dataTypes.preplanAircraftRegister(preplan.aircraftRegisters).convertBusinessToModelOptional(newAircraftRegister)
                             : flightModel.aircraftRegisterId,
                         legs: flightModel.legs.map<FlightLegModel>(l => ({
@@ -214,10 +288,10 @@ const TimelinePage: FC<TimelinePageProps> = ({ onObjectionTargetClick, onEditFli
                     : f.extractModel()
                 );
               // const newPreplanModel = await FlightService.edit(preplan.id, ...flightModels);
-              const newFlightRequirementModel = flight.flightRequirement.extractModel(flightRequirementModel => ({
+              const newFlightRequirementModel = flightView.flightRequirement.extractModel(flightRequirementModel => ({
                 ...flightRequirementModel,
                 days: flightRequirementModel.days.map<DayFlightRequirementModel>(d =>
-                  d.day === flight.day || allWeekdays
+                  d.day === flightView.day || allWeekdays
                     ? {
                         ...d,
                         route: d.route.map<DayFlightRequirementLegModel>(l => ({
@@ -237,13 +311,12 @@ const TimelinePage: FC<TimelinePageProps> = ({ onObjectionTargetClick, onEditFli
             }
             setTimelineViewState(timelineViewState => ({ ...timelineViewState, loading: false }));
           }}
-          onFlightMouseHover={flight => setStatusBarProps({ mode: 'FLIGHT', flight })}
-          onFreeSpaceMouseHover={(aircraftRegister, previousFlight, nextFlight) => setStatusBarProps({ mode: 'FREE_SPACE', aircraftRegister, previousFlight, nextFlight })}
+          onFlightViewMouseHover={flightView => setStatusBarProps({ mode: 'FLIGHT_VIEW', flightView })}
+          onFreeSpaceMouseHover={(aircraftRegister, previousFlightView, nextFlightView) =>
+            setStatusBarProps({ mode: 'FREE_SPACE', aircraftRegister, previousFlightView, nextFlightView })
+          }
           onNowhereMouseHover={() => setStatusBarProps({})}
         />
-        <div className={classes.selectWeekWrapper}>
-          <SelectWeek preplan={preplan} />
-        </div>
         <div className={classes.statusBarWrapper}>
           <StatusBar {...statusBarProps} />
         </div>

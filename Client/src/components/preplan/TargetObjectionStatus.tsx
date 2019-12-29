@@ -27,7 +27,7 @@ const TargetObjectionStatus: FC<TargetObjectionStatusProps> = ({ target }) => {
 
   const [objectionModalState, openObjectionModal, closeObjectionModal] = useObjectionModalState();
 
-  const objections = preplan.constraintSystem.getObjectionsByTarget(target);
+  const objections = preplan.constraintSystem.getObjectionsByTargets(target);
   const errorsCount = objections.filter(o => o.type === 'ERROR').length;
   const warningsCount = objections.length - errorsCount;
 

@@ -56,7 +56,7 @@ export default class FlightLegView {
   readonly stdDateTime: Date;
   readonly staDateTime: Date;
 
-  constructor(flightLeg: FlightLeg, flightView: FlightView, startWeek: Week, endWeek: Week) {
+  constructor(flightLeg: FlightLeg, flightView: FlightView, startWeek: Week, endWeek: Week, week: Week) {
     this.std = flightLeg.std;
 
     this.label = flightLeg.label;
@@ -81,7 +81,7 @@ export default class FlightLegView {
     this.flights = flightView.flights;
     this.flightLegs = this.flights.map(f => f.legs.find(l => l.day === this.day)!).sortBy('weekStd');
 
-    this.derivedId = flightLeg.derivedId;
+    this.derivedId = `${flightView.derivedId}#${this.index}`;
     this.sta = flightLeg.sta;
     this.transit = flightLeg.transit;
     this.international = flightLeg.international;
@@ -93,7 +93,7 @@ export default class FlightLegView {
 
     // Fields which should be calculated for view:
     this.notes = flightLeg.notes;
-    this.stdDateTime = new Date(startWeek.startDate.getTime() + this.weekStd * 60 * 1000);
-    this.staDateTime = new Date(startWeek.startDate.getTime() + this.weekSta * 60 * 1000);
+    this.stdDateTime = new Date(week.startDate.getTime() + this.weekStd * 60 * 1000);
+    this.staDateTime = new Date(week.startDate.getTime() + this.weekSta * 60 * 1000);
   }
 }

@@ -12,11 +12,12 @@ import useProperty from 'src/utils/useProperty';
 import { AircraftType } from 'src/business/master-data';
 import persistant from 'src/utils/persistant';
 import chroma from 'chroma-js';
-import Flight from 'src/business/flight/Flight';
 import { PreplanContext } from 'src/pages/preplan';
 import KeyboardHandler from 'src/utils/KeyboardHandler';
 import FlightRequirement from 'src/business/flight-requirement/FlightRequirement';
 import DayFlightRequirement from 'src/business/flight-requirement/DayFlightRequirement';
+import FlightView from 'src/business/flight/FlightView';
+import Week from 'src/business/Week';
 
 const useStyles = makeStyles((theme: Theme) => ({
   '@global': {
@@ -118,8 +119,11 @@ const useStyles = makeStyles((theme: Theme) => ({
       borderRadius: '4px',
       backgroundColor: 'rgba(0, 20, 110, 0.15)', // Will be overridden.
       height: 27,
-      '&.rpa-unknown-aircraft-register': {
+      '&.rpa-half-opacity': {
         opacity: 0.5
+      },
+      '&.rpa-full-opacity': {
+        opacity: 1
       },
       '&.rpa-origin-permission': {
         borderLeftWidth: 4,
@@ -236,36 +240,60 @@ const useStyles = makeStyles((theme: Theme) => ({
   }
 }));
 
-interface FlightContextMenuModel {
+interface FlightViewContextMenuModel {
   open?: boolean;
-  flight?: Flight;
+  flightView?: FlightView;
 }
 
 export interface TimelineViewProps {
-  selectedFlight?: Flight;
-  onSelectFlight(flight?: Flight): void;
+  week: Week;
+  flightViews: readonly FlightView[];
+  previous?: {
+    week: Week;
+    numberOfDays: number;
+    flightViews: readonly FlightView[];
+  };
+  next?: {
+    week: Week;
+    numberOfDays: number;
+    flightViews: readonly FlightView[];
+  };
+  selectedFlightView?: FlightView;
+  onSelectFlightView(flightView?: FlightView): void;
   onEditFlightRequirement(flightRequirement: FlightRequirement): void;
   onEditDayFlightRequirement(dayFlightRequirement: DayFlightRequirement): void;
-  onEditFlight(flight: Flight): void;
-  onFlightDragAndDrop(flight: Flight, deltaStd: number, newAircraftRegister: PreplanAircraftRegister | undefined, allWeekdays: boolean): void;
-  onFlightMouseHover(flight: Flight): void;
-  onFreeSpaceMouseHover(aircraftRegister: PreplanAircraftRegister, previousFlight?: Flight, nextFlight?: Flight): void;
+  onEditFlightView(flightView: FlightView): void;
+  onFlightViewDragAndDrop(flightView: FlightView, deltaStd: number, newAircraftRegister: PreplanAircraftRegister | undefined, allWeekdays: boolean): void;
+  onFlightViewMouseHover(flightView: FlightView): void;
+  onFreeSpaceMouseHover(aircraftRegister: PreplanAircraftRegister, previousFlightView?: FlightView, nextFlightView?: FlightView): void;
   onNowhereMouseHover(): void;
 }
 
 const TimelineView: FC<TimelineViewProps> = ({
-  selectedFlight,
-  onSelectFlight,
+  week,
+  flightViews,
+  previous,
+  next,
+  selectedFlightView,
+  onSelectFlightView,
   onEditFlightRequirement,
   onEditDayFlightRequirement,
-  onEditFlight,
-  onFlightDragAndDrop,
-  onFlightMouseHover,
+  onEditFlightView,
+  onFlightViewDragAndDrop,
+  onFlightViewMouseHover,
   onFreeSpaceMouseHover,
   onNowhereMouseHover
 }) => {
   const preplan = useContext(PreplanContext);
-  const startDate = preplan.startDate.getDatePart().addDays((preplan.startDate.getUTCDay() + 1) % 7);
+
+  const flightViewsByAircraftRegisterId = useMemo(
+    () =>
+      flightViews.groupBy(
+        f => (f.aircraftRegister ? f.aircraftRegister.id : '???'),
+        g => g.sortBy('weekStart')
+      ),
+    [flightViews]
+  );
 
   const timeline = useProperty<Timeline>(null as any);
   const timelineScrollTop = useProperty<number | undefined>(undefined);
@@ -283,10 +311,10 @@ const TimelineView: FC<TimelineViewProps> = ({
         updateTime: !preplan.readonly,
         overrideItems: false
       },
-      end: startDate.clone().addDays(7),
+      end: week.endDate,
       format: {
         majorLabels(date, scale, step) {
-          return Weekday[((new Date(date).setUTCHours(0, 0, 0, 0) - startDate.getTime()) / (24 * 60 * 60 * 1000) + 7) % 7].slice(0, 3);
+          return Weekday[((new Date(date).setUTCHours(0, 0, 0, 0) - week.startDate.getTime()) / (24 * 60 * 60 * 1000) + 7) % 7].slice(0, 3);
         },
         minorLabels: {
           millisecond: 'HH:mm:ss',
@@ -317,10 +345,10 @@ const TimelineView: FC<TimelineViewProps> = ({
           vertical: 6
         }
       },
-      max: startDate.clone().addDays(8),
+      max: week.endDate.clone().addDays(next ? next.numberOfDays + 1 : 1),
       maxHeight: 'calc(100vh - 219px)',
       maxMinorChars: 5,
-      min: startDate,
+      min: previous ? week.startDate.clone().addDays(-previous.numberOfDays) : week.startDate,
       minHeight: 'calc(100vh - 220px)',
       moveable: true,
       multiselect: false,
@@ -330,11 +358,11 @@ const TimelineView: FC<TimelineViewProps> = ({
       // onDragObjectOnItem(objectData, item) {},
       // onInitialDrawComplete() {},
       onMove(item, callback) {
-        const flight: Flight = item.data;
+        const flightView: FlightView = item.data;
         const newAircraftRegister = preplan.aircraftRegisters.id[item.group as any];
-        const deltaStd = Math.round((new Date(item.start).getTime() - flight.startDateTime.getTime()) / (5 * 60 * 1000)) * 5;
+        const deltaStd = Math.round((new Date(item.start).getTime() - flightView.startDateTime.getTime()) / (5 * 60 * 1000)) * 5;
         const allWeekdays = KeyboardHandler.status.ctrl;
-        onFlightDragAndDrop(flight, newAircraftRegister === flight.aircraftRegister ? deltaStd : 0, newAircraftRegister, allWeekdays);
+        onFlightViewDragAndDrop(flightView, newAircraftRegister === flightView.aircraftRegister ? deltaStd : 0, newAircraftRegister, allWeekdays);
         callback(item);
       },
       // onMoveGroup(group, callback) {},
@@ -342,9 +370,9 @@ const TimelineView: FC<TimelineViewProps> = ({
         if ((item.group as string).startsWith('T')) return callback(null);
 
         // To convert item resize to item move:
-        const flight: Flight = item.data;
-        const originalStart = flight.startDateTime.getTime();
-        const originalEnd = flight.endDateTime.getTime();
+        const flightView: FlightView = item.data;
+        const originalStart = flightView.startDateTime.getTime();
+        const originalEnd = flightView.endDateTime.getTime();
         const calclulatedStart = Date.parse(item.start as any);
         const calculatedEnd = Date.parse(item.end as any);
         if (calculatedEnd - calclulatedStart !== originalEnd - originalStart) {
@@ -354,9 +382,9 @@ const TimelineView: FC<TimelineViewProps> = ({
 
         // To prevent time change when register changes:
         const newAircraftRegister = preplan.aircraftRegisters.id[item.group as any];
-        if (newAircraftRegister !== flight.aircraftRegister) {
-          item.start = flight.startDateTime;
-          item.end = flight.endDateTime;
+        if (newAircraftRegister !== flightView.aircraftRegister) {
+          item.start = flightView.startDateTime;
+          item.end = flightView.endDateTime;
         }
 
         callback(item);
@@ -380,7 +408,7 @@ const TimelineView: FC<TimelineViewProps> = ({
           rounded = Math.round(fraction / timeStep) * timeStep;
         return new Date(ticks - fraction + rounded);
       },
-      start: startDate,
+      start: week.startDate,
       template: itemTemplate,
       // timeAxis: {},
       //type: 'range',
@@ -390,7 +418,7 @@ const TimelineView: FC<TimelineViewProps> = ({
         delay: 400
         // template: ... //TODO: Replace itemTooltipTemplate function here.
       },
-      tooltipOnItemUpdateTime: true, //{ template(itemData: DataItem) { return ''; } },
+      tooltipOnItemUpdateTime: true, //TODO: Replace with this: { template(itemData: DataItem) { return ''; } },
       verticalScroll: true,
       width: '100%',
       zoomable: true,
@@ -414,8 +442,8 @@ const TimelineView: FC<TimelineViewProps> = ({
             </div>
           `;
       const aircraftRegister: PreplanAircraftRegister = group.data;
-      const aircraftRegisterObjections = preplan.constraintSystem.getObjectionsByTarget(aircraftRegister);
-      const aircraftRegisterObjectionStatus = preplan.constraintSystem.getObjectionStatusByTarget(aircraftRegister);
+      const aircraftRegisterObjections = preplan.constraintSystem.getObjectionsByTargets(aircraftRegister);
+      const aircraftRegisterObjectionStatus = preplan.constraintSystem.getObjectionStatusByTargets(aircraftRegister);
       return `
           <div>
             ${group.content}
@@ -444,37 +472,38 @@ const TimelineView: FC<TimelineViewProps> = ({
     function itemTemplate(item: DataItem, element: HTMLElement, data: DataItem): string {
       if (item.className && item.className.startsWith('rpa-group-item-')) return '';
 
-      const flight: Flight = item.data;
-      const stcColor = chroma(persistant.userSettings!.stcColors[flight.stc.name] || '#000000');
+      const flightView: FlightView = item.data;
+      const extra = String(item.id).startsWith('X');
+      const stcColor = chroma(persistant.userSettings!.stcColors[flightView.stc.name] || '#000000');
       return `
           <div class="rpa-item-header">
             <div class="rpa-item-time rpa-item-std">
-              ${flight.start.toString('H:mm', true)}
+              ${flightView.start.toString('H:mm', true)}
             </div>
             <div class="rpa-item-time rpa-item-sta">
-              ${flight.end.toString('H:mm', true)}
+              ${flightView.end.toString('H:mm', true)}
             </div>
           </div>
           <div class="rpa-item-body
-          ${true ? ' rpa-known-aircraft-register' : ' rpa-unknown-aircraft-register'}
+          ${extra ? ' rpa-half-opacity' : ' rpa-full-opacity'}
           ${
-            flight.originPermission === true
+            flightView.originPermission === true
               ? ' rpa-origin-permission rpa-origin-permission-full'
-              : flight.originPermission === undefined
+              : flightView.originPermission === undefined
               ? ' rpa-origin-permission rpa-origin-permission-semi'
               : ''
           }
           ${
-            flight.destinationPermission === true
+            flightView.destinationPermission === true
               ? ' rpa-destination-permission rpa-destination-permission-full'
-              : flight.destinationPermission === undefined
+              : flightView.destinationPermission === undefined
               ? ' rpa-destination-permission rpa-destination-permission-semi'
               : ''
           }
           " style="border-color: ${stcColor}; background-color: ${chroma.mix(stcColor.desaturate(1), '#fff', 0.8)};">
-            ${flight.sections
+            ${flightView.sections
               .map((s, index, sections) => {
-                const flightLegObjectionStatus = preplan.constraintSystem.getObjectionStatusByTarget(flight.legs[index]);
+                const flightLegObjectionStatus = preplan.constraintSystem.getObjectionStatusByTargets(flightView.legs[index].flightLegs);
                 return `<div class="rpa-item-section${
                   flightLegObjectionStatus === 'ERROR' ? ' rpa-item-section-error' : flightLegObjectionStatus === 'WARNING' ? ' rpa-item-section-warning' : ''
                 }${index === 0 ? ' rpa-item-section-first' : ''}${index === sections.length - 1 ? ' rpa-item-section-last' : ''}" style="left: ${s.start * 100}%; right: ${(1 -
@@ -483,16 +512,16 @@ const TimelineView: FC<TimelineViewProps> = ({
               })
               .join(' ')}
             <div class="rpa-item-label">
-              ${flight.label}
+              ${flightView.label}
             </div>
           </div>
           ${
-            flight.icons.length === 0 && !flight.notes
+            flightView.icons.length === 0 && !flightView.notes
               ? ''
               : `
                   <div class="rpa-item-footer">
-                    ${flight.icons.map(i => `<span class="rpa-item-icon">${i}</span>`).join(' ')}
-                    ${flight.notes
+                    ${flightView.icons.map(i => `<span class="rpa-item-icon">${i}</span>`).join(' ')}
+                    ${flightView.notes
                       .split('')
                       .map(c => `<div>${c === ' ' ? '&nbsp;' : c}</div>`)
                       .join('')}
@@ -586,9 +615,8 @@ const TimelineView: FC<TimelineViewProps> = ({
       //   }
       // `;
     }
-  }, [startDate.getTime(), preplan /* Because we have used onFlightDragAndDrop() in options */]);
+  }, [preplan /* Because we have used onFlightDragAndDrop() in options */, week.startDate.getTime(), previous?.numberOfDays, next?.numberOfDays]);
   const timelineGroups = useMemo<DataGroup[]>(() => {
-    // const registers = aircraftRegisters.items.filter(r => flights.some(f => f.aircraftRegister && f.aircraftRegister.id === r.id)).sortBy('name');
     const registers = preplan.aircraftRegisters.items
       .filter(r => r.options.status !== 'IGNORED')
       .sort((a, b) => {
@@ -634,20 +662,35 @@ const TimelineView: FC<TimelineViewProps> = ({
     return groups;
   }, [preplan.aircraftRegisters]);
   const timelineItems = useMemo<DataItem[]>(() => {
-    const items = preplan.flights
-      .filter(f => ['REAL', 'STB1'].includes(f.rsx))
-      .map(
-        (f): DataItem => ({
-          id: f.id,
-          start: new Date(startDate.getTime() + (f.day * 24 * 60 + f.start.minutes) * 60 * 1000),
-          end: new Date(startDate.getTime() + (f.day * 24 * 60 + f.end.minutes) * 60 * 1000),
-          group: f.aircraftRegister ? f.aircraftRegister.id : '???',
-          content: f.label,
-          title: itemTooltipTemplate(f),
-          type: 'range',
-          data: f
-        })
-      );
+    const items = flightViews.map(f => convertFlightViewToDataItem(f, false, !preplan.readonly));
+
+    if (previous) {
+      const dateTimeThreshold = previous.week.endDate.clone().addDays(1 - previous.numberOfDays);
+      previous.flightViews.filter(f => f.endDateTime >= dateTimeThreshold).forEach(f => items.push(convertFlightViewToDataItem(f, true, false)));
+    }
+    if (next) {
+      const dateTimeThreshold = next.week.startDate.clone().addDays(next.numberOfDays);
+      next.flightViews.filter(f => f.startDateTime <= dateTimeThreshold).forEach(f => items.push(convertFlightViewToDataItem(f, true, false)));
+    }
+
+    function convertFlightViewToDataItem(flightView: FlightView, extra: boolean, editable: boolean): DataItem {
+      return {
+        id: extra ? `X${flightView.derivedId}` : flightView.derivedId,
+        selectable: !extra,
+        start: flightView.startDateTime,
+        end: flightView.endDateTime,
+        group: flightView.aircraftRegister ? flightView.aircraftRegister.id : '???',
+        content: flightView.label,
+        title: itemTooltipTemplate(flightView),
+        type: 'range',
+        editable: {
+          remove: false,
+          updateGroup: editable,
+          updateTime: editable
+        },
+        data: flightView
+      };
+    }
 
     timelineGroups.forEach(group => {
       if ((group.id as string).startsWith('T')) {
@@ -689,17 +732,17 @@ const TimelineView: FC<TimelineViewProps> = ({
 
     return items;
 
-    function itemTooltipTemplate(flight: Flight): string {
+    function itemTooltipTemplate(flightView: FlightView): string {
       return `
           <div>
             <div>
               <em><small>Flight:</small></em>
-              <strong>${flight.label}</strong>
-              ${Weekday[flight.day]}s
+              <strong>${flightView.label}</strong>
+              ${Weekday[flightView.day]}s
             </div>
             <div>
               <em><small>Flights:</small></em>
-              ${flight.legs
+              ${flightView.legs
                 .map(
                   l => `
                     <div>
@@ -713,31 +756,43 @@ const TimelineView: FC<TimelineViewProps> = ({
                 .join('')}
             </div>
             ${
-              flight.icons.length === 0
+              flightView.icons.length === 0
                 ? ''
                 : `
                     <div>
                       <em><small>Flags:</small></em>
-                      ${flight.icons.map(i => `<strong>${i}</strong>`).join(' | ')}
+                      ${flightView.icons.map(i => `<strong>${i}</strong>`).join(' | ')}
                     </div>
                   `
             }
             ${
-              !flight.notes
+              !flightView.notes
                 ? ''
                 : `
                     <div>
                       <em><small>Notes:</small></em>
-                      ${flight.notes}
+                      ${flightView.notes}
                     </div>
                   `
             }
           </div>
         `;
     }
-  }, [startDate.getTime(), preplan, timelineOptions, timelineGroups]);
+  }, [
+    preplan,
+    week.startDate.getTime(),
+    flightViews,
+    previous?.week.startDate.getTime(),
+    previous?.numberOfDays,
+    previous?.flightViews,
+    next?.week.startDate.getTime(),
+    next?.numberOfDays,
+    next?.flightViews,
+    timelineOptions,
+    timelineGroups
+  ]);
 
-  const [flightContextMenuModel, setFlightContextMenuModel] = useState<FlightContextMenuModel>({});
+  const [flightViewContextMenuModel, setFlightViewContextMenuModel] = useState<FlightViewContextMenuModel>({});
   const flightContextMenuRef = useRef<HTMLDivElement>(null);
 
   const classes = useStyles();
@@ -748,7 +803,7 @@ const TimelineView: FC<TimelineViewProps> = ({
         options={timelineOptions}
         groups={timelineGroups}
         items={timelineItems}
-        selection={selectedFlight && selectedFlight.id}
+        selection={selectedFlightView && selectedFlightView.derivedId}
         scrollTop={timelineScrollTop()}
         onScrollY={scrollTop => timelineScrollTop(scrollTop)}
         retrieveTimeline={t => timeline(t)}
@@ -756,7 +811,7 @@ const TimelineView: FC<TimelineViewProps> = ({
         onRangeChanged={properties => timeline().redraw()}
         onSelect={({ items, event }) => {
           const item = timelineItems.find(item => item.id === items[0]);
-          onSelectFlight(item ? item.data : undefined);
+          onSelectFlightView(item ? item.data : undefined);
         }}
         onContextMenu={properties => {
           properties.event.preventDefault();
@@ -765,35 +820,36 @@ const TimelineView: FC<TimelineViewProps> = ({
           const { pageX, pageY } = properties;
           flightContextMenuRef.current!.style.top = `${pageY}px`;
           flightContextMenuRef.current!.style.left = `${pageX}px`;
-          setFlightContextMenuModel({ open: true, flight: item.data });
+          setFlightViewContextMenuModel({ open: true, flightView: item.data });
         }}
         onMouseOver={properties => {
           switch (properties.what) {
             case 'item':
               const item = timelineItems.find(item => item.id === properties.item);
               if (!item) return onNowhereMouseHover();
-              onFlightMouseHover(item.data);
+              onFlightViewMouseHover(item.data);
               break;
 
             case 'background':
               if (properties.group === '???') return onNowhereMouseHover();
+              const time = properties.time.getTime();
+              if (time < week.startDate.getTime() || time > week.endDate.getTime() + 24 * 60 * 1000) return onNowhereMouseHover();
               const register = preplan.aircraftRegisters.id[properties.group as any];
               if (!register) return onNowhereMouseHover();
-              const registerFlights = [...preplan.flightsByAircraftRegisterId[register.id]];
-              if (registerFlights.length === 0) return onFreeSpaceMouseHover(register);
-              if (registerFlights.length === 1) return onFreeSpaceMouseHover(register, registerFlights[0], registerFlights[0]);
-              const firstFlight = registerFlights[0],
-                lastFlight = registerFlights.last()!;
-              let previousFlight: Flight | undefined = undefined,
-                nextFlight: Flight | undefined = registerFlights.shift();
+              const registerFlightViews = register.id in flightViewsByAircraftRegisterId ? [...flightViewsByAircraftRegisterId[register.id]] : [];
+              if (registerFlightViews.length === 0) return onFreeSpaceMouseHover(register);
+              if (registerFlightViews.length === 1) return onFreeSpaceMouseHover(register, registerFlightViews[0], registerFlightViews[0]);
+              const firstFlightView = registerFlightViews[0],
+                lastFlightView = registerFlightViews.last()!;
+              let previousFlightView: FlightView | undefined = undefined,
+                nextFlightView: FlightView | undefined = registerFlightViews.shift();
               do {
-                const start = previousFlight ? startDate.getTime() + previousFlight.day * 24 * 60 * 60 * 1000 + previousFlight.end.minutes * 60 * 1000 : -Infinity,
-                  end = nextFlight ? startDate.getTime() + nextFlight.day * 24 * 60 * 60 * 1000 + nextFlight.start.minutes * 60 * 1000 : Infinity;
-                if (start <= properties.time.getTime() && properties.time.getTime() <= end)
-                  return onFreeSpaceMouseHover(register, previousFlight || lastFlight, nextFlight || firstFlight);
-                previousFlight = nextFlight;
-                nextFlight = registerFlights.shift();
-              } while (previousFlight || nextFlight);
+                const start = previousFlightView ? week.startDate.getTime() + previousFlightView.day * 24 * 60 * 60 * 1000 + previousFlightView.end.minutes * 60 * 1000 : -Infinity,
+                  end = nextFlightView ? week.startDate.getTime() + nextFlightView.day * 24 * 60 * 60 * 1000 + nextFlightView.start.minutes * 60 * 1000 : Infinity;
+                if (start <= time && time <= end) return onFreeSpaceMouseHover(register, previousFlightView || lastFlightView, nextFlightView || firstFlightView);
+                previousFlightView = nextFlightView;
+                nextFlightView = registerFlightViews.shift();
+              } while (previousFlightView || nextFlightView);
               onFreeSpaceMouseHover(register);
               break;
 
@@ -802,16 +858,16 @@ const TimelineView: FC<TimelineViewProps> = ({
           }
         }}
       />
-      <ClickAwayListener onClickAway={() => setFlightContextMenuModel({ ...flightContextMenuModel, open: false })}>
+      <ClickAwayListener onClickAway={() => setFlightViewContextMenuModel({ ...flightViewContextMenuModel, open: false })}>
         <div>
           <Paper ref={flightContextMenuRef} className={classes.contextMenu}>
-            {flightContextMenuModel.open && (
+            {flightViewContextMenuModel.open && (
               <MenuList>
                 <MenuItem
                   onClick={() => {
-                    setFlightContextMenuModel({ ...flightContextMenuModel, open: false });
-                    // onEditFlight(flightContextMenuModel.flight!);
-                    onEditDayFlightRequirement(flightContextMenuModel.flight!.dayFlightRequirement);
+                    setFlightViewContextMenuModel({ ...flightViewContextMenuModel, open: false });
+                    // onEditFlightView(flightViewContextMenuModel.flightView!);
+                    onEditDayFlightRequirement(flightViewContextMenuModel.flightView!.dayFlightRequirement);
                   }}
                 >
                   {/* <ListItemIcon>

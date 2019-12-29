@@ -46,18 +46,19 @@ export default class FlightView {
   readonly endDateTime: Date;
   readonly icons: readonly string[]; //TODO: Check if it is really required.
 
-  constructor(flights: readonly Flight[], startWeek: Week, endWeek: Week) {
+  constructor(flights: readonly Flight[], startWeek: Week, endWeek: Week, week: Week) {
     const { sourceFlight, notes } = flights.map(sourceFlight => ({ sourceFlight, notes: createNotes(flights, sourceFlight) })).sortBy(({ notes }) => notes.length)[0];
 
     this.sourceFlight = sourceFlight;
 
     this.aircraftRegister = this.sourceFlight.aircraftRegister;
-    this.legs = this.sourceFlight.legs.map(l => new FlightLegView(l, this, startWeek, endWeek));
 
     this.aircraftRegisters = this.sourceFlight.aircraftRegisters;
     this.flightRequirement = this.sourceFlight.flightRequirement;
     this.dayFlightRequirement = this.sourceFlight.dayFlightRequirement;
     this.flights = flights;
+
+    this.legs = this.sourceFlight.legs.map(l => new FlightLegView(l, this, startWeek, endWeek, week));
 
     this.label = this.sourceFlight.label;
     this.category = this.sourceFlight.category;
@@ -68,7 +69,7 @@ export default class FlightView {
     this.originPermission = this.sourceFlight.originPermission;
     this.destinationPermission = this.sourceFlight.destinationPermission;
 
-    this.derivedId = this.sourceFlight.id;
+    this.derivedId = String((FlightView.idCounter = FlightView.idCounter === Number.MAX_SAFE_INTEGER ? 1 : FlightView.idCounter + 1));
     this.start = this.sourceFlight.start;
     this.end = this.sourceFlight.end;
     this.weekStart = this.sourceFlight.weekStart;
@@ -76,12 +77,14 @@ export default class FlightView {
     this.sections = this.sourceFlight.sections;
 
     // Fields which should be calculated for view:
-    this.startDateTime = new Date(startWeek.startDate.getTime() + this.weekStart * 60 * 1000);
-    this.endDateTime = new Date(startWeek.startDate.getTime() + this.weekEnd * 60 * 1000);
+    this.startDateTime = new Date(week.startDate.getTime() + this.weekStart * 60 * 1000);
+    this.endDateTime = new Date(week.startDate.getTime() + this.weekEnd * 60 * 1000);
     this.icons = [];
 
     function createNotes(flights: readonly Flight[], sourceFlight: Flight): string {
       return ''; //TODO: Not implemented.
     }
   }
+
+  private static idCounter: number = 0;
 }

@@ -27,6 +27,7 @@ const useStyles = makeStyles((theme: Theme) => ({
     padding: '2px 0 1px 3px',
     flexGrow: 1,
     color: theme.palette.common.black,
+    overflow: 'hidden',
     fontSize: '12px',
     userSelect: 'none',
     cursor: 'pointer',

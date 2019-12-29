@@ -115,7 +115,7 @@ const PreplanPage: FC = () => {
                       onObjectionTargetClick={target => openObjectionModal({ target })}
                       onEditFlightRequirement={flightRequirement => openFlightRequirementModal({ flightRequirement })}
                       onEditDayFlightRequirement={({ flightRequirement, day }) => openFlightRequirementModal({ flightRequirement, day })}
-                      onEditFlight={flight => openFlightModal({ flight })}
+                      onEditFlightView={flightView => openFlightModal({ flight: flightView.sourceFlight })}
                     />
                   )}
                 />

@@ -1,4 +1,4 @@
-import React, { FC, useState, Fragment, useEffect } from 'react';
+import React, { FC, useState, Fragment, useEffect, useMemo, useContext } from 'react';
 import { Theme, InputLabel, TextField, TableHead, TableCell, Table, TableRow, TableBody, Button, Paper, Typography, Grid } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import MasterData, { Airport } from 'src/business/master-data';
@@ -13,6 +13,8 @@ import { dataTypes } from 'src/utils/DataType';
 import RefiningTextField from 'src/components/RefiningTextField';
 import Validation from '@core/node_modules/@ahs502/validation/dist/Validation';
 import AutoComplete from 'src/components/AutoComplete';
+import { PreplanContext } from 'src/pages/preplan';
+import Week from 'src/business/Week';
 
 const errorPaperSize = 250;
 const character = {
@@ -109,6 +111,11 @@ interface ViewState {
   minConnectionTime: string;
 }
 
+interface ReportDateRangeState {
+  startDate: string;
+  endDate: string;
+}
+
 class ConnectionReportValidation extends Validation<
   | 'WEST_AIRPORT_EXISTS'
   | 'EAST_AIRPORT_EXISTS'
@@ -192,7 +199,6 @@ class NumberOfConnectionValidation extends Validation<
 }
 
 interface ConnectionsReportProps {
-  flights: readonly FlightLeg[];
   preplanName: string;
   fromDate: Date;
   toDate: Date;
@@ -216,10 +222,26 @@ interface AutoCompleteOption {
 
 interface Airline extends AutoCompleteOption {}
 
-const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, fromDate, toDate }) => {
+const ConnectionsReport: FC<ConnectionsReportProps> = ({ preplanName, fromDate, toDate }) => {
+  const preplan = useContext(PreplanContext);
+
+  const [reportDateRange, setReportDateRange] = useState<ReportDateRangeState>({
+    startDate: dataTypes.utcDate.convertBusinessToView(fromDate),
+    endDate: dataTypes.utcDate.convertBusinessToView(toDate)
+  });
+
+  const flightViews = useMemo(() => {
+    return preplan.getFlightViews(
+      new Week(dataTypes.utcDate.convertViewToBusiness(reportDateRange.startDate)),
+      new Week(dataTypes.utcDate.convertViewToBusiness(reportDateRange.endDate))
+    );
+  }, [reportDateRange]);
+
+  const flightLegViews = flightViews.flatMap(f => f.legs);
+
   const allAirports = MasterData.all.airports.items;
 
-  const allAirline = flights
+  const allAirline = flightLegViews
     .map(f => f.flightNumber.airlineCode)
     .distinct()
     .map<Airline>(a => ({ label: a, value: a }));
@@ -250,14 +272,14 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
       const flightLegInfoModels: FlightLegInfoModel[] = [];
       const reportBaseDate = new Date(dataTypes.utcDate.convertViewToModel(viewState.baseDate));
 
-      const eastFlight = flights.filter(
+      const eastFlight = flightLegViews.filter(
         f =>
           f.rsx === 'REAL' &&
           f.flightNumber.airlineCode === viewState.eastAirportsAirline.value &&
           viewState.eastAirports.some(a => a.id === f.departureAirport.id || a.id === f.arrivalAirport.id)
       );
 
-      const westFlight = flights.filter(
+      const westFlight = flightLegViews.filter(
         f =>
           f.rsx === 'REAL' &&
           f.flightNumber.airlineCode === viewState.westAirportsAirline.value &&
@@ -945,7 +967,7 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
       <br />
       <br />
 
-      <div className={classNames(classes.export, classes.marginBottom1)}>{exportConnectionTable}</div>
+      {/* <div className={classNames(classes.export, classes.marginBottom1)}>{exportConnectionTable}</div> */}
       {validation.ok ? (
         <div className={classes.tableContainer}>{connectionTable}</div>
       ) : (
@@ -980,7 +1002,7 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
       <br />
       <br />
 
-      <div className={classNames(classes.export, classes.marginBottom1)}>{exportConnectionNumber}</div>
+      {/* <div className={classNames(classes.export, classes.marginBottom1)}>{exportConnectionNumber}</div> */}
       {numberOfConnectionValidation.ok ? (
         <div className={classes.tableContainer}>{connectionNumber}</div>
       ) : (

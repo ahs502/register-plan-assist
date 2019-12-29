@@ -49,6 +49,8 @@ export default class FlightView {
   constructor(flights: readonly Flight[], startWeek: Week, endWeek: Week) {
     const { sourceFlight, notes } = flights.map(sourceFlight => ({ sourceFlight, notes: createNotes(flights, sourceFlight) })).sortBy(({ notes }) => notes.length)[0];
 
+    this.flights = flights; //Use flights in FlightLegView
+
     this.sourceFlight = sourceFlight;
 
     this.aircraftRegister = this.sourceFlight.aircraftRegister;
@@ -57,7 +59,6 @@ export default class FlightView {
     this.aircraftRegisters = this.sourceFlight.aircraftRegisters;
     this.flightRequirement = this.sourceFlight.flightRequirement;
     this.dayFlightRequirement = this.sourceFlight.dayFlightRequirement;
-    this.flights = flights;
 
     this.label = this.sourceFlight.label;
     this.category = this.sourceFlight.category;

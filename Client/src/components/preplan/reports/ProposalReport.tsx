@@ -13,8 +13,6 @@ import Weekday from '@core/types/Weekday';
 import { WorkbookSheetRow } from '@progress/kendo-ooxml';
 import Rsx from '@core/types/Rsx';
 import PreplanHeader from 'src/business/preplan/PreplanHeader';
-import Flight from 'src/business/flight/Flight';
-import FlightLeg from 'src/business/flight/FlightLeg';
 import { dataTypes } from 'src/utils/DataType';
 import RefiningTextField from 'src/components/RefiningTextField';
 import Validation from '@core/node_modules/@ahs502/validation/dist/Validation';
@@ -999,9 +997,9 @@ const ProposalReport: FC<ProposalReportProps> = ({ preplanName, fromDate, toDate
           <ExcelExportColumnGroup
             title={
               'Proposal Schedule from ' +
-              dataTypes.utcDate.refineView(viewState.startDate) +
+              dataTypes.utcDate.refineView(reportDateRange.startDate) +
               ' till ' +
-              dataTypes.utcDate.refineView(viewState.endDate) +
+              dataTypes.utcDate.refineView(reportDateRange.endDate) +
               ' (Based on ' +
               dataTypes.utcDate.refineView(viewState.baseDate) +
               ')'

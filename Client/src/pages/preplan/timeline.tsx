@@ -242,8 +242,11 @@ const TimelinePage: FC<TimelinePageProps> = ({ onObjectionTargetClick, onEditFli
         />
         <div className={classes.selectWeekWrapper}>
           <SelectWeeks
+            includeSides={true}
             weekSelection={{ previousStartIndex: 0, startIndex: 0, endIndex: preplan.weeks.all.length, nextEndIndex: preplan.weeks.all.length }}
-            onSelectWeeks={weekSelection => {}}
+            onSelectWeeks={weekSelection => {
+              console.log(weekSelection);
+            }}
           />
         </div>
         <div className={classes.statusBarWrapper}>

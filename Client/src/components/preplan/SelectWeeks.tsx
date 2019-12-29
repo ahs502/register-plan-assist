@@ -5,6 +5,7 @@ import { Theme, Slider } from '@material-ui/core';
 import classNames from 'classnames';
 import chroma from 'chroma-js';
 import { PreplanContext } from 'src/pages/preplan';
+import useProperty from 'src/utils/useProperty';
 
 const useStyles = makeStyles((theme: Theme) => ({
   root: {
@@ -18,6 +19,7 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
   week: {
     width: 20,
+    position: 'relative',
     borderWidth: 1,
     borderStyle: 'solid',
     borderRadius: 4,
@@ -27,7 +29,21 @@ const useStyles = makeStyles((theme: Theme) => ({
     color: theme.palette.common.black,
     fontSize: '12px',
     userSelect: 'none',
-    cursor: 'pointer'
+    cursor: 'pointer',
+    '&:hover $weekHover': {
+      display: 'block'
+    }
+  },
+  weekHover: {
+    display: 'none',
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    backgroundColor: '#0002',
+    userSelect: 'none',
+    pointerEvents: 'none'
   },
   chuckStart: {
     borderLeftWidth: '5px'
@@ -110,15 +126,17 @@ export interface WeekSelection {
 
 export interface SelectWeeksProps {
   preplan?: Preplan;
+  includeSides?: boolean;
   weekSelection: WeekSelection;
   onSelectWeeks(weekSelection: WeekSelection): void;
 }
 
-const SelectWeeks: FC<SelectWeeksProps> = ({ preplan: externalPreplan, weekSelection: externalWeekSelection, onSelectWeeks }) => {
+const SelectWeeks: FC<SelectWeeksProps> = ({ preplan: externalPreplan, includeSides, weekSelection: externalWeekSelection, onSelectWeeks }) => {
   const contextPreplan = useContext(PreplanContext);
   const preplan = externalPreplan ?? contextPreplan;
 
   const [weekSelection, setWeekSelection] = useState<WeekSelection>(externalWeekSelection);
+  const startingSelectionIndex = useProperty<number | undefined>(undefined);
 
   const classes = useStyles();
 
@@ -128,28 +146,36 @@ const SelectWeeks: FC<SelectWeeksProps> = ({ preplan: externalPreplan, weekSelec
         {preplan.weeks.chunks.flatMap((chunk, chunkIndex) =>
           chunk.all.map((week, chunkWeekIndex) => {
             const weekIndex = preplan.weeks.all.indexOf(week);
-            const weekType =
-              weekIndex < weekSelection.previousStartIndex || weekIndex >= weekSelection.nextEndIndex
+            const weekType = includeSides
+              ? weekIndex < weekSelection.previousStartIndex || weekIndex >= weekSelection.nextEndIndex
                 ? 'FREE'
                 : weekIndex >= weekSelection.startIndex && weekIndex < weekSelection.endIndex
                 ? 'SELECTION'
-                : 'SIDE';
-            const chunkType =
-              chunk.endIndex <= weekSelection.previousStartIndex || chunk.startIndex >= weekSelection.nextEndIndex
+                : 'SIDE'
+              : weekIndex < weekSelection.startIndex || weekIndex >= weekSelection.endIndex
+              ? 'FREE'
+              : 'SELECTION';
+            const chunkType = includeSides
+              ? chunk.endIndex <= weekSelection.previousStartIndex || chunk.startIndex >= weekSelection.nextEndIndex
                 ? 'FREE'
                 : chunk.endIndex <= weekSelection.endIndex && chunk.startIndex >= weekSelection.startIndex
                 ? 'SELECTION'
                 : chunk.endIndex <= weekSelection.startIndex || chunk.startIndex >= weekSelection.endIndex
                 ? 'SIDE'
-                : 'MIXED';
+                : 'MIXED'
+              : chunk.endIndex <= weekSelection.startIndex || chunk.startIndex >= weekSelection.endIndex
+              ? 'FREE'
+              : 'SELECTION';
             return (
               <div
                 key={`${chunkIndex}-${chunkWeekIndex}`}
                 title={`Week from ${week.startDate.format('d')} to ${week.endDate.format('d')}\nChunk from ${chunk.startDate.format('d')} to ${chunk.endDate.format('d')}`}
                 className={classNames(
                   classes.week,
-                  chunkWeekIndex === 0 && classes.chuckStart,
-                  chunkWeekIndex === chunk.all.length - 1 && classes.chuckEnd,
+                  {
+                    [classes.chuckStart]: chunkWeekIndex === 0,
+                    [classes.chuckEnd]: chunkWeekIndex === chunk.all.length - 1
+                  },
                   {
                     [classes.weekFree]: weekType === 'FREE',
                     [classes.weekSide]: weekType === 'SIDE',
@@ -162,7 +188,7 @@ const SelectWeeks: FC<SelectWeeksProps> = ({ preplan: externalPreplan, weekSelec
                     [classes.chunkSelection]: chunkType === 'SELECTION'
                   }
                 )}
-                onClick={() => {
+                onDoubleClick={() => {
                   const weekSelection: WeekSelection = {
                     previousStartIndex: chunk.startIndex === 0 ? chunk.startIndex : chunk.startIndex - 1,
                     startIndex: chunk.startIndex,
@@ -172,8 +198,43 @@ const SelectWeeks: FC<SelectWeeksProps> = ({ preplan: externalPreplan, weekSelec
                   setWeekSelection(weekSelection);
                   onSelectWeeks(weekSelection);
                 }}
+                onMouseDown={e => {
+                  if (e.buttons !== 1 || e.metaKey || e.altKey || e.ctrlKey || e.shiftKey) {
+                    startingSelectionIndex(undefined);
+                    return;
+                  }
+                  startingSelectionIndex(weekIndex);
+                  setWeekSelection({
+                    previousStartIndex: Math.max(weekIndex - 1, 0),
+                    startIndex: weekIndex,
+                    endIndex: weekIndex + 1,
+                    nextEndIndex: Math.min(weekIndex + 2, preplan.weeks.all.length)
+                  });
+                }}
+                onMouseMove={e => {
+                  if (startingSelectionIndex() === undefined) return;
+                  if (e.buttons !== 1 || e.metaKey || e.altKey || e.ctrlKey || e.shiftKey) {
+                    startingSelectionIndex(undefined);
+                    return;
+                  }
+                  const firstIndex = Math.min(startingSelectionIndex()!, weekIndex);
+                  const lastIndex = Math.max(startingSelectionIndex()!, weekIndex);
+                  setWeekSelection({
+                    previousStartIndex: Math.max(firstIndex - 1, 0),
+                    startIndex: firstIndex,
+                    endIndex: lastIndex + 1,
+                    nextEndIndex: Math.min(lastIndex + 2, preplan.weeks.all.length)
+                  });
+                }}
+                onMouseUp={e => {
+                  if (startingSelectionIndex() === undefined) return;
+                  startingSelectionIndex(undefined);
+                  if (e.buttons !== 0 || e.metaKey || e.altKey || e.ctrlKey || e.shiftKey) return;
+                  onSelectWeeks(weekSelection);
+                }}
               >
                 {formatDate(week.startDate)}
+                <div className={classes.weekHover} />
               </div>
             );
           })
@@ -202,12 +263,17 @@ const SelectWeeks: FC<SelectWeeksProps> = ({ preplan: externalPreplan, weekSelec
                 : preplan.weeks.all.last()!.endDate
             )
           }
-          value={[weekSelection.previousStartIndex, weekSelection.startIndex, weekSelection.endIndex, weekSelection.nextEndIndex]}
+          value={
+            includeSides
+              ? [weekSelection.previousStartIndex, weekSelection.startIndex, weekSelection.endIndex, weekSelection.nextEndIndex]
+              : [weekSelection.startIndex, weekSelection.endIndex]
+          }
           onChange={(event, value) => {
-            let previousStartIndex = (value as number[])[0];
-            let startIndex = (value as number[])[1];
-            let endIndex = (value as number[])[2];
-            let nextEndIndex = (value as number[])[3];
+            const valueArray = value as number[];
+            let previousStartIndex = includeSides ? valueArray[0] : Math.max(valueArray[0] - 1, 0);
+            let startIndex = includeSides ? valueArray[1] : valueArray[0];
+            let endIndex = includeSides ? valueArray[2] : valueArray[1];
+            let nextEndIndex = includeSides ? valueArray[3] : Math.min(valueArray[1], preplan.weeks.all.length);
             endIndex = endIndex > startIndex || endIndex === preplan.weeks.all.length ? endIndex : endIndex + 1;
             startIndex = startIndex < endIndex || startIndex === 0 ? startIndex : startIndex - 1;
             previousStartIndex = previousStartIndex < startIndex || startIndex === 0 ? previousStartIndex : startIndex - 1;
@@ -222,9 +288,11 @@ const SelectWeeks: FC<SelectWeeksProps> = ({ preplan: externalPreplan, weekSelec
 
   function formatDate(date: Date): JSX.Element {
     const dateString = date.format('d');
+    const day = dateString[0] === '0' ? dateString.slice(1, 2) : dateString.slice(0, 2);
+    const month = dateString.slice(2, 5);
     return (
       <Fragment>
-        {dateString.slice(0, 2)}&nbsp;{dateString.slice(2, 5)}
+        {day}&nbsp;{month}
       </Fragment>
     );
   }

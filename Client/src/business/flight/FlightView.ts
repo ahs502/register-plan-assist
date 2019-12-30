@@ -86,8 +86,9 @@ export default class FlightView {
       const canclationOrActiveationPerDay: string = generateCanalationOrActivationNotes();
       const timeChange: string = ''; //TODO implement
       const registerChange: string = ''; //TODO implement
-      const permissionChangeAndPermissionComment: string = ''; //TODO implement
-      const flightComments: string = ''; //TODO implement
+      const permissionAndPermissionNotesChange: string = ''; //TODO implement
+      const notesChange: string = ''; //TODO implement
+      const rsxChange: string = '';
 
       return canclationOrActiveationPerDay;
 

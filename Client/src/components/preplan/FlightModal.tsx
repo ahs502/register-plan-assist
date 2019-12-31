@@ -1,5 +1,5 @@
-import React, { Fragment, useContext, useState } from 'react';
-import { Theme, Typography, Grid, Table, TableHead, TableRow, TableCell, TableBody } from '@material-ui/core';
+import React, { Fragment, useContext, useState, useMemo } from 'react';
+import { Theme, Typography, Grid, Table, TableHead, TableRow, TableCell, TableBody, FormControlLabel, Checkbox } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import BaseModal, { BaseModalProps, useModalState, createModal } from 'src/components/BaseModal';
 import Flight from 'src/business/flight/Flight';
@@ -14,10 +14,14 @@ import FlightService from 'src/services/FlightService';
 import FlightModel from '@core/models/flight/FlightModel';
 import FlightLegModel from '@core/models/flight/FlightLegModel';
 import Daytime from '@core/types/Daytime';
+import { WeekSelection } from 'src/components/preplan/SelectWeeks';
+import FlightView from 'src/business/flight/FlightView';
+import Preplan from 'src/business/preplan/Preplan';
 
 const useStyles = makeStyles((theme: Theme) => ({}));
 
 interface ViewState {
+  dates: DateViewState[];
   aircraftRegister: string;
   legs: LegViewState[];
 }
@@ -43,9 +47,17 @@ class ViewStateValidation extends Validation<
   }
 }
 
-interface LegViewState {
-  std: string;
+interface DateViewState {
+  disabled: boolean;
+  selected: boolean;
 }
+
+interface LegViewState {
+  blockTime: string;
+  std: string;
+  sta: string;
+}
+
 class LegViewStateValidation extends Validation<'STD_EXISTS' | 'STD_FORMAT_IS_VALID'> {
   constructor({ std }: LegViewState) {
     super(validator => validator.check('STD_EXISTS', !!std).check('STD_FORMAT_IS_VALID', () => dataTypes.daytime.checkView(std)), {
@@ -58,7 +70,9 @@ class LegViewStateValidation extends Validation<'STD_EXISTS' | 'STD_FORMAT_IS_VA
 }
 
 export interface FlightModalState {
-  flight: Flight;
+  flightRequirement: FlightRequirement;
+  day: Weekday;
+  selectedFlights?: readonly Flight[];
 }
 
 export interface FlightModalProps extends BaseModalProps<FlightModalState> {
@@ -69,12 +83,58 @@ const FlightModal = createModal<FlightModalState, FlightModalProps>(({ state, on
   const preplan = useContext(PreplanContext);
   const reloadPreplan = useContext(ReloadPreplanContext);
 
-  const [viewState, setViewState] = useState<ViewState>(() => ({
-    aircraftRegister: dataTypes.preplanAircraftRegister(preplan.aircraftRegisters).convertBusinessToViewOptional(state.flight.aircraftRegister),
-    legs: state.flight.legs.map<LegViewState>(l => ({
-      std: dataTypes.daytime.convertBusinessToView(l.std)
-    }))
-  }));
+  const flights = useMemo(() => preplan.flights.filter(f => f.flightRequirement === state.flightRequirement && f.day === state.day), [preplan]);
+
+  const [viewState, setViewState] = useState<ViewState>(() => {
+    const selectedFlights: readonly Flight[] = state.selectedFlights ?? flights;
+
+    return calculateViewState(selectedFlights, preplan, flights, state);
+  });
+
+  function calculateViewState(selectedFlights: readonly Flight[], preplan: Preplan, flights: Flight[], state: FlightModalState) {
+    const selectedFlightsRegister = getAircraftRegister(selectedFlights);
+    const selectedFlightStds = selectedFlights.reduce<string[][]>((acc, current) => {
+      current.legs.forEach((l, index) => {
+        const std = dataTypes.daytime.convertBusinessToView(l.std);
+        acc[index] = acc[index] ?? ([] as string[]);
+        if (!acc[index].some(s => s === std)) acc[index].push(std);
+      });
+      return acc;
+    }, []);
+    const selectedFlightStas = selectedFlights.reduce<string[][]>((acc, current) => {
+      current.legs.forEach((l, index) => {
+        const sta = dataTypes.daytime.convertBusinessToView(l.sta);
+        acc[index] = acc[index] ?? ([] as string[]);
+        if (!acc[index].some(s => s === sta)) acc[index].push(sta);
+      });
+      return acc;
+    }, []);
+    const selectedFlightBlockTimes = selectedFlights.reduce<string[][]>((acc, current) => {
+      current.legs.forEach((l, index) => {
+        const blockTime = dataTypes.daytime.convertBusinessToView(l.blockTime);
+        acc[index] = acc[index] ?? ([] as string[]);
+        if (!acc[index].some(s => s === blockTime)) acc[index].push(blockTime);
+      });
+      return acc;
+    }, []);
+    return {
+      aircraftRegister: selectedFlightsRegister,
+      legs: selectedFlightStds.map<LegViewState>((l, index) => ({
+        blockTime: selectedFlightBlockTimes[index].length > 1 ? '—' : selectedFlightBlockTimes[index][0],
+        std: l.length > 1 ? '' : l[0],
+        sta: selectedFlightStas[index].length > 1 ? '—' : selectedFlightStas[index][0]
+      })),
+      dates: preplan.weeks.all.map<DateViewState>(w => ({
+        disabled: !flights.some(f => dataTypes.utcDate.convertBusinessToView(f.date) === dataTypes.utcDate.convertBusinessToView(new Date(w.startDate).addDays(state.day))),
+        selected: selectedFlights.some(f => dataTypes.utcDate.convertBusinessToView(f.date) === dataTypes.utcDate.convertBusinessToView(new Date(w.startDate).addDays(state.day)))
+      }))
+    };
+
+    function getAircraftRegister(flights: readonly Flight[]): string {
+      const aircraftRegisters = flights.map(f => dataTypes.preplanAircraftRegister(preplan.aircraftRegisters).convertBusinessToViewOptional(f.aircraftRegister)).distinct();
+      return aircraftRegisters.length === 1 ? aircraftRegisters[0] : '';
+    }
+  }
 
   const validation = new ViewStateValidation(viewState, preplan.aircraftRegisters);
   const errors = {
@@ -91,22 +151,22 @@ const FlightModal = createModal<FlightModalState, FlightModalProps>(({ state, on
       complexTitle={
         <Fragment>
           <Typography variant="h6" display="inline">
-            {state.flight.label}
+            {state.flightRequirement.label}
           </Typography>
-          {!!state.flight.category && (
+          {!!state.flightRequirement.category && (
             <Typography variant="body2" display="inline">
-              &nbsp;&nbsp;&nbsp;{state.flight.category}
+              &nbsp;&nbsp;&nbsp;{state.flightRequirement.category}
             </Typography>
           )}
           <Typography variant="h6" display="inline">
-            &nbsp;&nbsp;{state.flight.stc.name}&nbsp;&nbsp;
+            &nbsp;&nbsp;{state.flightRequirement.stc.name}&nbsp;&nbsp;
           </Typography>
           <Typography variant="subtitle1" display="inline">
-            {Weekday[state.flight.day]}s&nbsp;&nbsp;
+            {Weekday[state.day]}s&nbsp;&nbsp;
           </Typography>
-          {state.flight.rsx !== 'REAL' && (
+          {state.flightRequirement.rsx !== 'REAL' && (
             <Typography variant="overline" display="inline">
-              {state.flight.rsx}
+              {state.flightRequirement.rsx}
             </Typography>
           )}
         </Fragment>
@@ -118,7 +178,7 @@ const FlightModal = createModal<FlightModalState, FlightModalProps>(({ state, on
         },
         {
           title: 'Flight Requirement',
-          action: () => onOpenFlightRequirementModal(state.flight.flightRequirement, state.flight.day)
+          action: () => onOpenFlightRequirementModal(state.flightRequirement, state.day)
         },
         {
           title: 'Submit',
@@ -127,26 +187,74 @@ const FlightModal = createModal<FlightModalState, FlightModalProps>(({ state, on
           action: async () => {
             if (!validation.ok) throw 'Invalid form fields.';
 
-            const flightModel: FlightModel = state.flight.extractModel(flightModel => ({
-              ...flightModel,
-              aircraftRegisterId: dataTypes.preplanAircraftRegister(preplan.aircraftRegisters).convertViewToModelOptional(viewState.aircraftRegister),
-              legs: viewState.legs.map<FlightLegModel>(l => ({
-                ...l,
-                std: dataTypes.daytime.convertViewToModel(l.std)
-              }))
-            }));
+            throw 'Not impliement';
 
-            const otherFlightModels: FlightModel[] = preplan.flights
-              .filter(f => f.flightRequirement.id === state.flight.flightRequirement.id && f.id !== state.flight.id)
-              .map<FlightModel>(f => f.extractModel());
+            const selectedFlights = viewState.dates
+              .map((d, dayIndex) => {
+                if (!d.selected || d.disabled) return undefined;
+                return flights.find(
+                  f =>
+                    dataTypes.utcDate.convertBusinessToView(f.date) === dataTypes.utcDate.convertBusinessToView(new Date(preplan.weeks.all[dayIndex].startDate).addDays(state.day))
+                );
+              })
+              .filter(Boolean) as Flight[];
 
-            const newPreplanDataModel = await FlightService.edit(preplan.id, flightModel, ...otherFlightModels);
+            const flightModels: FlightModel[] = selectedFlights.map(f =>
+              f.extractModel(flightModel => {
+                const aircraftRegisterId = dataTypes.aircraftRegister.checkView(viewState.aircraftRegister)
+                  ? dataTypes.preplanAircraftRegister(preplan.aircraftRegisters).convertViewToModelOptional(viewState.aircraftRegister)
+                  : flightModel.aircraftRegisterId;
+                return {
+                  ...flightModel,
+                  aircraftRegisterId: aircraftRegisterId,
+                  legs: viewState.legs.map<FlightLegModel>((l, index) => ({
+                    ...l,
+                    std: dataTypes.daytime.checkView(l.std) ? dataTypes.daytime.convertViewToModel(l.std) : flightModel.legs[index].std
+                  }))
+                };
+              })
+            );
+
+            // const otherFlightModels: FlightModel[] = preplan.flights
+            //   .filter(f => f.flightRequirement.id === state.flight.flightRequirement.id && f.id !== state.flight.id)
+            //   .map<FlightModel>(f => f.extractModel());
+
+            const newPreplanDataModel = await FlightService.edit(preplan.id, ...flightModels, ...otherFlightModels);
             await reloadPreplan(newPreplanDataModel);
           }
         }
       ]}
       body={({ handleKeyboardEvent }) => (
         <Grid container spacing={2}>
+          <Grid item xs={12}>
+            {viewState.dates.map((w, index) => (
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={w.selected}
+                    onChange={({ target: { checked: selected } }) => {
+                      //setViewState({ ...viewState, dates: [...viewState.dates.slice(0, index), { ...w, selected }, ...viewState.dates.slice(index + 1)] })
+                      const selectedFlights = viewState.dates
+                        .map((d, dayIndex) => {
+                          if ((dayIndex === index && !selected) || (dayIndex !== index && !d.selected)) return undefined;
+                          return flights.find(
+                            f =>
+                              dataTypes.utcDate.convertBusinessToView(f.date) ===
+                              dataTypes.utcDate.convertBusinessToView(new Date(preplan.weeks.all[dayIndex].startDate).addDays(state.day))
+                          );
+                        })
+                        .filter(Boolean) as Flight[];
+
+                      setViewState(calculateViewState(selectedFlights, preplan, flights, state));
+                    }}
+                    color="primary"
+                    disabled={w.disabled}
+                  />
+                }
+                label={new Date(preplan.weeks.all[index].startDate).addDays(state.day).format('d')}
+              />
+            ))}
+          </Grid>
           <Grid item xs={12}>
             <RefiningTextField
               fullWidth
@@ -158,6 +266,7 @@ const FlightModal = createModal<FlightModalState, FlightModalProps>(({ state, on
               onKeyDown={handleKeyboardEvent}
               error={errors.aircraftRegister !== undefined}
               helperText={errors.aircraftRegister}
+              disabled={viewState.legs.length === 0}
             />
           </Grid>
           <Grid item xs={12}>
@@ -174,7 +283,7 @@ const FlightModal = createModal<FlightModalState, FlightModalProps>(({ state, on
                 </TableRow>
               </TableHead>
               <TableBody>
-                {state.flight.legs.map((l, index) => (
+                {flights[0].legs.map((l, index) => (
                   <TableRow key={index}>
                     <TableCell align="center">{index + 1}</TableCell>
                     <TableCell align="center">{dataTypes.flightNumber.convertBusinessToView(l.flightNumber)}</TableCell>
@@ -185,7 +294,7 @@ const FlightModal = createModal<FlightModalState, FlightModalProps>(({ state, on
                       <RefiningTextField
                         fullWidth
                         dataType={dataTypes.daytime}
-                        value={viewState.legs[index].std}
+                        value={viewState.legs[index]?.std ?? ''}
                         onChange={({ target: { value: std } }) =>
                           setViewState({
                             ...viewState,
@@ -200,12 +309,13 @@ const FlightModal = createModal<FlightModalState, FlightModalProps>(({ state, on
                           })
                         }
                         onKeyDown={handleKeyboardEvent}
-                        error={errors.stds[index] !== undefined}
-                        helperText={errors.stds[index]}
+                        error={errors.stds?.[index] !== undefined}
+                        helperText={errors.stds?.[index]}
+                        disabled={viewState.legs.length === 0}
                       />
                     </TableCell>
                     <TableCell align="center">
-                      {dataTypes.daytime.checkView(viewState.legs[index].std) ? (
+                      {dataTypes.daytime.checkView(viewState.legs[index]?.std) ? (
                         new Daytime(dataTypes.daytime.convertViewToModel(viewState.legs[index].std) + l.blockTime.minutes).toString('HH:mm', true)
                       ) : (
                         <Fragment>&mdash;</Fragment>

@@ -18,6 +18,7 @@ import FlightRequirement from 'src/business/flight-requirement/FlightRequirement
 import DayFlightRequirement from 'src/business/flight-requirement/DayFlightRequirement';
 import FlightView from 'src/business/flight/FlightView';
 import Week from 'src/business/Week';
+import Flight from 'src/business/flight/Flight';
 
 const useStyles = makeStyles((theme: Theme) => ({
   '@global': {
@@ -262,7 +263,7 @@ export interface TimelineViewProps {
   onSelectFlightView(flightView?: FlightView): void;
   onEditFlightRequirement(flightRequirement: FlightRequirement): void;
   onEditDayFlightRequirement(dayFlightRequirement: DayFlightRequirement): void;
-  onEditFlightView(flightView: FlightView): void;
+  onEditFlight(flightRequirement: FlightRequirement, day: Weekday, flights?: readonly Flight[]): void;
   onFlightViewDragAndDrop(flightView: FlightView, deltaStd: number, newAircraftRegister: PreplanAircraftRegister | undefined, allWeekdays: boolean): void;
   onFlightViewMouseHover(flightView: FlightView): void;
   onFreeSpaceMouseHover(aircraftRegister: PreplanAircraftRegister, previousFlightView?: FlightView, nextFlightView?: FlightView): void;
@@ -278,7 +279,7 @@ const TimelineView: FC<TimelineViewProps> = ({
   onSelectFlightView,
   onEditFlightRequirement,
   onEditDayFlightRequirement,
-  onEditFlightView,
+  onEditFlight: onEditFlight,
   onFlightViewDragAndDrop,
   onFlightViewMouseHover,
   onFreeSpaceMouseHover,
@@ -866,14 +867,29 @@ const TimelineView: FC<TimelineViewProps> = ({
                 <MenuItem
                   onClick={() => {
                     setFlightViewContextMenuModel({ ...flightViewContextMenuModel, open: false });
-                    // onEditFlightView(flightViewContextMenuModel.flightView!);
+                    onEditFlight(
+                      flightViewContextMenuModel.flightView!.flightRequirement,
+                      flightViewContextMenuModel.flightView!.day,
+                      flightViewContextMenuModel.flightView!.flights
+                    );
+                  }}
+                >
+                  {/* <ListItemIcon>
+                      <span />
+                    </ListItemIcon> */}
+                  <Typography>Flight...</Typography>
+                </MenuItem>
+
+                <MenuItem
+                  onClick={() => {
+                    setFlightViewContextMenuModel({ ...flightViewContextMenuModel, open: false });
                     onEditDayFlightRequirement(flightViewContextMenuModel.flightView!.dayFlightRequirement);
                   }}
                 >
                   {/* <ListItemIcon>
                       <span />
                     </ListItemIcon> */}
-                  <Typography>Edit...</Typography>
+                  <Typography>Requirement...</Typography>
                 </MenuItem>
                 {/* <MenuItem
                     onClick={() => {

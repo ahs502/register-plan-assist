@@ -124,8 +124,13 @@ const PerplanVersionsModal = createModal<PerplanVersionsModalState, PerplanVersi
                       title="Delete"
                       onClick={async () => {
                         loading(true);
-                        const preplanModel = await PreplanService.remove(v.id);
-                        await reloadPreplan(preplanModel);
+                        try {
+                          const preplanModel = await PreplanService.remove(v.id);
+                          await reloadPreplan(preplanModel);
+                        } catch (error) {
+                          errorMessage(error);
+                        }
+
                         loading(false);
                         await others.onClose();
                       }}

@@ -2,17 +2,10 @@
   "files.exclude": {
     ".vscode": true,
     "**/node_modules": true,
-<<<<<<< Updated upstream
     "Client/build": true,
     "Server/dist": true,
     "Server/make": true,
     "Server/temp": true
-=======
-    "Server/temp": false,
-    "Server/make": false,
-    "Server/dist": false,
-    "Client/build": true
->>>>>>> Stashed changes
   },
   "editor.formatOnSave": true,
   "editor.formatOnSaveTimeout": 3000,

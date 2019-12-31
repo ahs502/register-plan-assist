@@ -19,13 +19,13 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
   week: {
     width: 20,
+    flexGrow: 1,
     position: 'relative',
     borderWidth: 1,
     borderStyle: 'solid',
     borderRadius: 4,
     margin: '2px 1px 0 1px',
     padding: '2px 0 1px 3px',
-    flexGrow: 1,
     color: theme.palette.common.black,
     overflow: 'hidden',
     fontSize: '12px',
@@ -169,7 +169,7 @@ const SelectWeeks: FC<SelectWeeksProps> = ({ preplan: externalPreplan, includeSi
               : 'SELECTION';
             return (
               <div
-                key={`${chunkIndex}-${chunkWeekIndex}`}
+                key={weekIndex}
                 title={`Week from ${week.startDate.format('d')} to ${week.endDate.format('d')}\nChunk from ${chunk.startDate.format('d')} to ${chunk.endDate.format('d')}`}
                 className={classNames(
                   classes.week,

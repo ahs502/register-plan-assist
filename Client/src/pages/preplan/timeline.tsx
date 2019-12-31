@@ -160,7 +160,7 @@ const TimelinePage: FC<TimelinePageProps> = ({ onObjectionTargetClick, onEditFli
 
       <Portal container={navBarToolsContainer}>
         <div className={timelineViewState.loading ? classes.disable : ''}>
-          <Button onClick={() => openPreplanVersionsModal({ perplan: preplan } as PerplanVersionsModalState)}>Current</Button>
+          <Button onClick={() => openPreplanVersionsModal({ preplan: preplan } as PerplanVersionsModalState)}>Current</Button>
           <IconButton disabled={timelineViewState.loading} color="inherit" title="Accept Preplan">
             <FinilizedIcon />
           </IconButton>
@@ -322,7 +322,7 @@ const TimelinePage: FC<TimelinePageProps> = ({ onObjectionTargetClick, onEditFli
         </div>
       </div>
 
-      <PerplanVersionsModal state={preplanVersionsModalState} onClose={closePreplanVersionsModal} loadVersions={versionId => {}} deleteVersion={versionId => {}} />
+      <PerplanVersionsModal state={preplanVersionsModalState} onClose={closePreplanVersionsModal} />
     </Fragment>
   );
 };

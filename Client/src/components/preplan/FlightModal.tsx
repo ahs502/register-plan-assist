@@ -140,8 +140,8 @@ const FlightModal = createModal<FlightModalState, FlightModalProps>(({ state, on
               .filter(f => f.flightRequirement.id === state.flight.flightRequirement.id && f.id !== state.flight.id)
               .map<FlightModel>(f => f.extractModel());
 
-            const newPreplanModel = await FlightService.edit(preplan.id, flightModel, ...otherFlightModels);
-            await reloadPreplan(newPreplanModel);
+            const newPreplanDataModel = await FlightService.edit(preplan.id, flightModel, ...otherFlightModels);
+            await reloadPreplan(newPreplanDataModel);
           }
         }
       ]}

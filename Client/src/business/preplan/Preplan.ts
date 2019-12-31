@@ -38,6 +38,8 @@ export default class Preplan {
 
   readonly versions: readonly {
     readonly id: Id;
+
+    readonly current: boolean;
     readonly lastEditDateTime: Date;
     readonly description: string;
   }[];
@@ -79,6 +81,7 @@ export default class Preplan {
     this.endDate = dataTypes.utcDate.convertModelToBusiness(raw.header.endDate);
     this.versions = raw.versions.map<Preplan['versions'][number]>(version => ({
       id: version.id,
+      current: version.current,
       lastEditDateTime: dataTypes.utcDate.convertModelToBusiness(version.lastEditDateTime),
       description: dataTypes.name.convertModelToBusiness(version.description)
     }));

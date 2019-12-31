@@ -50,7 +50,7 @@ router.post(
   '/clone',
   requestMiddlewareWithTransactionalDb<{ clonePreplanHeader: ClonePreplanHeaderModel }, Id>(async (userId, { clonePreplanHeader }, db) => {
     const userPreplanIds = await db
-      .select<{ id: string }>({ id: '[Id]' })
+      .select<{ id: string }>({ id: 'p.[Id]' })
       .from('[Rpa].[Preplan] as p join [Rpa].[PreplanHeader] as h on h.[Id] = p.[Id_PreplanHeader]')
       .where(`h.[Id_User] = '${userId}' or h.[Published] = 1`)
       .map(({ id }) => id, 'User do not have access to any preplans.');
@@ -81,7 +81,8 @@ router.post(
         db.nVarCharParam('name', clonePreplanHeaderEntity.name, 200),
         db.dateTimeParam('startDate', clonePreplanHeaderEntity.startDate),
         db.dateTimeParam('endDate', clonePreplanHeaderEntity.endDate),
-        db.bitParam('includeChanges', clonePreplanHeaderEntity.includeChanges)
+        db.bitParam('includeChanges', clonePreplanHeaderEntity.includeChanges),
+        db.bitParam('includeAllVersions', clonePreplanHeaderEntity.includeAllVersions)
       )
       .one();
 

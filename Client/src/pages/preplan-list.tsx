@@ -156,7 +156,7 @@ const PreplanListPage: FC = () => {
                   .map(preplanHeader => (
                     <TableRow key={preplanHeader.id}>
                       <TableCell
-                        onClick={() => history.push('preplan/' + preplanHeader.id)}
+                        onClick={() => history.push('preplan/' + preplanHeader.current.id)}
                         className={classNames(classes.preplanTableCell, classes.linkTableCell)}
                         component="th"
                         scope="row"

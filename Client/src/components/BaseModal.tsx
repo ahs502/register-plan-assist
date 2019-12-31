@@ -49,6 +49,8 @@ interface Supplement {
   handleKeyboardEvent(e?: KeyboardEvent): void;
   submit(): void;
   cancel(): void;
+  loading(loading?: boolean): boolean;
+  errorMessage(errorMessage?: string): string;
 }
 interface ActualBaseModalProps extends Omit<BaseModalProps<any>, 'state'> {
   cancelable?: boolean;
@@ -82,6 +84,16 @@ const BaseModal: FC<ActualBaseModalProps> = ({ cancelable, title, complexTitle, 
       const action = actions?.last(a => !a.disabled && !a.invisible && a.canceler);
       if (!action) return;
       handleLoader(fullAction(action))();
+    },
+    loading(_loading?: boolean): boolean {
+      if (_loading === undefined) return loading;
+      setViewState({ loading: _loading, errorMessage });
+      return _loading;
+    },
+    errorMessage(_errorMessage?: string): string {
+      if (_errorMessage === undefined) return errorMessage;
+      setViewState({ loading, errorMessage: _errorMessage });
+      return _errorMessage;
     }
   };
 

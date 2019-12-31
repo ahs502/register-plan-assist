@@ -38,6 +38,8 @@ export default class Preplan {
 
   readonly versions: readonly {
     readonly id: Id;
+
+    readonly current: boolean;
     readonly lastEditDateTime: Date;
     readonly description: string;
   }[];
@@ -79,6 +81,7 @@ export default class Preplan {
     this.endDate = dataTypes.utcDate.convertModelToBusiness(raw.header.endDate);
     this.versions = raw.versions.map<Preplan['versions'][number]>(version => ({
       id: version.id,
+      current: version.current,
       lastEditDateTime: dataTypes.utcDate.convertModelToBusiness(version.lastEditDateTime),
       description: dataTypes.name.convertModelToBusiness(version.description)
     }));
@@ -138,13 +141,13 @@ export default class Preplan {
     this.readonly = this.user.id !== persistant.user!.id || !this.current;
   }
 
-  getFlightViews(startWeek: Week, endWeek: Week): FlightView[] {
+  getFlightViews(startWeek: Week, endWeek: Week, week?: Week): FlightView[] {
     return Object.values(
       this.flights
         .filter(f => startWeek.startDate <= f.date && f.date <= endWeek.endDate)
         .groupBy(
           f => f.flightRequirement.id,
-          g => Object.values(g.groupBy('day', h => new FlightView(h, startWeek, endWeek)))
+          g => Object.values(g.groupBy('day', h => new FlightView(h, startWeek, endWeek, week ?? startWeek)))
         )
     ).flatten();
   }

@@ -11,6 +11,7 @@ declare module 'vis-timeline' {
     end?: CustomTime;
     group?: Id;
     id?: Id;
+    selectable?: boolean;
     start: CustomTime;
     style?: string;
     subgroup?: Id;

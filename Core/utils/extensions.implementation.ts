@@ -1,4 +1,5 @@
 import Weekday from '@core/types/Weekday';
+import { ShortMonthNames, MonthNames } from '@core/types/MonthName';
 
 /*eslint no-extend-native: "off", no-self-compare: "off"*/
 
@@ -124,9 +125,6 @@ import Weekday from '@core/types/Weekday';
 
   // Date:
   {
-    const monthNames = <const>['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-    const shortMonthNames = <const>['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
     Date.invalidDate = new Date(NaN);
 
     Date.parseUtc = function Date_parseUtc(date: string): Date {
@@ -136,7 +134,7 @@ import Weekday from '@core/types/Weekday';
         const [date, days, month, years] = parts;
         const daysNumber = Number(days);
         if (daysNumber <= 0 || daysNumber > 31) return Date.invalidDate;
-        const monthIndex = shortMonthNames.indexOf((month[0].toUpperCase() + month.slice(1).toLowerCase()) as any);
+        const monthIndex = ShortMonthNames.indexOf((month[0].toUpperCase() + month.slice(1).toLowerCase()) as any);
         if (monthIndex < 0) return Date.invalidDate;
         let yearsNumber = Number(years);
         yearsNumber = yearsNumber < 70 ? 2000 + yearsNumber : 1900 + yearsNumber; //TODO: Fix this before year 2070.
@@ -197,7 +195,7 @@ import Weekday from '@core/types/Weekday';
           throw new Error('Not implemented!');
 
         case 'd':
-          return `${String(this.getUTCDate()).padStart(2, '0')}${shortMonthNames[this.getUTCMonth()]}${String(this.getUTCFullYear()).slice(-2)}`;
+          return `${String(this.getUTCDate()).padStart(2, '0')}${ShortMonthNames[this.getUTCMonth()]}${String(this.getUTCFullYear()).slice(-2)}`;
 
         case 'd#':
           throw new Error('Not implemented!');
@@ -206,7 +204,7 @@ import Weekday from '@core/types/Weekday';
           throw new Error('Not implemented!');
 
         case '~D$':
-          return `${this.getUTCDate()} ${monthNames[this.getUTCMonth()]} ${this.getUTCFullYear()}`;
+          return `${this.getUTCDate()} ${MonthNames[this.getUTCMonth()]} ${this.getUTCFullYear()}`;
 
         case 'T':
           throw new Error('Not implemented!');

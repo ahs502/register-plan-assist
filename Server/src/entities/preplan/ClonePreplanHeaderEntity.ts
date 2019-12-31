@@ -5,12 +5,14 @@ import ClonePreplanHeaderModel from '@core/models/preplan/ClonePreplanHeaderMode
 export default interface ClonePreplanHeaderEntity extends NewPreplanHeaderEntity {
   readonly sourcePreplanId: Id;
   readonly includeChanges: boolean;
+  readonly includeAllVersions: boolean;
 }
 
 export function convertClonePreplanHeaderModelToEntity(data: ClonePreplanHeaderModel): ClonePreplanHeaderEntity {
   return {
     ...convertNewPreplanHeaderModelToEntity(data),
     sourcePreplanId: data.sourcePreplanId,
-    includeChanges: data.includeChanges
+    includeChanges: data.includeChanges,
+    includeAllVersions: data.includeAllVersions
   };
 }

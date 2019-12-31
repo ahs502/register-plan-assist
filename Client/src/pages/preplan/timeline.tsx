@@ -28,6 +28,8 @@ import SelectWeeks, { WeekSelection } from 'src/components/preplan/SelectWeeks';
 import FlightView from 'src/business/flight/FlightView';
 import Rsx from '@core/types/Rsx';
 import Week from 'src/business/Week';
+import Flight from 'src/business/flight/Flight';
+import Weekday from '@core/types/Weekday';
 
 const useStyles = makeStyles((theme: Theme) => ({
   sideBarBackdrop: {
@@ -83,10 +85,10 @@ export interface TimelinePageProps {
   onObjectionTargetClick(target: Objectionable): void;
   onEditFlightRequirement(flightRequirement: FlightRequirement): void;
   onEditDayFlightRequirement(dayFlightRequirement: DayFlightRequirement): void;
-  onEditFlightView(flightView: FlightView): void;
+  onEditFlight(flightRequirement: FlightRequirement, day: Weekday, flights?: readonly Flight[]): void;
 }
 
-const TimelinePage: FC<TimelinePageProps> = ({ onObjectionTargetClick, onEditFlightRequirement, onEditDayFlightRequirement, onEditFlightView }) => {
+const TimelinePage: FC<TimelinePageProps> = ({ onObjectionTargetClick, onEditFlightRequirement, onEditDayFlightRequirement, onEditFlight: onEditFlightView }) => {
   //TODO: This should be the result of SettingsSideBar component:
   const settings: {
     readonly viewFilters: {
@@ -160,7 +162,7 @@ const TimelinePage: FC<TimelinePageProps> = ({ onObjectionTargetClick, onEditFli
 
       <Portal container={navBarToolsContainer}>
         <div className={timelineViewState.loading ? classes.disable : ''}>
-          <Button onClick={() => openPreplanVersionsModal({ perplan: preplan } as PerplanVersionsModalState)}>Current</Button>
+          <Button onClick={() => openPreplanVersionsModal({ preplan: preplan } as PerplanVersionsModalState)}>Current</Button>
           <IconButton disabled={timelineViewState.loading} color="inherit" title="Accept Preplan">
             <FinilizedIcon />
           </IconButton>
@@ -266,7 +268,7 @@ const TimelinePage: FC<TimelinePageProps> = ({ onObjectionTargetClick, onEditFli
           onSelectFlightView={flightView => setTimelineViewState({ ...timelineViewState, selectedFlightView: flightView })}
           onEditFlightRequirement={onEditFlightRequirement}
           onEditDayFlightRequirement={onEditDayFlightRequirement}
-          onEditFlightView={onEditFlightView}
+          onEditFlight={onEditFlightView}
           onFlightViewDragAndDrop={async (flightView, deltaStd, newAircraftRegister, allWeekdays) => {
             setTimelineViewState({ ...timelineViewState, loading: true });
             try {
@@ -322,7 +324,7 @@ const TimelinePage: FC<TimelinePageProps> = ({ onObjectionTargetClick, onEditFli
         </div>
       </div>
 
-      <PerplanVersionsModal state={preplanVersionsModalState} onClose={closePreplanVersionsModal} loadVersions={versionId => {}} deleteVersion={versionId => {}} />
+      <PerplanVersionsModal state={preplanVersionsModalState} onClose={closePreplanVersionsModal} />
     </Fragment>
   );
 };

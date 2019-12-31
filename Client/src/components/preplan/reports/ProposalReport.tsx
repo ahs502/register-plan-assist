@@ -1,5 +1,5 @@
 import React, { FC, Fragment, useState, useEffect, useMemo, useContext } from 'react';
-import { Theme, InputLabel, TableHead, TableCell, Table, TableRow, TableBody, Button, Grid, FormControlLabel, Checkbox, Paper, Typography } from '@material-ui/core';
+import { Theme, InputLabel, TableHead, TableCell, Table, TableRow, TableBody, Button, Grid, FormControlLabel, Checkbox, Paper, Typography, TextField } from '@material-ui/core';
 import { red, grey } from '@material-ui/core/colors';
 import { makeStyles } from '@material-ui/styles';
 import MasterData, { Airport } from 'src/business/master-data';
@@ -275,6 +275,8 @@ interface ViewState {
   showSTB2: boolean;
   showExtra: boolean;
   preplanHeader?: PreplanHeader;
+  autoCommit: boolean;
+  commitMessage: string;
 }
 
 interface ReportDateRangeState {
@@ -378,7 +380,9 @@ const ProposalReport: FC<ProposalReportProps> = ({ preplanName, fromDate, toDate
     showReal: true,
     showSTB1: true,
     showSTB2: true,
-    showExtra: true
+    showExtra: true,
+    autoCommit: false,
+    commitMessage: ''
   }));
 
   const [dataProvider, setDataProvider] = useState<DataProvider[]>([]);
@@ -530,7 +534,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ preplanName, fromDate, toDate
         );
       }
     }
-  }, [viewState]);
+  }, valuesBut(viewState, 'autoCommit', 'commitMessage'));
 
   const exportToExcel = () => {
     if (!proposalExporter) return;
@@ -979,10 +983,38 @@ const ProposalReport: FC<ProposalReportProps> = ({ preplanName, fromDate, toDate
       </Grid>
 
       <br />
-      <Button disabled={!validation.ok} className={classes.marginBottom2} variant="outlined" color="primary" onClick={() => exportToExcel()}>
-        Export to Excel
-        <ExportToExcelIcon className={classes.transform180} />
-      </Button>
+      <Grid container spacing={2}>
+        <Grid item>
+          <Button
+            disabled={!validation.ok}
+            className={classes.marginBottom2}
+            variant="outlined"
+            color="primary"
+            onClick={async () => {
+              if (viewState.autoCommit) {
+                await PreplanService.commit(preplan.versions.find(v => v.current)!.id, viewState.commitMessage);
+              }
+              exportToExcel();
+            }}
+          >
+            Export to Excel
+            <ExportToExcelIcon className={classes.transform180} />
+          </Button>
+        </Grid>
+        <Grid item>
+          <FormControlLabel
+            control={<Checkbox checked={viewState.autoCommit} onChange={({ target: { checked: autoCommit } }) => setViewState({ ...viewState, autoCommit })} color="primary" />}
+            label={
+              <TextField
+                label="Auto-commit message"
+                onChange={({ target: { value: commitMessage } }) => setViewState({ ...viewState, commitMessage })}
+                disabled={!viewState.autoCommit}
+              ></TextField>
+            }
+            labelPlacement="end"
+          />
+        </Grid>
+      </Grid>
       {validation.ok && (
         <ExcelExport
           data={dataProvider}
@@ -2087,4 +2119,10 @@ function halfPermission(flattenFlightRequirment: FlattenFlightRequirment, day: n
 
 function isRealFlight(flattenFlightRequirment: FlattenFlightRequirment, day: number) {
   return (flattenFlightRequirment as any)['rsxWeekDay' + day.toString()] === 'REAL';
+}
+
+function valuesBut<T>(data: T, ...exceptions: (keyof T)[]): T[any][] {
+  const clone = { ...data };
+  exceptions.forEach(key => delete clone[key]);
+  return Object.values(clone);
 }

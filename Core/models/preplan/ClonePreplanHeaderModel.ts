@@ -5,6 +5,7 @@ import Id from '@core/types/Id';
 export default interface ClonePreplanHeaderModel extends NewPreplanHeaderModel {
   readonly sourcePreplanId: Id;
   readonly includeChanges: boolean;
+  readonly includeAllVersions: boolean;
 }
 
 export class ClonePreplanHeaderModelValidation extends Validation<

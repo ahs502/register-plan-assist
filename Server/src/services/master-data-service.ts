@@ -7,7 +7,7 @@ import ConstraintTemplateDataFieldType from '@core/types/ConstraintTemplateDataF
 import { xmlParse, xmlArray } from 'src/utils/xml';
 import { Db } from 'src/utils/sqlServer';
 
-import MasterData from 'src/utils/masterData';
+import MasterData from 'src/utils/MasterData';
 import MasterDataModel from '@core/models/master-data/MasterDataModel';
 
 import AircraftTypeModel from '@core/models/master-data/AircraftTypeModel';

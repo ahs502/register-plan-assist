@@ -14,7 +14,7 @@ import DummyAircraftRegisterModel, { DummyAircraftRegisterModelArrayValidation }
 import AircraftRegisterOptionsModel, { AircraftRegisterOptionsModelValidation } from '@core/models/preplan/AircraftRegisterOptionsModel';
 import FlightEntity, { convertFlightEntityToModel } from 'src/entities/flight/FlightEntity';
 import { Db } from 'src/utils/sqlServer';
-import MasterData from 'src/utils/masterData';
+import MasterData from 'src/utils/MasterData';
 import PreplanDataModel from '@core/models/preplan/PreplanDataModel';
 import PreplanVersionEntity, { convertPreplanVersionEntityToModel } from 'src/entities/preplan/PreplanVersionEntity';
 

@@ -7,9 +7,7 @@ import { convertFlightRequirementModelToEntity } from 'src/entities/flight-requi
 import FlightRequirementModel, { FlightRequirementModelValidation } from '@core/models/flight-requirement/FlightRequirementModel';
 import NewFlightRequirementModel, { NewFlightRequirementModelValidation } from '@core/models/flight-requirement/NewFlightRequirementModel';
 import { convertNewFlightRequirementModelToEntity } from 'src/entities/flight-requirement/NewFlightRequirementEntity';
-import FlightModel, { FlightModelArrayValidation } from '@core/models/flight/FlightModel';
-import { convertFlightModelToEntity } from 'src/entities/flight/FlightEntity';
-import MasterData from 'src/utils/masterData';
+import MasterData from 'src/utils/MasterData';
 import { getPreplanDataModel } from 'src/services/preplan-service';
 import PreplanDataModel from '@core/models/preplan/PreplanDataModel';
 import EditFlightModel, { EditFlightModelArrayValidation } from '@core/models/flight/EditFlightModel';

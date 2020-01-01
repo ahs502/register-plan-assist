@@ -77,3 +77,4 @@ To view a summary on code files and lines:
 Place any file you want to serve statically into either `./Server/public` or `./Client/public` folders.
 
 > There is no watch on the files within the `./Server/public` or `./Client/public` folders during development. So, when modifying their contents, you need to restart the development process manually.
+

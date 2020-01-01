@@ -14,14 +14,61 @@ import FlightService from 'src/services/FlightService';
 import FlightModel from '@core/models/flight/FlightModel';
 import FlightLegModel from '@core/models/flight/FlightLegModel';
 import Daytime from '@core/types/Daytime';
-import { WeekSelection } from 'src/components/preplan/SelectWeeks';
-import FlightView from 'src/business/flight/FlightView';
 import Preplan from 'src/business/preplan/Preplan';
+import classNames from 'classnames';
+import chroma from 'chroma-js';
 
-const useStyles = makeStyles((theme: Theme) => ({}));
+const useStyles = makeStyles((theme: Theme) => ({
+  flightDates: {
+    width: '100%',
+    display: 'flex'
+  },
+  flightDate: {
+    width: 10,
+    flexGrow: 1,
+    position: 'relative',
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderRadius: 4,
+    margin: '2px 1px 0 1px',
+    padding: '2px 0 1px 3px',
+    color: theme.palette.common.black,
+    overflow: 'hidden',
+    fontSize: '12px',
+    userSelect: 'none',
+    cursor: 'pointer',
+    '&:hover $flightDateHover': {
+      display: 'block'
+    }
+  },
+  flightDateHover: {
+    display: 'none',
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    backgroundColor: '#0002',
+    userSelect: 'none',
+    pointerEvents: 'none'
+  },
+  flightDateDisabled: {
+    backgroundColor: chroma(theme.palette.grey[400])
+      .alpha(0.4)
+      .hex(),
+    borderColor: theme.palette.grey[600]
+  },
+  flightDateSelected: {
+    backgroundColor: chroma(theme.palette.secondary.main)
+      .alpha(0.4)
+      .hex(),
+    borderColor: theme.palette.secondary.dark
+  }
+}));
 
 interface ViewState {
   dates: DateViewState[];
+  dateSelectionStartIndex?: number;
   aircraftRegister: string;
   legs: LegViewState[];
 }
@@ -91,51 +138,6 @@ const FlightModal = createModal<FlightModalState, FlightModalProps>(({ state, on
     return calculateViewState(selectedFlights, preplan, flights, state);
   });
 
-  function calculateViewState(selectedFlights: readonly Flight[], preplan: Preplan, flights: Flight[], state: FlightModalState) {
-    const selectedFlightsRegister = getAircraftRegister(selectedFlights);
-    const selectedFlightStds = selectedFlights.reduce<string[][]>((acc, current) => {
-      current.legs.forEach((l, index) => {
-        const std = dataTypes.daytime.convertBusinessToView(l.std);
-        acc[index] = acc[index] ?? ([] as string[]);
-        if (!acc[index].some(s => s === std)) acc[index].push(std);
-      });
-      return acc;
-    }, []);
-    const selectedFlightStas = selectedFlights.reduce<string[][]>((acc, current) => {
-      current.legs.forEach((l, index) => {
-        const sta = dataTypes.daytime.convertBusinessToView(l.sta);
-        acc[index] = acc[index] ?? ([] as string[]);
-        if (!acc[index].some(s => s === sta)) acc[index].push(sta);
-      });
-      return acc;
-    }, []);
-    const selectedFlightBlockTimes = selectedFlights.reduce<string[][]>((acc, current) => {
-      current.legs.forEach((l, index) => {
-        const blockTime = dataTypes.daytime.convertBusinessToView(l.blockTime);
-        acc[index] = acc[index] ?? ([] as string[]);
-        if (!acc[index].some(s => s === blockTime)) acc[index].push(blockTime);
-      });
-      return acc;
-    }, []);
-    return {
-      aircraftRegister: selectedFlightsRegister,
-      legs: selectedFlightStds.map<LegViewState>((l, index) => ({
-        blockTime: selectedFlightBlockTimes[index].length > 1 ? '—' : selectedFlightBlockTimes[index][0],
-        std: l.length > 1 ? '' : l[0],
-        sta: selectedFlightStas[index].length > 1 ? '—' : selectedFlightStas[index][0]
-      })),
-      dates: preplan.weeks.all.map<DateViewState>(w => ({
-        disabled: !flights.some(f => dataTypes.utcDate.convertBusinessToView(f.date) === dataTypes.utcDate.convertBusinessToView(new Date(w.startDate).addDays(state.day))),
-        selected: selectedFlights.some(f => dataTypes.utcDate.convertBusinessToView(f.date) === dataTypes.utcDate.convertBusinessToView(new Date(w.startDate).addDays(state.day)))
-      }))
-    };
-
-    function getAircraftRegister(flights: readonly Flight[]): string {
-      const aircraftRegisters = flights.map(f => dataTypes.preplanAircraftRegister(preplan.aircraftRegisters).convertBusinessToViewOptional(f.aircraftRegister)).distinct();
-      return aircraftRegisters.length === 1 ? aircraftRegisters[0] : '';
-    }
-  }
-
   const validation = new ViewStateValidation(viewState, preplan.aircraftRegisters);
   const errors = {
     aircraftRegister: validation.message('AIRCRAFT_REGISTER_*'),
@@ -147,7 +149,7 @@ const FlightModal = createModal<FlightModalState, FlightModalProps>(({ state, on
   return (
     <BaseModal
       {...others}
-      maxWidth="sm"
+      maxWidth="lg"
       complexTitle={
         <Fragment>
           <Typography variant="h6" display="inline">
@@ -228,6 +230,41 @@ const FlightModal = createModal<FlightModalState, FlightModalProps>(({ state, on
       body={({ handleKeyboardEvent }) => (
         <Grid container spacing={2}>
           <Grid item xs={12}>
+            <div className={classes.flightDates}>
+              {viewState.dates.map((date, index) => {
+                const flightDate = preplan.weeks.all[index].startDate.clone().addDays(state.day);
+
+                return (
+                  <div
+                    key={index}
+                    className={classNames(classes.flightDate, {
+                      [classes.flightDateDisabled]: date.disabled,
+                      [classes.flightDateSelected]: date.selected
+                    })}
+                    title={`Flight at ${flightDate.format('d')}`}
+                    onClick={() => {
+                      if (date.disabled) return;
+                      const selectedFlights = viewState.dates
+                        .map((d, dayIndex) => {
+                          if ((dayIndex === index && !date.selected) || (dayIndex !== index && !d.selected)) return undefined;
+                          return flights.find(
+                            f =>
+                              dataTypes.utcDate.convertBusinessToView(f.date) ===
+                              dataTypes.utcDate.convertBusinessToView(new Date(preplan.weeks.all[dayIndex].startDate).addDays(state.day))
+                          );
+                        })
+                        .filter(Boolean) as Flight[];
+                      setViewState(calculateViewState(selectedFlights, preplan, flights, state));
+                    }}
+                  >
+                    {formatDate(flightDate)}
+                    <div className={classes.flightDateHover} />
+                  </div>
+                );
+              })}
+            </div>
+          </Grid>
+          {/* <Grid item xs={12}>
             {viewState.dates.map((w, index) => (
               <FormControlLabel
                 control={
@@ -255,7 +292,7 @@ const FlightModal = createModal<FlightModalState, FlightModalProps>(({ state, on
                 label={new Date(preplan.weeks.all[index].startDate).addDays(state.day).format('d')}
               />
             ))}
-          </Grid>
+          </Grid> */}
           <Grid item xs={12}>
             <RefiningTextField
               fullWidth
@@ -331,6 +368,62 @@ const FlightModal = createModal<FlightModalState, FlightModalProps>(({ state, on
       )}
     />
   );
+
+  function calculateViewState(selectedFlights: readonly Flight[], preplan: Preplan, flights: Flight[], state: FlightModalState) {
+    const selectedFlightsRegister = getAircraftRegister(selectedFlights);
+    const selectedFlightStds = selectedFlights.reduce<string[][]>((acc, current) => {
+      current.legs.forEach((l, index) => {
+        const std = dataTypes.daytime.convertBusinessToView(l.std);
+        acc[index] = acc[index] ?? ([] as string[]);
+        if (!acc[index].some(s => s === std)) acc[index].push(std);
+      });
+      return acc;
+    }, []);
+    const selectedFlightStas = selectedFlights.reduce<string[][]>((acc, current) => {
+      current.legs.forEach((l, index) => {
+        const sta = dataTypes.daytime.convertBusinessToView(l.sta);
+        acc[index] = acc[index] ?? ([] as string[]);
+        if (!acc[index].some(s => s === sta)) acc[index].push(sta);
+      });
+      return acc;
+    }, []);
+    const selectedFlightBlockTimes = selectedFlights.reduce<string[][]>((acc, current) => {
+      current.legs.forEach((l, index) => {
+        const blockTime = dataTypes.daytime.convertBusinessToView(l.blockTime);
+        acc[index] = acc[index] ?? ([] as string[]);
+        if (!acc[index].some(s => s === blockTime)) acc[index].push(blockTime);
+      });
+      return acc;
+    }, []);
+    return {
+      aircraftRegister: selectedFlightsRegister,
+      legs: selectedFlightStds.map<LegViewState>((l, index) => ({
+        blockTime: selectedFlightBlockTimes[index].length > 1 ? '—' : selectedFlightBlockTimes[index][0],
+        std: l.length > 1 ? '' : l[0],
+        sta: selectedFlightStas[index].length > 1 ? '—' : selectedFlightStas[index][0]
+      })),
+      dates: preplan.weeks.all.map<DateViewState>(w => ({
+        disabled: !flights.some(f => dataTypes.utcDate.convertBusinessToView(f.date) === dataTypes.utcDate.convertBusinessToView(new Date(w.startDate).addDays(state.day))),
+        selected: selectedFlights.some(f => dataTypes.utcDate.convertBusinessToView(f.date) === dataTypes.utcDate.convertBusinessToView(new Date(w.startDate).addDays(state.day)))
+      }))
+    };
+
+    function getAircraftRegister(flights: readonly Flight[]): string {
+      const aircraftRegisters = flights.map(f => dataTypes.preplanAircraftRegister(preplan.aircraftRegisters).convertBusinessToViewOptional(f.aircraftRegister)).distinct();
+      return aircraftRegisters.length === 1 ? aircraftRegisters[0] : '';
+    }
+  }
+
+  function formatDate(date: Date): JSX.Element {
+    const dateString = date.format('d');
+    const day = dateString[0] === '0' ? dateString.slice(1, 2) : dateString.slice(0, 2);
+    const month = dateString.slice(2, 5);
+    return (
+      <Fragment>
+        {day}&nbsp;{month}
+      </Fragment>
+    );
+  }
 });
 
 export default FlightModal;

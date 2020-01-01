@@ -114,11 +114,7 @@ export default class VisTimeline extends Component<TimelineProps> {
     const { options, groups, items, selection, scrollTop } = this.props;
 
     this.optionsChange && this.timeline.setOptions(options);
-    this.itemsChange
-      ? this.groupsChange
-        ? this.timeline.setData({ groups: new DataSet(groups), items: new DataSet(items) })
-        : this.timeline.setItems(items)
-      : this.groupsChange && this.timeline.setGroups(groups);
+    (this.itemsChange || this.groupsChange) && this.timeline.setData({ groups: new DataSet(groups), items: new DataSet(items) });
     this.selectionChange && this.timeline.setSelection(selection || []);
 
     scrollTop === undefined || setTimeout(() => (this.timeline.body.dom.leftContainer.scrollTop = scrollTop));

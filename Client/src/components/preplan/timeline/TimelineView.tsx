@@ -1,4 +1,4 @@
-import React, { FC, useState, Fragment, useRef, useMemo, useContext } from 'react';
+import React, { FC, useState, Fragment, useRef, useMemo, useContext, useEffect } from 'react';
 import { Theme, MenuItem, MenuList, ClickAwayListener, Paper, ListItemIcon, Typography, Divider } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import { Check as CheckIcon } from '@material-ui/icons';
@@ -640,6 +640,7 @@ const TimelineView: FC<TimelineViewProps> = ({
         id: r.id,
         content: r.name,
         title: r.name,
+        treeLevel: 1,
         data: r
       })
     );

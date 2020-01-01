@@ -1,12 +1,13 @@
 import { Router } from 'express';
-import { requestMiddlewareWithDbAccess } from 'src/utils/requestMiddleware';
+import { requestMiddlewareWithDb } from 'src/utils/requestMiddleware';
 
 import Id from '@core/types/Id';
 import ConstraintTemplateType from '@core/types/ConstraintTemplateType';
 import ConstraintTemplateDataFieldType from '@core/types/ConstraintTemplateDataFieldType';
 import { xmlParse, xmlArray } from 'src/utils/xml';
+import { Db } from 'src/utils/sqlServer';
 
-import MasterData from '@core/master-data';
+import MasterData from 'src/utils/masterData';
 import MasterDataModel from '@core/models/master-data/MasterDataModel';
 
 import AircraftTypeModel from '@core/models/master-data/AircraftTypeModel';
@@ -18,21 +19,20 @@ import StcModel from '@core/models/master-data/StcModel';
 import AircraftRegisterGroupModel from '@core/models/master-data/AircraftRegisterGroupModel';
 import ConstraintTemplateModel from '@core/models/master-data/ConstraintTemplateModel';
 import ConstraintModel from '@core/models/master-data/ConstraintModel';
-import { DbAccess } from 'src/utils/sqlServer';
 
 const router = Router();
 export default router;
 
 router.post(
   '/get',
-  requestMiddlewareWithDbAccess<{ collections: (keyof MasterDataModel)[] }, MasterDataModel>(async (userId, { collections }, { runQuery }) => {
+  requestMiddlewareWithDb<{ collections: (keyof MasterDataModel)[] }, MasterDataModel>(async (userId, { collections }, db) => {
     //TODO: Check user access here...
 
-    return fetchAndCacheMasterData(collections, runQuery);
+    return fetchAndCacheMasterData(collections, db);
   })
 );
 
-export async function fetchAndCacheMasterData(collections: (keyof MasterDataModel)[], runQuery: DbAccess['runQuery']): Promise<MasterDataModel> {
+export async function fetchAndCacheMasterData(collections: (keyof MasterDataModel)[], db: Db): Promise<MasterDataModel> {
   const masterDataModel: MasterDataModel = {
     aircraftTypes: collections.includes('aircraftTypes') ? await getAircraftTypes() : undefined,
     aircraftRegisters: collections.includes('aircraftRegisters') ? await getAircraftRegisters() : undefined,
@@ -49,39 +49,46 @@ export async function fetchAndCacheMasterData(collections: (keyof MasterDataMode
 
   return masterDataModel;
 
-  async function getAircraftTypes(): Promise<readonly AircraftTypeModel[]> {
-    const rawAircraftTypes: readonly {
-      id: Id;
-      name: string;
-      displayName: string;
-      turnroundStartDate: string;
-      turnroundEndDate: string;
-      turnroundDepartureDomestic: number;
-      turnroundDepartureInternational: number;
-      turnroundTransitDomestic: number;
-      turnroundTransitInternational: number;
-    }[] = await runQuery(
-      `
-        select
-          convert(varchar(30), u.[Id])           as [id],
-          u.[ShortTitle]                         as [name],
-          u.[DisplayOrder]                       as [displayName],
-          t.[StartDate]                          as [turnroundStartDate],
-          t.[EndDate]                            as [turnroundEndDate] ,
-          t.[Domestic]                           as [turnroundDepartureDomestic],
-          t.[International]                      as [turnroundDepartureInternational],
-          t.[TransitDomestic]                    as [turnroundTransitDomestic] ,
-          t.[TransitInternational]               as [turnroundTransitInternational]
-        from
-          [MasterData].[AircraftType]      as u
-          left join 
-            [MasterData].[Turnround]       as t
-            on 
-              u.[id] = t.[Id_AircraftType]
-      `
-    );
+  interface MasterDataItemEntity {
+    readonly id: Id;
+    readonly name: string;
+  }
 
-    return Object.values(rawAircraftTypes.groupBy('id')).map(group => {
+  async function getAircraftTypes(): Promise<readonly AircraftTypeModel[]> {
+    interface AircraftTypeEntity extends MasterDataItemEntity {
+      readonly displayName: string;
+      readonly turnroundStartDate: string;
+      readonly turnroundEndDate: string;
+      readonly turnroundDepartureDomestic: number;
+      readonly turnroundDepartureInternational: number;
+      readonly turnroundTransitDomestic: number;
+      readonly turnroundTransitInternational: number;
+    }
+
+    const aircraftTypeEntities = await db
+      .query<AircraftTypeEntity>(
+        `
+          select
+            convert(varchar(30), u.[Id])           as [id],
+            u.[ShortTitle]                         as [name],
+            u.[DisplayOrder]                       as [displayName],
+            t.[StartDate]                          as [turnroundStartDate],
+            t.[EndDate]                            as [turnroundEndDate] ,
+            t.[Domestic]                           as [turnroundDepartureDomestic],
+            t.[International]                      as [turnroundDepartureInternational],
+            t.[TransitDomestic]                    as [turnroundTransitDomestic] ,
+            t.[TransitInternational]               as [turnroundTransitInternational]
+          from
+            [MasterData].[AircraftType]      as u
+            left join 
+              [MasterData].[Turnround]       as t
+              on 
+                u.[id] = t.[Id_AircraftType]
+        `
+      )
+      .all();
+
+    return Object.values(aircraftTypeEntities.groupBy('id')).map(group => {
       const sample = group[0];
       return {
         id: sample.id,
@@ -104,30 +111,32 @@ export async function fetchAndCacheMasterData(collections: (keyof MasterDataMode
   }
 
   async function getAircraftRegisters(): Promise<readonly AircraftRegisterModel[]> {
-    const rawAircraftRegisters: {
-      id: Id;
-      name: string;
-      aircraftTypeId: Id;
-      periodStartDate: string;
-      periodEndDate: string;
-    }[] = await runQuery(
-      `
-        select
-          convert(varchar(30), u.[Id])                    as [id],
-          u.[ShortCode]                                   as [name],
-          convert(varchar(30), u.[Id_AircraftType])       as [aircraftTypeId],
-          p.[PeriodStartDate]                             as [periodStartDate],
-          p.[PeriodEndDate]                               as [periodEndDate]
-        from
-          [MasterData].[AircraftRegister]                as u
-        join
-          [MasterData].[AircraftRegisterValidPeriod]     as p
-          on
-            p.[Id_AircraftRegister] = u.[Id]
-      `
-    );
+    interface AircraftRegisterEntity extends MasterDataItemEntity {
+      readonly aircraftTypeId: Id;
+      readonly periodStartDate: string;
+      readonly periodEndDate: string;
+    }
 
-    return Object.values(rawAircraftRegisters.groupBy('id')).map(group => {
+    const aircraftRegisterEntities = await db
+      .query<AircraftRegisterEntity>(
+        `
+          select
+            convert(varchar(30), u.[Id])                    as [id],
+            u.[ShortCode]                                   as [name],
+            convert(varchar(30), u.[Id_AircraftType])       as [aircraftTypeId],
+            p.[PeriodStartDate]                             as [periodStartDate],
+            p.[PeriodEndDate]                               as [periodEndDate]
+          from
+            [MasterData].[AircraftRegister]                    as u
+            join
+              [MasterData].[AircraftRegisterValidPeriod]       as p
+              on
+                p.[Id_AircraftRegister] = u.[Id]
+        `
+      )
+      .all();
+
+    return Object.values(aircraftRegisterEntities.groupBy('id')).map(group => {
       const sample = group[0];
       return {
         id: sample.id,
@@ -150,44 +159,46 @@ export async function fetchAndCacheMasterData(collections: (keyof MasterDataMode
   }
 
   async function getAirports(): Promise<readonly AirportModel[]> {
-    const rawAirports: readonly {
-      id: Id;
-      name: string;
-      fullName: string;
-      international: boolean;
-      offsetIsDst: boolean;
-      offsetStartDateTimeUtc: string;
-      offsetEndDateTimeUtc: string;
-      offsetStartDateTimeLocal: string;
-      offsetEndDateTimeLocal: string;
-      offset: number;
-    }[] = await runQuery(
-      `
-        select
-          convert(varchar(30), u.[Id])            as [id],
-          u.[Iata]                                as [name],
-          u.[Name]                                as [fullName],
-          cast(iif(l.[Code] = 2, 1, 0) as bit)    as [international],
-          c.[IsDst]                               as [offsetIsDst],
-          c.[StartDateUtc]                        as [offsetStartDateTimeUtc],
-          c.[EndDateUtc]                          as [offsetEndDateTimeUtc] ,
-          c.[StartDateLocal]                      as [offsetStartDateTimeLocal],
-          c.[EndDateLocal]                        as [offsetEndDateTimeLocal],
-          c.[OffsetFromUtc]                       as [offset]
-        from
-          [MasterData].[Airport]                      as u
-          left join 
-            [MasterData].[CityUtcOffset]              as c
-            on 
-              u.[Id_City] = c.[Id_City]
-          left join 
-            [MasterData].[LocalityType]               as l
-            on 
-              u.[Id_LocalityType] = l.[Id]
-      `
-    );
+    interface AirportEntity extends MasterDataItemEntity {
+      readonly fullName: string;
+      readonly international: boolean;
+      readonly offsetIsDst: boolean;
+      readonly offsetStartDateTimeUtc: string;
+      readonly offsetEndDateTimeUtc: string;
+      readonly offsetStartDateTimeLocal: string;
+      readonly offsetEndDateTimeLocal: string;
+      readonly offset: number;
+    }
 
-    return Object.values(rawAirports.groupBy('id')).map(group => {
+    const airportEntities = await db
+      .query<AirportEntity>(
+        `
+          select
+            convert(varchar(30), u.[Id])            as [id],
+            u.[Iata]                                as [name],
+            u.[Name]                                as [fullName],
+            cast(iif(l.[Code] = 2, 1, 0) as bit)    as [international],
+            c.[IsDst]                               as [offsetIsDst],
+            c.[StartDateUtc]                        as [offsetStartDateTimeUtc],
+            c.[EndDateUtc]                          as [offsetEndDateTimeUtc] ,
+            c.[StartDateLocal]                      as [offsetStartDateTimeLocal],
+            c.[EndDateLocal]                        as [offsetEndDateTimeLocal],
+            c.[OffsetFromUtc]                       as [offset]
+          from
+            [MasterData].[Airport]                      as u
+            left join 
+              [MasterData].[CityUtcOffset]              as c
+              on 
+                u.[Id_City] = c.[Id_City]
+            left join 
+              [MasterData].[LocalityType]               as l
+              on 
+                u.[Id_LocalityType] = l.[Id]
+        `
+      )
+      .all();
+
+    return Object.values(airportEntities.groupBy('id')).map(group => {
       const sample = group[0];
       return {
         id: sample.id,
@@ -209,46 +220,49 @@ export async function fetchAndCacheMasterData(collections: (keyof MasterDataMode
   }
 
   async function getSeasonTypes(): Promise<readonly SeasonTypeModel[]> {
-    const rawSeasonTypes: readonly {
-      id: Id;
-      name: string;
-    }[] = await runQuery(
-      `
-        select
-          convert(varchar(30), [Id])      as [id],
-          [Title]                         as [name]
-        from
-          [MasterData].[SeasonType]
-      `
-    );
+    interface SeasonTypeEntity extends MasterDataItemEntity {}
 
-    return rawSeasonTypes.map(s => ({
+    const seasonTypeEntities = await db
+      .query<SeasonTypeEntity>(
+        `
+          select
+            convert(varchar(30), [Id])      as [id],
+            [Title]                         as [name]
+          from
+            [MasterData].[SeasonType]
+        `
+      )
+      .all();
+
+    return seasonTypeEntities.map(s => ({
       id: s.id,
       name: s.name
     }));
   }
 
   async function getSeasons(): Promise<readonly SeasonModel[]> {
-    const rawSeasons: readonly {
-      id: Id;
-      name: string;
-      startDate: string;
-      endDate: string;
-      seasonTypeId: Id;
-    }[] = await runQuery(
-      `
-        select
-          convert(varchar(30), [Id])                 as [id],
-          [SeasonName]                               as [name],
-          [FromDateUtc]                              as [startDate],
-          [ToDateUtc]                                as [endDate],
-          convert(varchar(30), [Id_SeasonType])      as [seasonTypeId] 
-        from
-          [MasterData].[Season]
-      `
-    );
+    interface SeasonEntity extends MasterDataItemEntity {
+      readonly startDate: string;
+      readonly endDate: string;
+      readonly seasonTypeId: Id;
+    }
 
-    return rawSeasons.map(c => ({
+    const seasonEntities = await db
+      .query<SeasonEntity>(
+        `
+          select
+            convert(varchar(30), [Id])                 as [id],
+            [SeasonName]                               as [name],
+            [FromDateUtc]                              as [startDate],
+            [ToDateUtc]                                as [endDate],
+            convert(varchar(30), [Id_SeasonType])      as [seasonTypeId] 
+          from
+            [MasterData].[Season]
+        `
+      )
+      .all();
+
+    return seasonEntities.map(c => ({
       id: c.id,
       name: c.name,
       startDate: new Date(c.startDate).toJSON(),
@@ -258,22 +272,24 @@ export async function fetchAndCacheMasterData(collections: (keyof MasterDataMode
   }
 
   async function getStcs(): Promise<readonly StcModel[]> {
-    const rawStcs: readonly {
-      id: Id;
-      name: string;
-      description: string;
-    }[] = await runQuery(
-      `
-        select
-          convert(varchar(30), [Id])     as [id],
-          [Code]                         as [name],
-          [description]                  as [description] 
-        from
-          [MasterData].[Stc]
-      `
-    );
+    interface StcEntity extends MasterDataItemEntity {
+      readonly description: string;
+    }
 
-    return rawStcs.map(s => ({
+    const stcEntities = await db
+      .query<StcEntity>(
+        `
+          select
+            convert(varchar(30), [Id])     as [id],
+            [Code]                         as [name],
+            [description]                  as [description] 
+          from
+            [MasterData].[Stc]
+        `
+      )
+      .all();
+
+    return stcEntities.map(s => ({
       id: s.id,
       name: s.name,
       description: s.description
@@ -281,22 +297,24 @@ export async function fetchAndCacheMasterData(collections: (keyof MasterDataMode
   }
 
   async function getAircraftRegisterGroups(): Promise<readonly AircraftRegisterGroupModel[]> {
-    const rawAircraftRegisterGroups: readonly {
-      id: Id;
-      name: string;
-      aircraftRegistersXml: string;
-    }[] = await runQuery(
-      `
-        select
-          convert(varchar(30), [Id])     as [id],
-          [Name]                         as [name],
-          [AircraftRegisters]            as [aircraftRegistersXml]
-        from
-          [MasterData].[AircraftRegisterGroup]
-      `
-    );
+    interface AircraftRegisterGroupEntity extends MasterDataItemEntity {
+      readonly aircraftRegistersXml: string;
+    }
 
-    return rawAircraftRegisterGroups.map(g => ({
+    const aircraftRegisterGroupEntities = await db
+      .query<AircraftRegisterGroupEntity>(
+        `
+          select
+            convert(varchar(30), [Id])     as [id],
+            [Name]                         as [name],
+            [AircraftRegisters]            as [aircraftRegistersXml]
+          from
+            [MasterData].[AircraftRegisterGroup]
+        `
+      )
+      .all();
+
+    return aircraftRegisterGroupEntities.map(g => ({
       id: g.id,
       name: g.name,
       aircraftRegisterIds: xmlArray(xmlParse(g.aircraftRegistersXml, 'AircraftRegisters')['AircraftRegister']).map(a => a._attributes.Id)
@@ -304,28 +322,30 @@ export async function fetchAndCacheMasterData(collections: (keyof MasterDataMode
   }
 
   async function getConstraintTemplates(): Promise<readonly ConstraintTemplateModel[]> {
-    const rawConstraintTemplates: readonly {
-      id: Id;
-      name: string;
-      type: ConstraintTemplateType;
-      instantiable: boolean;
-      description: string;
-      dataFieldsXml: string;
-    }[] = await runQuery(
-      `
-        select
-          convert(varchar(30), [Id])     as [id],
-          [Name]                         as [name],
-          [Code]                         as [type],
-          [IsInstantiable]               as [instantiable],
-          [Description]                  as [description],
-          [DataFields]                   as [dataFieldsXml]
-        from
-          [MasterData].[ConstraintTemplate]
-      `
-    );
+    interface ConstraintTemplateEntity extends MasterDataItemEntity {
+      readonly type: ConstraintTemplateType;
+      readonly instantiable: boolean;
+      readonly description: string;
+      readonly dataFieldsXml: string;
+    }
 
-    return rawConstraintTemplates.map(t => ({
+    const constraintTemplateEntities = await db
+      .query<ConstraintTemplateEntity>(
+        `
+          select
+            convert(varchar(30), [Id])     as [id],
+            [Name]                         as [name],
+            [Code]                         as [type],
+            [IsInstantiable]               as [instantiable],
+            [Description]                  as [description],
+            [DataFields]                   as [dataFieldsXml]
+          from
+            [MasterData].[ConstraintTemplate]
+        `
+      )
+      .all();
+
+    return constraintTemplateEntities.map(t => ({
       id: t.id,
       name: t.name,
       type: t.type,
@@ -347,34 +367,36 @@ export async function fetchAndCacheMasterData(collections: (keyof MasterDataMode
   }
 
   async function getConstraints(): Promise<readonly ConstraintModel[]> {
-    const rawConstraints: readonly {
-      id: Id;
-      name: string;
-      type: ConstraintTemplateType;
-      details: string;
-      fromDate?: string;
-      toDate?: string;
-      seasonTypeId?: Id;
-      daysXml: string;
-      dataXml: string;
-    }[] = await runQuery(
-      `
-        select
-          convert(varchar(30), [Id])               as [id],
-          [Name]                                   as [name],
-          [Type]                                   as [type],
-          [Details]                                as [details],
-          [FromDate]                               as [fromDate],
-          [ToDate]                                 as [toDate],
-          convert(varchar(30), [SeasonTypeId])     as [seasonTypeId],
-          [Days]                                   as [daysXml],
-          [Data]                                   as [dataXml]
-        from
-          [MasterData].[Constraint]
-      `
-    );
+    interface ConstraintEntity extends MasterDataItemEntity {
+      readonly type: ConstraintTemplateType;
+      readonly details: string;
+      readonly fromDate?: string;
+      readonly toDate?: string;
+      readonly seasonTypeId?: Id;
+      readonly daysXml: string;
+      readonly dataXml: string;
+    }
 
-    return rawConstraints.map(c => {
+    const constraintEntities = await db
+      .query<ConstraintEntity>(
+        `
+          select
+            convert(varchar(30), [Id])               as [id],
+            [Name]                                   as [name],
+            [Type]                                   as [type],
+            [Details]                                as [details],
+            [FromDate]                               as [fromDate],
+            [ToDate]                                 as [toDate],
+            convert(varchar(30), [SeasonTypeId])     as [seasonTypeId],
+            [Days]                                   as [daysXml],
+            [Data]                                   as [dataXml]
+          from
+            [MasterData].[Constraint]
+        `
+      )
+      .all();
+
+    return constraintEntities.map(c => {
       const dataKeys =
         c.type === 'AIRCRAFT_RESTRICTION_ON_AIRPORTS'
           ? ['airportIds', 'restriction', 'aircraftSelection']

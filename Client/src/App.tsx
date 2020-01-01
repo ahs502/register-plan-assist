@@ -4,7 +4,7 @@ import { ThemeProvider, makeStyles } from '@material-ui/styles';
 import theme from './theme';
 import RequestManager from './utils/RequestManager';
 import MasterDataService from './services/MasterDataService';
-import MasterData from '@core/master-data';
+import MasterData from 'src/business/master-data';
 import { Switch, Route, Redirect } from 'react-router-dom';
 import PreplanListPage from './pages/preplan-list';
 import PreplanPage from './pages/preplan';

@@ -1,12 +1,13 @@
-import React, { FC, useState, useContext } from 'react';
+import React, { FC, useState, useContext, useMemo } from 'react';
 import { Theme, TableRow, TableCell, Table, TableHead, TableBody, TablePagination } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import Search from 'src/components/Search';
 import Weekday from '@core/types/Weekday';
 import TablePaginationActions from 'src/components/TablePaginationActions';
-import FlightLeg from 'src/business/flight/FlightLeg';
 import { PreplanContext } from 'src/pages/preplan';
 import SideBarContainer from 'src/components/preplan/timeline/SideBarContainer';
+import FlightLegView from 'src/business/flight/FlightLegView';
+import FlightView from 'src/business/flight/FlightView';
 
 const useStyles = makeStyles((theme: Theme) => ({
   searchWrapper: {
@@ -28,13 +29,16 @@ const useStyles = makeStyles((theme: Theme) => ({
 
 export interface SearchFlightsSideBarProps {
   initialSearch?: string;
-  onClick(flightLeg: FlightLeg): void;
+  flightViews: readonly FlightView[];
+  onClick(flightLegView: FlightLegView): void;
 }
 
-const SearchFlightsSideBar: FC<SearchFlightsSideBarProps> = ({ initialSearch, onClick }) => {
+const SearchFlightsSideBar: FC<SearchFlightsSideBarProps> = ({ initialSearch, flightViews, onClick }) => {
   const preplan = useContext(PreplanContext);
 
-  const [filteredFlightLegs, setFilteredFlightLegs] = useState<readonly FlightLeg[]>(preplan.flightLegs);
+  const flightLegViews = useMemo<readonly FlightLegView[]>(() => flightViews.flatMap(f => f.legs), [flightViews]);
+
+  const [filteredFlightLegViews, setFilteredFlightLegViews] = useState<readonly FlightLegView[]>(flightLegViews);
   const [pageNumber, setPageNumber] = useState(0);
   const [rowPerPage, setRowPerPage] = useState(10);
 
@@ -47,10 +51,10 @@ const SearchFlightsSideBar: FC<SearchFlightsSideBarProps> = ({ initialSearch, on
           initialSearch={initialSearch}
           onQueryChange={query => {
             setPageNumber(0);
-            setFilteredFlightLegs(
+            setFilteredFlightLegViews(
               !query.length
-                ? preplan.flightLegs
-                : preplan.flightLegs.filter(l => {
+                ? flightLegViews
+                : flightLegViews.filter(l => {
                     const values = [
                       l.label,
                       l.arrivalAirport.name,
@@ -78,7 +82,7 @@ const SearchFlightsSideBar: FC<SearchFlightsSideBarProps> = ({ initialSearch, on
           </TableRow>
         </TableHead>
         <TableBody>
-          {filteredFlightLegs.slice(pageNumber * rowPerPage, (pageNumber + 1) * rowPerPage).map(f => {
+          {filteredFlightLegViews.slice(pageNumber * rowPerPage, (pageNumber + 1) * rowPerPage).map(f => {
             return (
               <TableRow key={f.derivedId} onClick={() => onClick(f)} hover={true}>
                 <TableCell classes={{ root: classes.tableCell }}> {f.flightNumber.standardFormat}</TableCell>
@@ -97,7 +101,7 @@ const SearchFlightsSideBar: FC<SearchFlightsSideBarProps> = ({ initialSearch, on
       <TablePagination
         classes={{ root: classes.divContent }}
         rowsPerPageOptions={[10, 20, 50]}
-        count={filteredFlightLegs.length}
+        count={filteredFlightLegViews.length}
         onChangePage={(event, page) => setPageNumber(page)}
         page={pageNumber}
         rowsPerPage={rowPerPage}

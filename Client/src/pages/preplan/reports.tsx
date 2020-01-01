@@ -45,17 +45,15 @@ const ReportsPage: FC<ReportsPageProps> = ({}) => {
   return (
     <Fragment>
       <Portal container={navBarToolsContainer}>
-        <Fragment>Preplan {preplan.name} Reports</Fragment>
+        <span />
       </Portal>
       <SectionList
         sections={preplanReports}
         selectedSection={preplanReport}
         onSectionSelect={selectedSection => history.push(`/preplan/${routeMatch.params.id}/reports/${(selectedSection as PreplanReport).path}`)}
       >
-        {preplanReport === proposalPreplanReport && <ProposalReport flights={preplan.flights} preplanName={preplan.name} fromDate={preplan.startDate} toDate={preplan.endDate} />}
-        {preplanReport === connectionsPpreplanReport && (
-          <ConnectionsReport preplanName={preplan.name} flights={preplan.flightLegs} fromDate={preplan.startDate} toDate={preplan.endDate} />
-        )}
+        {preplanReport === proposalPreplanReport && <ProposalReport preplanName={preplan.name} fromDate={preplan.startDate} toDate={preplan.endDate} />}
+        {preplanReport === connectionsPpreplanReport && <ConnectionsReport preplanName={preplan.name} fromDate={preplan.startDate} toDate={preplan.endDate} />}
       </SectionList>
     </Fragment>
   );

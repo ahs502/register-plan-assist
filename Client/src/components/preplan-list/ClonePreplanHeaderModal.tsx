@@ -1,14 +1,14 @@
-import React, { useState } from 'react';
-import { Theme, Grid } from '@material-ui/core';
+import React, { useState, useMemo } from 'react';
+import { Theme, Grid, FormControlLabel, Checkbox, Typography } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import BaseModal, { BaseModalProps, useModalState, createModal } from 'src/components/BaseModal';
-import NewPreplanModel from '@core/models/preplan/NewPreplanModel';
 import PreplanHeader from 'src/business/preplan/PreplanHeader';
-import Id from '@core/types/Id';
 import { dataTypes } from 'src/utils/DataType';
 import RefiningTextField from 'src/components/RefiningTextField';
 import Validation from '@core/node_modules/@ahs502/validation/dist/Validation';
 import persistant from 'src/utils/persistant';
+import ClonePreplanHeaderModel from '@core/models/preplan/ClonePreplanHeaderModel';
+import AutoComplete from 'src/components/AutoComplete';
 
 const useStyles = makeStyles((theme: Theme) => ({}));
 
@@ -16,6 +16,9 @@ interface ViewState {
   name: string;
   startDate: string;
   endDate: string;
+  includeChange: boolean;
+  includeAllVersions: boolean;
+  version?: PreplanHeader['versions'][number];
 }
 class ViewStateValidation extends Validation<
   | 'NAME_EXISTS'
@@ -27,8 +30,15 @@ class ViewStateValidation extends Validation<
   | 'END_DATE_IS_VALID'
   | 'START_DATE_IS_NOT_AFTER_END_DATE'
   | 'END_DATE_IS_NOT_BEFORE_START_DATE'
+  | 'START_DATE_IS_NOT_AFTER_PREPLAN_START_DATE'
+  | 'END_DATE_IS_NOT_BEFORE_PREPLAN_END_DATE'
+  | 'ALL_VERSION_ONLY_SELECT_WITH_INCLUDE_CHANGE'
 > {
-  constructor({ name, startDate, endDate }: ViewState, preplanHeaders: readonly PreplanHeader[]) {
+  constructor(
+    { name, startDate, endDate, includeChange, includeAllVersions: allVersion }: ViewState,
+    currentPreplanHeader: PreplanHeader,
+    preplanHeaders: readonly PreplanHeader[]
+  ) {
     super(
       validator => {
         validator
@@ -46,6 +56,22 @@ class ViewStateValidation extends Validation<
           validator.check('START_DATE_IS_NOT_AFTER_END_DATE', ok, 'Can not be after end date.');
           validator.check('END_DATE_IS_NOT_BEFORE_START_DATE', ok, 'Can not be before start date.');
         });
+        validator
+          .if(includeChange)
+          .when('START_DATE_IS_VALID', 'END_DATE_IS_VALID')
+          .then(() => {
+            validator.check(
+              'START_DATE_IS_NOT_AFTER_PREPLAN_START_DATE',
+              dataTypes.utcDate.convertViewToModel(startDate) <= dataTypes.utcDate.convertBusinessToModel(currentPreplanHeader.startDate),
+              `Can not after ${currentPreplanHeader.startDate.format('d')}.`
+            );
+            validator.check(
+              'END_DATE_IS_NOT_BEFORE_PREPLAN_END_DATE',
+              dataTypes.utcDate.convertViewToModel(endDate) >= dataTypes.utcDate.convertBusinessToModel(currentPreplanHeader.endDate),
+              `Can not before ${currentPreplanHeader.endDate.format('d')}.`
+            );
+          });
+        validator.if(!includeChange).check('ALL_VERSION_ONLY_SELECT_WITH_INCLUDE_CHANGE', !allVersion);
       },
       {
         '*_EXISTS': 'Required.',
@@ -57,23 +83,43 @@ class ViewStateValidation extends Validation<
   }
 }
 
-export interface ClonePreplanModalState {
+export interface ClonePreplanHeaderModalState {
   preplanHeader: PreplanHeader;
 }
 
-export interface ClonePreplanModalProps extends BaseModalProps<ClonePreplanModalState> {
-  onClone(sourcePreplanId: Id, newPreplanModel: NewPreplanModel): Promise<void>;
+export interface ClonePreplanHeaderModalProps extends BaseModalProps<ClonePreplanHeaderModalState> {
+  onClone(clonePreplanHeaderModel: ClonePreplanHeaderModel): Promise<void>;
   preplanHeaders: readonly PreplanHeader[];
 }
 
-const ClonePreplanModal = createModal<ClonePreplanModalState, ClonePreplanModalProps>(({ state, onClone, preplanHeaders, ...others }) => {
+const ClonePreplanHeaderModal = createModal<ClonePreplanHeaderModalState, ClonePreplanHeaderModalProps>(({ state, onClone, preplanHeaders, ...others }) => {
   const [viewState, setViewState] = useState<ViewState>(() => ({
     name: `Copy of ${dataTypes.name.convertBusinessToView(state.preplanHeader.name)}`,
     startDate: dataTypes.utcDate.convertBusinessToView(state.preplanHeader.startDate),
-    endDate: dataTypes.utcDate.convertBusinessToView(state.preplanHeader.endDate)
+    endDate: dataTypes.utcDate.convertBusinessToView(state.preplanHeader.endDate),
+    includeChange: false,
+    includeAllVersions: false
   }));
 
-  const validation = new ViewStateValidation(viewState, preplanHeaders);
+  const preplanVersionOptions = useMemo(
+    () => [
+      {
+        id: '',
+        label: ' ',
+        version: undefined
+      },
+      ...state.preplanHeader.versions
+        .filter(v => !v.current)
+        .map(l => ({
+          id: l.id,
+          label: l.current ? 'Current' : `${l.lastEditDateTime.format('d')} ${l.lastEditDateTime.format('t')} — ${l.description}`,
+          version: l
+        }))
+    ],
+    [state.preplanHeader.versions]
+  );
+
+  const validation = new ViewStateValidation(viewState, state.preplanHeader, preplanHeaders);
   const errors = {
     name: validation.message('NAME_*'),
     startDate: validation.message('START_DATE_*'),
@@ -98,18 +144,61 @@ const ClonePreplanModal = createModal<ClonePreplanModalState, ClonePreplanModalP
           action: async () => {
             if (!validation.ok) throw 'Invalid form fields.';
 
-            const newPreplanModel: NewPreplanModel = {
+            const clonePreplanHeaderModel: ClonePreplanHeaderModel = {
               name: dataTypes.name.convertViewToModel(viewState.name),
               startDate: dataTypes.utcDate.convertViewToModel(viewState.startDate),
-              endDate: dataTypes.utcDate.convertViewToModel(viewState.endDate)
+              endDate: dataTypes.utcDate.convertViewToModel(viewState.endDate),
+              sourcePreplanId: viewState.version?.id ?? state.preplanHeader.current.id,
+              includeChanges: viewState.includeChange,
+              includeAllVersions: viewState.includeAllVersions
             };
 
-            await onClone(state.preplanHeader.id, newPreplanModel);
+            await onClone(clonePreplanHeaderModel);
           }
         }
       ]}
       body={({ handleKeyboardEvent }) => (
         <Grid container spacing={2}>
+          <Grid item xs={6}>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={viewState.includeChange}
+                  onChange={({ target: { checked } }) => setViewState({ ...viewState, includeChange: checked, includeAllVersions: false })}
+                  color="primary"
+                />
+              }
+              label="Include Changes"
+            />
+          </Grid>
+          <Grid item xs={6}>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={viewState.includeAllVersions}
+                  onChange={({ target: { checked } }) =>
+                    setViewState(viewState => ({ ...viewState, includeAllVersions: checked, version: preplanVersionOptions.find(p => p.version === undefined)?.version }))
+                  }
+                  color="primary"
+                />
+              }
+              label="All Version"
+              disabled={!viewState.includeChange}
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <Typography>Version</Typography>
+            <AutoComplete
+              options={preplanVersionOptions}
+              value={preplanVersionOptions.find(p => p.version === viewState.version)}
+              getOptionLabel={l => l.label}
+              getOptionValue={l => l.id}
+              onSelect={({ version }) => {
+                setViewState({ ...viewState, version });
+              }}
+              isDisabled={viewState.includeAllVersions}
+            />
+          </Grid>
           <Grid item xs={12}>
             <RefiningTextField
               fullWidth
@@ -153,8 +242,8 @@ const ClonePreplanModal = createModal<ClonePreplanModalState, ClonePreplanModalP
   );
 });
 
-export default ClonePreplanModal;
+export default ClonePreplanHeaderModal;
 
-export function useClonePreplanModalState() {
-  return useModalState<ClonePreplanModalState>();
+export function useClonePreplanHeaderModalState() {
+  return useModalState<ClonePreplanHeaderModalState>();
 }

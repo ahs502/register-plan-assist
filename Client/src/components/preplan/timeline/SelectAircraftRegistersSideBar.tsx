@@ -3,7 +3,7 @@ import { Theme, Table, TableHead, TableBody, TableCell, TableRow, Typography, Ic
 import { Clear as RemoveIcon, Check as CheckIcon } from '@material-ui/icons';
 import { makeStyles } from '@material-ui/styles';
 import classNames from 'classnames';
-import MasterData from '@core/master-data';
+import MasterData from 'src/business/master-data';
 import Search, { filterOnProperties } from 'src/components/Search';
 import useProperty from 'src/utils/useProperty';
 import AircraftRegisterOptionsStatus from '@core/types/AircraftRegisterOptionsStatus';

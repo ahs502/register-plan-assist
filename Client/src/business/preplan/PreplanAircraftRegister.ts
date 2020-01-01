@@ -1,9 +1,9 @@
 import DummyAircraftRegisterModel from '@core/models/preplan/DummyAircraftRegisterModel';
 import AircraftRegisterOptionsModel from '@core/models/preplan/AircraftRegisterOptionsModel';
-import MasterData, { MasterDataItem, MasterDataItems, AircraftType, AircraftRegisterGroup, AircraftRegister } from '@core/master-data';
+import MasterData, { MasterDataItem, MasterDataItems, AircraftType, AircraftRegisterGroup, AircraftRegister } from 'src/business/master-data';
 import AircraftRegisterOptionsDictionary from './AircraftRegisterOptionsDictionary';
-import AircraftIdentity from '@core/master-data/AircraftIdentity';
-import AircraftSelection from '@core/master-data/AircraftSelection';
+import AircraftIdentity from 'src/business/master-data/AircraftIdentity';
+import AircraftSelection from 'src/business/master-data/AircraftSelection';
 import Preplan from './Preplan';
 import Objectionable from 'src/business/constraints/Objectionable';
 import Objection, { ObjectionType } from 'src/business/constraints/Objection';

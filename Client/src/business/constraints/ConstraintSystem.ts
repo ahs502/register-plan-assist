@@ -2,7 +2,7 @@ import Objection, { ObjectionType } from 'src/business/constraints/Objection';
 import FlightLeg from 'src/business/flight/FlightLeg';
 import Checker from 'src/business/constraints/Checker';
 import Preplan from 'src/business/preplan/Preplan';
-import MasterData, { ConstraintTemplate, Constraint } from '@core/master-data';
+import MasterData, { ConstraintTemplate, Constraint } from 'src/business/master-data';
 import Objectionable from 'src/business/constraints/Objectionable';
 
 import NoConflictionOnFlightsChecker from './checkers/NoConflictionOnFlightsChecker';
@@ -127,8 +127,10 @@ export default class ConstraintSystem {
     }
   }
 
-  getObjectionsByTarget(target: Objectionable, skipDependencies?: boolean): readonly Objection[] {
-    return (skipDependencies || !target.objectionStatusDependencies ? [target] : [target, ...target.objectionStatusDependencies]).flatMap(target => {
+  getObjectionsByTargets(target: Objectionable | readonly Objectionable[], skipDependencies?: boolean): readonly Objection[] {
+    const targets: readonly Objectionable[] = Array.isArray(target) ? target : [target];
+    const allTargets = targets.flatMap(t => (skipDependencies || !t.objectionStatusDependencies ? [t] : [t, ...t.objectionStatusDependencies]));
+    return allTargets.flatMap(target => {
       const targetConstructor = (target as Object).constructor.name;
       if (!(targetConstructor in this.objectionsByTarget)) return [];
       const targetId = (target.id || target.derivedId)!;
@@ -136,11 +138,12 @@ export default class ConstraintSystem {
       return this.objectionsByTarget[targetConstructor][targetId];
     });
   }
-  getObjectionStatusByTarget(target: Objectionable, skipDependencies?: boolean): ObjectionStatus {
-    const targets = skipDependencies || !target.objectionStatusDependencies ? [target] : [target, ...target.objectionStatusDependencies];
+  getObjectionStatusByTargets(target: Objectionable | readonly Objectionable[], skipDependencies?: boolean): ObjectionStatus {
+    const targets: readonly Objectionable[] = Array.isArray(target) ? target : [target];
+    const allTargets = targets.flatMap(t => (skipDependencies || !t.objectionStatusDependencies ? [t] : [t, ...t.objectionStatusDependencies]));
     let warning = false;
-    for (const target of targets) {
-      const targetObjections = this.getObjectionsByTarget(target, true);
+    for (const target of allTargets) {
+      const targetObjections = this.getObjectionsByTargets(target, true);
       if (targetObjections.length === 0) continue;
       if (targetObjections.some(o => o.type === 'ERROR')) return 'ERROR';
       warning = true;

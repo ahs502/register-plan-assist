@@ -7,15 +7,15 @@ import Id from '@core/types/Id';
 
 const useStyles = makeStyles((theme: Theme) => ({}));
 
-export interface RemovePreplanModalState {
+export interface RemovePreplanHeaderModalState {
   preplanHeader: PreplanHeader;
 }
 
-export interface RemovePreplanModalProps extends BaseModalProps<RemovePreplanModalState> {
+export interface RemovePreplanHeaderModalProps extends BaseModalProps<RemovePreplanHeaderModalState> {
   onRemove(sourcePreplanId: Id): Promise<void>;
 }
 
-const RemovePreplanModal = createModal<RemovePreplanModalState, RemovePreplanModalProps>(({ state, onRemove, ...others }) => {
+const RemovePreplanHeaderModal = createModal<RemovePreplanHeaderModalState, RemovePreplanHeaderModalProps>(({ state, onRemove, ...others }) => {
   const classes = useStyles();
 
   return (
@@ -38,8 +38,8 @@ const RemovePreplanModal = createModal<RemovePreplanModalState, RemovePreplanMod
   );
 });
 
-export default RemovePreplanModal;
+export default RemovePreplanHeaderModal;
 
-export function useRemovePreplanModalState() {
-  return useModalState<RemovePreplanModalState>();
+export function useRemovePreplanHeaderModalState() {
+  return useModalState<RemovePreplanHeaderModalState>();
 }

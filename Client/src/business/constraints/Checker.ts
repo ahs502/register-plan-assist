@@ -1,5 +1,5 @@
 import Id from '@core/types/Id';
-import { Constraint, ConstraintTemplate } from '@core/master-data';
+import { Constraint, ConstraintTemplate } from 'src/business/master-data';
 import Preplan from 'src/business/preplan/Preplan';
 import Objection, { ObjectionType } from 'src/business/constraints/Objection';
 import ConstraintSystem from 'src/business/constraints/ConstraintSystem';

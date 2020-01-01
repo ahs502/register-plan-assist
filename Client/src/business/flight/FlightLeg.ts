@@ -1,5 +1,5 @@
 import Daytime from '@core/types/Daytime';
-import { Stc, Airport } from '@core/master-data';
+import { Stc, Airport } from 'src/business/master-data';
 import FlightRequirement from 'src/business/flight-requirement/FlightRequirement';
 import FlightRequirementLeg from 'src/business/flight-requirement/FlightRequirementLeg';
 import DayFlightRequirement from 'src/business/flight-requirement/DayFlightRequirement';
@@ -13,13 +13,30 @@ import Weekday from '@core/types/Weekday';
 import Objectionable from 'src/business/constraints/Objectionable';
 import Checker from 'src/business/constraints/Checker';
 import FlightNumber from '@core/types/FlightNumber';
-import Id from '@core/types/Id';
 import ModelConvertable from 'src/business/ModelConvertable';
 import { dataTypes } from 'src/utils/DataType';
+import FlightRequirementChange from 'src/business/flight-requirement/FlightRequirementChange';
+import FlightRequirementLegChange from 'src/business/flight-requirement/FlightRequirementLegChange';
+import DayFlightRequirementChange from 'src/business/flight-requirement/DayFlightRequirementChange';
+import DayFlightRequirementLegChange from 'src/business/flight-requirement/DayFlightRequirementLegChange';
+import Id from '@core/types/Id';
 
 export default class FlightLeg implements ModelConvertable<FlightLegModel>, Objectionable {
   // Original:
   readonly std: Daytime;
+
+  // References:
+  readonly flight: Flight;
+  readonly flightRequirement: FlightRequirement;
+  readonly flightRequirementLeg: FlightRequirementLeg;
+  readonly dayFlightRequirement: DayFlightRequirement;
+  readonly dayFlightRequirementLeg: DayFlightRequirementLeg;
+  readonly change?: {
+    readonly flightRequirement: FlightRequirementChange;
+    readonly flightRequirementLeg: FlightRequirementLegChange;
+    readonly dayFlightRequirement: DayFlightRequirementChange;
+    readonly dayFlightRequirementLeg: DayFlightRequirementLegChange;
+  };
 
   // Duplicates:
   readonly label: string;
@@ -27,8 +44,8 @@ export default class FlightLeg implements ModelConvertable<FlightLegModel>, Obje
   readonly stc: Stc;
   readonly aircraftRegister?: PreplanAircraftRegister;
   readonly rsx: Rsx;
-  readonly ignored: boolean;
   readonly day: Weekday;
+  readonly date: Date;
   readonly notes: string;
   readonly index: number;
   readonly flightNumber: FlightNumber;
@@ -37,13 +54,6 @@ export default class FlightLeg implements ModelConvertable<FlightLegModel>, Obje
   readonly blockTime: Daytime;
   readonly originPermission: boolean;
   readonly destinationPermission: boolean;
-
-  // References:
-  readonly flight: Flight;
-  readonly flightRequirement: FlightRequirement;
-  readonly flightRequirementLeg: FlightRequirementLeg;
-  readonly dayFlightRequirement: DayFlightRequirement;
-  readonly dayFlightRequirementLeg: DayFlightRequirementLeg;
 
   // Computational:
   readonly derivedId: Id;
@@ -55,34 +65,48 @@ export default class FlightLeg implements ModelConvertable<FlightLegModel>, Obje
   readonly actualSta: Daytime;
   readonly weekStd: number;
   readonly weekSta: number;
+  readonly stdDateTime: Date;
+  readonly staDateTime: Date;
 
   // Inherited:
   readonly objectionStatusDependencies: readonly Objectionable[];
 
-  constructor(raw: FlightLegModel, dayOffset: number, flight: Flight, dayFlightRequirementLeg: DayFlightRequirementLeg) {
+  constructor(
+    raw: FlightLegModel,
+    dayOffset: number,
+    flight: Flight,
+    dayFlightRequirementLeg: DayFlightRequirementLeg,
+    dayFlightRequirementLegChange?: DayFlightRequirementLegChange
+  ) {
     this.std = dataTypes.daytime.convertModelToBusiness(raw.std);
-
-    this.label = flight.label;
-    this.category = flight.category;
-    this.stc = flight.stc;
-    this.aircraftRegister = flight.aircraftRegister;
-    this.rsx = flight.rsx;
-    this.ignored = flight.ignored;
-    this.day = flight.day;
-    this.notes = flight.notes;
-    this.index = dayFlightRequirementLeg.index;
-    this.flightNumber = dayFlightRequirementLeg.flightRequirementLeg.flightNumber;
-    this.departureAirport = dayFlightRequirementLeg.flightRequirementLeg.departureAirport;
-    this.arrivalAirport = dayFlightRequirementLeg.flightRequirementLeg.arrivalAirport;
-    this.blockTime = dayFlightRequirementLeg.blockTime;
-    this.originPermission = dayFlightRequirementLeg.originPermission;
-    this.destinationPermission = dayFlightRequirementLeg.destinationPermission;
 
     this.flight = flight;
     this.flightRequirement = dayFlightRequirementLeg.flightRequirement;
     this.flightRequirementLeg = dayFlightRequirementLeg.flightRequirementLeg;
     this.dayFlightRequirement = dayFlightRequirementLeg.dayFlightRequirement;
     this.dayFlightRequirementLeg = dayFlightRequirementLeg;
+    this.change = dayFlightRequirementLegChange && {
+      flightRequirement: dayFlightRequirementLegChange.flightRequirementChange,
+      flightRequirementLeg: dayFlightRequirementLegChange.flightRequirementLegChange,
+      dayFlightRequirement: dayFlightRequirementLegChange.dayFlightRequirementChange,
+      dayFlightRequirementLeg: dayFlightRequirementLegChange
+    };
+
+    this.label = flight.label;
+    this.category = flight.category;
+    this.stc = flight.stc;
+    this.aircraftRegister = flight.aircraftRegister;
+    this.rsx = flight.rsx;
+    this.day = flight.day;
+    this.date = flight.date;
+    this.notes = flight.notes;
+    this.index = dayFlightRequirementLeg.index;
+    this.flightNumber = dayFlightRequirementLeg.flightRequirementLeg.flightNumber;
+    this.departureAirport = dayFlightRequirementLeg.flightRequirementLeg.departureAirport;
+    this.arrivalAirport = dayFlightRequirementLeg.flightRequirementLeg.arrivalAirport;
+    this.blockTime = (this.change?.dayFlightRequirementLeg ?? dayFlightRequirementLeg).blockTime;
+    this.originPermission = (this.change?.dayFlightRequirementLeg ?? dayFlightRequirementLeg).originPermission;
+    this.destinationPermission = (this.change?.dayFlightRequirementLeg ?? dayFlightRequirementLeg).destinationPermission;
 
     this.derivedId = `${flight.id}#${this.index}`;
     this.sta = new Daytime(this.std.minutes + this.blockTime.minutes);
@@ -97,6 +121,8 @@ export default class FlightLeg implements ModelConvertable<FlightLegModel>, Obje
     this.actualSta = new Daytime(actualStaMinutes);
     this.weekStd = this.day * 24 * 60 + this.actualStd.minutes;
     this.weekSta = this.day * 24 * 60 + this.actualSta.minutes;
+    this.stdDateTime = new Date(this.date.getTime() + this.actualStd.minutes * 60 * 1000);
+    this.staDateTime = new Date(this.date.getTime() + this.actualSta.minutes * 60 * 1000);
 
     this.objectionStatusDependencies = [this.flightRequirement, this.dayFlightRequirement];
   }
@@ -113,13 +139,6 @@ export default class FlightLeg implements ModelConvertable<FlightLegModel>, Obje
   }
   issueObjection(type: ObjectionType, priority: number, checker: Checker, messageProvider: (constraintMarker: string) => string): Objection<FlightLeg> {
     return new Objection<FlightLeg>(type, this, 1, priority, checker, messageProvider);
-  }
-
-  stdDateTime(weekStartDate: Date): Date {
-    return new Date(weekStartDate.getTime() + this.weekStd * 60 * 1000);
-  }
-  staDateTime(weekStartDate: Date): Date {
-    return new Date(weekStartDate.getTime() + this.weekSta * 60 * 1000);
   }
 
   getRequiredMinimumGroundTime(startDate: Date, endDate?: Date, method: 'MAXIMUM' | 'MINIMUM' = 'MAXIMUM'): number {

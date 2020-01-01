@@ -1,7 +1,7 @@
-import React, { FC, useState, Fragment, useEffect } from 'react';
-import { Theme, InputLabel, TextField, TableHead, TableCell, Table, TableRow, TableBody, Button, Paper, Typography } from '@material-ui/core';
+import React, { FC, useState, Fragment, useEffect, useMemo, useContext } from 'react';
+import { Theme, InputLabel, TextField, TableHead, TableCell, Table, TableRow, TableBody, Button, Paper, Typography, Grid } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
-import MasterData, { Airport } from '@core/master-data';
+import MasterData, { Airport } from 'src/business/master-data';
 import Weekday from '@core/types/Weekday';
 import MultiSelect from 'src/components/MultiSelect';
 import classNames from 'classnames';
@@ -13,6 +13,8 @@ import { dataTypes } from 'src/utils/DataType';
 import RefiningTextField from 'src/components/RefiningTextField';
 import Validation from '@core/node_modules/@ahs502/validation/dist/Validation';
 import AutoComplete from 'src/components/AutoComplete';
+import { PreplanContext } from 'src/pages/preplan';
+import Week from 'src/business/Week';
 
 const errorPaperSize = 250;
 const character = {
@@ -49,6 +51,10 @@ const useStyles = makeStyles((theme: Theme) => ({
     top: 13,
     position: 'relative',
     right: 10
+  },
+  connectionEastAirline: {
+    top: 16,
+    position: 'relative'
   },
   boarder: {
     borderColor: theme.palette.grey[400],
@@ -94,14 +100,18 @@ const useStyles = makeStyles((theme: Theme) => ({
 }));
 
 interface ViewState {
-  airline: Airline;
+  westAirportsAirline: Airline;
+  eastAirportsAirline: Airline;
   eastAirports: Airport[];
   westAirports: Airport[];
-  startDate: string;
-  endDate: string;
   baseDate: string;
   maxConnectionTime: string;
   minConnectionTime: string;
+}
+
+interface ReportDateRangeState {
+  startDate: string;
+  endDate: string;
 }
 
 class ConnectionReportValidation extends Validation<
@@ -116,9 +126,10 @@ class ConnectionReportValidation extends Validation<
   | 'BASE_DATE_EXISTS'
   | 'BASE_DATE_IS_VALID'
   | 'BASE_DATE_BETWEEN_START_DATE_AND_END_DATE'
-  | 'AIRLINE_EXISTS'
+  | 'EAST_AIRLINE_EXISTS'
+  | 'WEST_AIRLINE_EXISTS'
 > {
-  constructor({ airline, startDate, endDate, baseDate, eastAirports, westAirports }: ViewState) {
+  constructor({ eastAirportsAirline, westAirportsAirline, baseDate, eastAirports, westAirports }: ViewState, { startDate, endDate }: ReportDateRangeState) {
     super(
       validator => {
         validator.check('EAST_AIRPORT_EXISTS', eastAirports.length > 0);
@@ -139,7 +150,8 @@ class ConnectionReportValidation extends Validation<
                 dataTypes.utcDate.convertViewToModel(startDate) <= dataTypes.utcDate.convertViewToModel(baseDate),
               'Between start date and end date.'
             );
-          validator.check('AIRLINE_EXISTS', !!airline);
+          validator.check('EAST_AIRLINE_EXISTS', !!eastAirportsAirline);
+          validator.check('WEST_AIRLINE_EXISTS', !!westAirportsAirline);
         });
       },
       {
@@ -161,7 +173,7 @@ class NumberOfConnectionValidation extends Validation<
   | 'MAX_CONNECTION_IS_NOT_LESS_THAN_MIN_CONNECTION_TIME',
   { connectionReportValidation: ConnectionReportValidation }
 > {
-  constructor(viewState: ViewState) {
+  constructor(viewState: ViewState, reportDateRangeState: ReportDateRangeState) {
     const { maxConnectionTime, minConnectionTime } = viewState;
     super(
       validator => {
@@ -172,7 +184,7 @@ class NumberOfConnectionValidation extends Validation<
           validator.check('MIN_CONNECTION_IS_NOT_GREATER_THAN_MAX_CONNECTION_TIME', ok, 'Can not be grater than max connection.');
           validator.check('MAX_CONNECTION_IS_NOT_LESS_THAN_MIN_CONNECTION_TIME', ok, 'Can not be less than max connection.');
         });
-        validator.put(validator.$.connectionReportValidation, new ConnectionReportValidation(viewState));
+        validator.put(validator.$.connectionReportValidation, new ConnectionReportValidation(viewState, reportDateRangeState));
       },
       {
         '*_EXISTS': 'Required.',
@@ -185,7 +197,6 @@ class NumberOfConnectionValidation extends Validation<
 }
 
 interface ConnectionsReportProps {
-  flights: readonly FlightLeg[];
   preplanName: string;
   fromDate: Date;
   toDate: Date;
@@ -209,10 +220,26 @@ interface AutoCompleteOption {
 
 interface Airline extends AutoCompleteOption {}
 
-const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, fromDate, toDate }) => {
+const ConnectionsReport: FC<ConnectionsReportProps> = ({ preplanName, fromDate, toDate }) => {
+  const preplan = useContext(PreplanContext);
+
+  const [reportDateRange, setReportDateRange] = useState<ReportDateRangeState>({
+    startDate: dataTypes.utcDate.convertBusinessToView(fromDate),
+    endDate: dataTypes.utcDate.convertBusinessToView(toDate)
+  });
+
+  const flightViews = useMemo(() => {
+    return preplan.getFlightViews(
+      new Week(dataTypes.utcDate.convertViewToBusiness(reportDateRange.startDate)),
+      new Week(dataTypes.utcDate.convertViewToBusiness(reportDateRange.endDate))
+    );
+  }, [reportDateRange]);
+
+  const flightLegViews = flightViews.flatMap(f => f.legs);
+
   const allAirports = MasterData.all.airports.items;
 
-  const allAirline = flights
+  const allAirline = flightLegViews
     .map(f => f.flightNumber.airlineCode)
     .distinct()
     .map<Airline>(a => ({ label: a, value: a }));
@@ -220,7 +247,8 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
   const defaultWestAirport = ['BCN', 'DXB', 'ESB', 'IST', 'VKO'];
   const defaultEastAirpot = ['BKK', 'CAN', 'DEL', 'KUL', 'LHE', 'PEK', 'PVG'];
   const [viewState, setViewState] = useState<ViewState>(() => ({
-    airline: allAirline.find(z => z.value === 'W5') ?? allAirline[0],
+    westAirportsAirline: allAirline.find(z => z.value === 'W5') ?? allAirline[0],
+    eastAirportsAirline: allAirline.find(z => z.value === 'W5') ?? allAirline[0],
     eastAirports: allAirports.filter(a => defaultEastAirpot.indexOf(a.name) !== -1).orderBy('name'),
     westAirports: allAirports.filter(a => defaultWestAirport.indexOf(a.name) !== -1).orderBy('name'),
     startDate: dataTypes.utcDate.convertBusinessToView(fromDate),
@@ -242,13 +270,21 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
       const flightLegInfoModels: FlightLegInfoModel[] = [];
       const reportBaseDate = new Date(dataTypes.utcDate.convertViewToModel(viewState.baseDate));
 
-      const targetFlights = flights.filter(
+      const eastFlight = flightLegViews.filter(
         f =>
           f.rsx === 'REAL' &&
-          f.flightNumber.airlineCode === viewState.airline.value &&
-          (viewState.eastAirports.some(a => a.id === f.departureAirport.id || a.id === f.arrivalAirport.id) ||
-            viewState.westAirports.some(a => a.id === f.departureAirport.id || a.id === f.arrivalAirport.id))
+          f.flightNumber.airlineCode === viewState.eastAirportsAirline.value &&
+          viewState.eastAirports.some(a => a.id === f.departureAirport.id || a.id === f.arrivalAirport.id)
       );
+
+      const westFlight = flightLegViews.filter(
+        f =>
+          f.rsx === 'REAL' &&
+          f.flightNumber.airlineCode === viewState.westAirportsAirline.value &&
+          viewState.westAirports.some(a => a.id === f.departureAirport.id || a.id === f.arrivalAirport.id)
+      );
+
+      const targetFlights = eastFlight.concat(westFlight);
 
       viewState.eastAirports.forEach(airport => {
         if (!flightLegInfoModels.some(f => f.airport === airport)) {
@@ -282,7 +318,11 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
             if (flightInfo) {
               flightInfo.departureTimeFromIKA.push(localStd);
             } else {
-              flightLegInfoModel.flightInfo.push({ weekday: departureWeekDay, arrivalTimeToIKA: [], departureTimeFromIKA: [localStd] });
+              flightLegInfoModel.flightInfo.push({
+                weekday: departureWeekDay,
+                arrivalTimeToIKA: [],
+                departureTimeFromIKA: [localStd]
+              });
             }
           }
         } else if (isArrivalToIKA) {
@@ -307,7 +347,11 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
             if (flightInfo) {
               flightInfo.arrivalTimeToIKA.push(localSta);
             } else {
-              flightLegInfoModel.flightInfo.push({ weekday: arrivalWeekDay, arrivalTimeToIKA: [localSta], departureTimeFromIKA: [] });
+              flightLegInfoModel.flightInfo.push({
+                weekday: arrivalWeekDay,
+                arrivalTimeToIKA: [localSta],
+                departureTimeFromIKA: []
+              });
             }
           }
         }
@@ -320,8 +364,8 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
     }
   }, [viewState]);
 
-  const validation = new ConnectionReportValidation(viewState);
-  const numberOfConnectionValidation = new NumberOfConnectionValidation(viewState);
+  const validation = new ConnectionReportValidation(viewState, reportDateRange);
+  const numberOfConnectionValidation = new NumberOfConnectionValidation(viewState, reportDateRange);
 
   const errors = {
     eastAirports: validation.message('EAST_AIRPORT_*'),
@@ -329,7 +373,8 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
     startDate: validation.message('START_DATE_*'),
     endDate: validation.message('END_DATE_*'),
     baseDate: validation.message('BASE_DATE_*'),
-    airline: validation.message('AIRLINE_*'),
+    eastAirline: validation.message('EAST_AIRLINE_*'),
+    westAirline: validation.message('WEST_AIRLINE_*'),
     maxConnectionTime: numberOfConnectionValidation.message('MAX_CONNECTION_*'),
     minConnectionTime: numberOfConnectionValidation.message('MIN_CONNECTION_*')
   };
@@ -498,6 +543,38 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
     headerCellOption: { ...headerCellOptions, background: '#C6EFCE' }
   };
 
+  const generateWestAirportHeader = viewState.westAirports.map(airport => (
+    <ExcelExportColumn
+      key={airport.id}
+      field={airport.name}
+      title={airport.name}
+      width={54}
+      cellOptions={{
+        ...detailCellOption,
+        wrap: true,
+        background: '#FBE0CE'
+      }}
+      headerCellOptions={{
+        ...headerCellOptions,
+        background: '#F4B084'
+      }}
+    />
+  ));
+
+  const generateEastAirportHeader = viewState.eastAirports.map(airport => (
+    <ExcelExportColumn
+      key={airport.id}
+      field={'from' + airport.name}
+      title={airport.name}
+      width={30}
+      cellOptions={{ ...detailCellOption, wrap: true }}
+      headerCellOptions={{
+        ...headerCellOptions,
+        background: '#F4B084'
+      }}
+    />
+  ));
+
   const exportConnectionTable = (
     <Fragment>
       <Button
@@ -541,53 +618,19 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
         />
 
         <ExcelExportColumnGroup title="Arrival to IKA" headerCellOptions={columnGroupCellOptions}>
-          {viewState.eastAirports.map(airport => (
-            <ExcelExportColumn
-              key={airport.id}
-              field={'from' + airport.name}
-              title={airport.name}
-              width={30}
-              cellOptions={{ ...detailCellOption, wrap: true }}
-              headerCellOptions={{
-                ...headerCellOptions,
-                background: '#F4B084'
-              }}
-            />
-          ))}
+          <ExcelExportColumnGroup title={viewState.eastAirportsAirline.label} headerCellOptions={columnGroupCellOptions}>
+            {generateEastAirportHeader}
+          </ExcelExportColumnGroup>
         </ExcelExportColumnGroup>
         <ExcelExportColumnGroup title={preplanName + ' CONNECTIONS'} headerCellOptions={columnGroupCellOptions}>
-          {viewState.westAirports.map(airport => (
-            <ExcelExportColumn
-              key={airport.id}
-              field={airport.name}
-              title={airport.name}
-              width={54}
-              cellOptions={{
-                ...detailCellOption,
-                wrap: true,
-                background: '#FBE0CE'
-              }}
-              headerCellOptions={{
-                ...headerCellOptions,
-                background: '#F4B084'
-              }}
-            />
-          ))}
+          <ExcelExportColumnGroup title={viewState.westAirportsAirline.label} headerCellOptions={columnGroupCellOptions}>
+            {generateWestAirportHeader}
+          </ExcelExportColumnGroup>
         </ExcelExportColumnGroup>
         <ExcelExportColumnGroup title="Departure from IKA" headerCellOptions={columnGroupCellOptions}>
-          {viewState.eastAirports.map(airport => (
-            <ExcelExportColumn
-              key={airport.id}
-              field={'to' + airport.name}
-              title={airport.name}
-              width={30}
-              cellOptions={{ ...detailCellOption, wrap: true }}
-              headerCellOptions={{
-                ...headerCellOptions,
-                background: '#F4B084'
-              }}
-            />
-          ))}
+          <ExcelExportColumnGroup title={viewState.eastAirportsAirline.label} headerCellOptions={columnGroupCellOptions}>
+            {generateEastAirportHeader}
+          </ExcelExportColumnGroup>
         </ExcelExportColumnGroup>
       </ExcelExport>
     </Fragment>
@@ -605,6 +648,19 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
 
           <TableCell colSpan={viewState.eastAirports.length} align="center" className={classes.boarder}>
             Departure from IKA
+          </TableCell>
+        </TableRow>
+        <TableRow className={classes.header}>
+          <TableCell className={classes.boarder} />
+          <TableCell colSpan={viewState.eastAirports.length} align="center" className={classes.boarder}>
+            {viewState.eastAirportsAirline.label}
+          </TableCell>
+          <TableCell colSpan={viewState.westAirports.length} align="center" className={classes.boarder}>
+            {viewState.westAirportsAirline.label}
+          </TableCell>
+
+          <TableCell colSpan={viewState.eastAirports.length} align="center" className={classes.boarder}>
+            {viewState.eastAirportsAirline.label}
           </TableCell>
         </TableRow>
         <TableRow className={classes.airportHeader}>
@@ -703,61 +759,63 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
         <ExcelExportColumn
           field="airport"
           locked={false}
-          title={' '}
+          title={viewState.eastAirportsAirline.label}
           width={50}
           cellOptions={numberOfConnectionExcelStyle.headerCellOption}
-          headerCellOptions={numberOfConnectionExcelStyle.headerCellOption}
+          headerCellOptions={{ ...numberOfConnectionExcelStyle.headerCellOption, verticalAlign: 'bottom' }}
         />
 
         <ExcelExportColumnGroup
           title={preplanName + ' Number of Connection (Minimum Connection Time: ' + viewState.minConnectionTime + ' Maximum Connection Time: ' + viewState.maxConnectionTime + ')'}
           headerCellOptions={numberOfConnectionExcelStyle.headerCellOption}
         >
-          {viewState.westAirports.map(wa => (
-            <ExcelExportColumnGroup
-              title={wa.name}
-              key={wa.id}
-              headerCellOptions={{
-                ...numberOfConnectionExcelStyle.headerCellOption,
-                borderLeft: { size: 2, color: '#000000' },
-                borderRight: { size: 2, color: '#000000' },
-                borderTop: { size: 2, color: '#000000' }
-              }}
-            >
-              <ExcelExportColumn
-                field={'to' + wa.name}
-                title={'↗'}
-                locked={false}
-                width={50}
-                cellOptions={{
-                  ...detailCellOption,
-                  wrap: true,
-                  fontSize: 12,
-                  borderLeft: { size: 2, color: '#000000' }
-                }}
+          <ExcelExportColumnGroup title={viewState.westAirportsAirline.label} headerCellOptions={numberOfConnectionExcelStyle.headerCellOption}>
+            {viewState.westAirports.map(wa => (
+              <ExcelExportColumnGroup
+                title={wa.name}
+                key={wa.id}
                 headerCellOptions={{
                   ...numberOfConnectionExcelStyle.headerCellOption,
-                  borderLeft: { size: 2, color: '#000000' }
+                  borderLeft: { size: 2, color: '#000000' },
+                  borderRight: { size: 2, color: '#000000' },
+                  borderTop: { size: 2, color: '#000000' }
                 }}
-              />
-              <ExcelExportColumn
-                field={'from' + wa.name}
-                title={'↘'}
-                locked={false}
-                width={50}
-                cellOptions={{
-                  ...detailCellOption,
-                  wrap: true,
-                  fontSize: 12,
-                  borderRight: { size: 2, color: '#000000' }
-                }}
-                headerCellOptions={{
-                  ...numberOfConnectionExcelStyle.headerCellOption,
-                  borderRight: { size: 2, color: '#000000' }
-                }}
-              />
-            </ExcelExportColumnGroup>
-          ))}
+              >
+                <ExcelExportColumn
+                  field={'to' + wa.name}
+                  title={'↗'}
+                  locked={false}
+                  width={50}
+                  cellOptions={{
+                    ...detailCellOption,
+                    wrap: true,
+                    fontSize: 12,
+                    borderLeft: { size: 2, color: '#000000' }
+                  }}
+                  headerCellOptions={{
+                    ...numberOfConnectionExcelStyle.headerCellOption,
+                    borderLeft: { size: 2, color: '#000000' }
+                  }}
+                />
+                <ExcelExportColumn
+                  field={'from' + wa.name}
+                  title={'↘'}
+                  locked={false}
+                  width={50}
+                  cellOptions={{
+                    ...detailCellOption,
+                    wrap: true,
+                    fontSize: 12,
+                    borderRight: { size: 2, color: '#000000' }
+                  }}
+                  headerCellOptions={{
+                    ...numberOfConnectionExcelStyle.headerCellOption,
+                    borderRight: { size: 2, color: '#000000' }
+                  }}
+                />
+              </ExcelExportColumnGroup>
+            ))}
+          </ExcelExportColumnGroup>
         </ExcelExportColumnGroup>
       </ExcelExport>
     </Fragment>
@@ -768,6 +826,14 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
       <TableBody>
         <TableRow>
           <TableCell className={classNames(classes.connectionHeader, classes.boarder)} />
+          <TableCell colSpan={viewState.westAirports.length * 2} align="center" className={classNames(classes.connectionHeader, classes.boarder)}>
+            {viewState.westAirportsAirline.label}
+          </TableCell>
+        </TableRow>
+        <TableRow>
+          <TableCell align="center" className={classNames(classes.connectionHeader, classes.boarder)}>
+            <div className={classes.connectionEastAirline}>{viewState.eastAirportsAirline.label}</div>
+          </TableCell>
           {viewState.westAirports.map(wa => (
             <TableCell className={classNames(classes.connectionHeader, classes.boarder)} key={wa.id} colSpan={2} align="center">
               <ConnectionIcon className={classes.connectionFrom} />
@@ -805,59 +871,73 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
 
   return (
     <Fragment>
-      <InputLabel htmlFor="flight-type" className={classes.marginBottom1}>
-        Airline
-      </InputLabel>
-
-      <AutoComplete
-        id="airline"
-        options={allAirline}
-        value={viewState.airline}
-        onSelect={airline => {
-          setViewState({ ...viewState, airline });
-        }}
-        error={errors.airline !== undefined}
-        helperText={errors.airline}
-      />
+      <Grid container spacing={2}>
+        <Grid item xs={12}>
+          East Flight
+        </Grid>
+        <Grid item xs={1}>
+          <AutoComplete
+            id="airline"
+            options={allAirline}
+            value={viewState.eastAirportsAirline}
+            onSelect={eastAirportsAirline => {
+              setViewState({ ...viewState, eastAirportsAirline });
+            }}
+            error={errors.eastAirline !== undefined}
+            helperText={errors.eastAirline}
+          />
+        </Grid>
+        <Grid item xs={11}>
+          <MultiSelect
+            id="east-airport"
+            value={viewState.eastAirports}
+            options={allAirports}
+            getOptionLabel={r => r.name}
+            getOptionValue={r => r.id}
+            onSelect={value => {
+              setViewState({ ...viewState, eastAirports: value ? value.orderBy('name') : [] });
+            }}
+            className={classes.marginBottom1}
+            error={errors.eastAirports !== undefined}
+            helperText={errors.eastAirports}
+          />
+        </Grid>
+        <Grid item xs={12}>
+          West Flight
+        </Grid>
+        <Grid item xs={1}>
+          <AutoComplete
+            id="airline"
+            options={allAirline}
+            value={viewState.westAirportsAirline}
+            onSelect={westAirportsAirline => {
+              setViewState({ ...viewState, westAirportsAirline });
+            }}
+            error={errors.westAirline !== undefined}
+            helperText={errors.westAirline}
+          />
+        </Grid>
+        <Grid item xs={11}>
+          <MultiSelect
+            id="west-airport"
+            value={viewState.westAirports}
+            options={allAirports}
+            getOptionLabel={r => r.name}
+            getOptionValue={r => r.id}
+            onSelect={value => {
+              setViewState({ ...viewState, westAirports: value ? value.orderBy('name') : [] });
+            }}
+            error={errors.westAirports !== undefined}
+            helperText={errors.westAirports}
+          />
+        </Grid>
+      </Grid>
       <br />
-      <InputLabel error={errors.eastAirports !== undefined} htmlFor="east-airport" className={classes.marginBottom1}>
-        East Airport
-      </InputLabel>
-      <MultiSelect
-        id="east-airport"
-        value={viewState.eastAirports}
-        options={allAirports}
-        getOptionLabel={r => r.name}
-        getOptionValue={r => r.id}
-        onSelect={value => {
-          setViewState({ ...viewState, eastAirports: value ? value.orderBy('name') : [] });
-        }}
-        className={classes.marginBottom1}
-        error={errors.eastAirports !== undefined}
-        helperText={errors.eastAirports}
-      />
-      <br />
-      <InputLabel error={errors.westAirports !== undefined} htmlFor="west-airport" className={classes.marginBottom1}>
-        West Airport
-      </InputLabel>
-      <MultiSelect
-        id="west-airport"
-        value={viewState.westAirports}
-        options={allAirports}
-        getOptionLabel={r => r.name}
-        getOptionValue={r => r.id}
-        onSelect={value => {
-          setViewState({ ...viewState, westAirports: value ? value.orderBy('name') : [] });
-        }}
-        error={errors.westAirports !== undefined}
-        helperText={errors.westAirports}
-      />
-
       <RefiningTextField
         label="Start Date"
         dataType={dataTypes.utcDate}
-        value={viewState.startDate}
-        onChange={({ target: { value: startDate } }) => setViewState({ ...viewState, startDate })}
+        value={reportDateRange.startDate}
+        onChange={({ target: { value: startDate } }) => setReportDateRange({ ...reportDateRange, startDate })}
         error={errors.startDate !== undefined}
         helperText={errors.startDate}
         disabled
@@ -866,8 +946,8 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
       <RefiningTextField
         label="End Date"
         dataType={dataTypes.utcDate}
-        value={viewState.endDate}
-        onChange={({ target: { value: endDate } }) => setViewState({ ...viewState, endDate })}
+        value={reportDateRange.endDate}
+        onChange={({ target: { value: endDate } }) => setReportDateRange({ ...reportDateRange, endDate })}
         error={errors.endDate !== undefined}
         helperText={errors.endDate}
         disabled
@@ -885,7 +965,7 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
       <br />
       <br />
 
-      <div className={classNames(classes.export, classes.marginBottom1)}>{exportConnectionTable}</div>
+      {<div className={classNames(classes.export, classes.marginBottom1)}>{exportConnectionTable}</div>}
       {validation.ok ? (
         <div className={classes.tableContainer}>{connectionTable}</div>
       ) : (
@@ -920,7 +1000,7 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ flights, preplanName, f
       <br />
       <br />
 
-      <div className={classNames(classes.export, classes.marginBottom1)}>{exportConnectionNumber}</div>
+      {<div className={classNames(classes.export, classes.marginBottom1)}>{exportConnectionNumber}</div>}
       {numberOfConnectionValidation.ok ? (
         <div className={classes.tableContainer}>{connectionNumber}</div>
       ) : (

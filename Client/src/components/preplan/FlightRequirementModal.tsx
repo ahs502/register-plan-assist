@@ -1405,60 +1405,66 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
         }))
         .filter(x => x.selected)
         .map(x => x.model),
-      changes: refinedViewState.changeScopes.map<FlightRequirementChangeModel>(c => ({
-        startDate: dataTypes.utcDate.convertBusinessToModel(preplan.weeks.all[c.startWeekIndex].startDate),
-        endDate: dataTypes.utcDate.convertBusinessToModel(preplan.weeks.all[c.endWeekIndex].endDate),
-        aircraftSelection: {
-          includedIdentities: c.baseDay.allowedAircraftIdentities.map<AircraftIdentityModel>(i => ({
-            type: i.type,
-            entityId: i.entityId
+      changes: refinedViewState.changeScopes.map<FlightRequirementChangeModel>(c => {
+        const startDate = dataTypes.utcDate.convertBusinessToModel(preplan.weeks.all[c.startWeekIndex].startDate);
+        const endDate = dataTypes.utcDate.convertBusinessToModel(preplan.weeks.all[c.endWeekIndex].endDate);
+        const preplanStartDate = dataTypes.utcDate.convertBusinessToModel(preplan.startDate);
+        const preplanEndDate = dataTypes.utcDate.convertBusinessToModel(preplan.endDate);
+        return {
+          startDate: preplanStartDate > startDate ? preplanStartDate : startDate,
+          endDate: preplanEndDate < endDate ? preplanEndDate : endDate,
+          aircraftSelection: {
+            includedIdentities: c.baseDay.allowedAircraftIdentities.map<AircraftIdentityModel>(i => ({
+              type: i.type,
+              entityId: i.entityId
+            })),
+            excludedIdentities: c.baseDay.forbiddenAircraftIdentities.map<AircraftIdentityModel>(i => ({
+              type: i.type,
+              entityId: i.entityId
+            }))
+          },
+          rsx: c.baseDay.rsx,
+          notes: dataTypes.label.convertViewToModel(c.baseDay.notes),
+          route: c.baseDay.legs.map<FlightRequirementLegChangeModel>((l, index) => ({
+            flightNumber: dataTypes.flightNumber.convertViewToModel(refinedViewState.route[index].flightNumber),
+            departureAirportId: dataTypes.airport.convertViewToModel(refinedViewState.route[index].departureAirport),
+            arrivalAirportId: dataTypes.airport.convertViewToModel(refinedViewState.route[index].arrivalAirport),
+            blockTime: dataTypes.daytime.convertViewToModel(l.blockTime),
+            stdLowerBound: dataTypes.daytime.convertViewToModel(l.stdLowerBound),
+            stdUpperBound: dataTypes.daytime.convertViewToModelOptional(l.stdUpperBound),
+            originPermission: l.originPermission,
+            destinationPermission: l.destinationPermission
           })),
-          excludedIdentities: c.baseDay.forbiddenAircraftIdentities.map<AircraftIdentityModel>(i => ({
-            type: i.type,
-            entityId: i.entityId
-          }))
-        },
-        rsx: c.baseDay.rsx,
-        notes: dataTypes.label.convertViewToModel(c.baseDay.notes),
-        route: c.baseDay.legs.map<FlightRequirementLegChangeModel>((l, index) => ({
-          flightNumber: dataTypes.flightNumber.convertViewToModel(refinedViewState.route[index].flightNumber),
-          departureAirportId: dataTypes.airport.convertViewToModel(refinedViewState.route[index].departureAirport),
-          arrivalAirportId: dataTypes.airport.convertViewToModel(refinedViewState.route[index].arrivalAirport),
-          blockTime: dataTypes.daytime.convertViewToModel(l.blockTime),
-          stdLowerBound: dataTypes.daytime.convertViewToModel(l.stdLowerBound),
-          stdUpperBound: dataTypes.daytime.convertViewToModelOptional(l.stdUpperBound),
-          originPermission: l.originPermission,
-          destinationPermission: l.destinationPermission
-        })),
-        days: c.weekDays
-          .map<{ selected: boolean; model: DayFlightRequirementChangeModel }>((d, index) => ({
-            selected: d.selected,
-            model: {
-              aircraftSelection: {
-                includedIdentities: d.allowedAircraftIdentities.map(i => ({
-                  type: i.type,
-                  entityId: i.entityId
-                })),
-                excludedIdentities: d.forbiddenAircraftIdentities.map(i => ({
-                  type: i.type,
-                  entityId: i.entityId
+          days: c.weekDays
+            .map<{ selected: boolean; model: DayFlightRequirementChangeModel }>((d, index) => ({
+              selected: d.selected,
+              model: {
+                aircraftSelection: {
+                  includedIdentities: d.allowedAircraftIdentities.map(i => ({
+                    type: i.type,
+                    entityId: i.entityId
+                  })),
+                  excludedIdentities: d.forbiddenAircraftIdentities.map(i => ({
+                    type: i.type,
+                    entityId: i.entityId
+                  }))
+                },
+                rsx: d.rsx,
+                day: index,
+                notes: dataTypes.label.convertViewToModel(d.notes),
+                route: d.legs.map<DayFlightRequirementLegChangeModel>(l => ({
+                  blockTime: dataTypes.daytime.convertViewToModel(l.blockTime),
+                  stdLowerBound: dataTypes.daytime.convertViewToModel(l.stdLowerBound),
+                  stdUpperBound: dataTypes.daytime.convertViewToModelOptional(l.stdUpperBound),
+                  originPermission: l.originPermission,
+                  destinationPermission: l.destinationPermission
                 }))
-              },
-              rsx: d.rsx,
-              day: index,
-              notes: dataTypes.label.convertViewToModel(d.notes),
-              route: d.legs.map<DayFlightRequirementLegChangeModel>(l => ({
-                blockTime: dataTypes.daytime.convertViewToModel(l.blockTime),
-                stdLowerBound: dataTypes.daytime.convertViewToModel(l.stdLowerBound),
-                stdUpperBound: dataTypes.daytime.convertViewToModelOptional(l.stdUpperBound),
-                originPermission: l.originPermission,
-                destinationPermission: l.destinationPermission
-              }))
-            }
-          }))
-          .filter(x => x.selected)
-          .map(x => x.model)
-      }))
+              }
+            }))
+            .filter(x => x.selected)
+            .map(x => x.model)
+        };
+      })
     };
 
     const flightsByWeekIndexAndDay = flights.groupBy(
@@ -1466,42 +1472,44 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
       g => g.groupBy('day', h => h[0])
     );
 
-    const flightModels = preplan.weeks.all.flatMap((week, weekIndex) => {
-      const weekDays = refinedViewState.changeScopes.find(c => c.startWeekIndex <= weekIndex && weekIndex <= c.endWeekIndex)?.weekDays ?? refinedViewState.baseScope.weekDays;
-      const weekFlightsByDay = flightsByWeekIndexAndDay[weekIndex];
-      return weekDays
-        .filter(({ selected }) => selected)
-        .map<EditFlightModel>((weekDay, day) => {
-          const aircraftRegisterId = dataTypes.preplanAircraftRegister(preplan.aircraftRegisters).convertViewToModelOptional(weekDay.aircraftRegister);
-          const legs = weekDay.legs.map(({ stdLowerBound, stdUpperBound }, index) => ({
-            originalIndex: refinedViewState.route[index].originalIndex,
-            std: dataTypes.daytime.convertViewToModel(stdLowerBound)
-          }));
-          const oldFlight: Flight | undefined = weekFlightsByDay?.[day];
-          return oldFlight
-            ? oldFlight.extractModel(flightModel => ({
-                ...flightModel,
-                aircraftRegisterId: aircraftRegisterId ?? flightModel.aircraftRegisterId,
-                legs: legs.map<FlightLegModel>(({ originalIndex, std }, index) =>
-                  originalIndex === undefined
-                    ? {
-                        ...flightModel.legs[index],
-                        std
-                      }
-                    : {
-                        std
-                      }
-                )
-              }))
-            : {
-                date: dataTypes.utcDate.convertBusinessToModel(week.startDate.clone().addDays(day)),
-                aircraftRegisterId,
-                legs: legs.map<FlightLegModel>(({ std }) => ({
-                  std
+    const flightModels = preplan.weeks.all
+      .flatMap((week, weekIndex) => {
+        const weekDays = refinedViewState.changeScopes.find(c => c.startWeekIndex <= weekIndex && weekIndex <= c.endWeekIndex)?.weekDays ?? refinedViewState.baseScope.weekDays;
+        const weekFlightsByDay = flightsByWeekIndexAndDay[weekIndex];
+        return weekDays
+          .filter(({ selected }) => selected)
+          .map<EditFlightModel>((weekDay, day) => {
+            const aircraftRegisterId = dataTypes.preplanAircraftRegister(preplan.aircraftRegisters).convertViewToModelOptional(weekDay.aircraftRegister);
+            const legs = weekDay.legs.map(({ stdLowerBound, stdUpperBound }, index) => ({
+              originalIndex: refinedViewState.route[index].originalIndex,
+              std: dataTypes.daytime.convertViewToModel(stdLowerBound)
+            }));
+            const oldFlight: Flight | undefined = weekFlightsByDay?.[day];
+            return oldFlight
+              ? oldFlight.extractModel(flightModel => ({
+                  ...flightModel,
+                  aircraftRegisterId: aircraftRegisterId ?? flightModel.aircraftRegisterId,
+                  legs: legs.map<FlightLegModel>(({ originalIndex, std }, index) =>
+                    originalIndex === undefined
+                      ? {
+                          ...flightModel.legs[index],
+                          std
+                        }
+                      : {
+                          std
+                        }
+                  )
                 }))
-              };
-        });
-    });
+              : {
+                  date: dataTypes.utcDate.convertBusinessToModel(week.startDate.clone().addDays(day)),
+                  aircraftRegisterId,
+                  legs: legs.map<FlightLegModel>(({ std }) => ({
+                    std
+                  }))
+                };
+          });
+      })
+      .filter(fm => fm.date >= dataTypes.utcDate.convertBusinessToModel(preplan.startDate) && fm.date <= dataTypes.utcDate.convertBusinessToModel(preplan.endDate));
 
     const newPreplanModel = state.flightRequirement
       ? await FlightRequirementService.edit(preplan.id, { id: state.flightRequirement.id, ...newFlightRequirementModel }, flightModels)

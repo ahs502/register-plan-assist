@@ -187,8 +187,6 @@ const FlightModal = createModal<FlightModalState, FlightModalProps>(({ state, on
           action: async () => {
             if (!validation.ok) throw 'Invalid form fields.';
 
-            throw 'Not impliement';
-
             const selectedFlights = viewState.dates
               .map((d, dayIndex) => {
                 if (!d.selected || d.disabled) return undefined;
@@ -218,6 +216,9 @@ const FlightModal = createModal<FlightModalState, FlightModalProps>(({ state, on
             // const otherFlightModels: FlightModel[] = preplan.flights
             //   .filter(f => f.flightRequirement.id === state.flight.flightRequirement.id && f.id !== state.flight.id)
             //   .map<FlightModel>(f => f.extractModel());
+            const otherFlightModels = preplan.flights
+              .filter(f => f.flightRequirement === state.flightRequirement && !flightModels.some(n => n.id === f.id))
+              .map<FlightModel>(f => f.extractModel());
 
             const newPreplanDataModel = await FlightService.edit(preplan.id, ...flightModels, ...otherFlightModels);
             await reloadPreplan(newPreplanDataModel);

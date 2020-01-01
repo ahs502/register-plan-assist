@@ -41,6 +41,9 @@ export class FlightRequirementChangeModelValidation extends Validation<
         validator.must(!!startDate, typeof startDate === 'string', !!endDate, typeof endDate === 'string').then(() => {
           const start = new Date(startDate);
           const end = new Date(endDate);
+          start < preplanStartDate.getDatePart() && console.log(start, preplanStartDate, end, preplanEndDate);
+          end > preplanEndDate.getDatePart() && console.log(start, preplanStartDate, end, preplanEndDate);
+
           validator
             .must(start.isValid(), end.isValid())
             .must(

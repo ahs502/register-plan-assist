@@ -48,8 +48,8 @@ export class Weeks {
     let newChunk = true;
     this.all.forEach((week, index, weeks) => {
       newChunk ? chunks.push([week]) : chunks.last()!.push(week);
-      // newChunk = index !== weeks.length - 1 && checkChunkStart(week, weeks[index + 1]);
-      newChunk = index % 3 === 2; //TODO: Remove this line.
+      newChunk = index !== weeks.length - 1 && checkChunkStart(week, weeks[index + 1]);
+      //newChunk = index % 3 === 2; //TODO: Remove this line.
     });
     this.chunks = chunks.map(chunk => new WeekChunk(this, chunk));
 

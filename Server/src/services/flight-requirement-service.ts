@@ -89,7 +89,7 @@ router.post(
           db.intParam('flightRequirementId', flightRequirementId),
           db.tableParam(
             'flights',
-            [db.intColumn('id'), db.intColumn('date'), db.bigIntColumn('aircraftRegisterId'), db.xmlColumn('legsXml')],
+            [db.intColumn('id'), db.intColumn('date'), db.varCharColumn('aircraftRegisterId', 30), db.xmlColumn('legsXml')],
             newFlightEntities.map(f => [null, f.date, f.aircraftRegisterId, f.legsXml])
           )
         )
@@ -123,6 +123,7 @@ router.post(
   '/edit',
   requestMiddlewareWithTransactionalDb<{ preplanId: Id; flightRequirement: FlightRequirementModel; flights: readonly EditFlightModel[] }, PreplanDataModel>(
     async (userId, { preplanId, flightRequirement, flights }, db) => {
+      console.log(1111);
       const flightRequirementIds = await db
         .select<{ id: Id }>({ id: 'convert(varchar(30), [Id])' })
         .from('[Rpa].[FlightRequirement]')
@@ -151,6 +152,7 @@ router.post(
           }),
           'Preplan is not found.'
         );
+      console.log(22222);
       new FlightRequirementModelValidation(
         flightRequirement,
         MasterData.all.aircraftTypes,
@@ -165,12 +167,16 @@ router.post(
         preplanEndDate
       ).throw('Invalid API input.');
 
+      console.log(3333);
+
       const flightIds = await db
         .select<{ id: Id }>({ id: 'convert(varchar(30), f.[Id])' })
         .from('[Rpa].[Flight] as f join [Rpa].[FlightRequirement] as r on r.[Id] = f.[Id_FlightRequirement]')
         .where(`r.[Id_Preplan] = '${preplanId}'`)
         .map(({ id }) => id);
       new EditFlightModelArrayValidation(flights, flightIds, aircraftRegisterOptions, preplanStartDate, preplanEndDate).throw('Invalid API input.');
+
+      console.log(4444);
 
       const flightRequirementEntity = convertFlightRequirementModelToEntity(flightRequirement);
       await db
@@ -199,7 +205,7 @@ router.post(
           db.intParam('flightRequirementId', flightRequirementEntity.id),
           db.tableParam(
             'flights',
-            [db.intColumn('id'), db.intColumn('date'), db.bigIntColumn('aircraftRegisterId'), db.xmlColumn('legsXml')],
+            [db.intColumn('id'), db.dateTimeColumn('date'), db.bigIntColumn('aircraftRegisterId'), db.xmlColumn('legsXml')],
             flightEntities.map(f => [f.id, f.date, f.aircraftRegisterId, f.legsXml])
           )
         )

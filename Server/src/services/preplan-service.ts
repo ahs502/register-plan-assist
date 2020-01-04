@@ -56,12 +56,10 @@ router.post(
 
 router.post(
   '/remove',
-  requestMiddlewareWithTransactionalDb<{ id: Id }, PreplanDataModel>(async (userId, { id }, db) => {
-    const currentPreplanId = await db
+  requestMiddlewareWithTransactionalDb<{ id: Id; currentPreplanId: Id }, PreplanDataModel>(async (userId, { id, currentPreplanId }, db) => {
+    const cpId = await db
       .sp<{ currentPreplanId: Id }>('[Rpa].[SP_DeletePreplan]', db.bigIntParam('userId', userId), db.intParam('id', id))
       .pick(({ currentPreplanId }) => currentPreplanId);
-
-    console.log(currentPreplanId);
 
     return await getPreplanDataModel(db, userId, currentPreplanId);
   })

@@ -31,8 +31,8 @@ export default class PreplanService {
   /**
    * Removes a certain preplan version and provides the peplan data model.
    */
-  static async remove(id: Id): Promise<PreplanDataModel> {
-    return await request('remove', { id });
+  static async remove(id: Id, currentPreplanId: Id): Promise<PreplanDataModel> {
+    return await request('remove', { id, currentPreplanId });
   }
 
   /**

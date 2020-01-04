@@ -30,6 +30,7 @@ import Rsx from '@core/types/Rsx';
 import Week from 'src/business/Week';
 import Flight from 'src/business/flight/Flight';
 import Weekday from '@core/types/Weekday';
+import useProperty from 'src/utils/useProperty';
 
 const useStyles = makeStyles((theme: Theme) => ({
   sideBarBackdrop: {
@@ -68,6 +69,9 @@ const useStyles = makeStyles((theme: Theme) => ({
 
 type SideBar = 'SETTINGS' | 'SELECT_AIRCRAFT_REGISTERS' | 'SEARCH_FLIGHTS' | 'OBJECTIONS';
 
+interface NavBarStatus {
+  preplanVersionDescription: string;
+}
 interface SideBarState {
   open: boolean;
   loading?: boolean;
@@ -110,6 +114,12 @@ const TimelinePage: FC<TimelinePageProps> = ({ onObjectionTargetClick, onEditFli
 
   const preplan = useContext(PreplanContext);
   const reloadPreplan = useContext(ReloadPreplanContext);
+
+  const loadedPreplan = preplan.versions.find(v => v.id === preplan.id);
+  const preplanVersionDescription = loadedPreplan?.current ? 'CURRENT' : `${loadedPreplan?.description} — ${loadedPreplan?.lastEditDateTime.format('FD')}`;
+  const navBarStatus = {
+    preplanVersionDescription: preplanVersionDescription
+  };
 
   const [sideBarState, setSideBarState] = useState<SideBarState>({ open: false, loading: false, errorMessage: undefined });
   const [timelineViewState, setTimelineViewState] = useState<TimelineViewState>({ loading: false });
@@ -162,7 +172,7 @@ const TimelinePage: FC<TimelinePageProps> = ({ onObjectionTargetClick, onEditFli
 
       <Portal container={navBarToolsContainer}>
         <div className={timelineViewState.loading ? classes.disable : ''}>
-          <Button onClick={() => openPreplanVersionsModal({ preplan: preplan } as PerplanVersionsModalState)}>Current</Button>
+          <Button onClick={() => openPreplanVersionsModal({ preplan: preplan } as PerplanVersionsModalState)}>{navBarStatus.preplanVersionDescription}</Button>
           <IconButton disabled={timelineViewState.loading} color="inherit" title="Accept Preplan">
             <FinilizedIcon />
           </IconButton>

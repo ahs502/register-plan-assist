@@ -132,6 +132,10 @@ export default class Preplan {
           )
             return true;
         }
+        for (let day in nextFlightsByWeekAndLabel) {
+          const previousFlight = previousFlightsByWeekAndLabel[day];
+          if (!previousFlight) return true;
+        }
       }
       return false;
     });

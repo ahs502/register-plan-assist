@@ -1,6 +1,6 @@
-import React, { useMemo, useContext, Fragment, useState } from 'react';
-import { Theme, Typography, Grid, Paper, Tabs, Tab, Checkbox, IconButton, FormControlLabel, Button, Slider } from '@material-ui/core';
-import { Clear as ClearIcon, Add as AddIcon, WrapText as WrapTextIcon, CheckBoxOutlineBlank as CheckBoxOutlineBlankIcon } from '@material-ui/icons';
+import React, { useMemo, useContext, Fragment, useState, useEffect } from 'react';
+import { Theme, Typography, Grid, Paper, Tabs, Tab, Checkbox, IconButton, FormControlLabel, Slider } from '@material-ui/core';
+import { Clear as ClearIcon, Add as AddIcon, WrapText as WrapTextIcon } from '@material-ui/icons';
 import { makeStyles } from '@material-ui/styles';
 import BaseModal, { BaseModalProps, useModalState, createModal } from 'src/components/BaseModal';
 import FlightRequirement from 'src/business/flight-requirement/FlightRequirement';
@@ -97,6 +97,17 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
   scopeChangeWeekHover: {
     display: 'none',
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    backgroundColor: '#0002',
+    userSelect: 'none',
+    pointerEvents: 'none'
+  },
+  selectedWeek: {
+    display: 'black',
     position: 'absolute',
     top: 0,
     right: 0,
@@ -407,8 +418,8 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
               onChange={(e, value) => {
                 const newScopeIndex: ViewState['scopeIndex'] = value === 'BASE' ? 'BASE' : scopeIndex === 'BASE' ? -1 : scopeIndex;
                 if (newScopeIndex === scopeIndex) return;
-                setViewState(
-                  refineViewState(
+                setViewState(viewState => {
+                  return refineViewState(
                     {
                       ...viewState,
                       scopeIndex: newScopeIndex,
@@ -416,8 +427,8 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                       legIndex: newScopeIndex !== -1 ? legIndex : 0
                     },
                     true
-                  )
-                );
+                  );
+                });
               }}
               variant="fullWidth"
             >
@@ -456,9 +467,15 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                               )}
                               title={`Week from ${week.startDate.format('d')} to ${week.endDate.format('d')}`}
                               onClick={() => {
+                                //if (changeScopeIndex === -1)
+                                setViewState(viewState => {
+                                  return { ...viewState, selectedWeekIndex: weekIndex };
+                                });
+
                                 if (changeScopeIndex === scopeIndex) return;
-                                setViewState(
-                                  refineViewState(
+
+                                setViewState(viewState => {
+                                  return refineViewState(
                                     {
                                       ...viewState,
                                       scopeIndex: changeScopeIndex,
@@ -466,12 +483,12 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                                       sliderEndIndex: changeScopeIndex < 0 ? 0 : viewState.changeScopes[changeScopeIndex].endWeekIndex - 1
                                     },
                                     true
-                                  )
-                                );
+                                  );
+                                });
                               }}
                             >
                               {formatDate(week.startDate, true)}
-                              <div className={classes.scopeChangeWeekHover} />
+                              <div className={classNames(viewState.selectedWeekIndex === weekIndex ? classes.selectedWeek : classes.scopeChangeWeekHover)} />
                             </div>
                           );
                         })}
@@ -507,11 +524,17 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                           setViewState(
                             refineViewState({
                               ...viewState,
-                              changeScopes: splice(viewState.changeScopes, scopeIndex, 1, ([c]) => ({
-                                ...c,
-                                startWeekIndex: viewState.sliderStartIndex,
-                                endWeekIndex: viewState.sliderEndIndex - 1
-                              }))
+                              changeScopes: splice(viewState.changeScopes, scopeIndex, 1, ([c]) => {
+                                //if (!c.sourceScopeIndex) {
+                                return {
+                                  ...c,
+                                  startWeekIndex: viewState.sliderStartIndex,
+                                  endWeekIndex: viewState.sliderEndIndex - 1
+                                };
+                                //}
+
+                                //const baseChangeScope = viewState.changeScopes[c.sourceScopeIndex];
+                              })
                             })
                           )
                         }
@@ -525,37 +548,45 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                           if (scopeIndex === 'BASE' || scopeIndex < 0)
                             return (
                               viewState.changeScopes[0]?.startWeekIndex === 0 ||
-                              setViewState({
-                                ...viewState,
-                                scopeIndex: 0,
-                                sliderStartIndex: 0,
-                                sliderEndIndex: 1,
-                                changeScopes: [
-                                  {
-                                    ...viewState.baseScope,
-                                    startWeekIndex: 0,
-                                    endWeekIndex: 0
-                                  },
-                                  ...viewState.changeScopes
-                                ]
+                              setViewState(viewState => {
+                                return {
+                                  ...viewState,
+                                  scopeIndex: 0,
+                                  sliderStartIndex: viewState.selectedWeekIndex ?? 0,
+                                  sliderEndIndex: (viewState.selectedWeekIndex ?? 0) + 1,
+                                  changeScopes: [
+                                    {
+                                      ...viewState.baseScope,
+                                      startWeekIndex: viewState.selectedWeekIndex ?? 0,
+                                      endWeekIndex: viewState.selectedWeekIndex ?? 0,
+                                      sourceScopeIndex: undefined
+                                    },
+                                    ...viewState.changeScopes
+                                  ]
+                                };
                               })
                             );
                           if (viewState.changeScopes[scopeIndex].startWeekIndex === viewState.changeScopes[scopeIndex].endWeekIndex) return;
-                          setViewState({
-                            ...viewState,
-                            sliderStartIndex: viewState.changeScopes[scopeIndex].startWeekIndex,
-                            sliderEndIndex: viewState.changeScopes[scopeIndex].startWeekIndex + 1,
-                            changeScopes: splice(viewState.changeScopes, scopeIndex, 1, ([c]) => [
-                              {
-                                ...c,
-                                startWeekIndex: c.startWeekIndex,
-                                endWeekIndex: c.startWeekIndex
-                              },
-                              {
-                                ...c,
-                                startWeekIndex: c.startWeekIndex + 1
-                              }
-                            ])
+                          setViewState(viewState => {
+                            var r = {
+                              ...viewState,
+                              sliderStartIndex: viewState.changeScopes[scopeIndex].startWeekIndex,
+                              sliderEndIndex: viewState.changeScopes[scopeIndex].startWeekIndex + 1,
+                              changeScopes: splice(viewState.changeScopes, scopeIndex, 1, ([c]) => [
+                                {
+                                  ...c,
+                                  startWeekIndex: c.startWeekIndex,
+                                  endWeekIndex: c.startWeekIndex,
+                                  sourceScopeIndex: scopeIndex
+                                },
+                                {
+                                  ...c,
+                                  startWeekIndex: c.startWeekIndex + 1
+                                }
+                              ])
+                            };
+
+                            return r;
                           });
                         }}
                       >
@@ -994,6 +1025,7 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                 changeScopes: splice(viewState.changeScopes, scopeIndex, 1, ([c]) => ({
                   startWeekIndex: c.startWeekIndex,
                   endWeekIndex: c.endWeekIndex,
+                  sourceScopeIndex: undefined,
                   ...update(c)
                 }))
               });
@@ -1171,6 +1203,7 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
       return {
         startWeekIndex: preplan.weeks.all.findIndex(({ startDate, endDate }) => startDate <= c.startDate && c.startDate <= endDate),
         endWeekIndex: preplan.weeks.all.findIndex(({ startDate, endDate }) => startDate <= c.endDate && c.endDate <= endDate),
+        sourceScopeIndex: undefined,
         baseDay: {
           rsx: c.rsx,
           notes: dataTypes.label.convertBusinessToView(c.notes),
@@ -1477,8 +1510,8 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
         const weekDays = refinedViewState.changeScopes.find(c => c.startWeekIndex <= weekIndex && weekIndex <= c.endWeekIndex)?.weekDays ?? refinedViewState.baseScope.weekDays;
         const weekFlightsByDay = flightsByWeekIndexAndDay[weekIndex];
         return weekDays
-          .filter(({ selected }) => selected)
           .map<EditFlightModel>((weekDay, day) => {
+            if (!weekDay.selected) return undefined as any;
             const aircraftRegisterId = dataTypes.preplanAircraftRegister(preplan.aircraftRegisters).convertViewToModelOptional(weekDay.aircraftRegister);
             const legs = weekDay.legs.map(({ stdLowerBound, stdUpperBound }, index) => ({
               originalIndex: refinedViewState.route[index].originalIndex,
@@ -1507,7 +1540,8 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                     std
                   }))
                 };
-          });
+          })
+          .filter(Boolean);
       })
       .filter(fm => fm.date >= dataTypes.utcDate.convertBusinessToModel(preplan.startDate) && fm.date <= dataTypes.utcDate.convertBusinessToModel(preplan.endDate));
 

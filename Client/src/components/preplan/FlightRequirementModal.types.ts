@@ -39,7 +39,8 @@ export interface BaseScopeViewState {
 export interface ChangeScopeViewState extends BaseScopeViewState {
   startWeekIndex: number;
   endWeekIndex: number;
-  sourceScopeIndex: number | undefined;
+  isTemp: boolean;
+  isNew: boolean;
 }
 
 export interface BaseDayViewState {

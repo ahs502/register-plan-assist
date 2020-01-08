@@ -30,7 +30,7 @@ router.post(
         startDate: 'h.[StartDate]',
         endDate: 'h.[EndDate]'
       })
-      .from('[Rpa].[Preplan] as p join [Rpa].[PreplanHeader] as h on h.[Id] = p.[Id_Preplan]')
+      .from('[Rpa].[Preplan] as p join [Rpa].[PreplanHeader] as h on h.[Id] = p.[Id_PreplanHeader]')
       .where(`p.[Id] = '${preplanId}'`)
       .pick(
         ({ aircraftRegisterOptionsXml, startDate, endDate }) => ({

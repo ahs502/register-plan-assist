@@ -215,14 +215,12 @@ const FlightModal = createModal<FlightModalState, FlightModalProps>(({ state, on
               })
             );
 
-            // const otherFlightModels: FlightModel[] = preplan.flights
-            //   .filter(f => f.flightRequirement.id === state.flight.flightRequirement.id && f.id !== state.flight.id)
-            //   .map<FlightModel>(f => f.extractModel());
             const otherFlightModels = preplan.flights
               .filter(f => f.flightRequirement === state.flightRequirement && !flightModels.some(n => n.id === f.id))
               .map<FlightModel>(f => f.extractModel());
 
             const newPreplanDataModel = await FlightService.edit(preplan.id, ...flightModels, ...otherFlightModels);
+            await others.onClose();
             await reloadPreplan(newPreplanDataModel);
           }
         }
@@ -242,19 +240,35 @@ const FlightModal = createModal<FlightModalState, FlightModalProps>(({ state, on
                       [classes.flightDateSelected]: date.selected
                     })}
                     title={`Flight at ${flightDate.format('d')}`}
-                    onClick={() =>
-                      date.disabled ||
-                      setViewState({
-                        ...viewState,
-                        dates: [
-                          ...viewState.dates.slice(0, index),
-                          {
-                            ...date,
-                            selected: !date.selected
-                          },
-                          ...viewState.dates.slice(index + 1)
-                        ]
-                      })
+                    onClick={
+                      () => {
+                        if (date.disabled) return;
+
+                        const selectedFlights = viewState.dates
+                          .map((d, dayIndex) => {
+                            if ((dayIndex === index && date.selected) || (dayIndex !== index && !d.selected)) return undefined;
+                            return flights.find(
+                              f =>
+                                dataTypes.utcDate.convertBusinessToView(f.date) ===
+                                dataTypes.utcDate.convertBusinessToView(new Date(preplan.weeks.all[dayIndex].startDate).addDays(state.day))
+                            );
+                          })
+                          .filter(Boolean) as Flight[];
+
+                        setViewState(calculateViewState(selectedFlights, preplan, flights, state));
+                      }
+
+                      // setViewState({
+                      //   ...viewState,
+                      //   dates: [
+                      //     ...viewState.dates.slice(0, index),
+                      //     {
+                      //       ...date,
+                      //       selected: !date.selected
+                      //     },
+                      //     ...viewState.dates.slice(index + 1)
+                      //   ]
+                      // })
                     }
                   >
                     {formatDate(flightDate)}

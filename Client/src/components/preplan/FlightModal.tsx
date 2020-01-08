@@ -25,18 +25,29 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
   flightDate: {
     width: 10,
+    textAlign: 'center',
     flexGrow: 1,
     position: 'relative',
     borderWidth: 1,
+    borderRightWidth: 0,
     borderStyle: 'solid',
-    borderRadius: 4,
-    margin: '2px 1px 0 1px',
-    padding: '2px 0 1px 3px',
+    borderRadius: 0,
+    margin: 0,
+    padding: theme.spacing(0.5, 0, 0.5, 0),
     color: theme.palette.common.black,
     overflow: 'hidden',
     fontSize: '12px',
     userSelect: 'none',
     cursor: 'pointer',
+    '&:first-child': {
+      borderTopLeftRadius: 5,
+      borderBottomLeftRadius: 5
+    },
+    '&:last-child': {
+      borderRightWidth: 1,
+      borderTopRightRadius: 5,
+      borderBottomRightRadius: 5
+    },
     '&:hover $flightDateHover': {
       display: 'block'
     }
@@ -271,7 +282,7 @@ const FlightModal = createModal<FlightModalState, FlightModalProps>(({ state, on
                       // })
                     }
                   >
-                    {formatDate(flightDate)}
+                    {formatDate(flightDate, true)}
                     <div className={classes.flightDateHover} />
                   </div>
                 );
@@ -428,10 +439,18 @@ const FlightModal = createModal<FlightModalState, FlightModalProps>(({ state, on
     }
   }
 
-  function formatDate(date: Date): JSX.Element {
+  function formatDate(date: Date, lineBreak?: boolean): JSX.Element {
     const dateString = date.format('d');
     const day = dateString[0] === '0' ? dateString.slice(1, 2) : dateString.slice(0, 2);
     const month = dateString.slice(2, 5);
+    if (lineBreak)
+      return (
+        <Fragment>
+          {day}
+          <br />
+          {month}
+        </Fragment>
+      );
     return (
       <Fragment>
         {day}&nbsp;{month}

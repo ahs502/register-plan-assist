@@ -1,5 +1,5 @@
 import React, { useMemo, useContext, Fragment, useState, useEffect } from 'react';
-import { Theme, Typography, Grid, Paper, Tabs, Tab, Checkbox, IconButton, FormControlLabel, Slider } from '@material-ui/core';
+import { Theme, Typography, Grid, Paper, Tabs, Tab, Checkbox, IconButton, FormControlLabel, Slider, TextField } from '@material-ui/core';
 import { Clear as ClearIcon, Add as AddIcon, Remove as RemoveIcon, WrapText as WrapTextIcon } from '@material-ui/icons';
 import { makeStyles } from '@material-ui/styles';
 import BaseModal, { BaseModalProps, useModalState, createModal } from 'src/components/BaseModal';
@@ -890,7 +890,10 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
             updateRoute(
               viewState.route.length,
               route => [...route, { flightNumber: '', departureAirport, arrivalAirport }],
-              legs => [...legs, { blockTime: '', stdLowerBound: '', stdUpperBound: '', originPermission: false, destinationPermission: false }]
+              legs => [
+                ...legs,
+                { blockTime: '', stdLowerBound: '', staLowerBound: '', stdUpperBound: '', staUpperBound: '', originPermission: false, destinationPermission: false }
+              ]
             );
           }
         }
@@ -946,38 +949,55 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                   label="Block Time"
                   dataType={dataTypes.daytime}
                   value={legViewState?.blockTime ?? ''}
-                  onChange={({ target: { value: blockTime } }) => updateLeg(leg => ({ ...leg, blockTime }))}
+                  onChange={({ target: { value: blockTime } }) =>
+                    updateLeg(leg => ({
+                      ...leg,
+                      blockTime,
+                      staLowerBound: calculateSta(legViewState?.stdLowerBound, blockTime),
+                      staUpperBound: calculateSta(legViewState?.stdUpperBound, blockTime)
+                    }))
+                  }
                   onKeyDown={handleKeyboardEvent}
                   disabled={legDisabled}
                   error={errors.blockTime !== undefined}
                   helperText={errors.blockTime}
                 />
               </Grid>
-              <Grid item xs={4}>
+              <Grid item xs={3}>
                 <RefiningTextField
                   fullWidth
                   label="STD / STD Lower Bound"
                   dataType={dataTypes.daytime}
                   value={legViewState?.stdLowerBound ?? ''}
-                  onChange={({ target: { value: stdLowerBound } }) => legViewState && updateLeg(leg => ({ ...leg, stdLowerBound }))}
+                  onChange={({ target: { value: stdLowerBound } }) =>
+                    legViewState && updateLeg(leg => ({ ...leg, stdLowerBound, staLowerBound: calculateSta(stdLowerBound, legViewState?.blockTime) }))
+                  }
                   onKeyDown={handleKeyboardEvent}
                   disabled={legDisabled}
                   error={errors.stdLowerBound !== undefined}
                   helperText={errors.stdLowerBound}
                 />
               </Grid>
-              <Grid item xs={4}>
+              <Grid item xs={1}>
+                <RefiningTextField fullWidth label="STA" dataType={dataTypes.daytime} value={legViewState?.staLowerBound ?? ''} disabled={true} />
+              </Grid>
+              <Grid item xs={3}>
                 <RefiningTextField
                   fullWidth
                   label="STD Upper Bound"
                   dataType={dataTypes.daytime}
                   value={legViewState?.stdUpperBound ?? ''}
-                  onChange={({ target: { value: stdUpperBound } }) => legViewState && updateLeg(leg => ({ ...leg, stdUpperBound }))}
+                  onChange={({ target: { value: stdUpperBound } }) =>
+                    legViewState && updateLeg(leg => ({ ...leg, stdUpperBound, staUpperBound: calculateSta(stdUpperBound, legViewState?.blockTime) }))
+                  }
                   onKeyDown={handleKeyboardEvent}
                   disabled={legDisabled}
                   error={errors.stdUpperBound !== undefined}
                   helperText={errors.stdUpperBound}
                 />
+              </Grid>
+              <Grid item xs={1}>
+                <RefiningTextField fullWidth label="STA" dataType={dataTypes.daytime} value={legViewState?.staUpperBound ?? ''} disabled={true} />
               </Grid>
               <Grid item xs={3}>
                 <FormControlLabel
@@ -1103,6 +1123,14 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
         function updateLeg(update: (leg: LegViewState) => LegViewState): void {
           updateDay(day => ({ ...day, legs: splice(day.legs, legIndex, 1, ([l]) => update(l)) }));
         }
+
+        function calculateSta(std: string | undefined, blockTime: string | undefined): string {
+          if (!std || !blockTime) return '';
+          const _std = dataTypes.daytime.convertViewToBusiness(std);
+          const _block = dataTypes.daytime.convertViewToBusiness(blockTime);
+          if (!_std.isValid() || !_block.isValid()) return '';
+          return dataTypes.daytime.convertModelToView(_std.minutes + _block.minutes);
+        }
       }}
     />
   );
@@ -1192,7 +1220,9 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
               {
                 blockTime: '',
                 stdLowerBound: '',
+                staLowerBound: '',
                 stdUpperBound: '',
+                staUpperBound: '',
                 originPermission: false,
                 destinationPermission: false
               }
@@ -1209,7 +1239,9 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
               {
                 blockTime: '',
                 stdLowerBound: '',
+                staLowerBound: '',
                 stdUpperBound: '',
+                staUpperBound: '',
                 originPermission: false,
                 destinationPermission: false
               }
@@ -1238,7 +1270,9 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
           legs: c.route.map<LegViewState>(l => ({
             blockTime: dataTypes.daytime.convertBusinessToView(l.blockTime),
             stdLowerBound: dataTypes.daytime.convertBusinessToView(l.stdLowerBound),
+            staLowerBound: l.stdLowerBound.isValid() && l.blockTime.isValid ? dataTypes.daytime.convertModelToView(l.stdLowerBound.minutes + l.blockTime.minutes) : '',
             stdUpperBound: dataTypes.daytime.convertBusinessToViewOptional(l.stdUpperBound),
+            staUpperBound: l.stdUpperBound?.isValid() && l.blockTime.isValid ? dataTypes.daytime.convertModelToView(l.stdUpperBound.minutes + l.blockTime.minutes) : '',
             originPermission: l.originPermission,
             destinationPermission: l.destinationPermission
           }))
@@ -1261,14 +1295,18 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
               ? sourceDayFlightRequirementChange.route.map<LegViewState>(l => ({
                   blockTime: dataTypes.daytime.convertBusinessToView(l.blockTime),
                   stdLowerBound: dataTypes.daytime.convertBusinessToView(l.stdLowerBound),
+                  staLowerBound: l.stdLowerBound.isValid() && l.blockTime.isValid ? dataTypes.daytime.convertModelToView(l.stdLowerBound.minutes + l.blockTime.minutes) : '',
                   stdUpperBound: dataTypes.daytime.convertBusinessToViewOptional(l.stdUpperBound),
+                  staUpperBound: l.stdUpperBound?.isValid() && l.blockTime.isValid ? dataTypes.daytime.convertModelToView(l.stdUpperBound.minutes + l.blockTime.minutes) : '',
                   originPermission: l.originPermission,
                   destinationPermission: l.destinationPermission
                 }))
               : c.route.map<LegViewState>(l => ({
                   blockTime: dataTypes.daytime.convertBusinessToView(l.blockTime),
                   stdLowerBound: dataTypes.daytime.convertBusinessToView(l.stdLowerBound),
+                  staLowerBound: l.stdLowerBound.isValid() && l.blockTime.isValid ? dataTypes.daytime.convertModelToView(l.stdLowerBound.minutes + l.blockTime.minutes) : '',
                   stdUpperBound: dataTypes.daytime.convertBusinessToViewOptional(l.stdUpperBound),
+                  staUpperBound: l.stdUpperBound?.isValid() && l.blockTime.isValid ? dataTypes.daytime.convertModelToView(l.stdUpperBound.minutes + l.blockTime.minutes) : '',
                   originPermission: l.originPermission,
                   destinationPermission: l.destinationPermission
                 }))
@@ -1310,7 +1348,9 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
             legs: flightRequirement.route.map<LegViewState>(l => ({
               blockTime: dataTypes.daytime.convertBusinessToView(l.blockTime),
               stdLowerBound: dataTypes.daytime.convertBusinessToView(l.stdLowerBound),
+              staLowerBound: l.stdLowerBound.isValid() && l.blockTime.isValid ? dataTypes.daytime.convertModelToView(l.stdLowerBound.minutes + l.blockTime.minutes) : '',
               stdUpperBound: dataTypes.daytime.convertBusinessToViewOptional(l.stdUpperBound),
+              staUpperBound: l.stdUpperBound?.isValid() && l.blockTime.isValid ? dataTypes.daytime.convertModelToView(l.stdUpperBound.minutes + l.blockTime.minutes) : '',
               originPermission: l.originPermission,
               destinationPermission: l.destinationPermission
             }))
@@ -1333,14 +1373,18 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                 ? sourceDayFlightRequirement.route.map<LegViewState>(l => ({
                     blockTime: dataTypes.daytime.convertBusinessToView(l.blockTime),
                     stdLowerBound: dataTypes.daytime.convertBusinessToView(l.stdLowerBound),
+                    staLowerBound: l.stdLowerBound.isValid() && l.blockTime.isValid ? dataTypes.daytime.convertModelToView(l.stdLowerBound.minutes + l.blockTime.minutes) : '',
                     stdUpperBound: dataTypes.daytime.convertBusinessToViewOptional(l.stdUpperBound),
+                    staUpperBound: l.stdUpperBound?.isValid() && l.blockTime.isValid ? dataTypes.daytime.convertModelToView(l.stdUpperBound.minutes + l.blockTime.minutes) : '',
                     originPermission: l.originPermission,
                     destinationPermission: l.destinationPermission
                   }))
                 : flightRequirement.route.map<LegViewState>(l => ({
                     blockTime: dataTypes.daytime.convertBusinessToView(l.blockTime),
                     stdLowerBound: dataTypes.daytime.convertBusinessToView(l.stdLowerBound),
+                    staLowerBound: l.stdLowerBound.isValid() && l.blockTime.isValid ? dataTypes.daytime.convertModelToView(l.stdLowerBound.minutes + l.blockTime.minutes) : '',
                     stdUpperBound: dataTypes.daytime.convertBusinessToViewOptional(l.stdUpperBound),
+                    staUpperBound: l.stdUpperBound?.isValid() && l.blockTime.isValid ? dataTypes.daytime.convertModelToView(l.stdUpperBound.minutes + l.blockTime.minutes) : '',
                     originPermission: l.originPermission,
                     destinationPermission: l.destinationPermission
                   }))

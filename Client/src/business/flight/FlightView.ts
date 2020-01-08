@@ -86,13 +86,14 @@ export default class FlightView {
     function createNotes(sourceFlight: Flight): string {
       const sortedFlights = flights.orderBy('date');
       const canclationOrActiveationPerDay: string | undefined = generateCanalationOrActivationNotes();
-      const timeChange: string | undefined = generateTimeChangeNotes();
+      const stdChange: string | undefined = generateStdChangeNotes();
+      const blockTimeChange: string | undefined = generateBlockTimeChangeNotes();
       const registerChange: string | undefined = generateRegisterChangeNotes();
       const permissionAndPermissionNotesChange: string | undefined = generatePermissionAndPermissionNotesChangeNotes();
       const notesChange: string | undefined = generateNotesChangeNotes(); //TODO implement
       const rsxChange: string | undefined = generateRsxChangeNotes();
 
-      return [canclationOrActiveationPerDay, timeChange, registerChange, permissionAndPermissionNotesChange, notesChange, rsxChange].filter(Boolean).join(',');
+      return [canclationOrActiveationPerDay, stdChange, blockTimeChange, registerChange, permissionAndPermissionNotesChange, notesChange, rsxChange].filter(Boolean).join(',');
 
       function generateCanalationOrActivationNotes(): string | undefined {
         const diffInTime = endWeek.startDate.getTime() - startWeek.startDate.getTime();
@@ -121,9 +122,9 @@ export default class FlightView {
             return groupCancleDay
               .map(n =>
                 n.length >= 2
-                  ? `CNL ${n[0].getUTCDate()}/${ShortMonthNames[n[0].getMonth()]} TILL ${n[n.length - 1].getUTCDate()}/${ShortMonthNames[n[n.length - 1].getMonth()]}`
+                  ? `CNL ${n[0].getUTCDate()}${ShortMonthNames[n[0].getMonth()]} TILL ${n[n.length - 1].getUTCDate()}${ShortMonthNames[n[n.length - 1].getMonth()]}`
                   : n.length === 1
-                  ? `CNL ${n[0].getUTCDate()}/${ShortMonthNames[n[0].getMonth()]}`
+                  ? `CNL ${n[0].getUTCDate()}${ShortMonthNames[n[0].getMonth()]}`
                   : undefined
               )
               .filter(Boolean)
@@ -142,9 +143,9 @@ export default class FlightView {
             return groupActiveDay
               .map(n =>
                 n.length >= 2
-                  ? `FM ${n[0].getUTCDate()}/${ShortMonthNames[n[0].getMonth()]} TILL ${n[n.length - 1].getUTCDate()}/${ShortMonthNames[n[n.length - 1].getMonth()]}`
+                  ? `FM ${n[0].getUTCDate()}${ShortMonthNames[n[0].getMonth()]} TILL ${n[n.length - 1].getUTCDate()}${ShortMonthNames[n[n.length - 1].getMonth()]}`
                   : n.length === 1
-                  ? `FM ${n[0].getUTCDate()}/${ShortMonthNames[n[0].getMonth()]}`
+                  ? `FM ${n[0].getUTCDate()}${ShortMonthNames[n[0].getMonth()]}`
                   : undefined
               )
               .filter(Boolean)
@@ -153,7 +154,7 @@ export default class FlightView {
         }
       }
 
-      function generateTimeChangeNotes(): string | undefined {
+      function generateStdChangeNotes(): string | undefined {
         const diffInTime = endWeek.startDate.getTime() - startWeek.startDate.getTime();
         const diffInDays = diffInTime / (24 * 60 * 60 * 1000);
         const diffInWeek = diffInDays / 7 + 1;
@@ -185,11 +186,55 @@ export default class FlightView {
           return groupCancleDay
             .map(n =>
               n.dates.length >= 2
-                ? `TIM ${n.change} ${n.dates[0].getUTCDate()}/${ShortMonthNames[n.dates[0].getMonth()]} TILL ${n.dates[n.dates.length - 1].getUTCDate()}/${
+                ? `TIM ${n.change} ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]} TILL ${n.dates[n.dates.length - 1].getUTCDate()}${
                     ShortMonthNames[n.dates[n.dates.length - 1].getMonth()]
                   }`
                 : n.dates.length === 1
-                ? `TIM ${n.change} ${n.dates[0].getUTCDate()}/${ShortMonthNames[n.dates[0].getMonth()]}`
+                ? `TIM ${n.change} ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]}`
+                : undefined
+            )
+            .filter(Boolean)
+            .join(',');
+        }
+      }
+
+      function generateBlockTimeChangeNotes(): string | undefined {
+        const diffInTime = endWeek.startDate.getTime() - startWeek.startDate.getTime();
+        const diffInDays = diffInTime / (24 * 60 * 60 * 1000);
+        const diffInWeek = diffInDays / 7 + 1;
+
+        const firstFlight = sortedFlights[0];
+        const startDate = firstFlight.date;
+        const allDays = Array.range(0, diffInWeek - 1).map(d => {
+          return new Date(startDate).addDays(d * 7);
+        });
+        if (!sourceFlight.legs.some((l, index) => sortedFlights.some(f => l.blockTime.compare(f.legs[index].blockTime) !== 0))) {
+          return undefined;
+        } else {
+          const groupCancleDay = allDays.reduce<{ change?: string; dates: Date[] }[]>((acc, cur) => {
+            const lastElement: { change?: string; dates: Date[] } = acc[acc.length - 1] || (acc.push({ dates: [] as Date[] }) && acc[acc.length - 1]);
+            const flight = flights.find(f => f.date.getDatePart().getTime() == cur.getTime());
+            if (!flight || sourceFlight.legs.every((l, index) => l.blockTime.compare(flight.legs[index].blockTime) === 0)) {
+              lastElement.dates.length > 0 && acc.push({ dates: [] as Date[] });
+            } else {
+              const _change = `${dataTypes.daytime.convertBusinessToView(flight.legs[0].blockTime)}`;
+              if (lastElement.change === _change) {
+                lastElement.dates.push(cur);
+              } else {
+                acc.push({ change: _change, dates: [cur] });
+              }
+            }
+            return acc;
+          }, []);
+
+          return groupCancleDay
+            .map(n =>
+              n.dates.length >= 2
+                ? `BLK ${n.change} ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]} TILL ${n.dates[n.dates.length - 1].getUTCDate()}${
+                    ShortMonthNames[n.dates[n.dates.length - 1].getMonth()]
+                  }`
+                : n.dates.length === 1
+                ? `BLK ${n.change} ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]}`
                 : undefined
             )
             .filter(Boolean)
@@ -229,11 +274,11 @@ export default class FlightView {
           return groupCancleDay
             .map(n =>
               n.dates.length >= 2
-                ? `REG ${n.change} ${n.dates[0].getUTCDate()}/${ShortMonthNames[n.dates[0].getMonth()]} TILL ${n.dates[n.dates.length - 1].getUTCDate()}/${
+                ? `REG ${n.change} ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]} TILL ${n.dates[n.dates.length - 1].getUTCDate()}${
                     ShortMonthNames[n.dates[n.dates.length - 1].getMonth()]
                   }`
                 : n.dates.length === 1
-                ? `REG ${n.change} ${n.dates[0].getUTCDate()}/${ShortMonthNames[n.dates[0].getMonth()]}`
+                ? `REG ${n.change} ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]}`
                 : undefined
             )
             .filter(Boolean)
@@ -271,11 +316,11 @@ export default class FlightView {
         return groupCancleDay
           .map(n =>
             n.dates.length >= 2
-              ? `PER ${n.dates[0].getUTCDate()}/${ShortMonthNames[n.dates[0].getMonth()]} TILL ${n.dates[n.dates.length - 1].getUTCDate()}/${
+              ? `PER ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]} TILL ${n.dates[n.dates.length - 1].getUTCDate()}${
                   ShortMonthNames[n.dates[n.dates.length - 1].getMonth()]
                 }`
               : n.dates.length === 1
-              ? `PER ${n.dates[0].getUTCDate()}/${ShortMonthNames[n.dates[0].getMonth()]}`
+              ? `PER ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]}`
               : undefined
           )
           .filter(Boolean)
@@ -312,11 +357,11 @@ export default class FlightView {
         return groupCancleDay
           .map(n =>
             n.dates.length >= 2
-              ? `NTE ${n.dates[0].getUTCDate()}/${ShortMonthNames[n.dates[0].getMonth()]} TILL ${n.dates[n.dates.length - 1].getUTCDate()}/${
+              ? `NTE ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]} TILL ${n.dates[n.dates.length - 1].getUTCDate()}${
                   ShortMonthNames[n.dates[n.dates.length - 1].getMonth()]
                 }`
               : n.dates.length === 1
-              ? `NTE ${n.dates[0].getUTCDate()}/${ShortMonthNames[n.dates[0].getMonth()]}`
+              ? `NTE ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]}`
               : undefined
           )
           .filter(Boolean)
@@ -355,11 +400,11 @@ export default class FlightView {
         return groupChangeDay
           .map(n =>
             n.dates.length >= 2
-              ? `RSX ${n.change} ${n.dates[0].getUTCDate()}/${ShortMonthNames[n.dates[0].getMonth()]} TILL ${n.dates[n.dates.length - 1].getUTCDate()}/${
+              ? `RSX ${n.change} ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]} TILL ${n.dates[n.dates.length - 1].getUTCDate()}${
                   ShortMonthNames[n.dates[n.dates.length - 1].getMonth()]
                 }`
               : n.dates.length === 1
-              ? `RSX ${n.change} ${n.dates[0].getUTCDate()}/${ShortMonthNames[n.dates[0].getMonth()]}`
+              ? `RSX ${n.change} ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]}`
               : undefined
           )
           .filter(Boolean)

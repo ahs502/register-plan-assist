@@ -125,6 +125,7 @@ export default class Preplan {
             !nextFlight ||
             previousFlight.aircraftRegister !== nextFlight.aircraftRegister ||
             previousFlight.legs.some((l, index) => l.std.compare(nextFlight.legs[index].std) !== 0) ||
+            previousFlight.legs.some((l, index) => l.blockTime.compare(nextFlight.legs[index].blockTime) !== 0) ||
             previousFlight.rsx !== nextFlight.rsx ||
             previousFlight.notes !== nextFlight.notes ||
             previousFlight.originPermission !== nextFlight.originPermission ||

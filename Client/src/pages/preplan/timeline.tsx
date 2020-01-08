@@ -176,7 +176,7 @@ const TimelinePage: FC<TimelinePageProps> = ({ onObjectionTargetClick, onEditFli
           <IconButton disabled={timelineViewState.loading} color="inherit" title="Accept Preplan">
             <FinilizedIcon />
           </IconButton>
-          <LinkIconButton disabled={timelineViewState.loading} color="inherit" to={`/preplan/${preplan.id}/flight-requirement-list`} title="Flights">
+          <LinkIconButton disabled={timelineViewState.loading} color="inherit" to={`/preplan/${preplan.id}/flight-requirement-list`} title="Flight Requirement">
             <MahanIcon type={MahanIconType.FlightIcon} />
           </LinkIconButton>
           <LinkIconButton disabled={timelineViewState.loading} color="inherit" title="Reports" to={`/preplan/${preplan.id}/reports`}>

@@ -268,18 +268,6 @@ const FlightModal = createModal<FlightModalState, FlightModalProps>(({ state, on
 
                         setViewState(calculateViewState(selectedFlights, preplan, flights, state));
                       }
-
-                      // setViewState({
-                      //   ...viewState,
-                      //   dates: [
-                      //     ...viewState.dates.slice(0, index),
-                      //     {
-                      //       ...date,
-                      //       selected: !date.selected
-                      //     },
-                      //     ...viewState.dates.slice(index + 1)
-                      //   ]
-                      // })
                     }
                   >
                     {formatDate(flightDate, true)}
@@ -289,35 +277,6 @@ const FlightModal = createModal<FlightModalState, FlightModalProps>(({ state, on
               })}
             </div>
           </Grid>
-          {/* <Grid item xs={12}>
-            {viewState.dates.map((w, index) => (
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={w.selected}
-                    onChange={({ target: { checked: selected } }) => {
-                      //setViewState({ ...viewState, dates: [...viewState.dates.slice(0, index), { ...w, selected }, ...viewState.dates.slice(index + 1)] })
-                      const selectedFlights = viewState.dates
-                        .map((d, dayIndex) => {
-                          if ((dayIndex === index && !selected) || (dayIndex !== index && !d.selected)) return undefined;
-                          return flights.find(
-                            f =>
-                              dataTypes.utcDate.convertBusinessToView(f.date) ===
-                              dataTypes.utcDate.convertBusinessToView(new Date(preplan.weeks.all[dayIndex].startDate).addDays(state.day))
-                          );
-                        })
-                        .filter(Boolean) as Flight[];
-
-                      setViewState(calculateViewState(selectedFlights, preplan, flights, state));
-                    }}
-                    color="primary"
-                    disabled={w.disabled}
-                  />
-                }
-                label={new Date(preplan.weeks.all[index].startDate).addDays(state.day).format('d')}
-              />
-            ))}
-          </Grid> */}
           <Grid item xs={12}>
             <RefiningTextField
               fullWidth

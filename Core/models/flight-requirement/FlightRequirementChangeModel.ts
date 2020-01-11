@@ -72,7 +72,7 @@ export class FlightRequirementChangeModelValidation extends Validation<
           .each((leg, index) => validator.put(validator.$.route[index], new FlightRequirementLegChangeModelValidation(leg)));
         validator
           .array(days)
-          .must(() => days.length > 0)
+          .if(() => days.length > 0)
           .each((day, index) =>
             validator.put(
               validator.$.days[index],

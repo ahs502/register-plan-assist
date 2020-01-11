@@ -299,24 +299,27 @@ const TimelinePage: FC<TimelinePageProps> = ({ onObjectionTargetClick, onEditFli
                       }))
                     : f.extractModel()
                 );
-              // const newPreplanModel = await FlightService.edit(preplan.id, ...flightModels);
-              const newFlightRequirementModel = flightView.flightRequirement.extractModel(flightRequirementModel => ({
-                ...flightRequirementModel,
-                days: flightRequirementModel.days.map<DayFlightRequirementModel>(d =>
-                  d.day === flightView.day || allWeekdays
-                    ? {
-                        ...d,
-                        route: d.route.map<DayFlightRequirementLegModel>(l => ({
-                          ...l,
-                          stdLowerBound: l.stdLowerBound + deltaStd,
-                          stdUpperBound: undefined
-                        }))
-                      }
-                    : d
-                )
-              }));
-              const newPreplanModel = await FlightRequirementService.edit(preplan.id, newFlightRequirementModel, flightModels);
-              await reloadPreplan(newPreplanModel);
+
+              const newPreplanDataModel = await FlightService.edit(preplan.id, ...flightModels, [] as any);
+
+              // const newFlightRequirementModel = flightView.flightRequirement.extractModel(flightRequirementModel => ({
+              //   ...flightRequirementModel,
+              //   days: flightRequirementModel.days.map<DayFlightRequirementModel>(d =>
+              //     d.day === flightView.day || allWeekdays
+              //       ? {
+              //           ...d,
+              //           route: d.route.map<DayFlightRequirementLegModel>(l => ({
+              //             ...l,
+              //             stdLowerBound: l.stdLowerBound + deltaStd,
+              //             stdUpperBound: undefined
+              //           }))
+              //         }
+              //       : d
+              //   )
+              // }));
+              // const newPreplanModel = await FlightRequirementService.edit(preplan.id, newFlightRequirementModel, flightModels);
+
+              await reloadPreplan(newPreplanDataModel);
             } catch (reason) {
               snackbar.enqueueSnackbar(String(reason), { variant: 'error' });
               await reloadPreplan();

@@ -166,7 +166,7 @@ export default class Preplan {
         .filter(f => startWeek.startDate <= f.date && f.date <= endWeek.endDate)
         .groupBy(
           f => f.flightRequirement.id,
-          g => Object.values(g.groupBy('day', h => new FlightView(h, startWeek, endWeek, week ?? startWeek)))
+          g => Object.values(g.groupBy('day', h => new FlightView(h, startWeek, endWeek, week ?? startWeek, this.startDate, this.endDate)))
         )
     ).flatten();
   }

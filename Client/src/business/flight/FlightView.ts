@@ -48,7 +48,7 @@ export default class FlightView {
   readonly endDateTime: Date;
   readonly icons: readonly string[]; //TODO: Check if it is really required.
 
-  constructor(flights: readonly Flight[], startWeek: Week, endWeek: Week, week: Week) {
+  constructor(flights: readonly Flight[], startWeek: Week, endWeek: Week, week: Week, preplanStartDate: Date, preplanEndDate: Date) {
     const { sourceFlight, notes } = flights.map(sourceFlight => ({ sourceFlight, notes: createNotes(sourceFlight) })).sortBy(({ notes }) => notes.length)[0];
 
     this.sourceFlight = sourceFlight;
@@ -84,6 +84,19 @@ export default class FlightView {
     this.icons = [];
 
     function createNotes(sourceFlight: Flight): string {
+      const diffInTime = endWeek.startDate.getTime() - startWeek.startDate.getTime();
+      const diffInDays = diffInTime / (24 * 60 * 60 * 1000);
+      const diffInWeek = diffInDays / 7 + 1;
+
+      const flightDay = sourceFlight.day;
+      const startDate = new Date(startWeek.startDate).addDays(flightDay);
+      const allDays = Array.range(0, diffInWeek - 1).map(d => {
+        return new Date(startDate).addDays(d * 7);
+      });
+
+      if (allDays[0] < preplanStartDate) allDays.shift();
+      if (allDays[allDays.length - 1] > preplanEndDate) allDays.pop();
+
       const sortedFlights = flights.orderBy('date');
       const canclationOrActiveationPerDay: string | undefined = generateCanalationOrActivationNotes();
       const stdChange: string | undefined = generateStdChangeNotes();
@@ -96,15 +109,7 @@ export default class FlightView {
       return [canclationOrActiveationPerDay, stdChange, blockTimeChange, registerChange, permissionAndPermissionNotesChange, notesChange, rsxChange].filter(Boolean).join(',');
 
       function generateCanalationOrActivationNotes(): string | undefined {
-        const diffInTime = endWeek.startDate.getTime() - startWeek.startDate.getTime();
-        const diffInDays = diffInTime / (24 * 60 * 60 * 1000);
-        const diffInWeek = diffInDays / 7 + 1;
-
         const firstFlight = sortedFlights[0];
-        const startDate = firstFlight.date;
-        const allDays = Array.range(0, diffInWeek - 1).map(d => {
-          return new Date(startDate).addDays(d * 7);
-        });
         if (diffInWeek === sortedFlights.length) {
           return undefined;
         } else {
@@ -155,239 +160,144 @@ export default class FlightView {
       }
 
       function generateStdChangeNotes(): string | undefined {
-        const diffInTime = endWeek.startDate.getTime() - startWeek.startDate.getTime();
-        const diffInDays = diffInTime / (24 * 60 * 60 * 1000);
-        const diffInWeek = diffInDays / 7 + 1;
-
-        const firstFlight = sortedFlights[0];
-        const startDate = firstFlight.date;
-        const allDays = Array.range(0, diffInWeek - 1).map(d => {
-          return new Date(startDate).addDays(d * 7);
-        });
-        if (!sourceFlight.legs.some((l, index) => sortedFlights.some(f => l.std.compare(f.legs[index].std) !== 0))) {
-          return undefined;
-        } else {
-          const groupCancleDay = allDays.reduce<{ change?: string; dates: Date[] }[]>((acc, cur) => {
-            const lastElement: { change?: string; dates: Date[] } = acc[acc.length - 1] || (acc.push({ dates: [] as Date[] }) && acc[acc.length - 1]);
-            const flight = flights.find(f => f.date.getDatePart().getTime() == cur.getTime());
-            if (!flight || sourceFlight.legs.every((l, index) => l.std.compare(flight.legs[index].std) === 0)) {
-              lastElement.dates.length > 0 && acc.push({ dates: [] as Date[] });
-            } else {
-              const _change = `${dataTypes.daytime.convertBusinessToView(flight.legs[0].std)}-${dataTypes.daytime.convertBusinessToView(flight.legs[flight.legs.length - 1].sta)}`;
-              if (lastElement.change === _change) {
-                lastElement.dates.push(cur);
-              } else {
-                acc.push({ change: _change, dates: [cur] });
-              }
-            }
-            return acc;
-          }, []);
-
-          return groupCancleDay
-            .map(n =>
-              n.dates.length >= 2
-                ? `TIM ${n.change} ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]} TILL ${n.dates[n.dates.length - 1].getUTCDate()}${
-                    ShortMonthNames[n.dates[n.dates.length - 1].getMonth()]
-                  }`
-                : n.dates.length === 1
-                ? `TIM ${n.change} ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]}`
-                : undefined
-            )
-            .filter(Boolean)
-            .join(',');
-        }
+        return generateChangeNotes(
+          (firstFlight, secondFlight) => firstFlight.legs.every((l, index) => l.std.compare(secondFlight.legs[index].std) === 0),
+          'Time Change',
+          changes =>
+            changes
+              .map(n =>
+                n.dates.length >= 2
+                  ? `TIM ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]} TILL ${n.dates[n.dates.length - 1].getUTCDate()}${
+                      ShortMonthNames[n.dates[n.dates.length - 1].getMonth()]
+                    }`
+                  : n.dates.length === 1
+                  ? `TIM ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]}`
+                  : undefined
+              )
+              .filter(Boolean)
+              .join(',')
+        );
       }
 
       function generateBlockTimeChangeNotes(): string | undefined {
-        const diffInTime = endWeek.startDate.getTime() - startWeek.startDate.getTime();
-        const diffInDays = diffInTime / (24 * 60 * 60 * 1000);
-        const diffInWeek = diffInDays / 7 + 1;
-
-        const firstFlight = sortedFlights[0];
-        const startDate = firstFlight.date;
-        const allDays = Array.range(0, diffInWeek - 1).map(d => {
-          return new Date(startDate).addDays(d * 7);
-        });
-        if (!sourceFlight.legs.some((l, index) => sortedFlights.some(f => l.blockTime.compare(f.legs[index].blockTime) !== 0))) {
-          return undefined;
-        } else {
-          const groupCancleDay = allDays.reduce<{ change?: string; dates: Date[] }[]>((acc, cur) => {
-            const lastElement: { change?: string; dates: Date[] } = acc[acc.length - 1] || (acc.push({ dates: [] as Date[] }) && acc[acc.length - 1]);
-            const flight = flights.find(f => f.date.getDatePart().getTime() == cur.getTime());
-            if (!flight || sourceFlight.legs.every((l, index) => l.blockTime.compare(flight.legs[index].blockTime) === 0)) {
-              lastElement.dates.length > 0 && acc.push({ dates: [] as Date[] });
-            } else {
-              const _change = `${dataTypes.daytime.convertBusinessToView(flight.legs[0].blockTime)}`;
-              if (lastElement.change === _change) {
-                lastElement.dates.push(cur);
-              } else {
-                acc.push({ change: _change, dates: [cur] });
-              }
-            }
-            return acc;
-          }, []);
-
-          return groupCancleDay
-            .map(n =>
-              n.dates.length >= 2
-                ? `BLK ${n.change} ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]} TILL ${n.dates[n.dates.length - 1].getUTCDate()}${
-                    ShortMonthNames[n.dates[n.dates.length - 1].getMonth()]
-                  }`
-                : n.dates.length === 1
-                ? `BLK ${n.change} ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]}`
-                : undefined
-            )
-            .filter(Boolean)
-            .join(',');
-        }
+        return generateChangeNotes(
+          (firstFlight, secondFlight) => firstFlight.legs.every((l, index) => l.blockTime.compare(secondFlight.legs[index].blockTime) === 0),
+          'BlockTime Change',
+          changes =>
+            changes
+              .map(n =>
+                n.dates.length >= 2
+                  ? `BLK ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]} TILL ${n.dates[n.dates.length - 1].getUTCDate()}${
+                      ShortMonthNames[n.dates[n.dates.length - 1].getMonth()]
+                    }`
+                  : n.dates.length === 1
+                  ? `BLK ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]}`
+                  : undefined
+              )
+              .filter(Boolean)
+              .join(',')
+        );
       }
 
       function generateRegisterChangeNotes(): string | undefined {
-        const diffInTime = endWeek.startDate.getTime() - startWeek.startDate.getTime();
-        const diffInDays = diffInTime / (24 * 60 * 60 * 1000);
-        const diffInWeek = diffInDays / 7 + 1;
-
-        const firstFlight = sortedFlights[0];
-        const startDate = firstFlight.date;
-        const allDays = Array.range(0, diffInWeek - 1).map(d => {
-          return new Date(startDate).addDays(d * 7);
-        });
-        if (!sortedFlights.some(f => f.aircraftRegister !== sourceFlight.aircraftRegister)) {
-          return undefined;
-        } else {
-          const groupCancleDay = allDays.reduce<{ change?: string; dates: Date[] }[]>((acc, cur) => {
-            const lastElement: { change?: string; dates: Date[] } = acc[acc.length - 1] || (acc.push({ dates: [] as Date[] }) && acc[acc.length - 1]);
-            const flight = flights.find(f => f.date.getDatePart().getTime() == cur.getTime());
-            if (!flight || sourceFlight.aircraftRegister === flight.aircraftRegister) {
-              lastElement.dates.length > 0 && acc.push({ dates: [] as Date[] });
-            } else {
-              const _change = flight.aircraftRegister?.['name'];
-              if (lastElement.change === _change) {
-                lastElement.dates.push(cur);
-              } else {
-                acc.push({ change: _change, dates: [cur] });
-              }
-            }
-            return acc;
-          }, []);
-
-          return groupCancleDay
-            .map(n =>
-              n.dates.length >= 2
-                ? `REG ${n.change} ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]} TILL ${n.dates[n.dates.length - 1].getUTCDate()}${
-                    ShortMonthNames[n.dates[n.dates.length - 1].getMonth()]
-                  }`
-                : n.dates.length === 1
-                ? `REG ${n.change} ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]}`
-                : undefined
-            )
-            .filter(Boolean)
-            .join(',');
-        }
+        return generateChangeNotes(
+          (firstFlight, secondFlight) => firstFlight.aircraftRegister === secondFlight.aircraftRegister,
+          flight => flight.aircraftRegister?.['name'] ?? '',
+          changes =>
+            changes
+              .map(n =>
+                n.dates.length >= 2
+                  ? `REG ${n.change} ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]} TILL ${n.dates[n.dates.length - 1].getUTCDate()}${
+                      ShortMonthNames[n.dates[n.dates.length - 1].getMonth()]
+                    }`
+                  : n.dates.length === 1
+                  ? `REG ${n.change} ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]}`
+                  : undefined
+              )
+              .filter(Boolean)
+              .join(',')
+        );
       }
 
       function generatePermissionAndPermissionNotesChangeNotes(): string | undefined {
-        const diffInTime = endWeek.startDate.getTime() - startWeek.startDate.getTime();
-        const diffInDays = diffInTime / (24 * 60 * 60 * 1000);
-        const diffInWeek = diffInDays / 7 + 1;
-
-        const firstFlight = sortedFlights[0];
-        const startDate = firstFlight.date;
-        const allDays = Array.range(0, diffInWeek - 1).map(d => {
-          return new Date(startDate).addDays(d * 7);
-        });
-
-        const groupCancleDay = allDays.reduce<{ change?: string; dates: Date[] }[]>((acc, cur) => {
-          const lastElement: { change?: string; dates: Date[] } = acc[acc.length - 1] || (acc.push({ dates: [] as Date[] }) && acc[acc.length - 1]);
-          const flight = flights.find(f => f.date.getDatePart().getTime() == cur.getTime());
-          if (!flight || (sourceFlight.destinationPermission === flight.destinationPermission && sourceFlight.originPermission === flight.originPermission)) {
-            lastElement.dates.length > 0 && acc.push({ dates: [] as Date[] });
-          } else {
-            const _change = 'PermissionChagne';
-            if (lastElement.change === _change) {
-              lastElement.dates.push(cur);
-            } else {
-              acc.push({ change: _change, dates: [cur] });
-            }
-          }
-          return acc;
-        }, []);
-
-        return groupCancleDay
-          .map(n =>
-            n.dates.length >= 2
-              ? `PER ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]} TILL ${n.dates[n.dates.length - 1].getUTCDate()}${
-                  ShortMonthNames[n.dates[n.dates.length - 1].getMonth()]
-                }`
-              : n.dates.length === 1
-              ? `PER ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]}`
-              : undefined
-          )
-          .filter(Boolean)
-          .join(',');
+        return generateChangeNotes(
+          (firstFlight, secondFlight) => firstFlight.destinationPermission === secondFlight.destinationPermission && firstFlight.originPermission === secondFlight.originPermission,
+          'PermissionChagne',
+          changes =>
+            changes
+              .map(n =>
+                n.dates.length >= 2
+                  ? `PER ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]} TILL ${n.dates[n.dates.length - 1].getUTCDate()}${
+                      ShortMonthNames[n.dates[n.dates.length - 1].getMonth()]
+                    }`
+                  : n.dates.length === 1
+                  ? `PER ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]}`
+                  : undefined
+              )
+              .filter(Boolean)
+              .join(',')
+        );
       }
 
       function generateNotesChangeNotes(): string | undefined {
-        const diffInTime = endWeek.startDate.getTime() - startWeek.startDate.getTime();
-        const diffInDays = diffInTime / (24 * 60 * 60 * 1000);
-        const diffInWeek = diffInDays / 7 + 1;
-
-        const firstFlight = sortedFlights[0];
-        const startDate = firstFlight.date;
-        const allDays = Array.range(0, diffInWeek - 1).map(d => {
-          return new Date(startDate).addDays(d * 7);
-        });
-
-        const groupCancleDay = allDays.reduce<{ change?: string; dates: Date[] }[]>((acc, cur) => {
-          const lastElement: { change?: string; dates: Date[] } = acc[acc.length - 1] || (acc.push({ dates: [] as Date[] }) && acc[acc.length - 1]);
-          const flight = flights.find(f => f.date.getDatePart().getTime() == cur.getTime());
-          if (!flight || sourceFlight.notes === flight.notes) {
-            lastElement.dates.length > 0 && acc.push({ dates: [] as Date[] });
-          } else {
-            const _change = 'Note change';
-            if (lastElement.change === _change) {
-              lastElement.dates.push(cur);
-            } else {
-              acc.push({ change: _change, dates: [cur] });
-            }
-          }
-          return acc;
-        }, []);
-
-        return groupCancleDay
-          .map(n =>
-            n.dates.length >= 2
-              ? `NTE ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]} TILL ${n.dates[n.dates.length - 1].getUTCDate()}${
-                  ShortMonthNames[n.dates[n.dates.length - 1].getMonth()]
-                }`
-              : n.dates.length === 1
-              ? `NTE ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]}`
-              : undefined
-          )
-          .filter(Boolean)
-          .join(',');
+        return generateChangeNotes(
+          (firstFlight, secondFlight) => firstFlight.notes === secondFlight.notes,
+          'Note change',
+          changes =>
+            changes
+              .map(n =>
+                n.dates.length >= 2
+                  ? `NTE ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]} TILL ${n.dates[n.dates.length - 1].getUTCDate()}${
+                      ShortMonthNames[n.dates[n.dates.length - 1].getMonth()]
+                    }`
+                  : n.dates.length === 1
+                  ? `NTE ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]}`
+                  : undefined
+              )
+              .filter(Boolean)
+              .join(',')
+        );
       }
 
       function generateRsxChangeNotes(): string | undefined {
-        const diffInTime = endWeek.startDate.getTime() - startWeek.startDate.getTime();
-        const diffInDays = diffInTime / (24 * 60 * 60 * 1000);
-        const diffInWeek = diffInDays / 7 + 1;
+        return generateChangeNotes(
+          (firstFlight, secondFlight) => firstFlight.rsx === secondFlight.rsx,
+          flight => flight.rsx,
+          changes =>
+            changes
+              .map(n =>
+                n.dates.length >= 2
+                  ? `RSX ${n.change} ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]} TILL ${n.dates[n.dates.length - 1].getUTCDate()}${
+                      ShortMonthNames[n.dates[n.dates.length - 1].getMonth()]
+                    }`
+                  : n.dates.length === 1
+                  ? `RSX ${n.change} ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]}`
+                  : undefined
+              )
+              .filter(Boolean)
+              .join(',')
+        );
+      }
 
-        const firstFlight = sortedFlights[0];
-        const startDate = firstFlight.date;
-        const allDays = Array.range(0, diffInWeek - 1).map(d => {
-          return new Date(startDate).addDays(d * 7);
-        });
-
-        if (!sortedFlights.some(f => f.rsx !== sourceFlight.rsx)) return undefined;
+      function generateChangeNotes(
+        comparare: (firstFlight: Flight, secondFlight: Flight) => Boolean,
+        change: ((flight: Flight) => string) | string,
+        generateChangeNote: (
+          changes: {
+            change?: string | undefined;
+            dates: Date[];
+          }[]
+        ) => string | undefined
+      ): string | undefined {
+        if (sortedFlights.every(f => comparare(sourceFlight, f))) return undefined;
 
         const groupChangeDay = allDays.reduce<{ change?: string; dates: Date[] }[]>((acc, cur) => {
           const lastElement: { change?: string; dates: Date[] } = acc[acc.length - 1] || (acc.push({ dates: [] as Date[] }) && acc[acc.length - 1]);
           const flight = flights.find(f => f.date.getDatePart().getTime() == cur.getTime());
-          if (!flight || sourceFlight.rsx === flight.rsx) {
+          if (!flight || comparare(sourceFlight, flight)) {
             lastElement.dates.length > 0 && acc.push({ dates: [] as Date[] });
           } else {
-            const _change = flight.rsx;
+            const _change = typeof change === 'function' ? change(flight) : change;
             if (lastElement.change === _change) {
               lastElement.dates.push(cur);
             } else {
@@ -397,18 +307,7 @@ export default class FlightView {
           return acc;
         }, []);
 
-        return groupChangeDay
-          .map(n =>
-            n.dates.length >= 2
-              ? `RSX ${n.change} ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]} TILL ${n.dates[n.dates.length - 1].getUTCDate()}${
-                  ShortMonthNames[n.dates[n.dates.length - 1].getMonth()]
-                }`
-              : n.dates.length === 1
-              ? `RSX ${n.change} ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]}`
-              : undefined
-          )
-          .filter(Boolean)
-          .join(',');
+        return generateChangeNote(groupChangeDay);
       }
     }
   }

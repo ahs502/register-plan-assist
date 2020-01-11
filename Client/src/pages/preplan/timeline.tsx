@@ -300,7 +300,7 @@ const TimelinePage: FC<TimelinePageProps> = ({ onObjectionTargetClick, onEditFli
                     : f.extractModel()
                 );
 
-              const newPreplanDataModel = await FlightService.edit(preplan.id, ...flightModels, [] as any);
+              const newPreplanDataModel = await FlightService.edit(preplan.id, ...flightModels);
 
               // const newFlightRequirementModel = flightView.flightRequirement.extractModel(flightRequirementModel => ({
               //   ...flightRequirementModel,

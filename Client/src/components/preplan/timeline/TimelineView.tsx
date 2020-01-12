@@ -419,7 +419,12 @@ const TimelineView: FC<TimelineViewProps> = ({
         delay: 400
         // template: ... //TODO: Replace itemTooltipTemplate function here.
       },
-      tooltipOnItemUpdateTime: true, //TODO: Replace with this: { template(itemData: DataItem) { return ''; } },
+
+      tooltipOnItemUpdateTime: {
+        template: (itemData: DataItem) => {
+          return itemOnUpdateTooltipTemplate(itemData);
+        }
+      }, //TODO: Replace with this: { template(itemData: DataItem) { return ''; } },
       verticalScroll: true,
       width: '100%',
       zoomable: true,
@@ -616,7 +621,25 @@ const TimelineView: FC<TimelineViewProps> = ({
       //   }
       // `;
     }
+
+    function itemOnUpdateTooltipTemplate(itemData: DataItem): string {
+      const flightView: FlightView = itemData.data;
+      const deltaStd = Math.round((new Date(itemData.start).getTime() - flightView.startDateTime.getTime()) / (5 * 60 * 1000)) * 5;
+      const lastLeg = flightView.legs[flightView.legs.length - 1];
+      return `
+      <div>    
+          <div>(${new Date(itemData.start).format(
+            't'
+          )})&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div>
+          <div>(${new Daytime(lastLeg.std.minutes + deltaStd + lastLeg.blockTime.minutes).toString(
+            'HH:mm',
+            true
+          )})&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div>
+      </div>    
+      `;
+    }
   }, [preplan /* Because we have used onFlightDragAndDrop() in options */, week.startDate.getTime(), previous?.numberOfDays, next?.numberOfDays]);
+
   const timelineGroups = useMemo<DataGroup[]>(() => {
     const registers = preplan.aircraftRegisters.items
       .filter(r => r.options.status !== 'IGNORED')

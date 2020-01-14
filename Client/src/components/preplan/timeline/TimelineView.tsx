@@ -337,7 +337,7 @@ const TimelineView: FC<TimelineViewProps> = ({
       groupTemplate,
       // height: 0,
       horizontalScroll: false,
-      itemsAlwaysDraggable: true,
+      itemsAlwaysDraggable: false,
       // locale: '',
       // locales: {},
       moment(date) {
@@ -419,10 +419,9 @@ const TimelineView: FC<TimelineViewProps> = ({
       //type: 'range',
       tooltip: {
         followMouse: false,
-        overflowMethod: 'flip',
+        overflowMethod: 'cap',
         delay: 400
       },
-
       tooltipOnItemUpdateTime: {
         template: (itemData: DataItem) => {
           return itemOnUpdateTooltipTemplate(itemData);

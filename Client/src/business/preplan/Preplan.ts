@@ -10,6 +10,7 @@ import PreplanDataModel from '@core/models/preplan/PreplanDataModel';
 import { dataTypes } from 'src/utils/DataType';
 import Week, { Weeks } from 'src/business/Week';
 import FlightView from 'src/business/flight/FlightView';
+import FlightPackView from 'src/business/flight/FlightPackView';
 
 export default class Preplan {
   readonly id: Id;
@@ -169,5 +170,16 @@ export default class Preplan {
           g => Object.values(g.groupBy('day', h => new FlightView(h, startWeek, endWeek, week ?? startWeek, this.startDate, this.endDate)))
         )
     ).flatten();
+  }
+
+  getFlightPackViews(startWeek: Week, endWeek: Week, week?: Week): FlightPackView[] {
+    return Object.values(
+      this.flights
+        .filter(f => startWeek.startDate <= f.date && f.date <= endWeek.endDate)
+        .groupBy(
+          f => f.flightRequirement.id,
+          g => Object.values(g.groupBy('day', h => FlightPackView.create(h, startWeek, endWeek, week ?? startWeek, this.startDate, this.endDate)))
+        )
+    ).flat(2);
   }
 }

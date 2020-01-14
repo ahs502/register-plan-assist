@@ -10,7 +10,6 @@ import FlightLegView from 'src/business/flight/FlightLegView';
 import Week from 'src/business/Week';
 import Flight from 'src/business/flight/Flight';
 import { ShortMonthNames } from '@core/types/MonthName';
-import { dataTypes } from 'src/utils/DataType';
 
 export default class FlightView {
   // Original:

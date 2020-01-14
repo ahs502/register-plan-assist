@@ -316,7 +316,7 @@ const TimelineView: FC<TimelineViewProps> = ({
         updateTime: !preplan.readonly,
         overrideItems: false
       },
-      end: week.endDate,
+      end: new Date(week.endDate).addDays(1),
       format: {
         majorLabels(date, scale, step) {
           return Weekday[((new Date(date).setUTCHours(0, 0, 0, 0) - week.startDate.getTime()) / (24 * 60 * 60 * 1000) + 7) % 7].slice(0, 3);

@@ -415,7 +415,7 @@ const TimelineView: FC<TimelineViewProps> = ({
       //type: 'range',
       tooltip: {
         followMouse: true,
-        overflowMethod: 'cap',
+        overflowMethod: 'flip',
         delay: 400
         // template: ... //TODO: Replace itemTooltipTemplate function here.
       },

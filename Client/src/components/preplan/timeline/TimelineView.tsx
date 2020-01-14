@@ -53,6 +53,10 @@ const useStyles = makeStyles((theme: Theme) => ({
               '& .vis-item-overflow': {
                 boxShadow: '0px 0px 10px 1px green, inset 0px 0px 9px -1px green',
                 borderRadius: '4px'
+              },
+              '& .vis-onUpdateTime-tooltip': {
+                width: 240,
+                bottom: 'initial !important'
               }
             }
           }
@@ -414,10 +418,9 @@ const TimelineView: FC<TimelineViewProps> = ({
       // timeAxis: {},
       //type: 'range',
       tooltip: {
-        followMouse: true,
+        followMouse: false,
         overflowMethod: 'flip',
         delay: 400
-        // template: ... //TODO: Replace itemTooltipTemplate function here.
       },
 
       tooltipOnItemUpdateTime: {
@@ -627,14 +630,7 @@ const TimelineView: FC<TimelineViewProps> = ({
       const deltaStd = Math.round((new Date(itemData.start).getTime() - flightView.startDateTime.getTime()) / (5 * 60 * 1000)) * 5;
       const lastLeg = flightView.legs[flightView.legs.length - 1];
       return `
-      <div>    
-          <div>(${new Date(itemData.start).format(
-            't'
-          )})&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div>
-          <div>(${new Daytime(lastLeg.std.minutes + deltaStd + lastLeg.blockTime.minutes).toString(
-            'HH:mm',
-            true
-          )})&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div>
+      <div>From IKA (${new Date(itemData.start).format('t')}) &ndash; To IKA (${new Daytime(lastLeg.std.minutes + deltaStd + lastLeg.blockTime.minutes).toString('HH:mm', true)})
       </div>    
       `;
     }

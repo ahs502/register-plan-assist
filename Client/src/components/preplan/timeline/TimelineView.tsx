@@ -1,4 +1,4 @@
-import React, { FC, useState, Fragment, useRef, useMemo, useContext } from 'react';
+import React, { FC, useState, Fragment, useRef, useMemo, useContext, useEffect } from 'react';
 import { Theme, MenuItem, MenuList, ClickAwayListener, Paper, ListItemIcon, Typography, Divider } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import { Check as CheckIcon } from '@material-ui/icons';
@@ -18,6 +18,7 @@ import FlightRequirement from 'src/business/flight-requirement/FlightRequirement
 import DayFlightRequirement from 'src/business/flight-requirement/DayFlightRequirement';
 import FlightView from 'src/business/flight/FlightView';
 import Week from 'src/business/Week';
+import Flight from 'src/business/flight/Flight';
 
 const useStyles = makeStyles((theme: Theme) => ({
   '@global': {
@@ -52,6 +53,10 @@ const useStyles = makeStyles((theme: Theme) => ({
               '& .vis-item-overflow': {
                 boxShadow: '0px 0px 10px 1px green, inset 0px 0px 9px -1px green',
                 borderRadius: '4px'
+              },
+              '& .vis-onUpdateTime-tooltip': {
+                width: 240,
+                bottom: 'initial !important'
               }
             }
           }
@@ -262,7 +267,7 @@ export interface TimelineViewProps {
   onSelectFlightView(flightView?: FlightView): void;
   onEditFlightRequirement(flightRequirement: FlightRequirement): void;
   onEditDayFlightRequirement(dayFlightRequirement: DayFlightRequirement): void;
-  onEditFlightView(flightView: FlightView): void;
+  onEditFlight(flightRequirement: FlightRequirement, day: Weekday, flights?: readonly Flight[]): void;
   onFlightViewDragAndDrop(flightView: FlightView, deltaStd: number, newAircraftRegister: PreplanAircraftRegister | undefined, allWeekdays: boolean): void;
   onFlightViewMouseHover(flightView: FlightView): void;
   onFreeSpaceMouseHover(aircraftRegister: PreplanAircraftRegister, previousFlightView?: FlightView, nextFlightView?: FlightView): void;
@@ -278,7 +283,7 @@ const TimelineView: FC<TimelineViewProps> = ({
   onSelectFlightView,
   onEditFlightRequirement,
   onEditDayFlightRequirement,
-  onEditFlightView,
+  onEditFlight: onEditFlight,
   onFlightViewDragAndDrop,
   onFlightViewMouseHover,
   onFreeSpaceMouseHover,
@@ -311,7 +316,7 @@ const TimelineView: FC<TimelineViewProps> = ({
         updateTime: !preplan.readonly,
         overrideItems: false
       },
-      end: week.endDate,
+      end: new Date(week.endDate).addDays(1),
       format: {
         majorLabels(date, scale, step) {
           return Weekday[((new Date(date).setUTCHours(0, 0, 0, 0) - week.startDate.getTime()) / (24 * 60 * 60 * 1000) + 7) % 7].slice(0, 3);
@@ -332,7 +337,7 @@ const TimelineView: FC<TimelineViewProps> = ({
       groupTemplate,
       // height: 0,
       horizontalScroll: false,
-      itemsAlwaysDraggable: true,
+      itemsAlwaysDraggable: false,
       // locale: '',
       // locales: {},
       moment(date) {
@@ -413,12 +418,15 @@ const TimelineView: FC<TimelineViewProps> = ({
       // timeAxis: {},
       //type: 'range',
       tooltip: {
-        followMouse: true,
+        followMouse: false,
         overflowMethod: 'cap',
         delay: 400
-        // template: ... //TODO: Replace itemTooltipTemplate function here.
       },
-      tooltipOnItemUpdateTime: true, //TODO: Replace with this: { template(itemData: DataItem) { return ''; } },
+      tooltipOnItemUpdateTime: {
+        template: (itemData: DataItem) => {
+          return itemOnUpdateTooltipTemplate(itemData);
+        }
+      }, //TODO: Replace with this: { template(itemData: DataItem) { return ''; } },
       verticalScroll: true,
       width: '100%',
       zoomable: true,
@@ -615,7 +623,18 @@ const TimelineView: FC<TimelineViewProps> = ({
       //   }
       // `;
     }
+
+    function itemOnUpdateTooltipTemplate(itemData: DataItem): string {
+      const flightView: FlightView = itemData.data;
+      const deltaStd = Math.round((new Date(itemData.start).getTime() - flightView.startDateTime.getTime()) / (5 * 60 * 1000)) * 5;
+      const lastLeg = flightView.legs[flightView.legs.length - 1];
+      return `
+      <div>From IKA (${new Date(itemData.start).format('t')}) &ndash; To IKA (${new Daytime(lastLeg.std.minutes + deltaStd + lastLeg.blockTime.minutes).toString('HH:mm', true)})
+      </div>    
+      `;
+    }
   }, [preplan /* Because we have used onFlightDragAndDrop() in options */, week.startDate.getTime(), previous?.numberOfDays, next?.numberOfDays]);
+
   const timelineGroups = useMemo<DataGroup[]>(() => {
     const registers = preplan.aircraftRegisters.items
       .filter(r => r.options.status !== 'IGNORED')
@@ -639,6 +658,7 @@ const TimelineView: FC<TimelineViewProps> = ({
         id: r.id,
         content: r.name,
         title: r.name,
+        treeLevel: 1,
         data: r
       })
     );
@@ -866,14 +886,29 @@ const TimelineView: FC<TimelineViewProps> = ({
                 <MenuItem
                   onClick={() => {
                     setFlightViewContextMenuModel({ ...flightViewContextMenuModel, open: false });
-                    // onEditFlightView(flightViewContextMenuModel.flightView!);
+                    onEditFlight(
+                      flightViewContextMenuModel.flightView!.flightRequirement,
+                      flightViewContextMenuModel.flightView!.day,
+                      flightViewContextMenuModel.flightView!.flights
+                    );
+                  }}
+                >
+                  {/* <ListItemIcon>
+                      <span />
+                    </ListItemIcon> */}
+                  <Typography>Flight...</Typography>
+                </MenuItem>
+
+                <MenuItem
+                  onClick={() => {
+                    setFlightViewContextMenuModel({ ...flightViewContextMenuModel, open: false });
                     onEditDayFlightRequirement(flightViewContextMenuModel.flightView!.dayFlightRequirement);
                   }}
                 >
                   {/* <ListItemIcon>
                       <span />
                     </ListItemIcon> */}
-                  <Typography>Edit...</Typography>
+                  <Typography>Requirement...</Typography>
                 </MenuItem>
                 {/* <MenuItem
                     onClick={() => {

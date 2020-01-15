@@ -41,6 +41,9 @@ export class FlightRequirementChangeModelValidation extends Validation<
         validator.must(!!startDate, typeof startDate === 'string', !!endDate, typeof endDate === 'string').then(() => {
           const start = new Date(startDate);
           const end = new Date(endDate);
+          start < preplanStartDate.getDatePart() && console.log(start, preplanStartDate, end, preplanEndDate);
+          end > preplanEndDate.getDatePart() && console.log(start, preplanStartDate, end, preplanEndDate);
+
           validator
             .must(start.isValid(), end.isValid())
             .must(
@@ -69,7 +72,7 @@ export class FlightRequirementChangeModelValidation extends Validation<
           .each((leg, index) => validator.put(validator.$.route[index], new FlightRequirementLegChangeModelValidation(leg)));
         validator
           .array(days)
-          .must(() => days.length > 0)
+          .if(() => days.length > 0)
           .each((day, index) =>
             validator.put(
               validator.$.days[index],

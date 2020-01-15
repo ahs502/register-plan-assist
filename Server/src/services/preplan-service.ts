@@ -14,7 +14,7 @@ import DummyAircraftRegisterModel, { DummyAircraftRegisterModelArrayValidation }
 import AircraftRegisterOptionsModel, { AircraftRegisterOptionsModelValidation } from '@core/models/preplan/AircraftRegisterOptionsModel';
 import FlightEntity, { convertFlightEntityToModel } from 'src/entities/flight/FlightEntity';
 import { Db } from 'src/utils/sqlServer';
-import MasterData from 'src/utils/masterData';
+import MasterData from 'src/utils/MasterData';
 import PreplanDataModel from '@core/models/preplan/PreplanDataModel';
 import PreplanVersionEntity, { convertPreplanVersionEntityToModel } from 'src/entities/preplan/PreplanVersionEntity';
 
@@ -56,12 +56,10 @@ router.post(
 
 router.post(
   '/remove',
-  requestMiddlewareWithTransactionalDb<{ id: Id }, PreplanDataModel>(async (userId, { id }, db) => {
-    const currentPreplanId = await db
+  requestMiddlewareWithTransactionalDb<{ id: Id; currentPreplanId: Id }, PreplanDataModel>(async (userId, { id, currentPreplanId }, db) => {
+    const cpId = await db
       .sp<{ currentPreplanId: Id }>('[Rpa].[SP_DeletePreplan]', db.bigIntParam('userId', userId), db.intParam('id', id))
       .pick(({ currentPreplanId }) => currentPreplanId);
-
-    console.log(currentPreplanId);
 
     return await getPreplanDataModel(db, userId, currentPreplanId);
   })

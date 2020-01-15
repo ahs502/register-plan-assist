@@ -71,7 +71,7 @@ const PreplanPage: FC = () => {
             link: routeMatch.url
           },
           flightRequirementListPageSelected && {
-            title: 'Flights',
+            title: 'Flight Requirements',
             link: `${routeMatch.url}/flight-requirement-list`
           },
           reportsPageSelected && {
@@ -115,7 +115,7 @@ const PreplanPage: FC = () => {
                       onObjectionTargetClick={target => openObjectionModal({ target })}
                       onEditFlightRequirement={flightRequirement => openFlightRequirementModal({ flightRequirement })}
                       onEditDayFlightRequirement={({ flightRequirement, day }) => openFlightRequirementModal({ flightRequirement, day })}
-                      onEditFlightView={flightView => openFlightModal({ flight: flightView.sourceFlight })}
+                      onEditFlight={(flightRequirement, day, selectedFlights) => openFlightModal({ flightRequirement, day, selectedFlights })}
                     />
                   )}
                 />

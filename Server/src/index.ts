@@ -29,7 +29,7 @@ app.use('/', express.static(path.join(__dirname, 'public')));
 const port = process.env.PORT || 3000;
 app.set('port', port);
 
-import MasterData from 'src/utils/masterData';
+import MasterData from 'src/utils/MasterData';
 MasterData.initialize().then(
   () => {
     const server = http.createServer(app);

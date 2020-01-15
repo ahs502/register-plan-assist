@@ -13,12 +13,16 @@ import { useHistory } from 'react-router-dom';
 
 const useStyles = makeStyles((theme: Theme) => ({
   // The modal specific styles go here...
+  linkTableCell: {
+    cursor: 'pointer'
+  }
 }));
 
 interface ViewState {
   description: string;
   versions: Preplan['versions'][number][];
   bypassValidation: boolean;
+  isLastVersionEqualCurrent: boolean;
 }
 
 class ViewStateValidation extends Validation<'DESCRIPTION_EXISTS' | 'DESCRIPTION_FORMAT_IS_VALID' | 'DESCRIPTION_LESS_THAN_100_CHARACTER'> {
@@ -49,11 +53,12 @@ const PerplanVersionsModal = createModal<PerplanVersionsModalState, PerplanVersi
   const [viewState, setViewState] = useState<ViewState>(() => {
     const sortedVersions = preplan.versions.orderByDescending('lastEditDateTime');
     const isLastVersionEqualCurrent = sortedVersions.length >= 2 ? sortedVersions[0].lastEditDateTime.getTime() === sortedVersions[1].lastEditDateTime.getTime() : false;
-    if (isLastVersionEqualCurrent) sortedVersions.shift();
+    //if (isLastVersionEqualCurrent) sortedVersions.shift();
     return {
       description: '',
       versions: sortedVersions,
-      bypassValidation: true
+      bypassValidation: true,
+      isLastVersionEqualCurrent: isLastVersionEqualCurrent
     };
   });
 
@@ -85,19 +90,21 @@ const PerplanVersionsModal = createModal<PerplanVersionsModalState, PerplanVersi
             await reloadPreplan(newPreplanModel);
           },
           submitter: true,
-          disabled: !viewState.bypassValidation && !validation.ok
+          disabled: (!viewState.bypassValidation && !validation.ok) || viewState.isLastVersionEqualCurrent
         }
       ]}
       body={({ handleKeyboardEvent, loading, errorMessage }) => (
         <div>
           <Typography>Version of this preplan:</Typography>
-          <Table>
+          <Table size="small">
             <TableBody>
               {viewState.versions.map(v => (
-                <TableRow key={v.id}>
+                <TableRow hover key={v.id} selected={v.id === preplan.id}>
                   <TableCell
-                    onClick={() => {
+                    className={classes.linkTableCell}
+                    onClick={async () => {
                       history.push('/preplan/' + v.id);
+                      await others.onClose();
                     }}
                   >
                     {v.current ? 'Current' : `${v.lastEditDateTime.format('d')} ${v.lastEditDateTime.format('t')}`}
@@ -112,6 +119,7 @@ const PerplanVersionsModal = createModal<PerplanVersionsModalState, PerplanVersi
                           error={errors.description !== undefined}
                           helperText={errors.description}
                           onKeyDown={handleKeyboardEvent}
+                          disabled={viewState.isLastVersionEqualCurrent}
                         />
                       </Fragment>
                     ) : (
@@ -122,10 +130,11 @@ const PerplanVersionsModal = createModal<PerplanVersionsModalState, PerplanVersi
                     <IconButton
                       color="inherit"
                       title="Delete"
-                      onClick={async () => {
+                      onClick={async e => {
                         loading(true);
+                        e.stopPropagation();
                         try {
-                          const preplanModel = await PreplanService.remove(v.id);
+                          const preplanModel = await PreplanService.remove(v.id, preplan.id);
                           await reloadPreplan(preplanModel);
                         } catch (error) {
                           errorMessage(error);
@@ -134,7 +143,7 @@ const PerplanVersionsModal = createModal<PerplanVersionsModalState, PerplanVersi
                         loading(false);
                         await others.onClose();
                       }}
-                      disabled={viewState.versions.length === 1}
+                      disabled={!preplan.current && (v.id === preplan.id || v.current)}
                     >
                       <ClearIcon />
                     </IconButton>

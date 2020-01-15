@@ -7,9 +7,7 @@ import { convertFlightRequirementModelToEntity } from 'src/entities/flight-requi
 import FlightRequirementModel, { FlightRequirementModelValidation } from '@core/models/flight-requirement/FlightRequirementModel';
 import NewFlightRequirementModel, { NewFlightRequirementModelValidation } from '@core/models/flight-requirement/NewFlightRequirementModel';
 import { convertNewFlightRequirementModelToEntity } from 'src/entities/flight-requirement/NewFlightRequirementEntity';
-import FlightModel, { FlightModelArrayValidation } from '@core/models/flight/FlightModel';
-import { convertFlightModelToEntity } from 'src/entities/flight/FlightEntity';
-import MasterData from 'src/utils/masterData';
+import MasterData from 'src/utils/MasterData';
 import { getPreplanDataModel } from 'src/services/preplan-service';
 import PreplanDataModel from '@core/models/preplan/PreplanDataModel';
 import EditFlightModel, { EditFlightModelArrayValidation } from '@core/models/flight/EditFlightModel';
@@ -89,7 +87,7 @@ router.post(
           db.intParam('flightRequirementId', flightRequirementId),
           db.tableParam(
             'flights',
-            [db.intColumn('id'), db.intColumn('date'), db.bigIntColumn('aircraftRegisterId'), db.xmlColumn('legsXml')],
+            [db.intColumn('id'), db.dateTimeColumn('date'), db.varCharColumn('aircraftRegisterId', 30), db.xmlColumn('legsXml')],
             newFlightEntities.map(f => [null, f.date, f.aircraftRegisterId, f.legsXml])
           )
         )
@@ -106,7 +104,7 @@ router.post(
   '/remove',
   requestMiddlewareWithTransactionalDb<{ preplanId: Id; id: Id }, PreplanDataModel>(async (userId, { id, preplanId }, db) => {
     await db
-      .select()
+      .select<{ id: Id }>({ id: 'convert(varchar(30), [Id])' })
       .from('[Rpa].[FlightRequirement]')
       .where(`[Id] = '${id}'`)
       .one('Flight requirement is not found.');
@@ -151,6 +149,7 @@ router.post(
           }),
           'Preplan is not found.'
         );
+
       new FlightRequirementModelValidation(
         flightRequirement,
         MasterData.all.aircraftTypes,
@@ -199,7 +198,7 @@ router.post(
           db.intParam('flightRequirementId', flightRequirementEntity.id),
           db.tableParam(
             'flights',
-            [db.intColumn('id'), db.intColumn('date'), db.bigIntColumn('aircraftRegisterId'), db.xmlColumn('legsXml')],
+            [db.intColumn('id'), db.dateTimeColumn('date'), db.varCharColumn('aircraftRegisterId', 30), db.xmlColumn('legsXml')],
             flightEntities.map(f => [f.id, f.date, f.aircraftRegisterId, f.legsXml])
           )
         )

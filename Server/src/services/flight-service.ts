@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { requestMiddlewareWithDb } from 'src/utils/requestMiddleware';
+import { requestMiddlewareWithTransactionalDb } from 'src/utils/requestMiddleware';
 import { Xml } from 'src/utils/xml';
 import Id from '@core/types/Id';
 import { parsePreplanAircraftRegisterOptionsXml } from 'src/entities/preplan/PreplanEntity';
@@ -13,7 +13,7 @@ export default router;
 
 router.post(
   '/edit',
-  requestMiddlewareWithDb<{ preplanId: Id; flights: readonly FlightModel[] }, PreplanDataModel>(async (userId, { preplanId, flights }, db) => {
+  requestMiddlewareWithTransactionalDb<{ preplanId: Id; flights: readonly FlightModel[] }, PreplanDataModel>(async (userId, { preplanId, flights }, db) => {
     const flightIds = await db
       .select<{ id: Id }>({ id: 'convert(varchar(30), f.[Id])' })
       .from('[Rpa].[Flight] as f join [Rpa].[FlightRequirement] as r on f.[Id_FlightRequirement] = r.[Id]')
@@ -30,7 +30,7 @@ router.post(
         startDate: 'h.[StartDate]',
         endDate: 'h.[EndDate]'
       })
-      .from('[Rpa].[Preplan] as p join [Rpa].[PreplanHeader] as h on h.[Id] = p.[Id_Preplan]')
+      .from('[Rpa].[Preplan] as p join [Rpa].[PreplanHeader] as h on h.[Id] = p.[Id_PreplanHeader]')
       .where(`p.[Id] = '${preplanId}'`)
       .pick(
         ({ aircraftRegisterOptionsXml, startDate, endDate }) => ({
@@ -52,11 +52,13 @@ router.post(
         db.intParam('flightRequirementId', flights[0].flightRequirementId),
         db.tableParam(
           'flights',
-          [db.intColumn('id'), db.intColumn('date'), db.bigIntColumn('aircraftRegisterId'), db.xmlColumn('legsXml')],
+          [db.intColumn('id'), db.dateTimeColumn('date'), db.varCharColumn('aircraftRegisterId', 30), db.xmlColumn('legsXml')],
           flightEntities.map(f => [f.id, f.date, f.aircraftRegisterId, f.legsXml])
         )
       )
       .all();
+
+    await db.sp('[Rpa].[SP_UpdatePreplanLastEditDateTime]', db.bigIntParam('userId', userId), db.intParam('id', preplanId)).all();
 
     return await getPreplanDataModel(db, userId, preplanId);
   })

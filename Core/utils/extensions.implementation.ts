@@ -206,6 +206,11 @@ import { ShortMonthNames, MonthNames } from '@core/types/MonthName';
         case '~D$':
           return `${this.getUTCDate()} ${MonthNames[this.getUTCMonth()]} ${this.getUTCFullYear()}`;
 
+        case 'FD':
+          return `${String(this.getUTCDate()).padStart(2, '0')}${ShortMonthNames[this.getUTCMonth()]}${String(this.getUTCFullYear()).slice(-2)} ${String(
+            this.getUTCHours()
+          ).padStart(2, '0')}:${String(this.getUTCMinutes()).padStart(2, '0')}`;
+
         case 'T':
           throw new Error('Not implemented!');
 

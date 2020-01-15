@@ -1,6 +1,6 @@
-import React, { useMemo, useContext, Fragment, useState } from 'react';
-import { Theme, Typography, Grid, Paper, Tabs, Tab, Checkbox, IconButton, FormControlLabel, Button, Slider } from '@material-ui/core';
-import { Clear as ClearIcon, Add as AddIcon, WrapText as WrapTextIcon, CheckBoxOutlineBlank as CheckBoxOutlineBlankIcon } from '@material-ui/icons';
+import React, { useMemo, useContext, Fragment, useState, useEffect } from 'react';
+import { Theme, Typography, Grid, Paper, Tabs, Tab, Checkbox, IconButton, FormControlLabel, Slider, TextField } from '@material-ui/core';
+import { Clear as ClearIcon, Add as AddIcon, Remove as RemoveIcon, WrapText as WrapTextIcon } from '@material-ui/icons';
 import { makeStyles } from '@material-ui/styles';
 import BaseModal, { BaseModalProps, useModalState, createModal } from 'src/components/BaseModal';
 import FlightRequirement from 'src/business/flight-requirement/FlightRequirement';
@@ -106,6 +106,17 @@ const useStyles = makeStyles((theme: Theme) => ({
     userSelect: 'none',
     pointerEvents: 'none'
   },
+  selectedWeek: {
+    display: 'black',
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    backgroundColor: '#0002',
+    userSelect: 'none',
+    pointerEvents: 'none'
+  },
   scopeChangeChunk: {
     color: theme.palette.common.black,
     backgroundColor: chroma(theme.palette.secondary.light)
@@ -192,6 +203,11 @@ const useStyles = makeStyles((theme: Theme) => ({
   scopeChangeAdd: {
     marginTop: 34,
     marginLeft: 8
+  },
+  rebaseScopeChange: {
+    marginBottom: 34,
+    marginRight: -56,
+    bottom: 5
   },
   dayTab: {
     minWidth: 'unset',
@@ -405,10 +421,10 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
             <Tabs
               value={scopeIndex === 'BASE' ? 'BASE' : 'CHANGE'}
               onChange={(e, value) => {
-                const newScopeIndex: ViewState['scopeIndex'] = value === 'BASE' ? 'BASE' : scopeIndex === 'BASE' ? -1 : scopeIndex;
+                const newScopeIndex: ViewState['scopeIndex'] = value === 'BASE' ? 'BASE' : scopeIndex;
                 if (newScopeIndex === scopeIndex) return;
-                setViewState(
-                  refineViewState(
+                setViewState(viewState => {
+                  return refineViewState(
                     {
                       ...viewState,
                       scopeIndex: newScopeIndex,
@@ -416,8 +432,8 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                       legIndex: newScopeIndex !== -1 ? legIndex : 0
                     },
                     true
-                  )
-                );
+                  );
+                });
               }}
               variant="fullWidth"
             >
@@ -456,9 +472,15 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                               )}
                               title={`Week from ${week.startDate.format('d')} to ${week.endDate.format('d')}`}
                               onClick={() => {
+                                //if (changeScopeIndex === -1)
+                                setViewState(viewState => {
+                                  return { ...viewState, selectedWeekIndex: weekIndex };
+                                });
+
                                 if (changeScopeIndex === scopeIndex) return;
-                                setViewState(
-                                  refineViewState(
+
+                                setViewState(viewState => {
+                                  return refineViewState(
                                     {
                                       ...viewState,
                                       scopeIndex: changeScopeIndex,
@@ -466,16 +488,17 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                                       sliderEndIndex: changeScopeIndex < 0 ? 0 : viewState.changeScopes[changeScopeIndex].endWeekIndex - 1
                                     },
                                     true
-                                  )
-                                );
+                                  );
+                                });
                               }}
                             >
                               {formatDate(week.startDate, true)}
-                              <div className={classes.scopeChangeWeekHover} />
+                              <div className={classNames(viewState.selectedWeekIndex === weekIndex ? classes.selectedWeek : classes.scopeChangeWeekHover)} />
                             </div>
                           );
                         })}
                       </div>
+
                       <Slider
                         color="primary"
                         classes={{
@@ -507,11 +530,13 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                           setViewState(
                             refineViewState({
                               ...viewState,
-                              changeScopes: splice(viewState.changeScopes, scopeIndex, 1, ([c]) => ({
-                                ...c,
-                                startWeekIndex: viewState.sliderStartIndex,
-                                endWeekIndex: viewState.sliderEndIndex - 1
-                              }))
+                              changeScopes: splice(viewState.changeScopes, scopeIndex, 1, ([c]) => {
+                                return {
+                                  ...c,
+                                  startWeekIndex: viewState.sliderStartIndex,
+                                  endWeekIndex: viewState.sliderEndIndex - 1
+                                };
+                              })
                             })
                           )
                         }
@@ -519,44 +544,72 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                     </div>
                     <div>
                       <IconButton
+                        classes={{ root: classes.rebaseScopeChange }}
+                        title={'Remove change'}
+                        onClick={() => {
+                          if (scopeIndex !== 'BASE' && scopeIndex >= 0) {
+                            setViewState(viewState => {
+                              return refineViewState({
+                                ...viewState,
+                                scopeIndex: -1,
+                                changeScopes: splice(viewState.changeScopes, scopeIndex, 1, ([c]) => ({
+                                  ...viewState.baseScope,
+                                  startWeekIndex: c.startWeekIndex,
+                                  endWeekIndex: c.endWeekIndex,
+                                  isNew: c.isNew,
+                                  isTemp: false
+                                }))
+                              });
+                            });
+                          }
+                        }}
+                      >
+                        <RemoveIcon />
+                      </IconButton>
+
+                      <IconButton
                         classes={{ root: classes.scopeChangeAdd }}
                         title={scopeIndex === 'BASE' || scopeIndex < 0 ? 'Add a new change' : 'Split the selected change'}
                         onClick={() => {
                           if (scopeIndex === 'BASE' || scopeIndex < 0)
                             return (
                               viewState.changeScopes[0]?.startWeekIndex === 0 ||
-                              setViewState({
-                                ...viewState,
-                                scopeIndex: 0,
-                                sliderStartIndex: 0,
-                                sliderEndIndex: 1,
-                                changeScopes: [
-                                  {
-                                    ...viewState.baseScope,
-                                    startWeekIndex: 0,
-                                    endWeekIndex: 0
-                                  },
-                                  ...viewState.changeScopes
-                                ]
+                              setViewState(viewState => {
+                                return {
+                                  ...viewState,
+                                  scopeIndex: 0,
+                                  sliderStartIndex: viewState.selectedWeekIndex ?? 0,
+                                  sliderEndIndex: (viewState.selectedWeekIndex ?? 0) + 1,
+                                  changeScopes: [
+                                    {
+                                      ...viewState.baseScope,
+                                      startWeekIndex: viewState.selectedWeekIndex ?? 0,
+                                      endWeekIndex: viewState.selectedWeekIndex ?? 0,
+                                      isTemp: true,
+                                      isNew: true
+                                    },
+                                    ...viewState.changeScopes
+                                  ]
+                                };
                               })
                             );
                           if (viewState.changeScopes[scopeIndex].startWeekIndex === viewState.changeScopes[scopeIndex].endWeekIndex) return;
-                          setViewState({
+                          setViewState(viewState => ({
                             ...viewState,
-                            sliderStartIndex: viewState.changeScopes[scopeIndex].startWeekIndex,
-                            sliderEndIndex: viewState.changeScopes[scopeIndex].startWeekIndex + 1,
-                            changeScopes: splice(viewState.changeScopes, scopeIndex, 1, ([c]) => [
+                            scopeIndex: 0,
+                            sliderStartIndex: viewState.selectedWeekIndex ?? 0,
+                            sliderEndIndex: (viewState.selectedWeekIndex ?? 0) + 1,
+                            changeScopes: [
                               {
-                                ...c,
-                                startWeekIndex: c.startWeekIndex,
-                                endWeekIndex: c.startWeekIndex
+                                ...viewState.changeScopes[scopeIndex],
+                                startWeekIndex: viewState.selectedWeekIndex ?? 0,
+                                endWeekIndex: viewState.selectedWeekIndex ?? 0,
+                                isTemp: true,
+                                isNew: true
                               },
-                              {
-                                ...c,
-                                startWeekIndex: c.startWeekIndex + 1
-                              }
-                            ])
-                          });
+                              ...viewState.changeScopes
+                            ]
+                          }));
                         }}
                       >
                         <AddIcon />
@@ -575,7 +628,7 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                 <Checkbox
                   // icon={errors.daySelects === undefined ? <CheckBoxOutlineBlankIcon /> : <CheckBoxOutlineBlankIcon color="error" />}
                   indeterminate={scopeViewState && scopeViewState.weekDays.some(d => d.selected) && !scopeViewState.weekDays.every(d => d.selected)}
-                  checked={scopeViewState?.weekDays.every(d => d.selected)}
+                  checked={scopeViewState?.weekDays.every(d => d.selected) ?? false}
                   onChange={e => {
                     if (!scopeViewState) return;
                     const selected = !scopeViewState.weekDays.every(d => d.selected);
@@ -592,7 +645,7 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                 <div className={classes.checkboxContainer} key={d}>
                   <Checkbox
                     // icon={errors.daySelects === undefined ? <CheckBoxOutlineBlankIcon /> : <CheckBoxOutlineBlankIcon color="error" />}
-                    checked={scopeViewState && scopeViewState.weekDays[d].selected}
+                    checked={scopeViewState?.weekDays[d].selected ?? false}
                     onChange={(e, selected) =>
                       scopeViewState &&
                       updateScope(scope => ({
@@ -764,7 +817,7 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                             &rarr;&nbsp;{routeLeg.arrivalAirport || <Fragment>&nbsp;&mdash;</Fragment>}
                           </Typography>
                         </div>
-                        {dayIndex === 'ALL' && viewState.route.length > 1 && (
+                        {dayIndex === 'ALL' && scopeIndex === 'BASE' && viewState.route.length > 1 && (
                           <Fragment>
                             &nbsp;&nbsp;&nbsp;&nbsp;
                             <IconButton
@@ -792,7 +845,7 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
               </Tabs>
 
               {/* Add and return buttons */}
-              {dayIndex === 'ALL' && (
+              {dayIndex === 'ALL' && scopeIndex === 'BASE' && (
                 <Fragment>
                   <div>
                     <IconButton
@@ -837,13 +890,16 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
             updateRoute(
               viewState.route.length,
               route => [...route, { flightNumber: '', departureAirport, arrivalAirport }],
-              legs => [...legs, { blockTime: '', stdLowerBound: '', stdUpperBound: '', originPermission: false, destinationPermission: false }]
+              legs => [
+                ...legs,
+                { blockTime: '', stdLowerBound: '', staLowerBound: '', stdUpperBound: '', staUpperBound: '', originPermission: false, destinationPermission: false }
+              ]
             );
           }
         }
         function legFields() {
           const disabled = preplan.readonly || !scopeViewState;
-          const routeDisabled = disabled || dayIndex !== 'ALL';
+          const routeDisabled = disabled || dayIndex !== 'ALL' || scopeIndex !== 'BASE';
           const legDisabled = disabled || (dayIndex !== 'ALL' && !scopeViewState!.weekDays[dayIndex].selected);
 
           return (
@@ -893,38 +949,55 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                   label="Block Time"
                   dataType={dataTypes.daytime}
                   value={legViewState?.blockTime ?? ''}
-                  onChange={({ target: { value: blockTime } }) => updateLeg(leg => ({ ...leg, blockTime }))}
+                  onChange={({ target: { value: blockTime } }) =>
+                    updateLeg(leg => ({
+                      ...leg,
+                      blockTime,
+                      staLowerBound: calculateSta(legViewState?.stdLowerBound, blockTime),
+                      staUpperBound: calculateSta(legViewState?.stdUpperBound, blockTime)
+                    }))
+                  }
                   onKeyDown={handleKeyboardEvent}
                   disabled={legDisabled}
                   error={errors.blockTime !== undefined}
                   helperText={errors.blockTime}
                 />
               </Grid>
-              <Grid item xs={4}>
+              <Grid item xs={3}>
                 <RefiningTextField
                   fullWidth
                   label="STD / STD Lower Bound"
                   dataType={dataTypes.daytime}
                   value={legViewState?.stdLowerBound ?? ''}
-                  onChange={({ target: { value: stdLowerBound } }) => legViewState && updateLeg(leg => ({ ...leg, stdLowerBound }))}
+                  onChange={({ target: { value: stdLowerBound } }) =>
+                    legViewState && updateLeg(leg => ({ ...leg, stdLowerBound, staLowerBound: calculateSta(stdLowerBound, legViewState?.blockTime) }))
+                  }
                   onKeyDown={handleKeyboardEvent}
                   disabled={legDisabled}
                   error={errors.stdLowerBound !== undefined}
                   helperText={errors.stdLowerBound}
                 />
               </Grid>
-              <Grid item xs={4}>
+              <Grid item xs={1}>
+                <RefiningTextField fullWidth label="STA" dataType={dataTypes.daytime} value={legViewState?.staLowerBound ?? ''} disabled={true} />
+              </Grid>
+              <Grid item xs={3}>
                 <RefiningTextField
                   fullWidth
                   label="STD Upper Bound"
                   dataType={dataTypes.daytime}
                   value={legViewState?.stdUpperBound ?? ''}
-                  onChange={({ target: { value: stdUpperBound } }) => legViewState && updateLeg(leg => ({ ...leg, stdUpperBound }))}
+                  onChange={({ target: { value: stdUpperBound } }) =>
+                    legViewState && updateLeg(leg => ({ ...leg, stdUpperBound, staUpperBound: calculateSta(stdUpperBound, legViewState?.blockTime) }))
+                  }
                   onKeyDown={handleKeyboardEvent}
                   disabled={legDisabled}
                   error={errors.stdUpperBound !== undefined}
                   helperText={errors.stdUpperBound}
                 />
+              </Grid>
+              <Grid item xs={1}>
+                <RefiningTextField fullWidth label="STA" dataType={dataTypes.daytime} value={legViewState?.staUpperBound ?? ''} disabled={true} />
               </Grid>
               <Grid item xs={3}>
                 <FormControlLabel
@@ -983,20 +1056,23 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
         }
 
         function updateScope(update: (scope: BaseScopeViewState) => BaseScopeViewState): void {
-          scopeIndex === 'BASE'
-            ? setViewState({
-                ...viewState,
-                baseScope: update(viewState.baseScope)
-              })
-            : scopeIndex >= 0 &&
-              setViewState({
-                ...viewState,
-                changeScopes: splice(viewState.changeScopes, scopeIndex, 1, ([c]) => ({
-                  startWeekIndex: c.startWeekIndex,
-                  endWeekIndex: c.endWeekIndex,
-                  ...update(c)
-                }))
-              });
+          if (scopeIndex === 'BASE') {
+            setViewState({
+              ...viewState,
+              baseScope: update(viewState.baseScope)
+            });
+          } else if (scopeIndex >= 0) {
+            setViewState({
+              ...viewState,
+              changeScopes: splice(viewState.changeScopes, scopeIndex, 1, ([c]) => ({
+                startWeekIndex: c.startWeekIndex,
+                endWeekIndex: c.endWeekIndex,
+                ...update(c),
+                isTemp: false,
+                isNew: c.isNew
+              }))
+            });
+          }
         }
         function updateDay(update: (day: BaseDayViewState) => BaseDayViewState): void {
           updateScope(scope =>
@@ -1046,6 +1122,14 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
         }
         function updateLeg(update: (leg: LegViewState) => LegViewState): void {
           updateDay(day => ({ ...day, legs: splice(day.legs, legIndex, 1, ([l]) => update(l)) }));
+        }
+
+        function calculateSta(std: string | undefined, blockTime: string | undefined): string {
+          if (!std || !blockTime) return '';
+          const _std = dataTypes.daytime.convertViewToBusiness(std);
+          const _block = dataTypes.daytime.convertViewToBusiness(blockTime);
+          if (!_std.isValid() || !_block.isValid()) return '';
+          return dataTypes.daytime.convertModelToView(_std.minutes + _block.minutes);
         }
       }}
     />
@@ -1136,7 +1220,9 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
               {
                 blockTime: '',
                 stdLowerBound: '',
+                staLowerBound: '',
                 stdUpperBound: '',
+                staUpperBound: '',
                 originPermission: false,
                 destinationPermission: false
               }
@@ -1153,7 +1239,9 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
               {
                 blockTime: '',
                 stdLowerBound: '',
+                staLowerBound: '',
                 stdUpperBound: '',
+                staUpperBound: '',
                 originPermission: false,
                 destinationPermission: false
               }
@@ -1171,6 +1259,8 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
       return {
         startWeekIndex: preplan.weeks.all.findIndex(({ startDate, endDate }) => startDate <= c.startDate && c.startDate <= endDate),
         endWeekIndex: preplan.weeks.all.findIndex(({ startDate, endDate }) => startDate <= c.endDate && c.endDate <= endDate),
+        isTemp: false,
+        isNew: false,
         baseDay: {
           rsx: c.rsx,
           notes: dataTypes.label.convertBusinessToView(c.notes),
@@ -1180,7 +1270,9 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
           legs: c.route.map<LegViewState>(l => ({
             blockTime: dataTypes.daytime.convertBusinessToView(l.blockTime),
             stdLowerBound: dataTypes.daytime.convertBusinessToView(l.stdLowerBound),
+            staLowerBound: l.stdLowerBound.isValid() && l.blockTime.isValid ? dataTypes.daytime.convertModelToView(l.stdLowerBound.minutes + l.blockTime.minutes) : '',
             stdUpperBound: dataTypes.daytime.convertBusinessToViewOptional(l.stdUpperBound),
+            staUpperBound: l.stdUpperBound?.isValid() && l.blockTime.isValid ? dataTypes.daytime.convertModelToView(l.stdUpperBound.minutes + l.blockTime.minutes) : '',
             originPermission: l.originPermission,
             destinationPermission: l.destinationPermission
           }))
@@ -1203,14 +1295,18 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
               ? sourceDayFlightRequirementChange.route.map<LegViewState>(l => ({
                   blockTime: dataTypes.daytime.convertBusinessToView(l.blockTime),
                   stdLowerBound: dataTypes.daytime.convertBusinessToView(l.stdLowerBound),
+                  staLowerBound: l.stdLowerBound.isValid() && l.blockTime.isValid ? dataTypes.daytime.convertModelToView(l.stdLowerBound.minutes + l.blockTime.minutes) : '',
                   stdUpperBound: dataTypes.daytime.convertBusinessToViewOptional(l.stdUpperBound),
+                  staUpperBound: l.stdUpperBound?.isValid() && l.blockTime.isValid ? dataTypes.daytime.convertModelToView(l.stdUpperBound.minutes + l.blockTime.minutes) : '',
                   originPermission: l.originPermission,
                   destinationPermission: l.destinationPermission
                 }))
               : c.route.map<LegViewState>(l => ({
                   blockTime: dataTypes.daytime.convertBusinessToView(l.blockTime),
                   stdLowerBound: dataTypes.daytime.convertBusinessToView(l.stdLowerBound),
+                  staLowerBound: l.stdLowerBound.isValid() && l.blockTime.isValid ? dataTypes.daytime.convertModelToView(l.stdLowerBound.minutes + l.blockTime.minutes) : '',
                   stdUpperBound: dataTypes.daytime.convertBusinessToViewOptional(l.stdUpperBound),
+                  staUpperBound: l.stdUpperBound?.isValid() && l.blockTime.isValid ? dataTypes.daytime.convertModelToView(l.stdUpperBound.minutes + l.blockTime.minutes) : '',
                   originPermission: l.originPermission,
                   destinationPermission: l.destinationPermission
                 }))
@@ -1252,7 +1348,9 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
             legs: flightRequirement.route.map<LegViewState>(l => ({
               blockTime: dataTypes.daytime.convertBusinessToView(l.blockTime),
               stdLowerBound: dataTypes.daytime.convertBusinessToView(l.stdLowerBound),
+              staLowerBound: l.stdLowerBound.isValid() && l.blockTime.isValid ? dataTypes.daytime.convertModelToView(l.stdLowerBound.minutes + l.blockTime.minutes) : '',
               stdUpperBound: dataTypes.daytime.convertBusinessToViewOptional(l.stdUpperBound),
+              staUpperBound: l.stdUpperBound?.isValid() && l.blockTime.isValid ? dataTypes.daytime.convertModelToView(l.stdUpperBound.minutes + l.blockTime.minutes) : '',
               originPermission: l.originPermission,
               destinationPermission: l.destinationPermission
             }))
@@ -1275,14 +1373,18 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                 ? sourceDayFlightRequirement.route.map<LegViewState>(l => ({
                     blockTime: dataTypes.daytime.convertBusinessToView(l.blockTime),
                     stdLowerBound: dataTypes.daytime.convertBusinessToView(l.stdLowerBound),
+                    staLowerBound: l.stdLowerBound.isValid() && l.blockTime.isValid ? dataTypes.daytime.convertModelToView(l.stdLowerBound.minutes + l.blockTime.minutes) : '',
                     stdUpperBound: dataTypes.daytime.convertBusinessToViewOptional(l.stdUpperBound),
+                    staUpperBound: l.stdUpperBound?.isValid() && l.blockTime.isValid ? dataTypes.daytime.convertModelToView(l.stdUpperBound.minutes + l.blockTime.minutes) : '',
                     originPermission: l.originPermission,
                     destinationPermission: l.destinationPermission
                   }))
                 : flightRequirement.route.map<LegViewState>(l => ({
                     blockTime: dataTypes.daytime.convertBusinessToView(l.blockTime),
                     stdLowerBound: dataTypes.daytime.convertBusinessToView(l.stdLowerBound),
+                    staLowerBound: l.stdLowerBound.isValid() && l.blockTime.isValid ? dataTypes.daytime.convertModelToView(l.stdLowerBound.minutes + l.blockTime.minutes) : '',
                     stdUpperBound: dataTypes.daytime.convertBusinessToViewOptional(l.stdUpperBound),
+                    staUpperBound: l.stdUpperBound?.isValid() && l.blockTime.isValid ? dataTypes.daytime.convertModelToView(l.stdUpperBound.minutes + l.blockTime.minutes) : '',
                     originPermission: l.originPermission,
                     destinationPermission: l.destinationPermission
                   }))
@@ -1477,8 +1579,8 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
         const weekDays = refinedViewState.changeScopes.find(c => c.startWeekIndex <= weekIndex && weekIndex <= c.endWeekIndex)?.weekDays ?? refinedViewState.baseScope.weekDays;
         const weekFlightsByDay = flightsByWeekIndexAndDay[weekIndex];
         return weekDays
-          .filter(({ selected }) => selected)
           .map<EditFlightModel>((weekDay, day) => {
+            if (!weekDay.selected) return undefined as any;
             const aircraftRegisterId = dataTypes.preplanAircraftRegister(preplan.aircraftRegisters).convertViewToModelOptional(weekDay.aircraftRegister);
             const legs = weekDay.legs.map(({ stdLowerBound, stdUpperBound }, index) => ({
               originalIndex: refinedViewState.route[index].originalIndex,
@@ -1507,7 +1609,8 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                     std
                   }))
                 };
-          });
+          })
+          .filter(Boolean);
       })
       .filter(fm => fm.date >= dataTypes.utcDate.convertBusinessToModel(preplan.startDate) && fm.date <= dataTypes.utcDate.convertBusinessToModel(preplan.endDate));
 
@@ -1524,6 +1627,43 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
     //   If specified, for the changeScopes[selectedChangeScopeIndex], cut or remove all overlapping changes.
 
     let selectedChangeScope = viewState.scopeIndex === 'BASE' || viewState.scopeIndex < 0 ? undefined : viewState.changeScopes[viewState.scopeIndex];
+
+    if (selectedChangeScope && selectedChangeScope.isTemp) return viewState;
+
+    const newScope = viewState.changeScopes.find(c => c.isNew && !c.isTemp);
+    if (newScope) {
+      const inside = viewState.changeScopes.find(
+        c =>
+          !c.isNew &&
+          newScope.startWeekIndex >= c.startWeekIndex &&
+          newScope.startWeekIndex <= c.endWeekIndex &&
+          newScope.endWeekIndex >= c.startWeekIndex &&
+          newScope.endWeekIndex <= c.endWeekIndex
+      );
+      if (inside) {
+        const secondPart = { ...inside };
+
+        inside.endWeekIndex = newScope.startWeekIndex - 1;
+
+        secondPart.startWeekIndex = newScope.endWeekIndex + 1;
+        viewState.changeScopes.push(secondPart);
+      }
+
+      const endInside = viewState.changeScopes.find(
+        c => !c.isNew && newScope.startWeekIndex <= c.startWeekIndex && newScope.endWeekIndex >= c.startWeekIndex && newScope.endWeekIndex <= c.endWeekIndex
+      );
+      if (endInside) {
+        endInside.startWeekIndex = newScope.endWeekIndex + 1;
+      }
+
+      const startInside = viewState.changeScopes.find(
+        c => !c.isNew && newScope.endWeekIndex >= c.endWeekIndex && newScope.startWeekIndex >= c.startWeekIndex && newScope.startWeekIndex <= c.endWeekIndex
+      );
+      if (startInside) {
+        startInside.endWeekIndex = newScope.startWeekIndex - 1;
+      }
+      newScope.isNew = false;
+    }
 
     viewState.changeScopes
       .filter(c => c.startWeekIndex > c.endWeekIndex)

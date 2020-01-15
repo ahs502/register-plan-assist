@@ -10,6 +10,7 @@ import PreplanDataModel from '@core/models/preplan/PreplanDataModel';
 import { dataTypes } from 'src/utils/DataType';
 import Week, { Weeks } from 'src/business/Week';
 import FlightView from 'src/business/flight/FlightView';
+import FlightPackView from 'src/business/flight/FlightPackView';
 
 export default class Preplan {
   readonly id: Id;
@@ -122,13 +123,32 @@ export default class Preplan {
           const previousFlight = previousFlightsByWeekAndLabel[day];
           const nextFlight = nextFlightsByWeekAndLabel[day];
           if (
-            !nextFlight ||
-            previousFlight.aircraftRegister !== nextFlight.aircraftRegister ||
-            previousFlight.legs.some((l, index) => l.std.compare(nextFlight.legs[index].std) !== 0) ||
-            previousFlight.rsx !== nextFlight.rsx ||
-            previousFlight.notes !== nextFlight.notes ||
-            previousFlight.originPermission !== nextFlight.originPermission ||
-            previousFlight.destinationPermission !== nextFlight.destinationPermission
+            (!nextFlight ||
+              previousFlight.aircraftRegister !== nextFlight.aircraftRegister ||
+              previousFlight.legs.some((l, index) => l.std.compare(nextFlight.legs[index].std) !== 0) ||
+              previousFlight.legs.some((l, index) => l.blockTime.compare(nextFlight.legs[index].blockTime) !== 0) ||
+              previousFlight.rsx !== nextFlight.rsx ||
+              previousFlight.notes !== nextFlight.notes ||
+              previousFlight.originPermission !== nextFlight.originPermission ||
+              previousFlight.destinationPermission !== nextFlight.destinationPermission) &&
+            this.endDate.getDatePart().getTime() >=
+              new Date(previousFlight.date)
+                .getDatePart()
+                .addDays(7)
+                .getTime()
+          )
+            return true;
+        }
+        for (let day in nextFlightsByWeekAndLabel) {
+          const nextFlight = nextFlightsByWeekAndLabel[day];
+          const previousFlight = previousFlightsByWeekAndLabel[day];
+          if (
+            !previousFlight &&
+            this.startDate.getDatePart().getTime() <=
+              new Date(nextFlight.date)
+                .getDatePart()
+                .addDays(-7)
+                .getTime()
           )
             return true;
         }
@@ -147,8 +167,19 @@ export default class Preplan {
         .filter(f => startWeek.startDate <= f.date && f.date <= endWeek.endDate)
         .groupBy(
           f => f.flightRequirement.id,
-          g => Object.values(g.groupBy('day', h => new FlightView(h, startWeek, endWeek, week ?? startWeek)))
+          g => Object.values(g.groupBy('day', h => new FlightView(h, startWeek, endWeek, week ?? startWeek, this.startDate, this.endDate)))
         )
     ).flatten();
+  }
+
+  getFlightPackViews(startWeek: Week, endWeek: Week, week?: Week): FlightPackView[] {
+    return Object.values(
+      this.flights
+        .filter(f => startWeek.startDate <= f.date && f.date <= endWeek.endDate)
+        .groupBy(
+          f => f.flightRequirement.id,
+          g => Object.values(g.groupBy('day', h => FlightPackView.create(h, startWeek, endWeek, week ?? startWeek, this.startDate, this.endDate)))
+        )
+    ).flat(2);
   }
 }

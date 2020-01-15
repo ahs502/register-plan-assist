@@ -15,6 +15,7 @@ import Validation from '@core/node_modules/@ahs502/validation/dist/Validation';
 import AutoComplete from 'src/components/AutoComplete';
 import { PreplanContext } from 'src/pages/preplan';
 import Week from 'src/business/Week';
+import SelectWeeks, { WeekSelection } from 'src/components/preplan/SelectWeeks';
 
 const errorPaperSize = 250;
 const character = {
@@ -22,6 +23,10 @@ const character = {
 };
 
 const useStyles = makeStyles((theme: Theme) => ({
+  selectWeekWrapper: {
+    margin: theme.spacing(0, 0, 1, 0),
+    padding: 0
+  },
   west: {
     backgroundColor: '#FFCC99'
   },
@@ -226,6 +231,13 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ preplanName, fromDate, 
   const [reportDateRange, setReportDateRange] = useState<ReportDateRangeState>({
     startDate: dataTypes.utcDate.convertBusinessToView(fromDate),
     endDate: dataTypes.utcDate.convertBusinessToView(toDate)
+  });
+
+  const [weekSelection, setWeekSelection] = useState<WeekSelection>({
+    previousStartIndex: 0,
+    startIndex: 0,
+    endIndex: preplan.weeks.all.length,
+    nextEndIndex: preplan.weeks.all.length
   });
 
   const flightViews = useMemo(() => {
@@ -871,6 +883,20 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ preplanName, fromDate, 
 
   return (
     <Fragment>
+      <div className={classes.selectWeekWrapper}>
+        <SelectWeeks
+          includeSides={false}
+          weekSelection={weekSelection}
+          onSelectWeeks={weekSelection => {
+            setWeekSelection(weekSelection);
+            const weekStart = preplan.weeks.all[weekSelection.startIndex];
+            const weekEnd = preplan.weeks.all[weekSelection.endIndex - 1];
+            setReportDateRange({ startDate: dataTypes.utcDate.convertBusinessToView(weekStart.startDate), endDate: dataTypes.utcDate.convertBusinessToView(weekEnd.endDate) });
+            setViewState({ ...viewState, baseDate: dataTypes.utcDate.convertBusinessToView(weekStart.startDate) });
+          }}
+        />
+      </div>
+
       <Grid container spacing={2}>
         <Grid item xs={12}>
           East Flight

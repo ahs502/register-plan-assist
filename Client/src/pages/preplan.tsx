@@ -71,7 +71,7 @@ const PreplanPage: FC = () => {
             link: routeMatch.url
           },
           flightRequirementListPageSelected && {
-            title: 'Flights',
+            title: 'Flight Requirements',
             link: `${routeMatch.url}/flight-requirement-list`
           },
           reportsPageSelected && {

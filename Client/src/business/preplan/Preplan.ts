@@ -118,7 +118,18 @@ export default class Preplan {
       for (let label in grouppedPreviousFlightByWeek) {
         const previousFlightsByWeekAndLabel = grouppedPreviousFlightByWeek[label];
         const nextFlightsByWeekAndLabel = grouppedNextFlightByWeek[label];
-        if (!nextFlightsByWeekAndLabel) return true;
+        if (!nextFlightsByWeekAndLabel) {
+          if (nextWeek.endDate > this.endDate) {
+            const lastDay = (this.endDate.getDay() + 1) % 7;
+            if (Object.keys(previousFlightsByWeekAndLabel).some(f => +f <= lastDay)) {
+              return true;
+            } else {
+              continue;
+            }
+          }
+          return true;
+        }
+
         for (let day in previousFlightsByWeekAndLabel) {
           const previousFlight = previousFlightsByWeekAndLabel[day];
           const nextFlight = nextFlightsByWeekAndLabel[day];

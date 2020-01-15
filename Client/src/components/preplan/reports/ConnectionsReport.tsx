@@ -555,7 +555,7 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ preplanName, fromDate, 
     headerCellOption: { ...headerCellOptions, background: '#C6EFCE' }
   };
 
-  const generateWestAirportHeader = viewState.westAirports.map(airport => (
+  const generateWestAirport = viewState.westAirports.map(airport => (
     <ExcelExportColumn
       key={airport.id}
       field={airport.name}
@@ -573,10 +573,24 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ preplanName, fromDate, 
     />
   ));
 
-  const generateEastAirportHeader = viewState.eastAirports.map(airport => (
+  const generateFromEastAirport = viewState.eastAirports.map(airport => (
     <ExcelExportColumn
       key={airport.id}
       field={'from' + airport.name}
+      title={airport.name}
+      width={30}
+      cellOptions={{ ...detailCellOption, wrap: true }}
+      headerCellOptions={{
+        ...headerCellOptions,
+        background: '#F4B084'
+      }}
+    />
+  ));
+
+  const generateToEastAirport = viewState.eastAirports.map(airport => (
+    <ExcelExportColumn
+      key={airport.id}
+      field={'to' + airport.name}
       title={airport.name}
       width={30}
       cellOptions={{ ...detailCellOption, wrap: true }}
@@ -631,17 +645,17 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ preplanName, fromDate, 
 
         <ExcelExportColumnGroup title="Arrival to IKA" headerCellOptions={columnGroupCellOptions}>
           <ExcelExportColumnGroup title={viewState.eastAirportsAirline.label} headerCellOptions={columnGroupCellOptions}>
-            {generateEastAirportHeader}
+            {generateFromEastAirport}
           </ExcelExportColumnGroup>
         </ExcelExportColumnGroup>
         <ExcelExportColumnGroup title={preplanName + ' CONNECTIONS'} headerCellOptions={columnGroupCellOptions}>
           <ExcelExportColumnGroup title={viewState.westAirportsAirline.label} headerCellOptions={columnGroupCellOptions}>
-            {generateWestAirportHeader}
+            {generateWestAirport}
           </ExcelExportColumnGroup>
         </ExcelExportColumnGroup>
         <ExcelExportColumnGroup title="Departure from IKA" headerCellOptions={columnGroupCellOptions}>
           <ExcelExportColumnGroup title={viewState.eastAirportsAirline.label} headerCellOptions={columnGroupCellOptions}>
-            {generateEastAirportHeader}
+            {generateToEastAirport}
           </ExcelExportColumnGroup>
         </ExcelExportColumnGroup>
       </ExcelExport>

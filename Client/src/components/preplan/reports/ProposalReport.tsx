@@ -26,7 +26,7 @@ import FlightLegPackView from 'src/business/flight/FlightLegPackView';
 import { PreplanContext } from 'src/pages/preplan';
 import Preplan from 'src/business/preplan/Preplan';
 import SelectWeeks, { WeekSelection } from 'src/components/preplan/SelectWeeks';
-import FlightPackView from 'src/business/flight/FlightPackView';
+import FlightPackView, { FlightLegPermission } from 'src/business/flight/FlightPackView';
 import { useSnackbar } from 'notistack';
 
 const errorPaperSize = 250;
@@ -180,8 +180,6 @@ interface FlattenFlightRequirment {
   utcDays: number[];
   notes: string[];
   cancelationNotes: string[];
-  originPermissionAndPermissionNotesChanges: string[];
-  destinationPermissionAndPermissionNotesChanges: string[];
   note: string;
   localStd: string;
   localSta: string;
@@ -214,9 +212,13 @@ interface FlattenFlightRequirment {
   standbyFrequency: number;
   extraFrequency: number;
   destinationNoPermissionsWeekDay: number[];
-  destinationNoPermissions: string;
+  excelDestinationNoPermissions: string;
+  destinationNoPermissions: string[];
+  destinationPermissionAndPermissionNotesChanges: FlightLegPermission[];
   originNoPermissionsWeekDay: number[];
-  originNoPermissions: string;
+  excelOriginNoPermissions: string;
+  originNoPermissions: string[];
+  originPermissionAndPermissionNotesChanges: FlightLegPermission[];
   category?: string;
   nextFlights: FlattenFlightRequirment[];
   previousFlights: FlattenFlightRequirment[];
@@ -1325,7 +1327,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ preplanName, fromDate, toDate
               {viewState.showSlot && (
                 <ExcelExportColumn
                   title={['DESTINATION', 'SLOT (LCL)'].join('\r\n')}
-                  field="destinationNoPermissions"
+                  field="excelDestinationNoPermissions"
                   width={70}
                   cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 }, borderLeft: { color: '#000000', size: 3 } }}
                   headerCellOptions={{
@@ -1343,7 +1345,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ preplanName, fromDate, toDate
               {viewState.showSlot && (
                 <ExcelExportColumn
                   title={['ORIGIN', 'SLOT (UTC)'].join('\r\n')}
-                  field="originNoPermissions"
+                  field="excelOriginNoPermissions"
                   width={85}
                   cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 }, borderLeft: { color: '#000000', size: 3 } }}
                   headerCellOptions={{
@@ -1636,15 +1638,15 @@ const ProposalReport: FC<ProposalReportProps> = ({ preplanName, fromDate, toDate
                       {viewState.showSlot && (
                         <Fragment>
                           <TableCell className={classes.border} align="center">
-                            {f.destinationPermissionAndPermissionNotesChanges.length > 0
-                              ? f.destinationPermissionAndPermissionNotesChanges.map((n, index) => <div key={index}>{n}</div>)
-                              : f.destinationNoPermissions}
+                            {f.destinationNoPermissions.map((n, index) => (
+                              <div key={index}>{n}</div>
+                            ))}
                           </TableCell>
 
                           <TableCell className={classes.border} align="center">
-                            {f.originPermissionAndPermissionNotesChanges.length > 0
-                              ? f.originPermissionAndPermissionNotesChanges.map((n, index) => <div key={index}>{n}</div>)
-                              : f.originNoPermissions}
+                            {f.originNoPermissions.map((n, index) => (
+                              <div key={index}>{n}</div>
+                            ))}
                           </TableCell>
                         </Fragment>
                       )}
@@ -1950,22 +1952,35 @@ function generateMassage(sortedFlattenFlightRequirments: FlattenFlightRequirment
       .filter(Boolean)
       .concat(n.cancelationNotes)
       .join('\r\n');
-    n.destinationNoPermissions =
-      n.destinationPermissionAndPermissionNotesChanges.length === 0
-        ? n.destinationNoPermissionsWeekDay.length === 0
+
+    const destinationNoPermission = n.destinationNoPermissionsWeekDay
+      .filter(f => !n.destinationPermissionAndPermissionNotesChanges.some(y => f === y.day))
+      .map(w => Weekday[w].substring(0, 3))
+      .join(',');
+
+    n.destinationNoPermissions = n.destinationPermissionAndPermissionNotesChanges
+      .map(n => n.note)
+      .concat(
+        n.destinationNoPermissionsWeekDay.length === 0 && n.destinationPermissionAndPermissionNotesChanges.length === 0
           ? 'OK'
-          : n.destinationNoPermissionsWeekDay.length === n.days.length
-          ? 'NOT OK'
-          : 'NOT OK for: ' + n.destinationNoPermissionsWeekDay.map(w => Weekday[w].substring(0, 3)).join(',')
-        : n.destinationPermissionAndPermissionNotesChanges.join('\r\n');
-    n.originNoPermissions =
-      n.originPermissionAndPermissionNotesChanges.length === 0
-        ? n.originNoPermissionsWeekDay.length === 0
-          ? 'OK'
-          : n.originNoPermissionsWeekDay.length === n.days.length
-          ? 'NOT OK'
-          : 'NOT OK for: ' + n.originNoPermissionsWeekDay.map(w => Weekday[w].substring(0, 3)).join(',')
-        : n.originPermissionAndPermissionNotesChanges.join('\r\n');
+          : destinationNoPermission
+          ? 'NOT OK for: ' + destinationNoPermission
+          : ''
+      );
+    n.excelDestinationNoPermissions = n.destinationNoPermissions.filter(Boolean).join('\r\n');
+
+    const originNoPermission = n.originNoPermissionsWeekDay
+      .filter(f => !n.originPermissionAndPermissionNotesChanges.some(y => f === y.day))
+      .map(w => Weekday[w].substring(0, 3))
+      .join(',');
+
+    n.originNoPermissions = n.originPermissionAndPermissionNotesChanges
+      .map(n => n.note)
+      .concat(
+        n.originNoPermissionsWeekDay.length === 0 && n.originPermissionAndPermissionNotesChanges.length === 0 ? 'OK' : originNoPermission ? 'NOT OK for: ' + originNoPermission : ''
+      );
+
+    n.excelOriginNoPermissions = n.originNoPermissions.filter(Boolean).join('\r\n');
   });
 }
 
@@ -2086,8 +2101,7 @@ function createFlattenFlightRequirment(leg: FlightLegPackView, date: Date): Flat
     sta: new Daytime(utcSta),
     notes: [] as string[],
     cancelationNotes: [] as string[],
-    originPermissionAndPermissionNotesChanges: [] as string[],
-    destinationPermissionAndPermissionNotesChanges: [] as string[],
+
     localStd: formatDateToHHMM(localStd),
     localSta: formatDateToHHMM(localSta) + (diffLocalStdandLocalSta < 0 ? '*' : ''),
     utcStd: formatDateToHHMM(utcStd) + (diffLocalStdandUtcStd < 0 ? '*' : diffLocalStdandUtcStd > 0 ? '#' : ''),
@@ -2100,8 +2114,13 @@ function createFlattenFlightRequirment(leg: FlightLegPackView, date: Date): Flat
       .filter(i => i.type === 'TYPE' || i.type === 'TYPE_EXISTING')
       .map(t => t.entity.name)
       .join('/'),
-    originNoPermissionsWeekDay: [] as number[],
+
     destinationNoPermissionsWeekDay: [] as number[],
+    destinationPermissionAndPermissionNotesChanges: [] as FlightLegPermission[],
+    destinationNoPermissions: [] as string[],
+    originNoPermissionsWeekDay: [] as number[],
+    originPermissionAndPermissionNotesChanges: [] as FlightLegPermission[],
+    originNoPermissions: [] as string[],
     label: leg.label,
     category: leg.category,
     realFrequency: 0,
@@ -2109,10 +2128,10 @@ function createFlattenFlightRequirment(leg: FlightLegPackView, date: Date): Flat
     standbyFrequency: 0,
     note: '',
     change: false,
-    destinationNoPermissions: '',
+    excelDestinationNoPermissions: '',
     frequency: '',
     nextFlights: [],
-    originNoPermissions: '',
+    excelOriginNoPermissions: '',
     parentRoute: parentRoute,
     previousFlights: [],
     status: {} as FlattenFlightRequirmentStatus
@@ -2142,13 +2161,13 @@ function updateFlattenFlightRequirment(flattenFlight: FlattenFlightRequirment, l
   flattenFlight.notes.indexOf(leg.notes) === -1 && flattenFlight.notes.push(leg.notes);
   const canclationNote = leg.flightPackView.canclationNote;
   !!canclationNote && flattenFlight.cancelationNotes.indexOf(canclationNote) === -1 && flattenFlight.cancelationNotes.push(canclationNote);
-  const originPermissionAndPermissionNotesChange = leg.flightPackView.originPermissionAndPermissionNotesChange.find(p => p?.legIndex === leg.index)?.note;
+  const originPermissionAndPermissionNotesChange = leg.flightPackView.originPermissionAndPermissionNotesChange.find(p => p?.legIndex === leg.index);
 
   !!originPermissionAndPermissionNotesChange &&
     flattenFlight.originPermissionAndPermissionNotesChanges.indexOf(originPermissionAndPermissionNotesChange) === -1 &&
     flattenFlight.originPermissionAndPermissionNotesChanges.push(originPermissionAndPermissionNotesChange);
 
-  const destinationPermissionAndPermissionNotesChange = leg.flightPackView.destinationPermissionAndPermissionNotesChange.find(p => p?.legIndex === leg.index)?.note;
+  const destinationPermissionAndPermissionNotesChange = leg.flightPackView.destinationPermissionAndPermissionNotesChange.find(p => p?.legIndex === leg.index);
   !!destinationPermissionAndPermissionNotesChange &&
     flattenFlight.destinationPermissionAndPermissionNotesChanges.indexOf(destinationPermissionAndPermissionNotesChange) === -1 &&
     flattenFlight.destinationPermissionAndPermissionNotesChanges.push(destinationPermissionAndPermissionNotesChange);

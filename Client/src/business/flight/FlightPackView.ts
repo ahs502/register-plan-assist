@@ -10,7 +10,6 @@ import Week from 'src/business/Week';
 import Flight from 'src/business/flight/Flight';
 import { ShortMonthNames } from '@core/types/MonthName';
 import FlightLegPackView from 'src/business/flight/FlightLegPackView';
-import { resultsAriaMessage } from 'react-select/src/accessibility';
 
 export default class FlightPackView {
   // Original:
@@ -49,7 +48,8 @@ export default class FlightPackView {
   readonly canclationNote: string | undefined;
   readonly stdChangeNote: string | undefined;
   readonly blockTimeChangeNote: string | undefined;
-  readonly permissionAndPermissionNotesChange: string | undefined;
+  readonly originPermissionAndPermissionNotesChange: ({ legIndex: number; note: string } | undefined)[];
+  readonly destinationPermissionAndPermissionNotesChange: ({ legIndex: number; note: string } | undefined)[];
   readonly rsxChangeNote: string | undefined;
 
   readonly icons: readonly string[]; //TODO: Check if it is really required.
@@ -107,7 +107,8 @@ export default class FlightPackView {
     this.canclationNote = generateCanalationNotes();
     this.stdChangeNote = generateStdChangeNotes();
     this.blockTimeChangeNote = generateBlockTimeChangeNotes();
-    this.permissionAndPermissionNotesChange = generatePermissionAndPermissionNotesChangeNotes();
+    this.originPermissionAndPermissionNotesChange = generateOriginPermissionAndPermissionNotesChangeNotes().filter(Boolean);
+    this.destinationPermissionAndPermissionNotesChange = generateDestinationPermissionAndPermissionNotesChangeNotes().filter(Boolean);
     this.rsxChangeNote = generateRsxChangeNotes();
 
     function generateCanalationNotes(): string | undefined {
@@ -179,24 +180,52 @@ export default class FlightPackView {
       );
     }
 
-    function generatePermissionAndPermissionNotesChangeNotes(): string | undefined {
-      return generateChangeNotes(
-        (firstFlight, secondFlight) => firstFlight.destinationPermission === secondFlight.destinationPermission && firstFlight.originPermission === secondFlight.originPermission,
-        'PermissionChagne',
-        changes =>
-          changes
-            .map(n =>
-              n.dates.length >= 2
-                ? `PER ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]} TILL ${n.dates[n.dates.length - 1].getUTCDate()}${
-                    ShortMonthNames[n.dates[n.dates.length - 1].getMonth()]
-                  }`
-                : n.dates.length === 1
-                ? `PER ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]}`
-                : undefined
-            )
-            .filter(Boolean)
-            .join(',')
-      );
+    function generateOriginPermissionAndPermissionNotesChangeNotes(): ({ legIndex: number; note: string } | undefined)[] {
+      return sourceFlight.legs.map((l, index) => {
+        const result = generateChangeNotes(
+          (firstFlight, secondFlight) => firstFlight.legs[index].originPermission === secondFlight.legs[index].originPermission,
+          flight => (flight.legs[index].originPermission ? 'OK' : 'NOT OK'),
+          changes =>
+            changes
+              .map(n =>
+                n.dates.length >= 2
+                  ? `${n.change} ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]} TILL ${n.dates[n.dates.length - 1].getUTCDate()}${
+                      ShortMonthNames[n.dates[n.dates.length - 1].getMonth()]
+                    }`
+                  : n.dates.length === 1
+                  ? `${n.change} ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]}`
+                  : undefined
+              )
+              .filter(Boolean)
+              .join(',')
+        );
+
+        return result ? { legIndex: index, note: Weekday[sourceFlight.day].substr(0, 3) + ': ' + result } : undefined;
+      });
+    }
+
+    function generateDestinationPermissionAndPermissionNotesChangeNotes(): ({ legIndex: number; note: string } | undefined)[] {
+      return sourceFlight.legs.map((l, index) => {
+        const result = generateChangeNotes(
+          (firstFlight, secondFlight) => firstFlight.legs[index].destinationPermission === secondFlight.legs[index].destinationPermission,
+          flight => (flight.legs[index].destinationPermission ? 'OK' : 'NOT OK'),
+          changes =>
+            changes
+              .map(n =>
+                n.dates.length >= 2
+                  ? `${n.change} ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]} TILL ${n.dates[n.dates.length - 1].getUTCDate()}${
+                      ShortMonthNames[n.dates[n.dates.length - 1].getMonth()]
+                    }`
+                  : n.dates.length === 1
+                  ? `${n.change} ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]}`
+                  : undefined
+              )
+              .filter(Boolean)
+              .join(',')
+        );
+
+        return result ? { legIndex: index, note: Weekday[sourceFlight.day].substr(0, 3) + ': ' + result } : undefined;
+      });
     }
 
     function generateRsxChangeNotes(): string | undefined {

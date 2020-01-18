@@ -180,6 +180,8 @@ interface FlattenFlightRequirment {
   utcDays: number[];
   notes: string[];
   cancelationNotes: string[];
+  originPermissionAndPermissionNotesChanges: string[];
+  destinationPermissionAndPermissionNotesChanges: string[];
   note: string;
   localStd: string;
   localSta: string;
@@ -1634,11 +1636,15 @@ const ProposalReport: FC<ProposalReportProps> = ({ preplanName, fromDate, toDate
                       {viewState.showSlot && (
                         <Fragment>
                           <TableCell className={classes.border} align="center">
-                            {f.destinationNoPermissions}
+                            {f.destinationPermissionAndPermissionNotesChanges.length > 0
+                              ? f.destinationPermissionAndPermissionNotesChanges.map((n, index) => <div key={index}>{n}</div>)
+                              : f.destinationNoPermissions}
                           </TableCell>
 
                           <TableCell className={classes.border} align="center">
-                            {f.originNoPermissions}
+                            {f.originPermissionAndPermissionNotesChanges.length > 0
+                              ? f.originPermissionAndPermissionNotesChanges.map((n, index) => <div key={index}>{n}</div>)
+                              : f.originNoPermissions}
                           </TableCell>
                         </Fragment>
                       )}
@@ -1942,20 +1948,24 @@ function generateMassage(sortedFlattenFlightRequirments: FlattenFlightRequirment
   sortedFlattenFlightRequirments.forEach(n => {
     n.note = n.notes
       .filter(Boolean)
-      .concat(n.cancelationNotes.filter(Boolean))
+      .concat(n.cancelationNotes)
       .join('\r\n');
     n.destinationNoPermissions =
-      n.destinationNoPermissionsWeekDay.length === 0
-        ? 'OK'
-        : n.destinationNoPermissionsWeekDay.length === n.days.length
-        ? 'NOT OK'
-        : 'NOT OK for: ' + n.destinationNoPermissionsWeekDay.map(w => Weekday[w].substring(0, 3)).join(',');
+      n.destinationPermissionAndPermissionNotesChanges.length === 0
+        ? n.destinationNoPermissionsWeekDay.length === 0
+          ? 'OK'
+          : n.destinationNoPermissionsWeekDay.length === n.days.length
+          ? 'NOT OK'
+          : 'NOT OK for: ' + n.destinationNoPermissionsWeekDay.map(w => Weekday[w].substring(0, 3)).join(',')
+        : n.destinationPermissionAndPermissionNotesChanges.join('\r\n');
     n.originNoPermissions =
-      n.originNoPermissionsWeekDay.length === 0
-        ? 'OK'
-        : n.originNoPermissionsWeekDay.length === n.days.length
-        ? 'NOT OK'
-        : 'NOT OK for: ' + n.originNoPermissionsWeekDay.map(w => Weekday[w].substring(0, 3)).join(',');
+      n.originPermissionAndPermissionNotesChanges.length === 0
+        ? n.originNoPermissionsWeekDay.length === 0
+          ? 'OK'
+          : n.originNoPermissionsWeekDay.length === n.days.length
+          ? 'NOT OK'
+          : 'NOT OK for: ' + n.originNoPermissionsWeekDay.map(w => Weekday[w].substring(0, 3)).join(',')
+        : n.originPermissionAndPermissionNotesChanges.join('\r\n');
   });
 }
 
@@ -2076,6 +2086,8 @@ function createFlattenFlightRequirment(leg: FlightLegPackView, date: Date): Flat
     sta: new Daytime(utcSta),
     notes: [] as string[],
     cancelationNotes: [] as string[],
+    originPermissionAndPermissionNotesChanges: [] as string[],
+    destinationPermissionAndPermissionNotesChanges: [] as string[],
     localStd: formatDateToHHMM(localStd),
     localSta: formatDateToHHMM(localSta) + (diffLocalStdandLocalSta < 0 ? '*' : ''),
     utcStd: formatDateToHHMM(utcStd) + (diffLocalStdandUtcStd < 0 ? '*' : diffLocalStdandUtcStd > 0 ? '#' : ''),
@@ -2128,8 +2140,18 @@ function updateFlattenFlightRequirment(flattenFlight: FlattenFlightRequirment, l
 
   flattenFlight.utcDays.indexOf(leg.day) === -1 && flattenFlight.utcDays.push(leg.day);
   flattenFlight.notes.indexOf(leg.notes) === -1 && flattenFlight.notes.push(leg.notes);
-  const canclationNote = leg.flightPackView.canclationNote ?? '';
-  flattenFlight.cancelationNotes.indexOf(canclationNote) === -1 && flattenFlight.cancelationNotes.push(canclationNote);
+  const canclationNote = leg.flightPackView.canclationNote;
+  !!canclationNote && flattenFlight.cancelationNotes.indexOf(canclationNote) === -1 && flattenFlight.cancelationNotes.push(canclationNote);
+  const originPermissionAndPermissionNotesChange = leg.flightPackView.originPermissionAndPermissionNotesChange.find(p => p?.legIndex === leg.index)?.note;
+
+  !!originPermissionAndPermissionNotesChange &&
+    flattenFlight.originPermissionAndPermissionNotesChanges.indexOf(originPermissionAndPermissionNotesChange) === -1 &&
+    flattenFlight.originPermissionAndPermissionNotesChanges.push(originPermissionAndPermissionNotesChange);
+
+  const destinationPermissionAndPermissionNotesChange = leg.flightPackView.destinationPermissionAndPermissionNotesChange.find(p => p?.legIndex === leg.index)?.note;
+  !!destinationPermissionAndPermissionNotesChange &&
+    flattenFlight.destinationPermissionAndPermissionNotesChanges.indexOf(destinationPermissionAndPermissionNotesChange) === -1 &&
+    flattenFlight.destinationPermissionAndPermissionNotesChanges.push(destinationPermissionAndPermissionNotesChange);
   (flattenFlight as any)['weekDay' + weekDay.toString()] = calculateDayCharacter();
   (flattenFlight as any)['rsxWeekDay' + weekDay.toString()] = leg.rsx;
   switch (leg.rsx) {

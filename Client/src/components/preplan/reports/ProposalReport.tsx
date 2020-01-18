@@ -1960,7 +1960,13 @@ function generateMassage(sortedFlattenFlightRequirments: FlattenFlightRequirment
 
     n.destinationNoPermissions = n.destinationPermissionAndPermissionNotesChanges
       .map(n => n.note)
-      .concat(n.destinationNoPermissionsWeekDay.length === 0 ? 'OK' : destinationNoPermission ? 'NOT OK for: ' + destinationNoPermission : '');
+      .concat(
+        n.destinationNoPermissionsWeekDay.length === 0 && n.destinationPermissionAndPermissionNotesChanges.length === 0
+          ? 'OK'
+          : destinationNoPermission
+          ? 'NOT OK for: ' + destinationNoPermission
+          : ''
+      );
     n.excelDestinationNoPermissions = n.destinationNoPermissions.filter(Boolean).join('\r\n');
 
     const originNoPermission = n.originNoPermissionsWeekDay
@@ -1970,7 +1976,9 @@ function generateMassage(sortedFlattenFlightRequirments: FlattenFlightRequirment
 
     n.originNoPermissions = n.originPermissionAndPermissionNotesChanges
       .map(n => n.note)
-      .concat(n.originNoPermissionsWeekDay.length === 0 ? 'OK' : originNoPermission ? 'NOT OK for: ' + originNoPermission : '');
+      .concat(
+        n.originNoPermissionsWeekDay.length === 0 && n.originPermissionAndPermissionNotesChanges.length === 0 ? 'OK' : originNoPermission ? 'NOT OK for: ' + originNoPermission : ''
+      );
 
     n.excelOriginNoPermissions = n.originNoPermissions.filter(Boolean).join('\r\n');
   });

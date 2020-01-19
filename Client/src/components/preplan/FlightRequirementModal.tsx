@@ -892,7 +892,17 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
               route => [...route, { flightNumber: '', departureAirport, arrivalAirport }],
               legs => [
                 ...legs,
-                { blockTime: '', stdLowerBound: '', staLowerBound: '', stdUpperBound: '', staUpperBound: '', originPermission: false, destinationPermission: false }
+                {
+                  blockTime: '',
+                  stdLowerBound: '',
+                  staLowerBound: '',
+                  stdUpperBound: '',
+                  staUpperBound: '',
+                  originPermission: false,
+                  destinationPermission: false,
+                  originPermissionNote: '',
+                  destinationPermissionNote: ''
+                }
               ]
             );
           }
@@ -1224,7 +1234,9 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                 stdUpperBound: '',
                 staUpperBound: '',
                 originPermission: false,
-                destinationPermission: false
+                destinationPermission: false,
+                originPermissionNote: '',
+                destinationPermissionNote: ''
               }
             ]
           },
@@ -1243,7 +1255,9 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                 stdUpperBound: '',
                 staUpperBound: '',
                 originPermission: false,
-                destinationPermission: false
+                destinationPermission: false,
+                originPermissionNote: '',
+                destinationPermissionNote: ''
               }
             ]
           }))
@@ -1274,7 +1288,9 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
             stdUpperBound: dataTypes.daytime.convertBusinessToViewOptional(l.stdUpperBound),
             staUpperBound: l.stdUpperBound?.isValid() && l.blockTime.isValid ? dataTypes.daytime.convertModelToView(l.stdUpperBound.minutes + l.blockTime.minutes) : '',
             originPermission: l.originPermission,
-            destinationPermission: l.destinationPermission
+            destinationPermission: l.destinationPermission,
+            originPermissionNote: l.originPermissionNote,
+            destinationPermissionNote: l.destinationPermissionNote
           }))
         },
         weekDays: Weekdays.map<WeekDayViewState>(d => {
@@ -1299,7 +1315,9 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                   stdUpperBound: dataTypes.daytime.convertBusinessToViewOptional(l.stdUpperBound),
                   staUpperBound: l.stdUpperBound?.isValid() && l.blockTime.isValid ? dataTypes.daytime.convertModelToView(l.stdUpperBound.minutes + l.blockTime.minutes) : '',
                   originPermission: l.originPermission,
-                  destinationPermission: l.destinationPermission
+                  destinationPermission: l.destinationPermission,
+                  originPermissionNote: l.originPermissionNote,
+                  destinationPermissionNote: l.destinationPermissionNote
                 }))
               : c.route.map<LegViewState>(l => ({
                   blockTime: dataTypes.daytime.convertBusinessToView(l.blockTime),
@@ -1308,7 +1326,9 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                   stdUpperBound: dataTypes.daytime.convertBusinessToViewOptional(l.stdUpperBound),
                   staUpperBound: l.stdUpperBound?.isValid() && l.blockTime.isValid ? dataTypes.daytime.convertModelToView(l.stdUpperBound.minutes + l.blockTime.minutes) : '',
                   originPermission: l.originPermission,
-                  destinationPermission: l.destinationPermission
+                  destinationPermission: l.destinationPermission,
+                  originPermissionNote: l.originPermissionNote,
+                  destinationPermissionNote: l.destinationPermissionNote
                 }))
           };
         })
@@ -1352,7 +1372,9 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
               stdUpperBound: dataTypes.daytime.convertBusinessToViewOptional(l.stdUpperBound),
               staUpperBound: l.stdUpperBound?.isValid() && l.blockTime.isValid ? dataTypes.daytime.convertModelToView(l.stdUpperBound.minutes + l.blockTime.minutes) : '',
               originPermission: l.originPermission,
-              destinationPermission: l.destinationPermission
+              destinationPermission: l.destinationPermission,
+              originPermissionNote: l.originPermissionNote,
+              destinationPermissionNote: l.destinationPermissionNote
             }))
           },
           weekDays: Weekdays.map<WeekDayViewState>(d => {
@@ -1377,7 +1399,9 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                     stdUpperBound: dataTypes.daytime.convertBusinessToViewOptional(l.stdUpperBound),
                     staUpperBound: l.stdUpperBound?.isValid() && l.blockTime.isValid ? dataTypes.daytime.convertModelToView(l.stdUpperBound.minutes + l.blockTime.minutes) : '',
                     originPermission: l.originPermission,
-                    destinationPermission: l.destinationPermission
+                    destinationPermission: l.destinationPermission,
+                    originPermissionNote: l.originPermissionNote,
+                    destinationPermissionNote: l.destinationPermissionNote
                   }))
                 : flightRequirement.route.map<LegViewState>(l => ({
                     blockTime: dataTypes.daytime.convertBusinessToView(l.blockTime),
@@ -1386,7 +1410,9 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                     stdUpperBound: dataTypes.daytime.convertBusinessToViewOptional(l.stdUpperBound),
                     staUpperBound: l.stdUpperBound?.isValid() && l.blockTime.isValid ? dataTypes.daytime.convertModelToView(l.stdUpperBound.minutes + l.blockTime.minutes) : '',
                     originPermission: l.originPermission,
-                    destinationPermission: l.destinationPermission
+                    destinationPermission: l.destinationPermission,
+                    originPermissionNote: l.originPermissionNote,
+                    destinationPermissionNote: l.destinationPermissionNote
                   }))
             };
           })
@@ -1477,7 +1503,9 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
         stdLowerBound: dataTypes.daytime.convertViewToModel(l.stdLowerBound),
         stdUpperBound: dataTypes.daytime.convertViewToModelOptional(l.stdUpperBound),
         originPermission: l.originPermission,
-        destinationPermission: l.destinationPermission
+        destinationPermission: l.destinationPermission,
+        originPermissionNote: l.originPermissionNote,
+        destinationPermissionNote: l.destinationPermissionNote
       })),
       days: refinedViewState.baseScope.weekDays
         .map<{ selected: boolean; model: DayFlightRequirementModel }>((d, index) => ({
@@ -1501,7 +1529,9 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
               stdLowerBound: dataTypes.daytime.convertViewToModel(l.stdLowerBound),
               stdUpperBound: dataTypes.daytime.convertViewToModelOptional(l.stdUpperBound),
               originPermission: l.originPermission,
-              destinationPermission: l.destinationPermission
+              destinationPermission: l.destinationPermission,
+              originPermissionNote: l.originPermissionNote,
+              destinationPermissionNote: l.destinationPermissionNote
             }))
           }
         }))
@@ -1535,7 +1565,9 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
             stdLowerBound: dataTypes.daytime.convertViewToModel(l.stdLowerBound),
             stdUpperBound: dataTypes.daytime.convertViewToModelOptional(l.stdUpperBound),
             originPermission: l.originPermission,
-            destinationPermission: l.destinationPermission
+            destinationPermission: l.destinationPermission,
+            originPermissionNote: l.originPermissionNote,
+            destinationPermissionNote: l.destinationPermissionNote
           })),
           days: c.weekDays
             .map<{ selected: boolean; model: DayFlightRequirementChangeModel }>((d, index) => ({
@@ -1559,7 +1591,9 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                   stdLowerBound: dataTypes.daytime.convertViewToModel(l.stdLowerBound),
                   stdUpperBound: dataTypes.daytime.convertViewToModelOptional(l.stdUpperBound),
                   originPermission: l.originPermission,
-                  destinationPermission: l.destinationPermission
+                  destinationPermission: l.destinationPermission,
+                  originPermissionNote: l.originPermissionNote,
+                  destinationPermissionNote: l.destinationPermissionNote
                 }))
               }
             }))

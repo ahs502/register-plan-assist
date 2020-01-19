@@ -18,6 +18,8 @@ export default class DayFlightRequirementLegChange implements ModelConvertable<D
   readonly actualStdUpperBound: Daytime;
   readonly originPermission: boolean;
   readonly destinationPermission: boolean;
+  readonly originPermissionNote: string;
+  readonly destinationPermissionNote: string;
 
   constructor(
     raw: DayFlightRequirementLegChangeModel,
@@ -42,6 +44,8 @@ export default class DayFlightRequirementLegChange implements ModelConvertable<D
     this.actualStdUpperBound = new Daytime(actualStdUpperBoundMinutes);
     this.originPermission = raw.originPermission;
     this.destinationPermission = raw.destinationPermission;
+    this.originPermissionNote = raw.originPermissionNote;
+    this.destinationPermissionNote = raw.destinationPermissionNote;
   }
 
   extractModel(override?: (dayFlightRequirementLegChangeModel: DayFlightRequirementLegChangeModel) => DayFlightRequirementLegChangeModel): DayFlightRequirementLegChangeModel {
@@ -50,7 +54,9 @@ export default class DayFlightRequirementLegChange implements ModelConvertable<D
       stdLowerBound: dataTypes.daytime.convertBusinessToModel(this.stdLowerBound),
       stdUpperBound: dataTypes.daytime.convertBusinessToModelOptional(this.stdUpperBound),
       originPermission: this.originPermission,
-      destinationPermission: this.destinationPermission
+      destinationPermission: this.destinationPermission,
+      originPermissionNote: this.originPermissionNote,
+      destinationPermissionNote: this.destinationPermissionNote
     };
     return override?.(dayFlightRequirementLegChangeModel) ?? dayFlightRequirementLegChangeModel;
   }

@@ -63,6 +63,8 @@ export interface LegViewState {
   staUpperBound: string;
   originPermission: boolean;
   destinationPermission: boolean;
+  originPermissionNote: string;
+  destinationPermissionNote: string;
 }
 
 export interface GeneralOptionViewState {

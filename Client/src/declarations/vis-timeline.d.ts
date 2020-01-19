@@ -36,6 +36,7 @@ declare module 'vis-timeline' {
     visible?: boolean;
     nestedGroups?: Array<Id>;
     showNested?: boolean;
+    treeLevel?: number;
     /** Other group data */ data?: any;
   }
 

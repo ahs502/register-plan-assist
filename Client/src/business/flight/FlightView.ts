@@ -9,7 +9,7 @@ import Id from '@core/types/Id';
 import FlightLegView from 'src/business/flight/FlightLegView';
 import Week from 'src/business/Week';
 import Flight from 'src/business/flight/Flight';
-import { MonthNames } from '@core/types/MonthName';
+import { ShortMonthNames } from '@core/types/MonthName';
 
 export default class FlightView {
   // Original:
@@ -47,7 +47,7 @@ export default class FlightView {
   readonly endDateTime: Date;
   readonly icons: readonly string[]; //TODO: Check if it is really required.
 
-  constructor(flights: readonly Flight[], startWeek: Week, endWeek: Week, week: Week) {
+  constructor(flights: readonly Flight[], startWeek: Week, endWeek: Week, week: Week, preplanStartDate: Date, preplanEndDate: Date) {
     const { sourceFlight, notes } = flights.map(sourceFlight => ({ sourceFlight, notes: createNotes(sourceFlight) })).sortBy(({ notes }) => notes.length)[0];
 
     this.sourceFlight = sourceFlight;
@@ -83,30 +83,37 @@ export default class FlightView {
     this.icons = [];
 
     function createNotes(sourceFlight: Flight): string {
-      const canclationOrActiveationPerDay: string = generateCanalationOrActivationNotes();
-      const timeChange: string = ''; //TODO implement
-      const registerChange: string = ''; //TODO implement
-      const permissionAndPermissionNotesChange: string = ''; //TODO implement
-      const notesChange: string = ''; //TODO implement
-      const rsxChange: string = '';
+      const diffInTime = endWeek.startDate.getTime() - startWeek.startDate.getTime();
+      const diffInDays = diffInTime / (24 * 60 * 60 * 1000);
+      const diffInWeek = diffInDays / 7 + 1;
 
-      return canclationOrActiveationPerDay;
+      const flightDay = sourceFlight.day;
+      const startDate = new Date(startWeek.startDate).addDays(flightDay);
+      const allDays = Array.range(0, diffInWeek - 1).map(d => {
+        return new Date(startDate).addDays(d * 7);
+      });
 
-      function generateCanalationOrActivationNotes(): string {
-        const diffInTime = endWeek.startDate.getTime() - startWeek.startDate.getTime();
-        const diffInDays = diffInTime / (24 * 60 * 60 * 1000);
-        const diffInWeek = diffInDays / 7 + 1;
-        const sortedFlights = flights.orderBy('date');
+      if (allDays[0] < preplanStartDate) allDays.shift();
+      if (allDays[allDays.length - 1] > preplanEndDate) allDays.pop();
+
+      const sortedFlights = flights.orderBy('date');
+      const canclationOrActiveationPerDay: string | undefined = generateCanalationOrActivationNotes();
+      const stdChange: string | undefined = generateStdChangeNotes();
+      const blockTimeChange: string | undefined = generateBlockTimeChangeNotes();
+      const registerChange: string | undefined = generateRegisterChangeNotes();
+      const permissionAndPermissionNotesChange: string | undefined = generatePermissionAndPermissionNotesChangeNotes();
+      const notesChange: string | undefined = generateNotesChangeNotes(); //TODO implement
+      const rsxChange: string | undefined = generateRsxChangeNotes();
+
+      return [canclationOrActiveationPerDay, stdChange, blockTimeChange, registerChange, permissionAndPermissionNotesChange, notesChange, rsxChange].filter(Boolean).join(',');
+
+      function generateCanalationOrActivationNotes(): string | undefined {
         const firstFlight = sortedFlights[0];
-        const startDate = firstFlight.date;
-        const allDays = Array.range(0, diffInWeek - 1).map(d => {
-          return new Date(startDate).addDays(d * 7);
-        });
         if (diffInWeek === sortedFlights.length) {
-          return '';
+          return undefined;
         } else {
           if (firstFlight.date.getDatePart().getTime() === allDays[0].getTime()) {
-            const groupCancleDay = allDays.reduce<Date[][]>((acc, cur, self) => {
+            const groupCancleDay = allDays.reduce<Date[][]>((acc, cur) => {
               const lastElement: Date[] = acc[acc.length - 1] || (acc.push([] as Date[]) && acc[acc.length - 1]);
               if (flights.some(f => f.date.getDatePart().getTime() == cur.getTime())) {
                 lastElement.length > 0 && acc.push([]);
@@ -119,14 +126,15 @@ export default class FlightView {
             return groupCancleDay
               .map(n =>
                 n.length >= 2
-                  ? `CNL ${n[0].getUTCDate()}/${MonthNames[n[0].getMonth()]} TILL ${n[n.length - 1].getUTCDate()}/${MonthNames[n[n.length - 1].getMonth()]}`
+                  ? `CNL ${n[0].getUTCDate()}${ShortMonthNames[n[0].getMonth()]} TILL ${n[n.length - 1].getUTCDate()}${ShortMonthNames[n[n.length - 1].getMonth()]}`
                   : n.length === 1
-                  ? `CNL ${n[0].getUTCDate()}/${MonthNames[n[0].getMonth()]}`
-                  : ''
+                  ? `CNL ${n[0].getUTCDate()}${ShortMonthNames[n[0].getMonth()]}`
+                  : undefined
               )
+              .filter(Boolean)
               .join(',');
           } else {
-            const groupActiveDay = allDays.reduce<Date[][]>((acc, cur, self) => {
+            const groupActiveDay = allDays.reduce<Date[][]>((acc, cur) => {
               const lastElement: Date[] = acc[acc.length - 1] || (acc.push([] as Date[]) && acc[acc.length - 1]);
               if (!flights.some(f => f.date.getDatePart().getTime() == cur.getTime())) {
                 lastElement.length > 0 && acc.push([]);
@@ -139,14 +147,166 @@ export default class FlightView {
             return groupActiveDay
               .map(n =>
                 n.length >= 2
-                  ? `FM ${n[0].getUTCDate()}/${MonthNames[n[0].getMonth()]} TILL ${n[n.length - 1].getUTCDate()}/${MonthNames[n[n.length - 1].getMonth()]}`
+                  ? `FM ${n[0].getUTCDate()}${ShortMonthNames[n[0].getMonth()]} TILL ${n[n.length - 1].getUTCDate()}${ShortMonthNames[n[n.length - 1].getMonth()]}`
                   : n.length === 1
-                  ? `FM ${n[0].getUTCDate()}/${MonthNames[n[0].getMonth()]}`
-                  : ''
+                  ? `FM ${n[0].getUTCDate()}${ShortMonthNames[n[0].getMonth()]}`
+                  : undefined
               )
+              .filter(Boolean)
               .join(',');
           }
         }
+      }
+
+      function generateStdChangeNotes(): string | undefined {
+        return generateChangeNotes(
+          (firstFlight, secondFlight) => firstFlight.legs.every((l, index) => l.std.compare(secondFlight.legs[index].std) === 0),
+          'Time Change',
+          changes =>
+            changes
+              .map(n =>
+                n.dates.length >= 2
+                  ? `TIM ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]} TILL ${n.dates[n.dates.length - 1].getUTCDate()}${
+                      ShortMonthNames[n.dates[n.dates.length - 1].getMonth()]
+                    }`
+                  : n.dates.length === 1
+                  ? `TIM ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]}`
+                  : undefined
+              )
+              .filter(Boolean)
+              .join(',')
+        );
+      }
+
+      function generateBlockTimeChangeNotes(): string | undefined {
+        return generateChangeNotes(
+          (firstFlight, secondFlight) => firstFlight.legs.every((l, index) => l.blockTime.compare(secondFlight.legs[index].blockTime) === 0),
+          'BlockTime Change',
+          changes =>
+            changes
+              .map(n =>
+                n.dates.length >= 2
+                  ? `BLK ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]} TILL ${n.dates[n.dates.length - 1].getUTCDate()}${
+                      ShortMonthNames[n.dates[n.dates.length - 1].getMonth()]
+                    }`
+                  : n.dates.length === 1
+                  ? `BLK ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]}`
+                  : undefined
+              )
+              .filter(Boolean)
+              .join(',')
+        );
+      }
+
+      function generateRegisterChangeNotes(): string | undefined {
+        return generateChangeNotes(
+          (firstFlight, secondFlight) => firstFlight.aircraftRegister === secondFlight.aircraftRegister,
+          flight => flight.aircraftRegister?.['name'] ?? '',
+          changes =>
+            changes
+              .map(n =>
+                n.dates.length >= 2
+                  ? `REG ${n.change} ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]} TILL ${n.dates[n.dates.length - 1].getUTCDate()}${
+                      ShortMonthNames[n.dates[n.dates.length - 1].getMonth()]
+                    }`
+                  : n.dates.length === 1
+                  ? `REG ${n.change} ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]}`
+                  : undefined
+              )
+              .filter(Boolean)
+              .join(',')
+        );
+      }
+
+      function generatePermissionAndPermissionNotesChangeNotes(): string | undefined {
+        return generateChangeNotes(
+          (firstFlight, secondFlight) => firstFlight.destinationPermission === secondFlight.destinationPermission && firstFlight.originPermission === secondFlight.originPermission,
+          'PermissionChagne',
+          changes =>
+            changes
+              .map(n =>
+                n.dates.length >= 2
+                  ? `PER ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]} TILL ${n.dates[n.dates.length - 1].getUTCDate()}${
+                      ShortMonthNames[n.dates[n.dates.length - 1].getMonth()]
+                    }`
+                  : n.dates.length === 1
+                  ? `PER ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]}`
+                  : undefined
+              )
+              .filter(Boolean)
+              .join(',')
+        );
+      }
+
+      function generateNotesChangeNotes(): string | undefined {
+        return generateChangeNotes(
+          (firstFlight, secondFlight) => firstFlight.notes === secondFlight.notes,
+          'Note change',
+          changes =>
+            changes
+              .map(n =>
+                n.dates.length >= 2
+                  ? `NTE ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]} TILL ${n.dates[n.dates.length - 1].getUTCDate()}${
+                      ShortMonthNames[n.dates[n.dates.length - 1].getMonth()]
+                    }`
+                  : n.dates.length === 1
+                  ? `NTE ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]}`
+                  : undefined
+              )
+              .filter(Boolean)
+              .join(',')
+        );
+      }
+
+      function generateRsxChangeNotes(): string | undefined {
+        return generateChangeNotes(
+          (firstFlight, secondFlight) => firstFlight.rsx === secondFlight.rsx,
+          flight => flight.rsx,
+          changes =>
+            changes
+              .map(n =>
+                n.dates.length >= 2
+                  ? `RSX ${n.change} ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]} TILL ${n.dates[n.dates.length - 1].getUTCDate()}${
+                      ShortMonthNames[n.dates[n.dates.length - 1].getMonth()]
+                    }`
+                  : n.dates.length === 1
+                  ? `RSX ${n.change} ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]}`
+                  : undefined
+              )
+              .filter(Boolean)
+              .join(',')
+        );
+      }
+
+      function generateChangeNotes(
+        comparare: (firstFlight: Flight, secondFlight: Flight) => Boolean,
+        change: ((flight: Flight) => string) | string,
+        generateChangeNote: (
+          changes: {
+            change?: string | undefined;
+            dates: Date[];
+          }[]
+        ) => string | undefined
+      ): string | undefined {
+        if (sortedFlights.every(f => comparare(sourceFlight, f))) return undefined;
+
+        const groupChangeDay = allDays.reduce<{ change?: string; dates: Date[] }[]>((acc, cur) => {
+          const lastElement: { change?: string; dates: Date[] } = acc[acc.length - 1] || (acc.push({ dates: [] as Date[] }) && acc[acc.length - 1]);
+          const flight = flights.find(f => f.date.getDatePart().getTime() == cur.getTime());
+          if (!flight || comparare(sourceFlight, flight)) {
+            lastElement.dates.length > 0 && acc.push({ dates: [] as Date[] });
+          } else {
+            const _change = typeof change === 'function' ? change(flight) : change;
+            if (lastElement.change === _change) {
+              lastElement.dates.push(cur);
+            } else {
+              acc.push({ change: _change, dates: [cur] });
+            }
+          }
+          return acc;
+        }, []);
+
+        return generateChangeNote(groupChangeDay);
       }
     }
   }

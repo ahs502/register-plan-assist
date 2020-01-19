@@ -140,7 +140,7 @@ declare interface ReadonlyArray<T> {
   toDictionary<I = T>(key: keyof T | ((item: T) => string), mapper: (item: T) => I): { [key: string]: I };
 }
 
-declare type DateFormat = 'D' | 'D#' | 'd' | 'd#' | 'D$' | '~D$' | 'T' | 'T0' | 't' | 'T#' | 't#' | 'DT' | 'DT0';
+declare type DateFormat = 'D' | 'D#' | 'd' | 'd#' | 'D$' | '~D$' | 'FD' | 'T' | 'T0' | 't' | 'T#' | 't#' | 'DT' | 'DT0';
 
 declare interface DateConstructor {
   /**

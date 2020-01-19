@@ -22,6 +22,7 @@ export interface ViewState {
   route: RouteLegViewState[];
   baseScope: BaseScopeViewState;
   changeScopes: ChangeScopeViewState[];
+  selectedWeekIndex?: number;
 }
 
 export interface RouteLegViewState {
@@ -38,6 +39,8 @@ export interface BaseScopeViewState {
 export interface ChangeScopeViewState extends BaseScopeViewState {
   startWeekIndex: number;
   endWeekIndex: number;
+  isTemp: boolean;
+  isNew: boolean;
 }
 
 export interface BaseDayViewState {
@@ -55,7 +58,9 @@ export interface WeekDayViewState extends BaseDayViewState {
 export interface LegViewState {
   blockTime: string;
   stdLowerBound: string;
+  staLowerBound: string;
   stdUpperBound: string;
+  staUpperBound: string;
   originPermission: boolean;
   destinationPermission: boolean;
 }

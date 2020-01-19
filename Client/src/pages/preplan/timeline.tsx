@@ -30,6 +30,7 @@ import Rsx from '@core/types/Rsx';
 import Week from 'src/business/Week';
 import Flight from 'src/business/flight/Flight';
 import Weekday from '@core/types/Weekday';
+import useProperty from 'src/utils/useProperty';
 
 const useStyles = makeStyles((theme: Theme) => ({
   sideBarBackdrop: {
@@ -68,6 +69,9 @@ const useStyles = makeStyles((theme: Theme) => ({
 
 type SideBar = 'SETTINGS' | 'SELECT_AIRCRAFT_REGISTERS' | 'SEARCH_FLIGHTS' | 'OBJECTIONS';
 
+interface NavBarStatus {
+  preplanVersionDescription: string;
+}
 interface SideBarState {
   open: boolean;
   loading?: boolean;
@@ -110,6 +114,12 @@ const TimelinePage: FC<TimelinePageProps> = ({ onObjectionTargetClick, onEditFli
 
   const preplan = useContext(PreplanContext);
   const reloadPreplan = useContext(ReloadPreplanContext);
+
+  const loadedPreplan = preplan.versions.find(v => v.id === preplan.id);
+  const preplanVersionDescription = loadedPreplan?.current ? 'CURRENT' : `${loadedPreplan?.description} — ${loadedPreplan?.lastEditDateTime.format('FD')}`;
+  const navBarStatus = {
+    preplanVersionDescription: preplanVersionDescription
+  };
 
   const [sideBarState, setSideBarState] = useState<SideBarState>({ open: false, loading: false, errorMessage: undefined });
   const [timelineViewState, setTimelineViewState] = useState<TimelineViewState>({ loading: false });
@@ -162,11 +172,11 @@ const TimelinePage: FC<TimelinePageProps> = ({ onObjectionTargetClick, onEditFli
 
       <Portal container={navBarToolsContainer}>
         <div className={timelineViewState.loading ? classes.disable : ''}>
-          <Button onClick={() => openPreplanVersionsModal({ preplan: preplan } as PerplanVersionsModalState)}>Current</Button>
+          <Button onClick={() => openPreplanVersionsModal({ preplan: preplan } as PerplanVersionsModalState)}>{navBarStatus.preplanVersionDescription}</Button>
           <IconButton disabled={timelineViewState.loading} color="inherit" title="Accept Preplan">
             <FinilizedIcon />
           </IconButton>
-          <LinkIconButton disabled={timelineViewState.loading} color="inherit" to={`/preplan/${preplan.id}/flight-requirement-list`} title="Flights">
+          <LinkIconButton disabled={timelineViewState.loading} color="inherit" to={`/preplan/${preplan.id}/flight-requirement-list`} title="Flight Requirement">
             <MahanIcon type={MahanIconType.FlightIcon} />
           </LinkIconButton>
           <LinkIconButton disabled={timelineViewState.loading} color="inherit" title="Reports" to={`/preplan/${preplan.id}/reports`}>
@@ -289,24 +299,27 @@ const TimelinePage: FC<TimelinePageProps> = ({ onObjectionTargetClick, onEditFli
                       }))
                     : f.extractModel()
                 );
-              // const newPreplanModel = await FlightService.edit(preplan.id, ...flightModels);
-              const newFlightRequirementModel = flightView.flightRequirement.extractModel(flightRequirementModel => ({
-                ...flightRequirementModel,
-                days: flightRequirementModel.days.map<DayFlightRequirementModel>(d =>
-                  d.day === flightView.day || allWeekdays
-                    ? {
-                        ...d,
-                        route: d.route.map<DayFlightRequirementLegModel>(l => ({
-                          ...l,
-                          stdLowerBound: l.stdLowerBound + deltaStd,
-                          stdUpperBound: undefined
-                        }))
-                      }
-                    : d
-                )
-              }));
-              const newPreplanModel = await FlightRequirementService.edit(preplan.id, newFlightRequirementModel, flightModels);
-              await reloadPreplan(newPreplanModel);
+
+              const newPreplanDataModel = await FlightService.edit(preplan.id, ...flightModels);
+
+              // const newFlightRequirementModel = flightView.flightRequirement.extractModel(flightRequirementModel => ({
+              //   ...flightRequirementModel,
+              //   days: flightRequirementModel.days.map<DayFlightRequirementModel>(d =>
+              //     d.day === flightView.day || allWeekdays
+              //       ? {
+              //           ...d,
+              //           route: d.route.map<DayFlightRequirementLegModel>(l => ({
+              //             ...l,
+              //             stdLowerBound: l.stdLowerBound + deltaStd,
+              //             stdUpperBound: undefined
+              //           }))
+              //         }
+              //       : d
+              //   )
+              // }));
+              // const newPreplanModel = await FlightRequirementService.edit(preplan.id, newFlightRequirementModel, flightModels);
+
+              await reloadPreplan(newPreplanDataModel);
             } catch (reason) {
               snackbar.enqueueSnackbar(String(reason), { variant: 'error' });
               await reloadPreplan();

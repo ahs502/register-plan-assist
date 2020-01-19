@@ -19,15 +19,25 @@ export class EditFlightModelValidation extends Validation<
   constructor(data: EditFlightModel, flightIds: readonly Id[], aircraftRegisterOptions: AircraftRegisterOptionsModel, preplanStartDate: Date, preplanEndDate: Date) {
     super(validator =>
       validator.object(data).then(({ id, date, aircraftRegisterId, legs }) => {
+        !date && console.log('date is not valid');
+        !(typeof date === 'string') && console.log('date is not string');
         validator
           .if(id !== undefined)
           .must(() => typeof id === 'string' && !!id)
           .must(() => flightIds.includes(id));
+
         validator
           .must(typeof date === 'string', !!date)
           .then(() => new Date(date))
-          .must(date => date.isValid() && date.getDatePart().equals(date))
-          .must(date => preplanStartDate <= date && date <= preplanEndDate);
+          .must(date => {
+            !date.isValid() && console.log(date);
+            !date.getDatePart().equals(date) && console.log(date);
+            return date.isValid() && date.getDatePart().equals(date);
+          })
+          .must(date => {
+            !(preplanStartDate <= date && date <= preplanEndDate) && console.log(preplanStartDate, date, preplanEndDate);
+            return preplanStartDate <= date && date <= preplanEndDate;
+          });
         validator
           .if(aircraftRegisterId !== undefined)
           .must(() => typeof aircraftRegisterId === 'string')

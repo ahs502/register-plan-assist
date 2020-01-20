@@ -1,4 +1,4 @@
-import { XmlBoolean, booleanToXml, xmlToBoolean, xmlEscape } from 'src/utils/xml';
+import { XmlBoolean, booleanToXml, xmlToBoolean, xmlEscape, normalizeXml } from 'src/utils/xml';
 import DayFlightRequirementLegChangeModel from '@core/models/flight-requirement/DayFlightRequirementLegChangeModel';
 
 export default interface DayFlightRequirementLegChangeEntity {
@@ -8,9 +8,9 @@ export default interface DayFlightRequirementLegChangeEntity {
     readonly StdUpperBound?: string;
     readonly OriginPermission: XmlBoolean;
     readonly DestinationPermission: XmlBoolean;
-    readonly OriginPermissionNote: string;
-    readonly DestinationPermissionNote: string;
   };
+  readonly OriginPermissionNote: string;
+  readonly DestinationPermissionNote: string;
 }
 
 export function convertDayFlightRequirementLegChangeModelToEntity(data: DayFlightRequirementLegChangeModel): DayFlightRequirementLegChangeEntity {
@@ -20,10 +20,10 @@ export function convertDayFlightRequirementLegChangeModelToEntity(data: DayFligh
       StdLowerBound: String(data.stdLowerBound),
       StdUpperBound: data.stdUpperBound === undefined ? undefined : String(data.stdUpperBound),
       OriginPermission: booleanToXml(data.originPermission),
-      DestinationPermission: booleanToXml(data.destinationPermission),
-      OriginPermissionNote: xmlEscape(data.originPermissionNote),
-      DestinationPermissionNote: xmlEscape(data.destinationPermissionNote)
-    }
+      DestinationPermission: booleanToXml(data.destinationPermission)
+    },
+    OriginPermissionNote: xmlEscape(data.originPermissionNote),
+    DestinationPermissionNote: xmlEscape(data.destinationPermissionNote)
   };
 }
 export function convertDayFlightRequirementLegChangeEntityToModel(data: DayFlightRequirementLegChangeEntity): DayFlightRequirementLegChangeModel {
@@ -33,7 +33,7 @@ export function convertDayFlightRequirementLegChangeEntityToModel(data: DayFligh
     stdUpperBound: data._attributes.StdUpperBound === undefined ? undefined : Number(data._attributes.StdUpperBound),
     originPermission: xmlToBoolean(data._attributes.OriginPermission),
     destinationPermission: xmlToBoolean(data._attributes.DestinationPermission),
-    originPermissionNote: data._attributes.OriginPermissionNote,
-    destinationPermissionNote: data._attributes.DestinationPermissionNote
+    originPermissionNote: normalizeXml((data.OriginPermissionNote as any)?._text as string),
+    destinationPermissionNote: normalizeXml((data.DestinationPermissionNote as any)?._text as string)
   };
 }

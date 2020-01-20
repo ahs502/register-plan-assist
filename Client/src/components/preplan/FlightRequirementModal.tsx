@@ -1006,7 +1006,7 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
               <Grid item xs={1}>
                 <RefiningTextField fullWidth label="STA" dataType={dataTypes.daytime} value={legViewState?.staUpperBound ?? ''} disabled={true} />
               </Grid>
-              <Grid item xs={3}>
+              <Grid item xs={6}>
                 <FormControlLabel
                   label="Origin Permission"
                   control={
@@ -1020,7 +1020,7 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                 />
               </Grid>
 
-              <Grid item xs={3}>
+              <Grid item xs={6}>
                 <FormControlLabel
                   label="Destination Permission"
                   control={
@@ -1033,7 +1033,6 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                   disabled={legDisabled}
                 />
               </Grid>
-              <Grid item xs={6}></Grid>
               <Grid item xs={6}>
                 <RefiningTextField
                   fullWidth

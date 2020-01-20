@@ -1626,9 +1626,9 @@ const ProposalReport: FC<ProposalReportProps> = ({ preplanName, fromDate, toDate
                       </TableCell>
                       {viewState.showNote && (
                         <TableCell align="center" className={classes.border}>
-                          {f.notes.map((n, index) => (
+                          {/* {f.notes.map((n, index) => (
                             <div key={index}>{n}</div>
-                          ))}
+                          ))} */}
                           {f.cancelationNotes.map((n, index) => (
                             <div key={index}>{n}</div>
                           ))}
@@ -1948,11 +1948,12 @@ function calculateFrequency(flattenFlightRequirments: FlattenFlightRequirment[])
 
 function generateMassage(sortedFlattenFlightRequirments: FlattenFlightRequirment[]): void {
   sortedFlattenFlightRequirments.forEach(n => {
-    n.note = n.notes
-      .filter(Boolean)
-      .concat(n.cancelationNotes)
-      .join('\r\n');
+    // n.note = n.notes
+    //   .filter(Boolean)
+    //   .concat(n.cancelationNotes)
+    //   .join('\r\n');
 
+    n.note = n.cancelationNotes.filter(Boolean).join('\r\n');
     const destinationNoPermission = n.destinationNoPermissionsWeekDay
       .filter(f => !n.destinationPermissionAndPermissionNotesChanges.some(y => f === y.day))
       .map(w => Weekday[w].substring(0, 3))

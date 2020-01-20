@@ -139,9 +139,9 @@ export default class Preplan {
               previousFlight.legs.some((l, index) => l.std.compare(nextFlight.legs[index].std) !== 0) ||
               previousFlight.legs.some((l, index) => l.blockTime.compare(nextFlight.legs[index].blockTime) !== 0) ||
               previousFlight.rsx !== nextFlight.rsx ||
-              previousFlight.notes !== nextFlight.notes ||
-              previousFlight.originPermission !== nextFlight.originPermission ||
-              previousFlight.destinationPermission !== nextFlight.destinationPermission) &&
+              previousFlight.notes !== nextFlight.notes) &&
+            /*previousFlight.originPermission !== nextFlight.originPermission ||
+              previousFlight.destinationPermission !== nextFlight.destinationPermission*/
             this.endDate.getDatePart().getTime() >=
               new Date(previousFlight.date)
                 .getDatePart()

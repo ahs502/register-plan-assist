@@ -143,7 +143,7 @@ const PerplanVersionsModal = createModal<PerplanVersionsModalState, PerplanVersi
                         loading(false);
                         await others.onClose();
                       }}
-                      disabled={!preplan.current && (v.id === preplan.id || v.current)}
+                      disabled={true || (!preplan.current && (v.id === preplan.id || v.current))}
                     >
                       <ClearIcon />
                     </IconButton>

@@ -115,7 +115,8 @@ const useStyles = makeStyles((theme: Theme) => {
       fontSize: 26
     },
     permissionNote: {
-      fontFamily: '"Roboto", "Helvetica", "Arial", "sans-serif"'
+      fontFamily: '"Roboto", "Helvetica", "Arial", "sans-serif"',
+      margin: theme.spacing(0)
     },
     changeStatus: {
       backgroundColor: color.changeStatus.background
@@ -208,7 +209,7 @@ interface FlattenFlightRequirment {
   rsxWeekDay4?: Rsx;
   rsxWeekDay5?: Rsx;
   rsxWeekDay6?: Rsx;
-  change: boolean;
+  hasTimeChange: boolean;
   aircraftType: string;
   frequency: string;
   realFrequency: number;
@@ -1632,6 +1633,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ preplanName, fromDate, toDate
                           {/* {f.notes.map((n, index) => (
                             <div key={index}>{n}</div>
                           ))} */}
+                          {f.hasTimeChange ? <div>TIM</div> : <Fragment></Fragment>}
                           {f.cancelationNotes.map((n, index) => (
                             <div key={index}>{n}</div>
                           ))}
@@ -1955,7 +1957,7 @@ function calculateFrequency(flattenFlightRequirments: FlattenFlightRequirment[])
 
 function generateMassage(sortedFlattenFlightRequirments: FlattenFlightRequirment[]): void {
   sortedFlattenFlightRequirments.forEach(n => {
-    n.note = n.cancelationNotes.filter(Boolean).join('\r\n');
+    n.note = `${n.hasTimeChange ? 'TIM\r\n' : ''}${n.cancelationNotes.filter(Boolean).join('\r\n')}`;
 
     const originPermission = n.originPermissionsWeekDay
       .filter(f => !n.originPermissionAndPermissionNotesChanges.some(y => f === y.day))
@@ -2134,7 +2136,7 @@ function createFlattenFlightRequirment(leg: FlightLegPackView, date: Date): Flat
     extraFrequency: 0,
     standbyFrequency: 0,
     note: '',
-    change: false,
+    hasTimeChange: leg.flightPackView.hasTimeChange,
     excelDestinationPermissions: '',
     frequency: '',
     nextFlights: [],

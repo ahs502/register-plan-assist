@@ -51,6 +51,7 @@ export default class FlightPackView {
   readonly originPermissionAndPermissionNotesChange: FlightLegPermission[];
   readonly destinationPermissionAndPermissionNotesChange: FlightLegPermission[];
   readonly rsxChangeNote: string | undefined;
+  readonly hasTimeChange: boolean;
 
   readonly icons: readonly string[]; //TODO: Check if it is really required.
 
@@ -110,6 +111,11 @@ export default class FlightPackView {
     this.originPermissionAndPermissionNotesChange = generateOriginPermissionAndPermissionNotesChangeNotes().filter(Boolean);
     this.destinationPermissionAndPermissionNotesChange = generateDestinationPermissionAndPermissionNotesChangeNotes().filter(Boolean);
     this.rsxChangeNote = generateRsxChangeNotes();
+
+    this.hasTimeChange = sourceFlight.legs.some(
+      (l, index) =>
+        l.std.compare(sourceFlight.dayFlightRequirement.route[index].stdLowerBound) !== 0 || l.blockTime.compare(sourceFlight.dayFlightRequirement.route[index].blockTime) !== 0
+    );
 
     function generateCanalationNotes(): string | undefined {
       if (diffInWeek === sortedFlights.length) {

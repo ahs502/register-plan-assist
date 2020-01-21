@@ -1799,7 +1799,9 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
               aLeg.stdUpperBound !== bLeg.stdUpperBound ||
               aLeg.blockTime !== bLeg.blockTime ||
               aLeg.originPermission !== bLeg.originPermission ||
-              aLeg.destinationPermission !== bLeg.destinationPermission
+              aLeg.destinationPermission !== bLeg.destinationPermission ||
+              aLeg.originPermissionNote !== bLeg.originPermissionNote ||
+              aLeg.destinationPermissionNote !== bLeg.destinationPermissionNote
             );
           })
         );

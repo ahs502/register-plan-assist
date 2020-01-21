@@ -114,6 +114,9 @@ const useStyles = makeStyles((theme: Theme) => {
       top: 2,
       fontSize: 26
     },
+    permissionNote: {
+      fontFamily: '"Roboto", "Helvetica", "Arial", "sans-serif"'
+    },
     changeStatus: {
       backgroundColor: color.changeStatus.background
     },
@@ -211,13 +214,13 @@ interface FlattenFlightRequirment {
   realFrequency: number;
   standbyFrequency: number;
   extraFrequency: number;
-  destinationNoPermissionsWeekDay: number[];
-  excelDestinationNoPermissions: string;
-  destinationNoPermissions: string[];
+  destinationPermissionsWeekDay: number[];
+  excelDestinationPermissions: string;
+  destinationPermissions: string[];
   destinationPermissionAndPermissionNotesChanges: FlightLegPermission[];
-  originNoPermissionsWeekDay: number[];
-  excelOriginNoPermissions: string;
-  originNoPermissions: string[];
+  originPermissionsWeekDay: number[];
+  excelOriginPermissions: string;
+  originPermissions: string[];
   originPermissionAndPermissionNotesChanges: FlightLegPermission[];
   category?: string;
   nextFlights: FlattenFlightRequirment[];
@@ -599,7 +602,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ preplanName, fromDate, toDate
       if (row.type === 'data') {
         const id = r.cells![idColumnNumber].value;
         const model = flattenFlightRequirments.find(f => f.id === id)!;
-        const weekdayWithoutPermission = model.originNoPermissionsWeekDay.concat(model.destinationNoPermissionsWeekDay).distinct();
+        const weekdayWithoutPermission = model.originPermissionsWeekDay.concat(model.destinationPermissionsWeekDay).distinct();
 
         weekdayWithoutPermission.forEach(c => {
           r!.cells![weekDaySaturdayCellNumber + c].color = color.noPermission.color;
@@ -624,7 +627,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ preplanName, fromDate, toDate
     rows && proposalExporter.props.data && insertDividerBetweenRealFlightAndStantbyFlight(proposalExporter.props.data, rows);
 
     proposalExporter.save(options);
-    console.log('exit exportToExcel');
+
     function setFontSizeForDayColumns(model: FlattenFlightRequirment, workbookSheetRow: WorkbookSheetRow) {
       Array.range(0, 6).forEach(d => {
         const weekDayStatus = (model.status as any)['weekDay' + d.toString()] as WeekDayStatus;
@@ -1327,7 +1330,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ preplanName, fromDate, toDate
               {viewState.showSlot && (
                 <ExcelExportColumn
                   title={['DESTINATION', 'SLOT (LCL)'].join('\r\n')}
-                  field="excelDestinationNoPermissions"
+                  field="excelDestinationPermissions"
                   width={70}
                   cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 }, borderLeft: { color: '#000000', size: 3 } }}
                   headerCellOptions={{
@@ -1345,7 +1348,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ preplanName, fromDate, toDate
               {viewState.showSlot && (
                 <ExcelExportColumn
                   title={['ORIGIN', 'SLOT (UTC)'].join('\r\n')}
-                  field="excelOriginNoPermissions"
+                  field="excelOriginPermissions"
                   width={85}
                   cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 }, borderLeft: { color: '#000000', size: 3 } }}
                   headerCellOptions={{
@@ -1638,14 +1641,18 @@ const ProposalReport: FC<ProposalReportProps> = ({ preplanName, fromDate, toDate
                       {viewState.showSlot && (
                         <Fragment>
                           <TableCell className={classes.border} align="center">
-                            {f.destinationNoPermissions.map((n, index) => (
-                              <div key={index}>{n}</div>
+                            {f.destinationPermissions.map((n, index) => (
+                              <pre key={index} className={classes.permissionNote}>
+                                {n}
+                              </pre>
                             ))}
                           </TableCell>
 
                           <TableCell className={classes.border} align="center">
-                            {f.originNoPermissions.map((n, index) => (
-                              <div key={index}>{n}</div>
+                            {f.originPermissions.map((n, index) => (
+                              <pre key={index} className={classes.permissionNote}>
+                                {n}
+                              </pre>
                             ))}
                           </TableCell>
                         </Fragment>
@@ -1948,40 +1955,39 @@ function calculateFrequency(flattenFlightRequirments: FlattenFlightRequirment[])
 
 function generateMassage(sortedFlattenFlightRequirments: FlattenFlightRequirment[]): void {
   sortedFlattenFlightRequirments.forEach(n => {
-    // n.note = n.notes
-    //   .filter(Boolean)
-    //   .concat(n.cancelationNotes)
-    //   .join('\r\n');
-
     n.note = n.cancelationNotes.filter(Boolean).join('\r\n');
-    const destinationNoPermission = n.destinationNoPermissionsWeekDay
-      .filter(f => !n.destinationPermissionAndPermissionNotesChanges.some(y => f === y.day))
-      .map(w => Weekday[w].substring(0, 3))
-      .join(',');
 
-    n.destinationNoPermissions = n.destinationPermissionAndPermissionNotesChanges
-      .map(n => n.note)
-      .concat(
-        n.destinationNoPermissionsWeekDay.length === 0 && n.destinationPermissionAndPermissionNotesChanges.length === 0
-          ? 'OK'
-          : destinationNoPermission
-          ? 'NOT OK for: ' + destinationNoPermission
-          : ''
-      );
-    n.excelDestinationNoPermissions = n.destinationNoPermissions.filter(Boolean).join('\r\n');
-
-    const originNoPermission = n.originNoPermissionsWeekDay
+    const originPermission = n.originPermissionsWeekDay
       .filter(f => !n.originPermissionAndPermissionNotesChanges.some(y => f === y.day))
       .map(w => Weekday[w].substring(0, 3))
       .join(',');
 
-    n.originNoPermissions = n.originPermissionAndPermissionNotesChanges
-      .map(n => n.note)
-      .concat(
-        n.originNoPermissionsWeekDay.length === 0 && n.originPermissionAndPermissionNotesChanges.length === 0 ? 'OK' : originNoPermission ? 'NOT OK for: ' + originNoPermission : ''
-      );
+    n.originPermissions.push(...n.originPermissionAndPermissionNotesChanges.map(n => n.userNote));
+    n.originPermissions.push(...n.originPermissionAndPermissionNotesChanges.map(n => n.generatedNote));
 
-    n.excelOriginNoPermissions = n.originNoPermissions.filter(Boolean).join('\r\n');
+    n.originPermissions.push(
+      n.originPermissionsWeekDay.length === 0 && n.originPermissionAndPermissionNotesChanges.length === 0 ? 'OK' : originPermission ? 'NOT OK for: ' + originPermission : ''
+    );
+
+    n.excelOriginPermissions = n.originPermissions.filter(Boolean).join('\r\n');
+
+    const destinationPermission = n.destinationPermissionsWeekDay
+      .filter(f => !n.destinationPermissionAndPermissionNotesChanges.some(y => f === y.day))
+      .map(w => Weekday[w].substring(0, 3))
+      .join(',');
+
+    n.destinationPermissions.push(...n.destinationPermissionAndPermissionNotesChanges.map(n => n.userNote));
+    n.destinationPermissions.push(...n.destinationPermissionAndPermissionNotesChanges.map(n => n.generatedNote));
+
+    n.destinationPermissions.push(
+      n.destinationPermissionsWeekDay.length === 0 && n.destinationPermissionAndPermissionNotesChanges.length === 0
+        ? 'OK'
+        : destinationPermission
+        ? 'NOT OK for: ' + destinationPermission
+        : ''
+    );
+
+    n.excelDestinationPermissions = n.destinationPermissions.filter(Boolean).join('\r\n');
   });
 }
 
@@ -2116,12 +2122,12 @@ function createFlattenFlightRequirment(leg: FlightLegPackView, date: Date): Flat
       .map(t => t.entity.name)
       .join('/'),
 
-    destinationNoPermissionsWeekDay: [] as number[],
+    destinationPermissionsWeekDay: [] as number[],
     destinationPermissionAndPermissionNotesChanges: [] as FlightLegPermission[],
-    destinationNoPermissions: [] as string[],
-    originNoPermissionsWeekDay: [] as number[],
+    destinationPermissions: [] as string[],
+    originPermissionsWeekDay: [] as number[],
     originPermissionAndPermissionNotesChanges: [] as FlightLegPermission[],
-    originNoPermissions: [] as string[],
+    originPermissions: [] as string[],
     label: leg.label,
     category: leg.category,
     realFrequency: 0,
@@ -2129,10 +2135,10 @@ function createFlattenFlightRequirment(leg: FlightLegPackView, date: Date): Flat
     standbyFrequency: 0,
     note: '',
     change: false,
-    excelDestinationNoPermissions: '',
+    excelDestinationPermissions: '',
     frequency: '',
     nextFlights: [],
-    excelOriginNoPermissions: '',
+    excelOriginPermissions: '',
     parentRoute: parentRoute,
     previousFlights: [],
     status: {} as FlattenFlightRequirmentStatus
@@ -2149,12 +2155,12 @@ function updateFlattenFlightRequirment(flattenFlight: FlattenFlightRequirment, l
     flattenFlight.days.push(weekDay);
 
     if (!leg.originPermission) {
-      flattenFlight.originNoPermissionsWeekDay.push(weekDay);
+      flattenFlight.originPermissionsWeekDay.push(weekDay);
     }
 
     if (!leg.destinationPermission) {
       const arrivalWeekDay = flattenFlight.diffLocalStdandLocalSta > 0 ? (weekDay + 1) % 7 : weekDay;
-      flattenFlight.destinationNoPermissionsWeekDay.push(arrivalWeekDay);
+      flattenFlight.destinationPermissionsWeekDay.push(arrivalWeekDay);
     }
   }
 
@@ -2224,14 +2230,14 @@ function formatDateToHHMM(date: Date) {
 }
 
 function hasPermission(flattenFlightRequirment: FlattenFlightRequirment, day: number) {
-  const destinationPermission = flattenFlightRequirment.destinationNoPermissionsWeekDay.includes(day);
-  const domesticPermission = flattenFlightRequirment.originNoPermissionsWeekDay.includes(day);
+  const destinationPermission = flattenFlightRequirment.destinationPermissionsWeekDay.includes(day);
+  const domesticPermission = flattenFlightRequirment.originPermissionsWeekDay.includes(day);
   return !(destinationPermission || domesticPermission);
 }
 
 function halfPermission(flattenFlightRequirment: FlattenFlightRequirment, day: number) {
-  const destinationPermission = flattenFlightRequirment.destinationNoPermissionsWeekDay.includes(day);
-  const domesticPermission = flattenFlightRequirment.originNoPermissionsWeekDay.includes(day);
+  const destinationPermission = flattenFlightRequirment.destinationPermissionsWeekDay.includes(day);
+  const domesticPermission = flattenFlightRequirment.originPermissionsWeekDay.includes(day);
   return (destinationPermission && !domesticPermission) || (!destinationPermission && domesticPermission);
 }
 

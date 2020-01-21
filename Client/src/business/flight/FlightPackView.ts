@@ -48,8 +48,8 @@ export default class FlightPackView {
   readonly canclationNote: string | undefined;
   readonly stdChangeNote: string | undefined;
   readonly blockTimeChangeNote: string | undefined;
-  readonly originPermissionAndPermissionNotesChange: (FlightLegPermission | undefined)[];
-  readonly destinationPermissionAndPermissionNotesChange: (FlightLegPermission | undefined)[];
+  readonly originPermissionAndPermissionNotesChange: FlightLegPermission[];
+  readonly destinationPermissionAndPermissionNotesChange: FlightLegPermission[];
   readonly rsxChangeNote: string | undefined;
 
   readonly icons: readonly string[]; //TODO: Check if it is really required.
@@ -180,9 +180,9 @@ export default class FlightPackView {
       );
     }
 
-    function generateOriginPermissionAndPermissionNotesChangeNotes(): (FlightLegPermission | undefined)[] {
+    function generateOriginPermissionAndPermissionNotesChangeNotes(): FlightLegPermission[] {
       return sourceFlight.legs.map((l, index) => {
-        const result = generateChangeNotes(
+        let generatedNote = generateChangeNotes(
           (firstFlight, secondFlight) => firstFlight.legs[index].originPermission === secondFlight.legs[index].originPermission,
           flight => (flight.legs[index].originPermission ? 'OK' : 'NOT OK'),
           changes =>
@@ -199,14 +199,15 @@ export default class FlightPackView {
               .filter(Boolean)
               .join(',')
         );
-
-        return result ? { legIndex: index, day: sourceFlight.day, note: Weekday[sourceFlight.day].substr(0, 3) + ': ' + result } : undefined;
+        generatedNote = generatedNote ? Weekday[sourceFlight.day].substr(0, 3) + ': ' + generatedNote : '';
+        const userNote = l.originPermissionNote ? Weekday[sourceFlight.day].substr(0, 3) + ': ' + l.originPermissionNote : '';
+        return { legIndex: index, day: sourceFlight.day, generatedNote, userNote };
       });
     }
 
-    function generateDestinationPermissionAndPermissionNotesChangeNotes(): (FlightLegPermission | undefined)[] {
+    function generateDestinationPermissionAndPermissionNotesChangeNotes(): FlightLegPermission[] {
       return sourceFlight.legs.map((l, index) => {
-        const result = generateChangeNotes(
+        let generatedNote = generateChangeNotes(
           (firstFlight, secondFlight) => firstFlight.legs[index].destinationPermission === secondFlight.legs[index].destinationPermission,
           flight => (flight.legs[index].destinationPermission ? 'OK' : 'NOT OK'),
           changes =>
@@ -223,8 +224,9 @@ export default class FlightPackView {
               .filter(Boolean)
               .join(',')
         );
-
-        return result ? { legIndex: index, day: sourceFlight.day, note: Weekday[sourceFlight.day].substr(0, 3) + ': ' + result } : undefined;
+        generatedNote = generatedNote ? Weekday[sourceFlight.day].substr(0, 3) + ': ' + generatedNote : '';
+        const userNote = l.destinationPermissionNote ? Weekday[sourceFlight.day].substr(0, 3) + ': ' + l.destinationPermissionNote : '';
+        return { legIndex: index, day: sourceFlight.day, generatedNote, userNote };
       });
     }
 
@@ -291,5 +293,6 @@ export default class FlightPackView {
 export interface FlightLegPermission {
   legIndex: number;
   day: number;
-  note: string;
+  generatedNote: string;
+  userNote: string;
 }

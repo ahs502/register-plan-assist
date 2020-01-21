@@ -54,6 +54,8 @@ export default class FlightLeg implements ModelConvertable<FlightLegModel>, Obje
   readonly blockTime: Daytime;
   readonly originPermission: boolean;
   readonly destinationPermission: boolean;
+  readonly originPermissionNote: string | undefined;
+  readonly destinationPermissionNote: string | undefined;
 
   // Computational:
   readonly derivedId: Id;
@@ -107,6 +109,8 @@ export default class FlightLeg implements ModelConvertable<FlightLegModel>, Obje
     this.blockTime = (this.change?.dayFlightRequirementLeg ?? dayFlightRequirementLeg).blockTime;
     this.originPermission = (this.change?.dayFlightRequirementLeg ?? dayFlightRequirementLeg).originPermission;
     this.destinationPermission = (this.change?.dayFlightRequirementLeg ?? dayFlightRequirementLeg).destinationPermission;
+    this.originPermissionNote = (this.change?.dayFlightRequirementLeg ?? dayFlightRequirementLeg).originPermissionNote;
+    this.destinationPermissionNote = (this.change?.dayFlightRequirementLeg ?? dayFlightRequirementLeg).destinationPermissionNote;
 
     this.derivedId = `${flight.id}#${this.index}`;
     this.sta = new Daytime(this.std.minutes + this.blockTime.minutes);

@@ -1,5 +1,5 @@
 import React, { FC, useState, Fragment, useEffect, useMemo, useContext } from 'react';
-import { Theme, InputLabel, TextField, TableHead, TableCell, Table, TableRow, TableBody, Button, Paper, Typography, Grid } from '@material-ui/core';
+import { Theme, InputLabel, TextField, TableHead, TableCell, Table, TableRow, TableBody, Button, Paper, Typography, Grid, FormControlLabel, Checkbox } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import MasterData, { Airport } from 'src/business/master-data';
 import Weekday from '@core/types/Weekday';
@@ -16,6 +16,8 @@ import AutoComplete from 'src/components/AutoComplete';
 import { PreplanContext } from 'src/pages/preplan';
 import Week from 'src/business/Week';
 import SelectWeeks, { WeekSelection } from 'src/components/preplan/SelectWeeks';
+import PreplanService from 'src/services/PreplanService';
+import { useSnackbar } from 'notistack';
 
 const errorPaperSize = 250;
 const character = {
@@ -112,6 +114,8 @@ interface ViewState {
   baseDate: string;
   maxConnectionTime: string;
   minConnectionTime: string;
+  autoCommit: boolean;
+  commitMessage: string;
 }
 
 interface ReportDateRangeState {
@@ -227,6 +231,7 @@ interface Airline extends AutoCompleteOption {}
 
 const ConnectionsReport: FC<ConnectionsReportProps> = ({ preplanName, fromDate, toDate }) => {
   const preplan = useContext(PreplanContext);
+  const { enqueueSnackbar } = useSnackbar();
 
   const [reportDateRange, setReportDateRange] = useState<ReportDateRangeState>({
     startDate: dataTypes.utcDate.convertBusinessToView(fromDate),
@@ -267,7 +272,9 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ preplanName, fromDate, 
     endDate: dataTypes.utcDate.convertBusinessToView(toDate),
     baseDate: dataTypes.utcDate.convertBusinessToView(fromDate),
     maxConnectionTime: dataTypes.daytime.convertModelToView(300),
-    minConnectionTime: dataTypes.daytime.convertModelToView(70)
+    minConnectionTime: dataTypes.daytime.convertModelToView(70),
+    autoCommit: false,
+    commitMessage: ''
   }));
 
   const [connectionTableDataModel, setConnectionTableDataModel] = useState<{ [index: string]: any }[]>([]);
@@ -606,7 +613,7 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ preplanName, fromDate, 
       <Button
         variant="outlined"
         color="primary"
-        onClick={() => {
+        onClick={async () => {
           if (connectionTableExporter) {
             const options = connectionTableExporter.workbookOptions();
             const rows = options && options.sheets && options.sheets[0] && options.sheets[0].rows;
@@ -620,6 +627,14 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ preplanName, fromDate, 
             }
 
             connectionTableExporter.save(options);
+
+            if (viewState.autoCommit) {
+              try {
+                await PreplanService.commit(preplan.versions.find(v => v.current)!.id, viewState.commitMessage);
+              } catch (error) {
+                enqueueSnackbar(String(error), { variant: 'error' });
+              }
+            }
           }
         }}
         disabled={!validation.ok}
@@ -745,7 +760,7 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ preplanName, fromDate, 
       <Button
         variant="outlined"
         color="primary"
-        onClick={() => {
+        onClick={async () => {
           if (connectionNumberExporter) {
             const options = connectionNumberExporter.workbookOptions();
             const rows = options && options.sheets && options.sheets[0] && options.sheets[0].rows;
@@ -767,6 +782,14 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ preplanName, fromDate, 
               }
             }
             connectionNumberExporter.save(options);
+
+            if (viewState.autoCommit) {
+              try {
+                await PreplanService.commit(preplan.versions.find(v => v.current)!.id, viewState.commitMessage);
+              } catch (error) {
+                enqueueSnackbar(String(error), { variant: 'error' });
+              }
+            }
           }
         }}
         disabled={!numberOfConnectionValidation.ok}
@@ -1000,6 +1023,19 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ preplanName, fromDate, 
         onChange={({ target: { value: baseDate } }) => setViewState({ ...viewState, baseDate })}
         error={errors.baseDate !== undefined}
         helperText={errors.baseDate}
+      />
+
+      <FormControlLabel
+        control={<Checkbox checked={viewState.autoCommit} onChange={({ target: { checked: autoCommit } }) => setViewState({ ...viewState, autoCommit })} color="primary" />}
+        label={
+          <TextField
+            label="Auto-commit message"
+            onChange={({ target: { value: commitMessage } }) => setViewState({ ...viewState, commitMessage })}
+            disabled={!viewState.autoCommit}
+          ></TextField>
+        }
+        labelPlacement="end"
+        disabled={preplan.readonly}
       />
 
       <br />

@@ -572,27 +572,24 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                         title={scopeIndex === 'BASE' || scopeIndex < 0 ? 'Add a new change' : 'Split the selected change'}
                         onClick={() => {
                           if (scopeIndex === 'BASE' || scopeIndex < 0)
-                            return (
-                              viewState.changeScopes[0]?.startWeekIndex === 0 ||
-                              setViewState(viewState => {
-                                return {
-                                  ...viewState,
-                                  scopeIndex: 0,
-                                  sliderStartIndex: viewState.selectedWeekIndex ?? 0,
-                                  sliderEndIndex: (viewState.selectedWeekIndex ?? 0) + 1,
-                                  changeScopes: [
-                                    {
-                                      ...viewState.baseScope,
-                                      startWeekIndex: viewState.selectedWeekIndex ?? 0,
-                                      endWeekIndex: viewState.selectedWeekIndex ?? 0,
-                                      isTemp: true,
-                                      isNew: true
-                                    },
-                                    ...viewState.changeScopes
-                                  ]
-                                };
-                              })
-                            );
+                            return setViewState(viewState => {
+                              return {
+                                ...viewState,
+                                scopeIndex: 0,
+                                sliderStartIndex: viewState.selectedWeekIndex ?? 0,
+                                sliderEndIndex: (viewState.selectedWeekIndex ?? 0) + 1,
+                                changeScopes: [
+                                  {
+                                    ...viewState.baseScope,
+                                    startWeekIndex: viewState.selectedWeekIndex ?? 0,
+                                    endWeekIndex: viewState.selectedWeekIndex ?? 0,
+                                    isTemp: true,
+                                    isNew: true
+                                  },
+                                  ...viewState.changeScopes
+                                ]
+                              };
+                            });
                           if (viewState.changeScopes[scopeIndex].startWeekIndex === viewState.changeScopes[scopeIndex].endWeekIndex) return;
                           setViewState(viewState => ({
                             ...viewState,

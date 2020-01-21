@@ -151,7 +151,7 @@ const PerplanVersionsModal = createModal<PerplanVersionsModalState, PerplanVersi
                         onClick={async e => {
                           openRemoveVersionModal({ version: v });
                         }}
-                        disabled={!preplan.current && (v.id === preplan.id || v.current)}
+                        disabled={(!preplan.current && (v.id === preplan.id || v.current)) || viewState.versions.length === 1}
                       >
                         <ClearIcon />
                       </IconButton>

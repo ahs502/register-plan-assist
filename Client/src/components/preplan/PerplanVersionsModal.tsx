@@ -1,4 +1,4 @@
-import React, { useState, useContext, Fragment } from 'react';
+import React, { useState, useContext, Fragment, useEffect } from 'react';
 import { Theme, Typography, TableBody, Table, TableRow, TableCell, IconButton } from '@material-ui/core';
 import { Check as CheckIcon, Clear as ClearIcon } from '@material-ui/icons';
 import { makeStyles } from '@material-ui/styles';
@@ -7,9 +7,10 @@ import Preplan from 'src/business/preplan/Preplan';
 import RefiningTextField from 'src/components/RefiningTextField';
 import { dataTypes } from 'src/utils/DataType';
 import PreplanService from 'src/services/PreplanService';
-import { ReloadPreplanContext } from 'src/pages/preplan';
+import { ReloadPreplanContext, PreplanContext } from 'src/pages/preplan';
 import Validation from '@core/node_modules/@ahs502/validation/dist/Validation';
 import { useHistory } from 'react-router-dom';
+import RemoveVersionModal, { useRemoveVersionModalState } from 'src/components/preplan/RemoveVerionsModal';
 
 const useStyles = makeStyles((theme: Theme) => ({
   // The modal specific styles go here...
@@ -48,12 +49,12 @@ export interface PerplanVersionsModalProps extends BaseModalProps<PerplanVersion
 const PerplanVersionsModal = createModal<PerplanVersionsModalState, PerplanVersionsModalProps>(({ state, ...others }) => {
   const reloadPreplan = useContext(ReloadPreplanContext);
 
-  const preplan = state.preplan;
+  const preplan = useContext(PreplanContext);
 
   const [viewState, setViewState] = useState<ViewState>(() => {
     const sortedVersions = preplan.versions.orderByDescending('lastEditDateTime');
     const isLastVersionEqualCurrent = sortedVersions.length >= 2 ? sortedVersions[0].lastEditDateTime.getTime() === sortedVersions[1].lastEditDateTime.getTime() : false;
-    //if (isLastVersionEqualCurrent) sortedVersions.shift();
+
     return {
       description: '',
       versions: sortedVersions,
@@ -62,99 +63,116 @@ const PerplanVersionsModal = createModal<PerplanVersionsModalState, PerplanVersi
     };
   });
 
+  const [removeVersionModalState, openRemoveVersionModal, closeRemoveVersionModal] = useRemoveVersionModalState();
+
   const validation = new ViewStateValidation(viewState);
   const errors = {
     description: viewState.bypassValidation ? undefined : validation.message('DESCRIPTION_*')
   };
 
+  useEffect(() => {
+    setViewState(() => {
+      const sortedVersions = preplan.versions.orderByDescending('lastEditDateTime');
+      const isLastVersionEqualCurrent = sortedVersions.length >= 2 ? sortedVersions[0].lastEditDateTime.getTime() === sortedVersions[1].lastEditDateTime.getTime() : false;
+
+      return {
+        description: '',
+        versions: sortedVersions,
+        bypassValidation: true,
+        isLastVersionEqualCurrent: isLastVersionEqualCurrent
+      };
+    });
+  }, [preplan]);
+
   const history = useHistory();
   const classes = useStyles();
 
   return (
-    <BaseModal
-      {...others}
-      title="Version of this preplan:"
-      actions={[
-        {
-          title: 'Close',
-          canceler: true
-        },
-        {
-          title: 'Commit',
-          action: async () => {
-            viewState.bypassValidation && setViewState({ ...viewState, bypassValidation: false });
-
-            if (!validation.ok) throw 'Invalid form fields.';
-
-            const newPreplanModel = await PreplanService.commit(preplan.versions.find(v => v.current)!.id, viewState.description);
-            await reloadPreplan(newPreplanModel);
+    <Fragment>
+      <BaseModal
+        {...others}
+        title="Version of this preplan:"
+        actions={[
+          {
+            title: 'Close',
+            canceler: true
           },
-          submitter: true,
-          disabled: (!viewState.bypassValidation && !validation.ok) || viewState.isLastVersionEqualCurrent
-        }
-      ]}
-      body={({ handleKeyboardEvent, loading, errorMessage }) => (
-        <div>
-          <Typography>Version of this preplan:</Typography>
-          <Table size="small">
-            <TableBody>
-              {viewState.versions.map(v => (
-                <TableRow hover key={v.id} selected={v.id === preplan.id}>
-                  <TableCell
-                    className={classes.linkTableCell}
-                    onClick={async () => {
-                      history.push('/preplan/' + v.id);
-                      await others.onClose();
-                    }}
-                  >
-                    {v.current ? 'Current' : `${v.lastEditDateTime.format('d')} ${v.lastEditDateTime.format('t')}`}
-                  </TableCell>
-                  <TableCell>
-                    {v.current ? (
-                      <Fragment>
-                        <RefiningTextField
-                          autoFocus
-                          dataType={dataTypes.label}
-                          onChange={({ target: { value: description } }) => setViewState({ ...viewState, description })}
-                          error={errors.description !== undefined}
-                          helperText={errors.description}
-                          onKeyDown={handleKeyboardEvent}
-                          disabled={viewState.isLastVersionEqualCurrent}
-                        />
-                      </Fragment>
-                    ) : (
-                      v.description
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <IconButton
-                      color="inherit"
-                      title="Delete"
-                      onClick={async e => {
-                        loading(true);
-                        e.stopPropagation();
-                        try {
-                          const preplanModel = await PreplanService.remove(v.id, preplan.id);
-                          await reloadPreplan(preplanModel);
-                        } catch (error) {
-                          errorMessage(error);
-                        }
+          {
+            title: 'Commit',
+            action: async () => {
+              viewState.bypassValidation && setViewState({ ...viewState, bypassValidation: false });
 
-                        loading(false);
+              if (!validation.ok) throw 'Invalid form fields.';
+
+              const newPreplanModel = await PreplanService.commit(preplan.versions.find(v => v.current)!.id, viewState.description);
+              await reloadPreplan(newPreplanModel);
+            },
+            submitter: true,
+            disabled: (!viewState.bypassValidation && !validation.ok) || viewState.isLastVersionEqualCurrent
+          }
+        ]}
+        body={({ handleKeyboardEvent, loading, errorMessage }) => (
+          <div>
+            <Typography>Version of this preplan:</Typography>
+            <Table size="small">
+              <TableBody>
+                {viewState.versions.map(v => (
+                  <TableRow hover key={v.id} selected={v.id === preplan.id}>
+                    <TableCell
+                      className={classes.linkTableCell}
+                      onClick={async () => {
+                        history.push('/preplan/' + v.id);
                         await others.onClose();
                       }}
-                      disabled={true || (!preplan.current && (v.id === preplan.id || v.current))}
                     >
-                      <ClearIcon />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
-    />
+                      {v.current ? 'Current' : `${v.lastEditDateTime.format('d')} ${v.lastEditDateTime.format('t')}`}
+                    </TableCell>
+                    <TableCell>
+                      {v.current ? (
+                        <Fragment>
+                          <RefiningTextField
+                            autoFocus
+                            dataType={dataTypes.label}
+                            onChange={({ target: { value: description } }) => setViewState({ ...viewState, description })}
+                            error={errors.description !== undefined}
+                            helperText={errors.description}
+                            onKeyDown={handleKeyboardEvent}
+                            disabled={viewState.isLastVersionEqualCurrent}
+                          />
+                        </Fragment>
+                      ) : (
+                        v.description
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <IconButton
+                        color="inherit"
+                        title="Delete"
+                        onClick={async e => {
+                          openRemoveVersionModal({ version: v });
+                        }}
+                        disabled={!preplan.current && (v.id === preplan.id || v.current)}
+                      >
+                        <ClearIcon />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      />
+      <RemoveVersionModal
+        state={removeVersionModalState}
+        onClose={closeRemoveVersionModal}
+        onRemove={async version => {
+          const preplanModel = await PreplanService.remove(version.id, preplan.id);
+          await reloadPreplan(preplanModel);
+          closeRemoveVersionModal();
+        }}
+      />
+    </Fragment>
   );
 });
 

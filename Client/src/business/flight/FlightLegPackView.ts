@@ -42,6 +42,10 @@ export default class FlightLegPackView {
   readonly blockTime: Daytime;
   readonly originPermission: boolean;
   readonly destinationPermission: boolean;
+  readonly utcStd: Date;
+  readonly localStd: Date;
+  readonly utcSta: Date;
+  readonly localSta: Date;
 
   // Computational:
   readonly derivedId: Id;
@@ -55,8 +59,10 @@ export default class FlightLegPackView {
   readonly weekSta: number;
   readonly stdDateTime: Date;
   readonly staDateTime: Date;
+  readonly hasDstInDeparture: boolean;
+  readonly hasDstInArrival: boolean;
 
-  constructor(flightLeg: FlightLeg, flightPackView: FlightPackView, startWeek: Week, endWeek: Week, week: Week) {
+  constructor(flightLeg: FlightLeg, flightPackView: FlightPackView, week: Week) {
     this.std = flightLeg.std;
 
     this.label = flightLeg.label;
@@ -72,6 +78,10 @@ export default class FlightLegPackView {
     this.blockTime = flightLeg.blockTime;
     this.originPermission = flightLeg.originPermission;
     this.destinationPermission = flightLeg.destinationPermission;
+    this.utcStd = flightLeg.utcStd;
+    this.localStd = flightLeg.localStd;
+    this.utcSta = flightLeg.utcSta;
+    this.localSta = flightLeg.localSta;
 
     this.flightPackView = flightPackView;
     this.flightRequirement = flightLeg.flightRequirement;
@@ -90,7 +100,12 @@ export default class FlightLegPackView {
     this.actualSta = flightLeg.actualSta;
     this.weekStd = flightLeg.weekStd;
     this.weekSta = flightLeg.weekSta;
-
+    this.hasDstInDeparture = flightLeg.departureAirport.utcOffsets.some(
+      u => u.dst && u.startDateTimeUtc.getTime() <= flightLeg.utcStd.getTime() && flightLeg.utcStd.getTime() <= u.endDateTimeUtc.getTime()
+    );
+    this.hasDstInArrival = flightLeg.arrivalAirport.utcOffsets.some(
+      u => u.dst && u.startDateTimeUtc.getTime() <= flightLeg.utcSta.getTime() && flightLeg.utcSta.getTime() <= u.endDateTimeUtc.getTime()
+    );
     // Fields which should be calculated for view:
     this.notes = flightLeg.notes;
     this.stdDateTime = new Date(week.startDate.getTime() + this.weekStd * 60 * 1000);

@@ -69,6 +69,10 @@ export default class FlightLeg implements ModelConvertable<FlightLegModel>, Obje
   readonly weekSta: number;
   readonly stdDateTime: Date;
   readonly staDateTime: Date;
+  readonly utcStd: Date;
+  readonly localStd: Date;
+  readonly utcSta: Date;
+  readonly localSta: Date;
 
   // Inherited:
   readonly objectionStatusDependencies: readonly Objectionable[];
@@ -127,6 +131,10 @@ export default class FlightLeg implements ModelConvertable<FlightLegModel>, Obje
     this.weekSta = this.day * 24 * 60 + this.actualSta.minutes;
     this.stdDateTime = new Date(this.date.getTime() + this.actualStd.minutes * 60 * 1000);
     this.staDateTime = new Date(this.date.getTime() + this.actualSta.minutes * 60 * 1000);
+    this.utcStd = this.actualStd.toDate(this.date);
+    this.localStd = this.departureAirport.convertUtcToLocal(this.utcStd);
+    this.utcSta = this.actualSta.toDate(this.date);
+    this.localSta = this.arrivalAirport.convertUtcToLocal(this.utcSta);
 
     this.objectionStatusDependencies = [this.flightRequirement, this.dayFlightRequirement];
   }

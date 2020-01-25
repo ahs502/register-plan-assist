@@ -1,5 +1,21 @@
 import React, { FC, useState, Fragment, useEffect, useMemo, useContext } from 'react';
-import { Theme, InputLabel, TextField, TableHead, TableCell, Table, TableRow, TableBody, Button, Paper, Typography, Grid, FormControlLabel, Checkbox } from '@material-ui/core';
+import {
+  Theme,
+  InputLabel,
+  TextField,
+  TableHead,
+  TableCell,
+  Table,
+  TableRow,
+  TableBody,
+  Button,
+  Paper,
+  Typography,
+  Grid,
+  FormControlLabel,
+  Checkbox,
+  Box
+} from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import MasterData, { Airport } from 'src/business/master-data';
 import Weekday from '@core/types/Weekday';
@@ -920,128 +936,130 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ preplanName, fromDate, 
 
   return (
     <Fragment>
-      <div className={classes.selectWeekWrapper}>
-        <SelectWeeks
-          includeSides={false}
-          weekSelection={weekSelection}
-          onSelectWeeks={weekSelection => {
-            setWeekSelection(weekSelection);
-            const weekStart = preplan.weeks.all[weekSelection.startIndex];
-            const weekEnd = preplan.weeks.all[weekSelection.endIndex - 1];
-            setReportDateRange({ startDate: dataTypes.utcDate.convertBusinessToView(weekStart.startDate), endDate: dataTypes.utcDate.convertBusinessToView(weekEnd.endDate) });
-            setViewState({ ...viewState, baseDate: dataTypes.utcDate.convertBusinessToView(weekStart.startDate) });
-          }}
+      <Box display="block" displayPrint="none">
+        <div className={classes.selectWeekWrapper}>
+          <SelectWeeks
+            includeSides={false}
+            weekSelection={weekSelection}
+            onSelectWeeks={weekSelection => {
+              setWeekSelection(weekSelection);
+              const weekStart = preplan.weeks.all[weekSelection.startIndex];
+              const weekEnd = preplan.weeks.all[weekSelection.endIndex - 1];
+              setReportDateRange({ startDate: dataTypes.utcDate.convertBusinessToView(weekStart.startDate), endDate: dataTypes.utcDate.convertBusinessToView(weekEnd.endDate) });
+              setViewState({ ...viewState, baseDate: dataTypes.utcDate.convertBusinessToView(weekStart.startDate) });
+            }}
+          />
+        </div>
+
+        <Grid container spacing={2}>
+          <Grid item xs={12}>
+            East Flight
+          </Grid>
+          <Grid item xs={1}>
+            <AutoComplete
+              id="airline"
+              options={allAirline}
+              value={viewState.eastAirportsAirline}
+              onSelect={eastAirportsAirline => {
+                setViewState({ ...viewState, eastAirportsAirline });
+              }}
+              error={errors.eastAirline !== undefined}
+              helperText={errors.eastAirline}
+            />
+          </Grid>
+          <Grid item xs={11}>
+            <MultiSelect
+              id="east-airport"
+              value={viewState.eastAirports}
+              options={allAirports}
+              getOptionLabel={r => r.name}
+              getOptionValue={r => r.id}
+              onSelect={value => {
+                setViewState({ ...viewState, eastAirports: value ? value.orderBy('name') : [] });
+              }}
+              className={classes.marginBottom1}
+              error={errors.eastAirports !== undefined}
+              helperText={errors.eastAirports}
+            />
+          </Grid>
+          <Grid item xs={12}>
+            West Flight
+          </Grid>
+          <Grid item xs={1}>
+            <AutoComplete
+              id="airline"
+              options={allAirline}
+              value={viewState.westAirportsAirline}
+              onSelect={westAirportsAirline => {
+                setViewState({ ...viewState, westAirportsAirline });
+              }}
+              error={errors.westAirline !== undefined}
+              helperText={errors.westAirline}
+            />
+          </Grid>
+          <Grid item xs={11}>
+            <MultiSelect
+              id="west-airport"
+              value={viewState.westAirports}
+              options={allAirports}
+              getOptionLabel={r => r.name}
+              getOptionValue={r => r.id}
+              onSelect={value => {
+                setViewState({ ...viewState, westAirports: value ? value.orderBy('name') : [] });
+              }}
+              error={errors.westAirports !== undefined}
+              helperText={errors.westAirports}
+            />
+          </Grid>
+        </Grid>
+        <br />
+        <RefiningTextField
+          label="Start Date"
+          dataType={dataTypes.utcDate}
+          value={reportDateRange.startDate}
+          onChange={({ target: { value: startDate } }) => setReportDateRange({ ...reportDateRange, startDate })}
+          error={errors.startDate !== undefined}
+          helperText={errors.startDate}
+          disabled
         />
-      </div>
 
-      <Grid container spacing={2}>
-        <Grid item xs={12}>
-          East Flight
-        </Grid>
-        <Grid item xs={1}>
-          <AutoComplete
-            id="airline"
-            options={allAirline}
-            value={viewState.eastAirportsAirline}
-            onSelect={eastAirportsAirline => {
-              setViewState({ ...viewState, eastAirportsAirline });
-            }}
-            error={errors.eastAirline !== undefined}
-            helperText={errors.eastAirline}
-          />
-        </Grid>
-        <Grid item xs={11}>
-          <MultiSelect
-            id="east-airport"
-            value={viewState.eastAirports}
-            options={allAirports}
-            getOptionLabel={r => r.name}
-            getOptionValue={r => r.id}
-            onSelect={value => {
-              setViewState({ ...viewState, eastAirports: value ? value.orderBy('name') : [] });
-            }}
-            className={classes.marginBottom1}
-            error={errors.eastAirports !== undefined}
-            helperText={errors.eastAirports}
-          />
-        </Grid>
-        <Grid item xs={12}>
-          West Flight
-        </Grid>
-        <Grid item xs={1}>
-          <AutoComplete
-            id="airline"
-            options={allAirline}
-            value={viewState.westAirportsAirline}
-            onSelect={westAirportsAirline => {
-              setViewState({ ...viewState, westAirportsAirline });
-            }}
-            error={errors.westAirline !== undefined}
-            helperText={errors.westAirline}
-          />
-        </Grid>
-        <Grid item xs={11}>
-          <MultiSelect
-            id="west-airport"
-            value={viewState.westAirports}
-            options={allAirports}
-            getOptionLabel={r => r.name}
-            getOptionValue={r => r.id}
-            onSelect={value => {
-              setViewState({ ...viewState, westAirports: value ? value.orderBy('name') : [] });
-            }}
-            error={errors.westAirports !== undefined}
-            helperText={errors.westAirports}
-          />
-        </Grid>
-      </Grid>
-      <br />
-      <RefiningTextField
-        label="Start Date"
-        dataType={dataTypes.utcDate}
-        value={reportDateRange.startDate}
-        onChange={({ target: { value: startDate } }) => setReportDateRange({ ...reportDateRange, startDate })}
-        error={errors.startDate !== undefined}
-        helperText={errors.startDate}
-        disabled
-      />
+        <RefiningTextField
+          label="End Date"
+          dataType={dataTypes.utcDate}
+          value={reportDateRange.endDate}
+          onChange={({ target: { value: endDate } }) => setReportDateRange({ ...reportDateRange, endDate })}
+          error={errors.endDate !== undefined}
+          helperText={errors.endDate}
+          disabled
+        />
 
-      <RefiningTextField
-        label="End Date"
-        dataType={dataTypes.utcDate}
-        value={reportDateRange.endDate}
-        onChange={({ target: { value: endDate } }) => setReportDateRange({ ...reportDateRange, endDate })}
-        error={errors.endDate !== undefined}
-        helperText={errors.endDate}
-        disabled
-      />
+        <RefiningTextField
+          label="Base Date"
+          dataType={dataTypes.utcDate}
+          value={viewState.baseDate}
+          onChange={({ target: { value: baseDate } }) => setViewState({ ...viewState, baseDate })}
+          error={errors.baseDate !== undefined}
+          helperText={errors.baseDate}
+        />
 
-      <RefiningTextField
-        label="Base Date"
-        dataType={dataTypes.utcDate}
-        value={viewState.baseDate}
-        onChange={({ target: { value: baseDate } }) => setViewState({ ...viewState, baseDate })}
-        error={errors.baseDate !== undefined}
-        helperText={errors.baseDate}
-      />
+        <FormControlLabel
+          control={<Checkbox checked={viewState.autoCommit} onChange={({ target: { checked: autoCommit } }) => setViewState({ ...viewState, autoCommit })} color="primary" />}
+          label={
+            <TextField
+              label="Auto-commit message"
+              onChange={({ target: { value: commitMessage } }) => setViewState({ ...viewState, commitMessage })}
+              disabled={!viewState.autoCommit}
+            ></TextField>
+          }
+          labelPlacement="end"
+          disabled={preplan.readonly}
+        />
 
-      <FormControlLabel
-        control={<Checkbox checked={viewState.autoCommit} onChange={({ target: { checked: autoCommit } }) => setViewState({ ...viewState, autoCommit })} color="primary" />}
-        label={
-          <TextField
-            label="Auto-commit message"
-            onChange={({ target: { value: commitMessage } }) => setViewState({ ...viewState, commitMessage })}
-            disabled={!viewState.autoCommit}
-          ></TextField>
-        }
-        labelPlacement="end"
-        disabled={preplan.readonly}
-      />
+        <br />
+        <br />
 
-      <br />
-      <br />
-
-      {<div className={classNames(classes.export, classes.marginBottom1)}>{exportConnectionTable}</div>}
+        {<div className={classNames(classes.export, classes.marginBottom1)}>{exportConnectionTable}</div>}
+      </Box>
       {validation.ok ? (
         <div className={classes.tableContainer}>{connectionTable}</div>
       ) : (
@@ -1055,28 +1073,30 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ preplanName, fromDate, 
       <br />
       <br />
 
-      <RefiningTextField
-        label="Minimum Connection Time"
-        dataType={dataTypes.daytime}
-        value={viewState.minConnectionTime}
-        onChange={({ target: { value: minConnectionTime } }) => setViewState({ ...viewState, minConnectionTime })}
-        error={errors.minConnectionTime !== undefined}
-        helperText={errors.minConnectionTime}
-      />
+      <Box display="block" displayPrint="none">
+        <RefiningTextField
+          label="Minimum Connection Time"
+          dataType={dataTypes.daytime}
+          value={viewState.minConnectionTime}
+          onChange={({ target: { value: minConnectionTime } }) => setViewState({ ...viewState, minConnectionTime })}
+          error={errors.minConnectionTime !== undefined}
+          helperText={errors.minConnectionTime}
+        />
 
-      <RefiningTextField
-        label="Maximum Connection Time"
-        dataType={dataTypes.daytime}
-        value={viewState.maxConnectionTime}
-        onChange={({ target: { value: maxConnectionTime } }) => setViewState({ ...viewState, maxConnectionTime })}
-        error={errors.maxConnectionTime !== undefined}
-        helperText={errors.maxConnectionTime}
-      />
+        <RefiningTextField
+          label="Maximum Connection Time"
+          dataType={dataTypes.daytime}
+          value={viewState.maxConnectionTime}
+          onChange={({ target: { value: maxConnectionTime } }) => setViewState({ ...viewState, maxConnectionTime })}
+          error={errors.maxConnectionTime !== undefined}
+          helperText={errors.maxConnectionTime}
+        />
 
-      <br />
-      <br />
+        <br />
+        <br />
 
-      {<div className={classNames(classes.export, classes.marginBottom1)}>{exportConnectionNumber}</div>}
+        {<div className={classNames(classes.export, classes.marginBottom1)}>{exportConnectionNumber}</div>}
+      </Box>
       {numberOfConnectionValidation.ok ? (
         <div className={classes.tableContainer}>{connectionNumber}</div>
       ) : (

@@ -48,9 +48,11 @@ export default class FlightPackView {
   readonly canclationNote: string | undefined;
   readonly stdChangeNote: string | undefined;
   readonly blockTimeChangeNote: string | undefined;
-  readonly originPermissionAndPermissionNotesChange: (FlightLegPermission | undefined)[];
-  readonly destinationPermissionAndPermissionNotesChange: (FlightLegPermission | undefined)[];
+  readonly originPermissionAndPermissionNotesChange: FlightLegPermission[];
+  readonly destinationPermissionAndPermissionNotesChange: FlightLegPermission[];
   readonly rsxChangeNote: string | undefined;
+  readonly hasTimeChange: boolean;
+  readonly inDstChange: boolean;
 
   readonly icons: readonly string[]; //TODO: Check if it is really required.
 
@@ -64,7 +66,7 @@ export default class FlightPackView {
     this.dayFlightRequirement = sourceFlight.dayFlightRequirement;
     this.flights = flights;
 
-    this.legs = sourceFlight.legs.map(l => new FlightLegPackView(l, this, startWeek, endWeek, week));
+    this.legs = sourceFlight.legs.map(l => new FlightLegPackView(l, this, week));
 
     this.label = sourceFlight.label;
     this.category = sourceFlight.category;
@@ -95,6 +97,12 @@ export default class FlightPackView {
 
     const flightDay = sourceFlight.day;
     const startDate = new Date(startWeek.startDate).addDays(flightDay);
+
+    const flightAirports = sourceFlight.legs
+      .map(l => l.departureAirport)
+      .concat(sourceFlight.legs.map(l => l.arrivalAirport))
+      .distinct();
+
     const allDays = Array.range(0, diffInWeek - 1).map(d => {
       return new Date(startDate).addDays(d * 7);
     });
@@ -102,9 +110,54 @@ export default class FlightPackView {
     if (allDays[0] < preplanStartDate) allDays.shift();
     if (allDays[allDays.length - 1] > preplanEndDate) allDays.pop();
 
+    const utcOffsets = flightAirports
+      .map(a => a.utcOffsets.find(u => u.dst && u.startDateTimeUtc.getTime() <= sourceFlight.date.getTime() && sourceFlight.date.getTime() <= u.endDateTimeUtc.getTime()))
+      .filter(Boolean);
+
+    utcOffsets.forEach(u => {
+      if (u === undefined) return;
+      while (allDays[0].getTime() < u.startDateTimeUtc.getTime()) {
+        allDays.shift();
+      }
+      while (allDays[allDays.length - 1].getTime() > u.endDateTimeUtc.getTime()) {
+        allDays.pop();
+      }
+    });
+
+    if (utcOffsets.length === 0) {
+      flightAirports.forEach(a => {
+        a.utcOffsets
+          .orderBy(n => n.startDateTimeUtc)
+          .forEach(u => {
+            if (!u.dst) return;
+            while (allDays[0].getTime() < u.endDateTimeUtc.getTime() && u.endDateTimeUtc.getTime() < allDays[allDays.length - 1].getTime()) {
+              allDays.shift();
+            }
+            while (allDays[allDays.length - 1].getTime() > u.startDateTimeUtc.getTime() && u.startDateTimeUtc.getTime() > allDays[0].getTime()) {
+              allDays.pop();
+            }
+          });
+      });
+    }
     const sortedFlights = flights.orderBy('date');
 
-    this.canclationNote = generateCanalationNotes();
+    this.hasTimeChange = sourceFlight.legs.some(
+      (l, index) =>
+        l.std.compare(sourceFlight.dayFlightRequirement.route[index].stdLowerBound) !== 0 || l.blockTime.compare(sourceFlight.dayFlightRequirement.route[index].blockTime) !== 0
+    );
+
+    this.inDstChange = false;
+    for (let index = 0; index < flightAirports.length; index++) {
+      const airport = flightAirports[index];
+      this.inDstChange =
+        this.legs
+          .map(n => (n.departureAirport === airport ? n.hasDstInDeparture : n.arrivalAirport == airport ? n.hasDstInArrival : undefined))
+          .filter(f => f !== undefined)
+          .distinct().length > 1;
+      if (this.inDstChange) break;
+    }
+
+    this.canclationNote = !this.inDstChange ? generateCanalationNotes() : '';
     this.stdChangeNote = generateStdChangeNotes();
     this.blockTimeChangeNote = generateBlockTimeChangeNotes();
     this.originPermissionAndPermissionNotesChange = generateOriginPermissionAndPermissionNotesChangeNotes().filter(Boolean);
@@ -180,51 +233,59 @@ export default class FlightPackView {
       );
     }
 
-    function generateOriginPermissionAndPermissionNotesChangeNotes(): (FlightLegPermission | undefined)[] {
+    function generateOriginPermissionAndPermissionNotesChangeNotes(): FlightLegPermission[] {
       return sourceFlight.legs.map((l, index) => {
-        const result = generateChangeNotes(
-          (firstFlight, secondFlight) => firstFlight.legs[index].originPermission === secondFlight.legs[index].originPermission,
-          flight => (flight.legs[index].originPermission ? 'OK' : 'NOT OK'),
-          changes =>
-            changes
-              .map(n =>
-                n.dates.length >= 2
-                  ? `${n.change} ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]} TILL ${n.dates[n.dates.length - 1].getUTCDate()}${
-                      ShortMonthNames[n.dates[n.dates.length - 1].getMonth()]
-                    }`
-                  : n.dates.length === 1
-                  ? `${n.change} ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]}`
-                  : undefined
-              )
-              .filter(Boolean)
-              .join(',')
-        );
+        const generatedNote =
+          generateChangeNotes(
+            (firstFlight, secondFlight) =>
+              firstFlight.legs[index].originPermission === secondFlight.legs[index].originPermission &&
+              firstFlight.legs[index].originPermissionNote === secondFlight.legs[index].originPermissionNote,
+            flight => (flight.legs[index].originPermission ? 'OK' : 'NOT OK'),
+            changes => {
+              return changes
+                .map(n =>
+                  n.dates.length >= 2
+                    ? `${n.change} ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]} TILL ${n.dates[n.dates.length - 1].getUTCDate()}${
+                        ShortMonthNames[n.dates[n.dates.length - 1].getMonth()]
+                      }`
+                    : n.dates.length === 1
+                    ? `${n.change} ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]}`
+                    : undefined
+                )
+                .filter(Boolean)
+                .join(',');
+            }
+          ) ?? '';
 
-        return result ? { legIndex: index, day: sourceFlight.day, note: Weekday[sourceFlight.day].substr(0, 3) + ': ' + result } : undefined;
+        const permissions = generatedNote || l.originPermissionNote ? [{ generatedNote, userNote: l.originPermissionNote ?? '' }] : [];
+
+        return { legIndex: index, day: sourceFlight.day, permissions };
       });
     }
 
-    function generateDestinationPermissionAndPermissionNotesChangeNotes(): (FlightLegPermission | undefined)[] {
+    function generateDestinationPermissionAndPermissionNotesChangeNotes(): FlightLegPermission[] {
       return sourceFlight.legs.map((l, index) => {
-        const result = generateChangeNotes(
-          (firstFlight, secondFlight) => firstFlight.legs[index].destinationPermission === secondFlight.legs[index].destinationPermission,
-          flight => (flight.legs[index].destinationPermission ? 'OK' : 'NOT OK'),
-          changes =>
-            changes
-              .map(n =>
-                n.dates.length >= 2
-                  ? `${n.change} ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]} TILL ${n.dates[n.dates.length - 1].getUTCDate()}${
-                      ShortMonthNames[n.dates[n.dates.length - 1].getMonth()]
-                    }`
-                  : n.dates.length === 1
-                  ? `${n.change} ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]}`
-                  : undefined
-              )
-              .filter(Boolean)
-              .join(',')
-        );
+        const generatedNote =
+          generateChangeNotes(
+            (firstFlight, secondFlight) => firstFlight.legs[index].destinationPermission === secondFlight.legs[index].destinationPermission,
+            flight => (flight.legs[index].destinationPermission ? 'OK' : 'NOT OK'),
+            changes =>
+              changes
+                .map(n =>
+                  n.dates.length >= 2
+                    ? `${n.change} ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]} TILL ${n.dates[n.dates.length - 1].getUTCDate()}${
+                        ShortMonthNames[n.dates[n.dates.length - 1].getMonth()]
+                      }`
+                    : n.dates.length === 1
+                    ? `${n.change} ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]}`
+                    : undefined
+                )
+                .filter(Boolean)
+                .join(',')
+          ) ?? '';
 
-        return result ? { legIndex: index, day: sourceFlight.day, note: Weekday[sourceFlight.day].substr(0, 3) + ': ' + result } : undefined;
+        const permissions = generatedNote || l.destinationPermissionNote ? [{ generatedNote, userNote: l.destinationPermissionNote ?? '' }] : [];
+        return { legIndex: index, day: sourceFlight.day, permissions };
       });
     }
 
@@ -281,7 +342,19 @@ export default class FlightPackView {
   }
 
   public static create(flights: readonly Flight[], startWeek: Week, endWeek: Week, week: Week, preplanStartDate: Date, preplanEndDate: Date): FlightPackView[] {
-    const groupFlights = flights.groupBy(f => f.legs.map(t => t.actualStd.minutes.toString() + t.blockTime.minutes.toString() + t.rsx).join());
+    const groupFlights = flights.groupBy(f =>
+      f.legs
+        .map(
+          t =>
+            t.localStd.getUTCHours().toString() +
+            t.localStd.getUTCMinutes().toString() +
+            t.localSta.getUTCHours().toString() +
+            t.localSta.getUTCMinutes().toString() +
+            t.blockTime.minutes.toString() +
+            t.rsx
+        )
+        .join()
+    );
     return Object.values(groupFlights).map(f => new FlightPackView(f, startWeek, endWeek, week, preplanStartDate, preplanEndDate));
   }
 
@@ -291,5 +364,12 @@ export default class FlightPackView {
 export interface FlightLegPermission {
   legIndex: number;
   day: number;
-  note: string;
+  permissions: Permission[];
+}
+
+interface Permission {
+  fromDate?: Date;
+  toDate?: Date;
+  generatedNote: string;
+  userNote: string;
 }

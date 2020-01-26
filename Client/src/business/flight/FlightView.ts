@@ -101,11 +101,11 @@ export default class FlightView {
       const stdChange: string | undefined = generateStdChangeNotes();
       const blockTimeChange: string | undefined = generateBlockTimeChangeNotes();
       const registerChange: string | undefined = generateRegisterChangeNotes();
-      const permissionAndPermissionNotesChange: string | undefined = generatePermissionAndPermissionNotesChangeNotes();
+      //const permissionAndPermissionNotesChange: string | undefined = generatePermissionAndPermissionNotesChangeNotes();
       const notesChange: string | undefined = generateNotesChangeNotes(); //TODO implement
       const rsxChange: string | undefined = generateRsxChangeNotes();
 
-      return [canclationOrActiveationPerDay, stdChange, blockTimeChange, registerChange, permissionAndPermissionNotesChange, notesChange, rsxChange].filter(Boolean).join(',');
+      return [canclationOrActiveationPerDay, stdChange, blockTimeChange, registerChange, notesChange, rsxChange].filter(Boolean).join(',');
 
       function generateCanalationOrActivationNotes(): string | undefined {
         const firstFlight = sortedFlights[0];
@@ -126,9 +126,18 @@ export default class FlightView {
             return groupCancleDay
               .map(n =>
                 n.length >= 2
-                  ? `CNL ${n[0].getUTCDate()}${ShortMonthNames[n[0].getMonth()]} TILL ${n[n.length - 1].getUTCDate()}${ShortMonthNames[n[n.length - 1].getMonth()]}`
+                  ? `CNL ${n[0]
+                      .getUTCDate()
+                      .toString()
+                      .padStart(2, '0')}${ShortMonthNames[n[0].getMonth()]} TILL ${n[n.length - 1]
+                      .getUTCDate()
+                      .toString()
+                      .padStart(2, '0')}${ShortMonthNames[n[n.length - 1].getMonth()]}`
                   : n.length === 1
-                  ? `CNL ${n[0].getUTCDate()}${ShortMonthNames[n[0].getMonth()]}`
+                  ? `CNL ${n[0]
+                      .getUTCDate()
+                      .toString()
+                      .padStart(2, '0')}${ShortMonthNames[n[0].getMonth()]}`
                   : undefined
               )
               .filter(Boolean)
@@ -147,9 +156,18 @@ export default class FlightView {
             return groupActiveDay
               .map(n =>
                 n.length >= 2
-                  ? `FM ${n[0].getUTCDate()}${ShortMonthNames[n[0].getMonth()]} TILL ${n[n.length - 1].getUTCDate()}${ShortMonthNames[n[n.length - 1].getMonth()]}`
+                  ? `FM ${n[0]
+                      .getUTCDate()
+                      .toString()
+                      .padStart(2, '0')}${ShortMonthNames[n[0].getMonth()]} TILL ${n[n.length - 1]
+                      .getUTCDate()
+                      .toString()
+                      .padStart(2, '0')}${ShortMonthNames[n[n.length - 1].getMonth()]}`
                   : n.length === 1
-                  ? `FM ${n[0].getUTCDate()}${ShortMonthNames[n[0].getMonth()]}`
+                  ? `FM ${n[0]
+                      .getUTCDate()
+                      .toString()
+                      .padStart(2, '0')}${ShortMonthNames[n[0].getMonth()]}`
                   : undefined
               )
               .filter(Boolean)
@@ -166,11 +184,18 @@ export default class FlightView {
             changes
               .map(n =>
                 n.dates.length >= 2
-                  ? `TIM ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]} TILL ${n.dates[n.dates.length - 1].getUTCDate()}${
-                      ShortMonthNames[n.dates[n.dates.length - 1].getMonth()]
-                    }`
+                  ? `TIM ${n.dates[0]
+                      .getUTCDate()
+                      .toString()
+                      .padStart(2, '0')}${ShortMonthNames[n.dates[0].getMonth()]} TILL ${n.dates[n.dates.length - 1]
+                      .getUTCDate()
+                      .toString()
+                      .padStart(2, '0')}${ShortMonthNames[n.dates[n.dates.length - 1].getMonth()]}`
                   : n.dates.length === 1
-                  ? `TIM ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]}`
+                  ? `TIM ${n.dates[0]
+                      .getUTCDate()
+                      .toString()
+                      .padStart(2, '0')}${ShortMonthNames[n.dates[0].getMonth()]}`
                   : undefined
               )
               .filter(Boolean)
@@ -186,11 +211,18 @@ export default class FlightView {
             changes
               .map(n =>
                 n.dates.length >= 2
-                  ? `BLK ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]} TILL ${n.dates[n.dates.length - 1].getUTCDate()}${
-                      ShortMonthNames[n.dates[n.dates.length - 1].getMonth()]
-                    }`
+                  ? `BLK ${n.dates[0]
+                      .getUTCDate()
+                      .toString()
+                      .padStart(2, '0')}${ShortMonthNames[n.dates[0].getMonth()]} TILL ${n.dates[n.dates.length - 1]
+                      .getUTCDate()
+                      .toString()
+                      .padStart(2, '0')}${ShortMonthNames[n.dates[n.dates.length - 1].getMonth()]}`
                   : n.dates.length === 1
-                  ? `BLK ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]}`
+                  ? `BLK ${n.dates[0]
+                      .getUTCDate()
+                      .toString()
+                      .padStart(2, '0')}${ShortMonthNames[n.dates[0].getMonth()]}`
                   : undefined
               )
               .filter(Boolean)
@@ -206,11 +238,18 @@ export default class FlightView {
             changes
               .map(n =>
                 n.dates.length >= 2
-                  ? `REG ${n.change} ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]} TILL ${n.dates[n.dates.length - 1].getUTCDate()}${
-                      ShortMonthNames[n.dates[n.dates.length - 1].getMonth()]
-                    }`
+                  ? `REG ${n.change} ${n.dates[0]
+                      .getUTCDate()
+                      .toString()
+                      .padStart(2, '0')}${ShortMonthNames[n.dates[0].getMonth()]} TILL ${n.dates[n.dates.length - 1]
+                      .getUTCDate()
+                      .toString()
+                      .padStart(2, '0')}${ShortMonthNames[n.dates[n.dates.length - 1].getMonth()]}`
                   : n.dates.length === 1
-                  ? `REG ${n.change} ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]}`
+                  ? `REG ${n.change} ${n.dates[0]
+                      .getUTCDate()
+                      .toString()
+                      .padStart(2, '0')}${ShortMonthNames[n.dates[0].getMonth()]}`
                   : undefined
               )
               .filter(Boolean)
@@ -226,11 +265,18 @@ export default class FlightView {
             changes
               .map(n =>
                 n.dates.length >= 2
-                  ? `PER ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]} TILL ${n.dates[n.dates.length - 1].getUTCDate()}${
-                      ShortMonthNames[n.dates[n.dates.length - 1].getMonth()]
-                    }`
+                  ? `PER ${n.dates[0]
+                      .getUTCDate()
+                      .toString()
+                      .padStart(2, '0')}${ShortMonthNames[n.dates[0].getMonth()]} TILL ${n.dates[n.dates.length - 1]
+                      .getUTCDate()
+                      .toString()
+                      .padStart(2, '0')}${ShortMonthNames[n.dates[n.dates.length - 1].getMonth()]}`
                   : n.dates.length === 1
-                  ? `PER ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]}`
+                  ? `PER ${n.dates[0]
+                      .getUTCDate()
+                      .toString()
+                      .padStart(2, '0')}${ShortMonthNames[n.dates[0].getMonth()]}`
                   : undefined
               )
               .filter(Boolean)
@@ -246,11 +292,18 @@ export default class FlightView {
             changes
               .map(n =>
                 n.dates.length >= 2
-                  ? `NTE ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]} TILL ${n.dates[n.dates.length - 1].getUTCDate()}${
-                      ShortMonthNames[n.dates[n.dates.length - 1].getMonth()]
-                    }`
+                  ? `NTE ${n.dates[0]
+                      .getUTCDate()
+                      .toString()
+                      .padStart(2, '0')}${ShortMonthNames[n.dates[0].getMonth()]} TILL ${n.dates[n.dates.length - 1]
+                      .getUTCDate()
+                      .toString()
+                      .padStart(2, '0')}${ShortMonthNames[n.dates[n.dates.length - 1].getMonth()]}`
                   : n.dates.length === 1
-                  ? `NTE ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]}`
+                  ? `NTE ${n.dates[0]
+                      .getUTCDate()
+                      .toString()
+                      .padStart(2, '0')}${ShortMonthNames[n.dates[0].getMonth()]}`
                   : undefined
               )
               .filter(Boolean)
@@ -266,11 +319,18 @@ export default class FlightView {
             changes
               .map(n =>
                 n.dates.length >= 2
-                  ? `RSX ${n.change} ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]} TILL ${n.dates[n.dates.length - 1].getUTCDate()}${
-                      ShortMonthNames[n.dates[n.dates.length - 1].getMonth()]
-                    }`
+                  ? `RSX ${n.change} ${n.dates[0]
+                      .getUTCDate()
+                      .toString()
+                      .padStart(2, '0')}${ShortMonthNames[n.dates[0].getMonth()]} TILL ${n.dates[n.dates.length - 1]
+                      .getUTCDate()
+                      .toString()
+                      .padStart(2, '0')}${ShortMonthNames[n.dates[n.dates.length - 1].getMonth()]}`
                   : n.dates.length === 1
-                  ? `RSX ${n.change} ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]}`
+                  ? `RSX ${n.change} ${n.dates[0]
+                      .getUTCDate()
+                      .toString()
+                      .padStart(2, '0')}${ShortMonthNames[n.dates[0].getMonth()]}`
                   : undefined
               )
               .filter(Boolean)

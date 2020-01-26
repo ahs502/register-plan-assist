@@ -1,5 +1,5 @@
 import React, { FC } from 'react';
-import { Theme, Card, CardContent, Typography, CardActionArea, MenuList, MenuItem, List, ListItem, ListItemText } from '@material-ui/core';
+import { Theme, Card, CardContent, Typography, CardActionArea, MenuList, MenuItem, List, ListItem, ListItemText, Box } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import classNames from 'classnames';
 
@@ -75,15 +75,17 @@ const SectionList: FC<SectionListProps> = ({ children, sections, selectedSection
 
   return (
     <div className={classes.root}>
-      <div className={classes.list}>
-        <List>
-          {sections.map(section => (
-            <ListItem key={section.title} button selected={selectedSection === section} onClick={() => onSectionSelect && onSectionSelect(section)}>
-              <ListItemText primary={<Typography variant="subtitle2">{section.title}</Typography>} />
-            </ListItem>
-          ))}
-        </List>
-      </div>
+      <Box display="block" displayPrint="none">
+        <div className={classes.list}>
+          <List>
+            {sections.map(section => (
+              <ListItem key={section.title} button selected={selectedSection === section} onClick={() => onSectionSelect && onSectionSelect(section)}>
+                <ListItemText primary={<Typography variant="subtitle2">{section.title}</Typography>} />
+              </ListItem>
+            ))}
+          </List>
+        </div>
+      </Box>
       <div className={classes.contents}>
         {selectedSection ? (
           children

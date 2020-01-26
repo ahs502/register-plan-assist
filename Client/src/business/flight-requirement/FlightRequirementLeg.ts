@@ -17,6 +17,8 @@ export default class FlightRequirementLeg implements ModelConvertable<FlightRequ
   readonly stdUpperBound?: Daytime;
   readonly originPermission: boolean;
   readonly destinationPermission: boolean;
+  readonly originPermissionNote: string;
+  readonly destinationPermissionNote: string;
 
   constructor(raw: FlightRequirementLegModel, readonly index: number, readonly flightRequirement: FlightRequirement) {
     this.derivedId = `${flightRequirement.id}#${index}`;
@@ -28,6 +30,8 @@ export default class FlightRequirementLeg implements ModelConvertable<FlightRequ
     this.stdUpperBound = dataTypes.daytime.convertModelToBusinessOptional(raw.stdUpperBound);
     this.originPermission = raw.originPermission;
     this.destinationPermission = raw.destinationPermission;
+    this.originPermissionNote = raw.originPermissionNote;
+    this.destinationPermissionNote = raw.destinationPermissionNote;
   }
 
   extractModel(override?: (flightRequirementLegModel: FlightRequirementLegModel) => FlightRequirementLegModel): FlightRequirementLegModel {
@@ -39,7 +43,9 @@ export default class FlightRequirementLeg implements ModelConvertable<FlightRequ
       stdLowerBound: dataTypes.daytime.convertBusinessToModel(this.stdLowerBound),
       stdUpperBound: dataTypes.daytime.convertBusinessToModelOptional(this.stdUpperBound),
       originPermission: this.originPermission,
-      destinationPermission: this.destinationPermission
+      destinationPermission: this.destinationPermission,
+      originPermissionNote: this.originPermissionNote,
+      destinationPermissionNote: this.destinationPermissionNote
     };
     return override?.(flightRequirementLegModel) ?? flightRequirementLegModel;
   }

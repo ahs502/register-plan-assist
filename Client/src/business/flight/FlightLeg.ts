@@ -54,6 +54,8 @@ export default class FlightLeg implements ModelConvertable<FlightLegModel>, Obje
   readonly blockTime: Daytime;
   readonly originPermission: boolean;
   readonly destinationPermission: boolean;
+  readonly originPermissionNote: string | undefined;
+  readonly destinationPermissionNote: string | undefined;
 
   // Computational:
   readonly derivedId: Id;
@@ -67,6 +69,10 @@ export default class FlightLeg implements ModelConvertable<FlightLegModel>, Obje
   readonly weekSta: number;
   readonly stdDateTime: Date;
   readonly staDateTime: Date;
+  readonly utcStd: Date;
+  readonly localStd: Date;
+  readonly utcSta: Date;
+  readonly localSta: Date;
 
   // Inherited:
   readonly objectionStatusDependencies: readonly Objectionable[];
@@ -107,6 +113,8 @@ export default class FlightLeg implements ModelConvertable<FlightLegModel>, Obje
     this.blockTime = (this.change?.dayFlightRequirementLeg ?? dayFlightRequirementLeg).blockTime;
     this.originPermission = (this.change?.dayFlightRequirementLeg ?? dayFlightRequirementLeg).originPermission;
     this.destinationPermission = (this.change?.dayFlightRequirementLeg ?? dayFlightRequirementLeg).destinationPermission;
+    this.originPermissionNote = (this.change?.dayFlightRequirementLeg ?? dayFlightRequirementLeg).originPermissionNote;
+    this.destinationPermissionNote = (this.change?.dayFlightRequirementLeg ?? dayFlightRequirementLeg).destinationPermissionNote;
 
     this.derivedId = `${flight.id}#${this.index}`;
     this.sta = new Daytime(this.std.minutes + this.blockTime.minutes);
@@ -123,6 +131,10 @@ export default class FlightLeg implements ModelConvertable<FlightLegModel>, Obje
     this.weekSta = this.day * 24 * 60 + this.actualSta.minutes;
     this.stdDateTime = new Date(this.date.getTime() + this.actualStd.minutes * 60 * 1000);
     this.staDateTime = new Date(this.date.getTime() + this.actualSta.minutes * 60 * 1000);
+    this.utcStd = this.actualStd.toDate(this.date);
+    this.localStd = this.departureAirport.convertUtcToLocal(this.utcStd);
+    this.utcSta = this.actualSta.toDate(this.date);
+    this.localSta = this.arrivalAirport.convertUtcToLocal(this.utcSta);
 
     this.objectionStatusDependencies = [this.flightRequirement, this.dayFlightRequirement];
   }

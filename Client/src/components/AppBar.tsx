@@ -1,5 +1,5 @@
 import React, { FC, useRef, useState } from 'react';
-import { Theme, AppBar as MaterialUiAppBar, Toolbar, IconButton, Typography, Menu, MenuItem, ButtonBase } from '@material-ui/core';
+import { Theme, AppBar as MaterialUiAppBar, Toolbar, IconButton, Typography, Menu, MenuItem, ButtonBase, Box } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import {
   ArrowBackIos as ArrowBackIcon,
@@ -54,12 +54,14 @@ const AppBar: FC<AppBarProps> = ({ loading }) => {
   return (
     <MaterialUiAppBar position="relative" className={classes.appBarStyle}>
       <Toolbar variant="dense">
-        <IconButton onClick={() => (window.location.href = 'http://apps.mahan.aero/')} color="inherit" title="Back To Other Module">
-          <ArrowBackIcon classes={{ root: classes.backIcon }} />
-        </IconButton>
-        <IconButton color="inherit" onClick={() => window.location.reload()} title={loading ? 'Loading...' : 'Refresh Page'}>
-          <SyncIcon classes={{ root: classNames({ 'animate-spin-reverse': loading }) }} />
-        </IconButton>
+        <Box display="block" displayPrint="none">
+          <IconButton onClick={() => (window.location.href = 'http://apps.mahan.aero/')} color="inherit" title="Back To Other Module">
+            <ArrowBackIcon classes={{ root: classes.backIcon }} />
+          </IconButton>
+          <IconButton color="inherit" onClick={() => window.location.reload()} title={loading ? 'Loading...' : 'Refresh Page'}>
+            <SyncIcon classes={{ root: classNames({ 'animate-spin-reverse': loading }) }} />
+          </IconButton>
+        </Box>
         <Typography classes={{ root: classNames(classes.textMargin, classes.notSelectable) }} variant="h5" color="inherit" title={config.version}>
           RPA
         </Typography>
@@ -88,13 +90,14 @@ const AppBar: FC<AppBarProps> = ({ loading }) => {
         </Menu>
 
         <div className={classes.grow} />
-
-        <IconButton color="inherit" title="Select Module">
-          <ViewModuleIcon />
-        </IconButton>
-        <IconButton color="inherit" title={fullScreen ? 'Exit Full Screen' : 'Full Screen'} onClick={() => toggleFullScreen()}>
-          {fullScreen ? <ExitFullScreenIcon /> : <FullScreenIcon />}
-        </IconButton>
+        <Box display="block" displayPrint="none">
+          <IconButton color="inherit" title="Select Module">
+            <ViewModuleIcon />
+          </IconButton>
+          <IconButton color="inherit" title={fullScreen ? 'Exit Full Screen' : 'Full Screen'} onClick={() => toggleFullScreen()}>
+            {fullScreen ? <ExitFullScreenIcon /> : <FullScreenIcon />}
+          </IconButton>
+        </Box>
         <i className={classNames('rpa-icon-mahan-air-logo', classes.iconSize)} title="Mahan Air" />
       </Toolbar>
     </MaterialUiAppBar>

@@ -2069,8 +2069,6 @@ function createFlattenFlightRequirmentsFromDailyFlightView(flightViews: FlightPa
           return (
             leg.localStd.getUTCMinutes() === l.localStd.getUTCMinutes() &&
             leg.localStd.getUTCHours() === l.localStd.getUTCHours() &&
-            leg.localSta.getUTCMinutes() === l.localSta.getUTCMinutes() &&
-            leg.localSta.getUTCHours() === l.localSta.getUTCHours() &&
             leg.blockTime.minutes === l.blockTime.minutes &&
             leg.rsx === l.rsx
           );

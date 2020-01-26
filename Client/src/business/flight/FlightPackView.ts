@@ -46,11 +46,8 @@ export default class FlightPackView {
   readonly endDateTime: Date;
   readonly flightDates: Date[];
   readonly canclationNote: string | undefined;
-  readonly stdChangeNote: string | undefined;
-  readonly blockTimeChangeNote: string | undefined;
   readonly originPermissionAndPermissionNotesChange: FlightLegPermission[];
   readonly destinationPermissionAndPermissionNotesChange: FlightLegPermission[];
-  readonly rsxChangeNote: string | undefined;
   readonly hasTimeChange: boolean;
   readonly inDstChange: boolean;
 
@@ -157,12 +154,9 @@ export default class FlightPackView {
       if (this.inDstChange) break;
     }
 
-    this.canclationNote = !this.inDstChange ? generateCanalationNotes() : '';
-    this.stdChangeNote = generateStdChangeNotes();
-    this.blockTimeChangeNote = generateBlockTimeChangeNotes();
+    this.canclationNote = generateCanalationNotes();
     this.originPermissionAndPermissionNotesChange = generateOriginPermissionAndPermissionNotesChangeNotes().filter(Boolean);
     this.destinationPermissionAndPermissionNotesChange = generateDestinationPermissionAndPermissionNotesChangeNotes().filter(Boolean);
-    this.rsxChangeNote = generateRsxChangeNotes();
 
     function generateCanalationNotes(): string | undefined {
       if (diffInWeek === sortedFlights.length) {
@@ -191,46 +185,6 @@ export default class FlightPackView {
 
         return result ? Weekday[sourceFlight.day].substr(0, 3) + ' CNL: ' + result : undefined;
       }
-    }
-
-    function generateStdChangeNotes(): string | undefined {
-      return generateChangeNotes(
-        (firstFlight, secondFlight) => firstFlight.legs.every((l, index) => l.std.compare(secondFlight.legs[index].std) === 0),
-        'Time Change',
-        changes =>
-          changes
-            .map(n =>
-              n.dates.length >= 2
-                ? `TIM ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]} TILL ${n.dates[n.dates.length - 1].getUTCDate()}${
-                    ShortMonthNames[n.dates[n.dates.length - 1].getMonth()]
-                  }`
-                : n.dates.length === 1
-                ? `TIM ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]}`
-                : undefined
-            )
-            .filter(Boolean)
-            .join(',')
-      );
-    }
-
-    function generateBlockTimeChangeNotes(): string | undefined {
-      return generateChangeNotes(
-        (firstFlight, secondFlight) => firstFlight.legs.every((l, index) => l.blockTime.compare(secondFlight.legs[index].blockTime) === 0),
-        'BlockTime Change',
-        changes =>
-          changes
-            .map(n =>
-              n.dates.length >= 2
-                ? `BLK ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]} TILL ${n.dates[n.dates.length - 1].getUTCDate()}${
-                    ShortMonthNames[n.dates[n.dates.length - 1].getMonth()]
-                  }`
-                : n.dates.length === 1
-                ? `BLK ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]}`
-                : undefined
-            )
-            .filter(Boolean)
-            .join(',')
-      );
     }
 
     function generateOriginPermissionAndPermissionNotesChangeNotes(): FlightLegPermission[] {
@@ -289,26 +243,6 @@ export default class FlightPackView {
       });
     }
 
-    function generateRsxChangeNotes(): string | undefined {
-      return generateChangeNotes(
-        (firstFlight, secondFlight) => firstFlight.rsx === secondFlight.rsx,
-        flight => flight.rsx,
-        changes =>
-          changes
-            .map(n =>
-              n.dates.length >= 2
-                ? `RSX ${n.change} ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]} TILL ${n.dates[n.dates.length - 1].getUTCDate()}${
-                    ShortMonthNames[n.dates[n.dates.length - 1].getMonth()]
-                  }`
-                : n.dates.length === 1
-                ? `RSX ${n.change} ${n.dates[0].getUTCDate()}${ShortMonthNames[n.dates[0].getMonth()]}`
-                : undefined
-            )
-            .filter(Boolean)
-            .join(',')
-      );
-    }
-
     function generateChangeNotes(
       comparare: (firstFlight: Flight, secondFlight: Flight) => Boolean,
       change: ((flight: Flight) => string) | string,
@@ -343,17 +277,7 @@ export default class FlightPackView {
 
   public static create(flights: readonly Flight[], startWeek: Week, endWeek: Week, week: Week, preplanStartDate: Date, preplanEndDate: Date): FlightPackView[] {
     const groupFlights = flights.groupBy(f =>
-      f.legs
-        .map(
-          t =>
-            t.localStd.getUTCHours().toString() +
-            t.localStd.getUTCMinutes().toString() +
-            t.localSta.getUTCHours().toString() +
-            t.localSta.getUTCMinutes().toString() +
-            t.blockTime.minutes.toString() +
-            t.rsx
-        )
-        .join()
+      f.legs.map(t => t.localStd.getUTCHours().toString() + t.localStd.getUTCMinutes().toString() + t.blockTime.minutes.toString() + t.rsx).join()
     );
     return Object.values(groupFlights).map(f => new FlightPackView(f, startWeek, endWeek, week, preplanStartDate, preplanEndDate));
   }

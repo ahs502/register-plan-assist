@@ -153,9 +153,11 @@ const useStyles = makeStyles((theme: Theme) => {
     reportRendering: {
       opacity: 0.2
     },
-    dstContianer: {
+    localTimeContianer: {
       position: 'relative',
-      textAlign: 'center'
+      textAlign: 'center',
+      minHeight: 32,
+      minWidth: 43
     },
     dst: {
       position: 'absolute',
@@ -203,7 +205,9 @@ interface FlattenFlightRequirment {
   flightNumber: string;
   fullFlightNumber: string;
   departureAirport: Airport;
+  departureAirportUtcOffset: string;
   arrivalAirport: Airport;
+  arrivalAirportUtcOffset: string;
   std: Daytime;
   sta: Daytime;
   blocktime: number;
@@ -320,6 +324,7 @@ interface ViewState {
   preplanVersion?: Preplan['versions'][number];
   autoCommit: boolean;
   commitMessage: string;
+  showDst: boolean;
 }
 
 interface ReportDateRangeState {
@@ -422,7 +427,8 @@ const ProposalReport: FC<ProposalReportProps> = ({ preplanName, fromDate, toDate
     showSTB2: true,
     showExtra: true,
     autoCommit: false,
-    commitMessage: ''
+    commitMessage: '',
+    showDst: false
   }));
 
   const [dataProvider, setDataProvider] = useState<DataProvider[]>([]);
@@ -1051,11 +1057,20 @@ const ProposalReport: FC<ProposalReportProps> = ({ preplanName, fromDate, toDate
                 />
               </Grid>
 
-              <Grid item xs={3}>
+              <Grid item xs={5}>
                 <FormControlLabel
                   value="start"
                   control={<Checkbox checked={viewState.showExtra} onChange={e => setViewState({ ...viewState, showExtra: e.target.checked })} color="primary" />}
                   label="Show EXT"
+                  labelPlacement="end"
+                />
+              </Grid>
+              <Grid item xs={1}></Grid>
+              <Grid item xs={2}>
+                <FormControlLabel
+                  value="start"
+                  control={<Checkbox checked={viewState.showDst} onChange={({ target: { checked: showDst } }) => setViewState({ ...viewState, showDst })} color="primary" />}
+                  label="Show Dst"
                   labelPlacement="end"
                 />
               </Grid>
@@ -1543,16 +1558,16 @@ const ProposalReport: FC<ProposalReportProps> = ({ preplanName, fromDate, toDate
                       <TableCell className={classes.border}>{f.flightNumber}</TableCell>
                       <TableCell className={classNames(classes.border, f.status.routeChange ? classes.changeStatus : '')}>{f.route}</TableCell>
                       <TableCell className={classNames(classes.border, f.status.localStd && f.status.localStd.isChange ? classes.changeStatus : '')} align="center">
-                        <div className={classes.dstContianer}>
+                        <div className={classes.localTimeContianer}>
                           <div>{f.localStd}</div>
-                          {f.hasDstInDeparture ? <div className={classes.dst}>(DST+1)</div> : <Fragment></Fragment>}
+                          {viewState.showDst ? <div className={classes.dst}>(UTC+{f.departureAirportUtcOffset})</div> : <Fragment></Fragment>}
                         </div>
                       </TableCell>
                       <TableCell className={classNames(classes.border, f.status.localSta && f.status.localSta.isChange ? classes.changeStatus : '')} align="center">
-                        <div className={classes.dstContianer}>
+                        <div className={classes.localTimeContianer}>
                           <div className={f.diffLocalStdandLocalSta !== 0 ? classes.diffContainer : ''}>
                             <div>{f.localSta}</div>
-                            {f.hasDstInArrival ? <div className={classes.dst}>(DST+1)</div> : <Fragment></Fragment>}
+                            {viewState.showDst ? <div className={classes.dst}>(UTC+{f.arrivalAirportUtcOffset})</div> : <Fragment></Fragment>}
                           </div>
                         </div>
                       </TableCell>
@@ -2080,6 +2095,14 @@ function createFlattenFlightRequirment(leg: FlightLegPackView): FlattenFlightReq
   if (diffLocalStdandLocalSta > 1) diffLocalStdandLocalSta = -1;
   if (diffLocalStdandLocalSta < -1) diffLocalStdandLocalSta = 1;
 
+  const departureAirportUtcOffset = leg.departureAirport.getUtcOffsetFromLocalTime(leg.localStd);
+  const departureAirportUtcOffsetMinutes = departureAirportUtcOffset % 60;
+  const departureAirportUtcOffsetHours = (departureAirportUtcOffset - departureAirportUtcOffsetMinutes) / 60;
+
+  const arrivalAirportUtcOffset = leg.arrivalAirport.getUtcOffsetFromLocalTime(leg.localSta);
+  const arrivalAirportUtcOffsetMinutes = arrivalAirportUtcOffset % 60;
+  const arrivalAirportUtcOffsetHours = (arrivalAirportUtcOffset - arrivalAirportUtcOffsetMinutes) / 60;
+
   const flatten: FlattenFlightRequirment = {
     id:
       Math.random()
@@ -2088,8 +2111,10 @@ function createFlattenFlightRequirment(leg: FlightLegPackView): FlattenFlightReq
     baseFlightId: leg.flightPackView.derivedId,
     flightNumber: normalizeFlightNumber(leg.flightNumber),
     fullFlightNumber: leg.flightNumber.toString(),
-    arrivalAirport: leg.arrivalAirport,
     departureAirport: leg.departureAirport,
+    departureAirportUtcOffset: String(departureAirportUtcOffsetHours) + String(departureAirportUtcOffsetMinutes).padStart(2, '0'),
+    arrivalAirport: leg.arrivalAirport,
+    arrivalAirportUtcOffset: String(arrivalAirportUtcOffsetHours) + String(arrivalAirportUtcOffsetMinutes).padStart(2, '0'),
     blocktime: leg.blockTime.minutes,
     formatedBlockTime: dataTypes.daytime.convertBusinessToView(leg.blockTime),
     days: [] as number[],

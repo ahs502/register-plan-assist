@@ -2,7 +2,7 @@ import DayFlightRequirement from 'src/business/flight-requirement/DayFlightRequi
 import FlightRequirement from 'src/business/flight-requirement/FlightRequirement';
 import Daytime from '@core/types/Daytime';
 import PreplanAircraftRegister, { PreplanAircraftRegisters } from 'src/business/preplan/PreplanAircraftRegister';
-import { Stc } from 'src/business/master-data';
+import MasterData, { Stc } from 'src/business/master-data';
 import Rsx from '@core/types/Rsx';
 import Weekday, { Weekdays } from '@core/types/Weekday';
 import Id from '@core/types/Id';
@@ -10,6 +10,7 @@ import Week from 'src/business/Week';
 import Flight from 'src/business/flight/Flight';
 import { ShortMonthNames } from '@core/types/MonthName';
 import FlightLegPackView from 'src/business/flight/FlightLegPackView';
+import MasterDataService from 'src/services/MasterDataService';
 
 export default class FlightPackView {
   // Original:
@@ -48,8 +49,11 @@ export default class FlightPackView {
   readonly canclationNote: string | undefined;
   readonly hasTimeChange: boolean;
   readonly inDstChange: boolean;
+  readonly inIranDst: boolean;
   readonly permissions: FlightLegPermission;
   readonly icons: readonly string[]; //TODO: Check if it is really required.
+  readonly flightPackStartDate: Date;
+  readonly flightPackEndDate: Date;
 
   constructor(flights: readonly Flight[], startWeek: Week, endWeek: Week, week: Week, preplanStartDate: Date, preplanEndDate: Date) {
     const sourceFlight = flights[0];
@@ -105,35 +109,37 @@ export default class FlightPackView {
     if (allDays[0] < preplanStartDate) allDays.shift();
     if (allDays[allDays.length - 1] > preplanEndDate) allDays.pop();
 
-    const utcOffsets = flightAirports
-      .map(a => a.utcOffsets.find(u => u.dst && u.startDateTimeUtc.getTime() <= sourceFlight.date.getTime() && sourceFlight.date.getTime() <= u.endDateTimeUtc.getTime()))
-      .filter(Boolean);
+    const ika = MasterData.all.airports.name['IKA'];
+    const utcOffset = ika.utcOffsets.find(
+      u => u.dst && u.startDateTimeLocal.getTime() <= sourceFlight.legs[0].localStd.getTime() && sourceFlight.legs[0].localStd.getTime() <= u.endDateTimeLocal.getTime()
+    );
 
-    utcOffsets.forEach(u => {
-      if (u === undefined) return;
-      while (allDays[0].getTime() < u.startDateTimeUtc.getTime()) {
+    if (!!utcOffset) {
+      this.inIranDst = true;
+      while (allDays[0] < utcOffset.startDateTimeLocal) {
         allDays.shift();
       }
-      while (allDays[allDays.length - 1].getTime() > u.endDateTimeUtc.getTime()) {
+      while (allDays[allDays.length - 1] >= utcOffset.endDateTimeLocal) {
         allDays.pop();
       }
-    });
-
-    if (utcOffsets.length === 0) {
-      flightAirports.forEach(a => {
-        a.utcOffsets
-          .orderBy(n => n.startDateTimeUtc)
-          .forEach(u => {
-            if (!u.dst) return;
-            while (allDays[0].getTime() < u.endDateTimeUtc.getTime() && u.endDateTimeUtc.getTime() < allDays[allDays.length - 1].getTime()) {
-              allDays.shift();
-            }
-            while (allDays[allDays.length - 1].getTime() > u.startDateTimeUtc.getTime() && u.startDateTimeUtc.getTime() > allDays[0].getTime()) {
-              allDays.pop();
-            }
-          });
-      });
+    } else {
+      this.inIranDst = false;
+      ika.utcOffsets
+        .orderBy(n => n.startDateTimeLocal)
+        .forEach(u => {
+          if (!u.dst) return;
+          while (allDays[0] < u.endDateTimeLocal && u.endDateTimeLocal < allDays[allDays.length - 1]) {
+            allDays.shift();
+          }
+          while (allDays[allDays.length - 1] >= u.startDateTimeLocal && u.startDateTimeLocal >= allDays[0]) {
+            allDays.pop();
+          }
+        });
     }
+
+    this.flightPackStartDate = allDays[0];
+    this.flightPackEndDate = allDays.last()!;
+
     const sortedFlights = flights.orderBy('date');
 
     this.hasTimeChange = sourceFlight.legs.some(
@@ -170,13 +176,7 @@ export default class FlightPackView {
         }, []);
 
         const result = groupCancleDay
-          .map(n =>
-            n.length >= 2
-              ? `${n[0].getUTCDate()}${ShortMonthNames[n[0].getMonth()]} TILL ${n[n.length - 1].getUTCDate()}${ShortMonthNames[n[n.length - 1].getMonth()]}`
-              : n.length === 1
-              ? `${n[0].getUTCDate()}${ShortMonthNames[n[0].getMonth()]}`
-              : undefined
-          )
+          .map(n => (n.length >= 2 ? `${n[0].format('d')} TILL ${n[n.length - 1].format('d')}` : n.length === 1 ? `${n[0].format('d')}` : undefined))
           .filter(Boolean)
           .join(', ');
 

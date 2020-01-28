@@ -14,7 +14,10 @@ import {
   Paper,
   Typography,
   TextField,
-  Box
+  Box,
+  RadioGroup,
+  Radio,
+  FormControl
 } from '@material-ui/core';
 import { red, grey } from '@material-ui/core/colors';
 import { makeStyles } from '@material-ui/styles';
@@ -164,7 +167,15 @@ const useStyles = makeStyles((theme: Theme) => {
       fontSize: 10,
       fontWeight: 'bold',
       color: grey[500],
-      width: '100%'
+      width: '100%',
+      right: 6,
+      bottom: '-70%'
+    },
+    tableRow: {
+      height: 45
+    },
+    lcoalTimeCell: {
+      width: 60
     }
   };
 });
@@ -228,6 +239,9 @@ interface FlattenFlightRequirment {
   route: string;
   parentRoute: string;
   label: string;
+  startDate: Date;
+  endDate: Date;
+  duration?: string;
   weekDay0?: string;
   weekDay1?: string;
   weekDay2?: string;
@@ -307,6 +321,12 @@ interface DataProvider {
   countOfRealFlight: number;
 }
 
+enum Dst {
+  all,
+  withDst,
+  withOutDst
+}
+
 interface ViewState {
   airline: Airline;
   baseAirports: Airport[];
@@ -325,6 +345,7 @@ interface ViewState {
   autoCommit: boolean;
   commitMessage: string;
   showDst: boolean;
+  dst: Dst;
 }
 
 interface ReportDateRangeState {
@@ -428,7 +449,8 @@ const ProposalReport: FC<ProposalReportProps> = ({ preplanName, fromDate, toDate
     showExtra: true,
     autoCommit: false,
     commitMessage: '',
-    showDst: false
+    showDst: true,
+    dst: Dst.all
   }));
 
   const [dataProvider, setDataProvider] = useState<DataProvider[]>([]);
@@ -495,15 +517,15 @@ const ProposalReport: FC<ProposalReportProps> = ({ preplanName, fromDate, toDate
     bold: true
   };
 
-  const generateReportDataModel = (filterdFlightView: readonly FlightPackView[]): FlattenFlightRequirment[] => {
+  const generateReportDataModel = (filterdFlightView: readonly FlightPackView[], dst: Dst): FlattenFlightRequirment[] => {
     const result: FlattenFlightRequirment[] = [];
 
     const flightViewByflightRequirmentId = filterdFlightView.groupBy(f => f.flightRequirement.id);
 
     for (const key in flightViewByflightRequirmentId) {
       if (flightViewByflightRequirmentId.hasOwnProperty(key)) {
-        const sortedFlattenFlightRequirments = createFlattenFlightRequirmentsFromDailyFlightView(flightViewByflightRequirmentId[key]);
-        generateExcelMessage(sortedFlattenFlightRequirments);
+        const sortedFlattenFlightRequirments = createFlattenFlightRequirmentsFromDailyFlightView(flightViewByflightRequirmentId[key], dst);
+        generateCumulativeMessage(sortedFlattenFlightRequirments);
 
         calculateFrequency(sortedFlattenFlightRequirments);
         result.push(...sortedFlattenFlightRequirments);
@@ -514,7 +536,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ preplanName, fromDate, toDate
   };
 
   const filterFlight = (
-    { airline, baseAirports, categories, flightType, showReal, showSTB1, showSTB2, showExtra }: ViewState,
+    { airline, baseAirports, categories, flightType, showReal, showSTB1, showSTB2, showExtra, dst }: ViewState,
     flightPackViews: readonly FlightPackView[],
     generateRealFlight: boolean
   ): FlightPackView[] => {
@@ -546,8 +568,8 @@ const ProposalReport: FC<ProposalReportProps> = ({ preplanName, fromDate, toDate
     async function generateReport() {
       if (!validation.ok) return;
 
-      const realFlatModel = generateReportDataModel(filterFlight(viewState, flightPackViews, true));
-      const reserveFlatModel = generateReportDataModel(filterFlight(viewState, flightPackViews, false));
+      const realFlatModel = generateReportDataModel(filterFlight(viewState, flightPackViews, true), viewState.dst);
+      const reserveFlatModel = generateReportDataModel(filterFlight(viewState, flightPackViews, false), viewState.dst);
       setFlattenFlightRequirmentsStatus(realFlatModel);
       setFlattenFlightRequirmentsStatus(reserveFlatModel);
 
@@ -555,8 +577,8 @@ const ProposalReport: FC<ProposalReportProps> = ({ preplanName, fromDate, toDate
         const targetPreplan = viewState.preplanVersion;
         const targetPreplanFlights = await getPreplanFlightRequirments(targetPreplan.id);
 
-        const targetRealFlatModel = generateReportDataModel(filterFlight(viewState, targetPreplanFlights, true));
-        const targetReserveFlatModel = generateReportDataModel(filterFlight(viewState, targetPreplanFlights, false));
+        const targetRealFlatModel = generateReportDataModel(filterFlight(viewState, targetPreplanFlights, true), viewState.dst);
+        const targetReserveFlatModel = generateReportDataModel(filterFlight(viewState, targetPreplanFlights, false), viewState.dst);
 
         compareFlattenFlightRequirment(realFlatModel, targetRealFlatModel);
         compareFlattenFlightRequirment(reserveFlatModel, targetReserveFlatModel);
@@ -1076,6 +1098,28 @@ const ProposalReport: FC<ProposalReportProps> = ({ preplanName, fromDate, toDate
               </Grid>
             </Grid>
           </Grid>
+          <Grid item xs={12}>
+            <Grid container spacing={1}>
+              <Grid item xs={1}>
+                DST:
+              </Grid>
+              <Grid item xs={6}>
+                <FormControl component="fieldset">
+                  <RadioGroup
+                    row
+                    value={viewState.dst}
+                    onChange={({ target: { value } }) => {
+                      setViewState({ ...viewState, dst: +value });
+                    }}
+                  >
+                    <FormControlLabel value={Dst.all} control={<Radio color="primary" />} label="All" labelPlacement="end" />
+                    <FormControlLabel value={Dst.withDst} control={<Radio color="primary" />} label="With Dst" labelPlacement="end" />
+                    <FormControlLabel value={Dst.withOutDst} control={<Radio color="primary" />} label="With out Dst" labelPlacement="end" />
+                  </RadioGroup>
+                </FormControl>
+              </Grid>
+            </Grid>
+          </Grid>
         </Grid>
 
         <br />
@@ -1128,12 +1172,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ preplanName, fromDate, toDate
             }}
           >
             <ExcelExportColumnGroup
-              title={
-                'Proposal Schedule from ' + dataTypes.utcDate.refineView(reportDateRange.startDate) + ' till ' + dataTypes.utcDate.refineView(reportDateRange.endDate) // +
-                // ' (Based on ' +
-                // dataTypes.utcDate.refineView(viewState.baseDate) +
-                // ')'
-              }
+              title={'Proposal Schedule from ' + dataTypes.utcDate.refineView(reportDateRange.startDate) + ' till ' + dataTypes.utcDate.refineView(reportDateRange.endDate)}
               headerCellOptions={{ ...headerCellOptions, background: '#FFFFFF' }}
             >
               <ExcelExportColumnGroup
@@ -1338,7 +1377,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ preplanName, fromDate, toDate
                 {viewState.showNote && (
                   <ExcelExportColumn
                     title={['NOTE', '(base on domestic/lcl)'].join('\r\n')}
-                    field="excelNotes"
+                    field="excelNote"
                     width={100}
                     cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 }, borderLeft: { color: '#000000', size: 3 } }}
                     headerCellOptions={{
@@ -1547,6 +1586,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ preplanName, fromDate, toDate
                     <TableRow
                       key={index.toString() + f.label + f.flightNumber}
                       className={classNames(
+                        classes.tableRow,
                         index > 0 && self[index - 1].label !== f.label
                           ? self[index - 1].parentRoute !== f.parentRoute
                             ? classes.borderTopThick
@@ -1557,19 +1597,25 @@ const ProposalReport: FC<ProposalReportProps> = ({ preplanName, fromDate, toDate
                     >
                       <TableCell className={classes.border}>{f.flightNumber}</TableCell>
                       <TableCell className={classNames(classes.border, f.status.routeChange ? classes.changeStatus : '')}>{f.route}</TableCell>
-                      <TableCell className={classNames(classes.border, f.status.localStd && f.status.localStd.isChange ? classes.changeStatus : '')} align="center">
-                        <div className={classes.localTimeContianer}>
-                          <div>{f.localStd}</div>
-                          {viewState.showDst ? <div className={classes.dst}>(UTC+{f.departureAirportUtcOffset})</div> : <Fragment></Fragment>}
-                        </div>
+                      <TableCell
+                        className={classNames(classes.border, classes.lcoalTimeCell, f.status.localStd && f.status.localStd.isChange ? classes.changeStatus : '')}
+                        align="center"
+                      >
+                        <span className={classes.localTimeContianer}>
+                          <span>{f.localStd}</span>
+                          {viewState.showDst ? <span className={classes.dst}>(UTC+{f.departureAirportUtcOffset})</span> : <Fragment></Fragment>}
+                        </span>
                       </TableCell>
-                      <TableCell className={classNames(classes.border, f.status.localSta && f.status.localSta.isChange ? classes.changeStatus : '')} align="center">
-                        <div className={classes.localTimeContianer}>
-                          <div className={f.diffLocalStdandLocalSta !== 0 ? classes.diffContainer : ''}>
-                            <div>{f.localSta}</div>
-                            {viewState.showDst ? <div className={classes.dst}>(UTC+{f.arrivalAirportUtcOffset})</div> : <Fragment></Fragment>}
-                          </div>
-                        </div>
+                      <TableCell
+                        className={classNames(classes.border, classes.lcoalTimeCell, f.status.localSta && f.status.localSta.isChange ? classes.changeStatus : '')}
+                        align="center"
+                      >
+                        <span className={classes.localTimeContianer}>
+                          <span className={f.diffLocalStdandLocalSta !== 0 ? classes.diffContainer : ''}>
+                            <span>{f.localSta}</span>
+                            {viewState.showDst ? <span className={classes.dst}>(UTC+{f.arrivalAirportUtcOffset})</span> : <Fragment></Fragment>}
+                          </span>
+                        </span>
                       </TableCell>
                       <TableCell className={classNames(classes.border, classes.utc, f.status.utcStd && f.status.utcStd.isChange ? classes.changeStatus : '')} align="center">
                         <div className={f.diffLocalStdandUtcStd !== 0 ? classes.diffContainer : ''}>
@@ -1663,10 +1709,11 @@ const ProposalReport: FC<ProposalReportProps> = ({ preplanName, fromDate, toDate
                       </TableCell>
                       {viewState.showNote && (
                         <TableCell align="center" className={classes.border}>
+                          {f.hasTimeChange ? <div>TIM</div> : <Fragment></Fragment>}
+                          <div>{f.duration}</div>
                           {/* {f.notes.map((n, index) => (
                             <div key={index}>{n}</div>
                           ))} */}
-                          {f.hasTimeChange ? <div>TIM</div> : <Fragment></Fragment>}
                           {f.cancelationNotes.map((n, index) => (
                             <div key={index}>{n}</div>
                           ))}
@@ -1988,9 +2035,10 @@ function calculateFrequency(flattenFlightRequirments: FlattenFlightRequirment[])
   });
 }
 
-function generateExcelMessage(sortedFlattenFlightRequirments: FlattenFlightRequirment[]): void {
+function generateCumulativeMessage(sortedFlattenFlightRequirments: FlattenFlightRequirment[]): void {
   sortedFlattenFlightRequirments.forEach(n => {
-    n.excelNote = `${n.hasTimeChange ? 'TIM\r\n' : ''}${n.cancelationNotes.filter(Boolean).join('\r\n')}`;
+    n.duration = `FM ${n.startDate.format('d')} TILL ${n.endDate.format('d')}`;
+    n.excelNote = `${n.duration}\r\n${n.hasTimeChange ? 'TIM\r\n' : ''}${n.cancelationNotes.filter(Boolean).join('\r\n')}`;
     n.excelDestinationPermissions = n.destinationPermissions.filter(Boolean).join('\r\n');
     n.excelOriginPermissions = n.originPermissions.filter(Boolean).join('\r\n');
   });
@@ -2026,7 +2074,7 @@ function sortFlattenFlightRequirment(flattenFlightRequirmentList: FlattenFlightR
   return result;
 }
 
-function createFlattenFlightRequirmentsFromDailyFlightView(flightViews: FlightPackView[]): FlattenFlightRequirment[] {
+function createFlattenFlightRequirmentsFromDailyFlightView(flightViews: FlightPackView[], dst: Dst): FlattenFlightRequirment[] {
   const result: FlattenFlightRequirment[] = [];
   let existFlightId: string = '';
   flightViews.sortBy(f => f.legs[0]?.actualStd);
@@ -2058,7 +2106,7 @@ function createFlattenFlightRequirmentsFromDailyFlightView(flightViews: FlightPa
     const legs = flight.legs;
     for (let legIndex = 0; legIndex < legs.length; legIndex++) {
       const leg = legs[legIndex];
-
+      if ((dst === Dst.withDst && !leg.flightPackView.inIranDst) || (dst === Dst.withOutDst && leg.flightPackView.inIranDst)) continue;
       if (!!existFlightId) {
         const existFlatten = result.find(
           f =>
@@ -2123,7 +2171,6 @@ function createFlattenFlightRequirment(leg: FlightLegPackView): FlattenFlightReq
     sta: new Daytime(leg.utcSta),
     notes: [] as string[],
     cancelationNotes: [] as string[],
-
     localStd: formatDateToHHMM(leg.localStd),
     localSta: formatDateToHHMM(leg.localSta) + (diffLocalStdandLocalSta < 0 ? '*' : ''),
     utcStd: formatDateToHHMM(leg.utcStd) + (diffLocalStdandUtcStd < 0 ? '*' : diffLocalStdandUtcStd > 0 ? '#' : ''),
@@ -2144,6 +2191,8 @@ function createFlattenFlightRequirment(leg: FlightLegPackView): FlattenFlightReq
     originPermissionsWeekDay: [] as number[],
     originPermissions: [],
     label: leg.label,
+    startDate: leg.flightPackView.flightPackStartDate,
+    endDate: leg.flightPackView.flightPackEndDate,
     category: leg.category,
     realFrequency: 0,
     extraFrequency: 0,
@@ -2179,8 +2228,8 @@ function updateFlattenFlightRequirment(flattenFlight: FlattenFlightRequirment, l
     }
   }
 
-  flattenFlight.utcDays.indexOf(leg.day) === -1 && flattenFlight.utcDays.push(leg.day);
-  flattenFlight.notes.indexOf(leg.notes) === -1 && flattenFlight.notes.push(leg.notes);
+  // flattenFlight.utcDays.indexOf(leg.day) === -1 && flattenFlight.utcDays.push(leg.day);
+  // flattenFlight.notes.indexOf(leg.notes) === -1 && flattenFlight.notes.push(leg.notes);
   const canclationNote = leg.flightPackView.canclationNote;
   !!canclationNote && flattenFlight.cancelationNotes.indexOf(canclationNote) === -1 && flattenFlight.cancelationNotes.push(canclationNote);
 
@@ -2235,6 +2284,9 @@ function updateFlattenFlightRequirment(flattenFlight: FlattenFlightRequirment, l
 
   flattenFlight.destinationPermissions.push(...destinationPermissions);
   flattenFlight.originPermissions.push(...originPermissions);
+
+  flattenFlight.startDate > leg.flightPackView.flightPackStartDate && (flattenFlight.startDate = leg.flightPackView.flightPackStartDate);
+  flattenFlight.endDate < leg.flightPackView.flightPackEndDate && (flattenFlight.endDate = leg.flightPackView.flightPackEndDate);
 
   return flattenFlight;
 

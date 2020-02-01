@@ -46,17 +46,57 @@ export default class FlightPackView {
   readonly startDateTime: Date;
   readonly endDateTime: Date;
   readonly flightDates: Date[];
-  readonly canclationNote: string | undefined;
+  readonly canclationNote: FlightLegCancaltionNote | undefined;
   readonly hasTimeChange: boolean;
   readonly inDstChange: boolean;
   readonly inIranDst: boolean;
   readonly permissions: FlightLegPermission;
   readonly icons: readonly string[]; //TODO: Check if it is really required.
-  readonly flightPackStartDate: Date;
-  readonly flightPackEndDate: Date;
 
   constructor(flights: readonly Flight[], startWeek: Week, endWeek: Week, week: Week, preplanStartDate: Date, preplanEndDate: Date) {
     const sourceFlight = flights[0];
+
+    const diffInTime = endWeek.startDate.getTime() - startWeek.startDate.getTime();
+    const diffInDays = diffInTime / (24 * 60 * 60 * 1000);
+    const diffInWeek = diffInDays / 7 + 1;
+
+    const flightDay = sourceFlight.day;
+    const startDate = new Date(startWeek.startDate).addDays(flightDay);
+
+    const allDaysBaseOfFirstLeg = Array.range(0, diffInWeek - 1).map(d => {
+      return new Date(startDate).addDays(d * 7);
+    });
+
+    if (allDaysBaseOfFirstLeg[0] < preplanStartDate) allDaysBaseOfFirstLeg.shift();
+    if (allDaysBaseOfFirstLeg[allDaysBaseOfFirstLeg.length - 1] > preplanEndDate) allDaysBaseOfFirstLeg.pop();
+
+    const ika = MasterData.all.airports.name['IKA'];
+    const utcOffset = ika.utcOffsets.find(
+      u => u.dst && u.startDateTimeLocal.getTime() <= sourceFlight.legs[0].localStd.getTime() && sourceFlight.legs[0].localStd.getTime() <= u.endDateTimeLocal.getTime()
+    );
+
+    if (!!utcOffset) {
+      this.inIranDst = true;
+      while (allDaysBaseOfFirstLeg[0] < utcOffset.startDateTimeLocal) {
+        allDaysBaseOfFirstLeg.shift();
+      }
+      while (allDaysBaseOfFirstLeg[allDaysBaseOfFirstLeg.length - 1] >= utcOffset.endDateTimeLocal) {
+        allDaysBaseOfFirstLeg.pop();
+      }
+    } else {
+      this.inIranDst = false;
+      ika.utcOffsets
+        .orderBy(n => n.startDateTimeLocal)
+        .forEach(u => {
+          if (!u.dst) return;
+          while (allDaysBaseOfFirstLeg[0] < u.endDateTimeLocal && u.endDateTimeLocal < allDaysBaseOfFirstLeg[allDaysBaseOfFirstLeg.length - 1]) {
+            allDaysBaseOfFirstLeg.shift();
+          }
+          while (allDaysBaseOfFirstLeg[allDaysBaseOfFirstLeg.length - 1] >= u.startDateTimeLocal && u.startDateTimeLocal >= allDaysBaseOfFirstLeg[0]) {
+            allDaysBaseOfFirstLeg.pop();
+          }
+        });
+    }
 
     this.aircraftRegister = sourceFlight.aircraftRegister;
 
@@ -65,7 +105,29 @@ export default class FlightPackView {
     this.dayFlightRequirement = sourceFlight.dayFlightRequirement;
     this.flights = flights;
 
-    this.legs = sourceFlight.legs.map(l => new FlightLegPackView(l, this, week));
+    this.legs = sourceFlight.legs.map(l => new FlightLegPackView(l, this, week, sourceFlight, allDaysBaseOfFirstLeg));
+
+    const flightAirports = sourceFlight.legs
+      .map(l => l.departureAirport)
+      .concat(sourceFlight.legs.map(l => l.arrivalAirport))
+      .distinct();
+
+    this.inDstChange = false;
+    for (let index = 0; index < flightAirports.length; index++) {
+      const airport = flightAirports[index];
+      this.inDstChange =
+        this.legs
+          .map(n => (n.departureAirport === airport ? n.hasDstInDeparture : n.arrivalAirport == airport ? n.hasDstInArrival : undefined))
+          .filter(f => f !== undefined)
+          .distinct().length > 1;
+      if (this.inDstChange) break;
+    }
+
+    if (this.inDstChange) {
+      this.legs.forEach(l => {
+        l.possibleStartDate = l.possibleEndDate = l.utcStd;
+      });
+    }
 
     this.label = sourceFlight.label;
     this.category = sourceFlight.category;
@@ -90,56 +152,6 @@ export default class FlightPackView {
 
     this.flightDates = flights.map(f => f.date);
 
-    const diffInTime = endWeek.startDate.getTime() - startWeek.startDate.getTime();
-    const diffInDays = diffInTime / (24 * 60 * 60 * 1000);
-    const diffInWeek = diffInDays / 7 + 1;
-
-    const flightDay = sourceFlight.day;
-    const startDate = new Date(startWeek.startDate).addDays(flightDay);
-
-    const flightAirports = sourceFlight.legs
-      .map(l => l.departureAirport)
-      .concat(sourceFlight.legs.map(l => l.arrivalAirport))
-      .distinct();
-
-    const allDays = Array.range(0, diffInWeek - 1).map(d => {
-      return new Date(startDate).addDays(d * 7);
-    });
-
-    if (allDays[0] < preplanStartDate) allDays.shift();
-    if (allDays[allDays.length - 1] > preplanEndDate) allDays.pop();
-
-    const ika = MasterData.all.airports.name['IKA'];
-    const utcOffset = ika.utcOffsets.find(
-      u => u.dst && u.startDateTimeLocal.getTime() <= sourceFlight.legs[0].localStd.getTime() && sourceFlight.legs[0].localStd.getTime() <= u.endDateTimeLocal.getTime()
-    );
-
-    if (!!utcOffset) {
-      this.inIranDst = true;
-      while (allDays[0] < utcOffset.startDateTimeLocal) {
-        allDays.shift();
-      }
-      while (allDays[allDays.length - 1] >= utcOffset.endDateTimeLocal) {
-        allDays.pop();
-      }
-    } else {
-      this.inIranDst = false;
-      ika.utcOffsets
-        .orderBy(n => n.startDateTimeLocal)
-        .forEach(u => {
-          if (!u.dst) return;
-          while (allDays[0] < u.endDateTimeLocal && u.endDateTimeLocal < allDays[allDays.length - 1]) {
-            allDays.shift();
-          }
-          while (allDays[allDays.length - 1] >= u.startDateTimeLocal && u.startDateTimeLocal >= allDays[0]) {
-            allDays.pop();
-          }
-        });
-    }
-
-    this.flightPackStartDate = allDays[0];
-    this.flightPackEndDate = allDays.last()!;
-
     const sortedFlights = flights.orderBy('date');
 
     this.hasTimeChange = sourceFlight.legs.some(
@@ -147,40 +159,45 @@ export default class FlightPackView {
         l.std.compare(sourceFlight.dayFlightRequirement.route[index].stdLowerBound) !== 0 || l.blockTime.compare(sourceFlight.dayFlightRequirement.route[index].blockTime) !== 0
     );
 
-    this.inDstChange = false;
-    for (let index = 0; index < flightAirports.length; index++) {
-      const airport = flightAirports[index];
-      this.inDstChange =
-        this.legs
-          .map(n => (n.departureAirport === airport ? n.hasDstInDeparture : n.arrivalAirport == airport ? n.hasDstInArrival : undefined))
-          .filter(f => f !== undefined)
-          .distinct().length > 1;
-      if (this.inDstChange) break;
-    }
-
-    this.canclationNote = generateCanalationNotes();
+    this.canclationNote = !this.inDstChange ? generateCanalationNotes(this.legs) : undefined;
     this.permissions = generateFlightLegPermission();
 
-    function generateCanalationNotes(): string | undefined {
+    function generateCanalationNotes(legs: readonly FlightLegPackView[]): FlightLegCancaltionNote | undefined {
       if (diffInWeek === sortedFlights.length) {
         return undefined;
       } else {
-        const groupCancleDay = allDays.reduce<Date[][]>((acc, cur) => {
-          const lastElement: Date[] = acc[acc.length - 1] || (acc.push([] as Date[]) && acc[acc.length - 1]);
-          if (flights.some(f => f.date.getDatePart().getTime() == cur.getTime())) {
-            lastElement.length > 0 && acc.push([]);
-          } else {
-            lastElement.push(cur);
+        const result = {} as FlightLegCancaltionNote;
+        for (let index = 0; index < legs.length; index++) {
+          const leg = legs[index];
+          const groupCancleDay = allDaysBaseOfFirstLeg.reduce<Date[][]>((acc, cur) => {
+            const lastElement: Date[] = acc[acc.length - 1] || (acc.push([] as Date[]) && acc[acc.length - 1]);
+            if (flights.some(f => f.date.getDatePart().getTime() == cur.getTime())) {
+              lastElement.length > 0 && acc.push([]);
+            } else {
+              lastElement.push(cur);
+            }
+            return acc;
+          }, []);
+
+          const res = groupCancleDay
+            .map(n =>
+              n.length >= 2
+                ? `${(leg.diffWithFirstLeg > 0 ? new Date(n[0]).addDays(leg.diffWithFirstLeg) : n[0]).format('d')} TILL ${(leg.diffWithFirstLeg > 0
+                    ? new Date(n.last()!).addDays(leg.diffWithFirstLeg)
+                    : n.last()!
+                  ).format('d')}`
+                : n.length === 1
+                ? `${(leg.diffWithFirstLeg > 0 ? new Date(n[0]).addDays(leg.diffWithFirstLeg) : n[0]).format('d')}`
+                : undefined
+            )
+            .filter(Boolean)
+            .join(', ');
+
+          if (res) {
+            result[index] = { note: Weekday[sourceFlight.day].substr(0, 3) + ' CNL: ' + res };
           }
-          return acc;
-        }, []);
-
-        const result = groupCancleDay
-          .map(n => (n.length >= 2 ? `${n[0].format('d')} TILL ${n[n.length - 1].format('d')}` : n.length === 1 ? `${n[0].format('d')}` : undefined))
-          .filter(Boolean)
-          .join(', ');
-
-        return result ? Weekday[sourceFlight.day].substr(0, 3) + ' CNL: ' + result : undefined;
+        }
+        return result;
       }
     }
 
@@ -243,7 +260,13 @@ export default class FlightPackView {
   private static idCounter: number = 0;
 }
 
-export interface FlightLegPermission {
+interface FlightLegCancaltionNote {
+  [legIndex: number]: {
+    note: string;
+  };
+}
+
+interface FlightLegPermission {
   [legIndex: number]: {
     [day: number]: {
       originPermissions: Permission[];

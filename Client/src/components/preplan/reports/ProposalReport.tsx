@@ -45,7 +45,7 @@ import FlightLegPackView from 'src/business/flight/FlightLegPackView';
 import { PreplanContext } from 'src/pages/preplan';
 import Preplan from 'src/business/preplan/Preplan';
 import SelectWeeks, { WeekSelection } from 'src/components/preplan/SelectWeeks';
-import FlightPackView, { FlightLegPermission } from 'src/business/flight/FlightPackView';
+import FlightPackView from 'src/business/flight/FlightPackView';
 import { useSnackbar } from 'notistack';
 import { ShortMonthNames } from '@core/types/MonthName';
 
@@ -1113,8 +1113,8 @@ const ProposalReport: FC<ProposalReportProps> = ({ preplanName, fromDate, toDate
                     }}
                   >
                     <FormControlLabel value={Dst.all} control={<Radio color="primary" />} label="All" labelPlacement="end" />
-                    <FormControlLabel value={Dst.withDst} control={<Radio color="primary" />} label="With Dst" labelPlacement="end" />
-                    <FormControlLabel value={Dst.withOutDst} control={<Radio color="primary" />} label="With out Dst" labelPlacement="end" />
+                    <FormControlLabel value={Dst.withDst} control={<Radio color="primary" />} label="Iran (UTC 04:30)" labelPlacement="end" />
+                    <FormControlLabel value={Dst.withOutDst} control={<Radio color="primary" />} label="Iran (UTC 03:30)" labelPlacement="end" />
                   </RadioGroup>
                 </FormControl>
               </Grid>
@@ -2037,7 +2037,7 @@ function calculateFrequency(flattenFlightRequirments: FlattenFlightRequirment[])
 
 function generateCumulativeMessage(sortedFlattenFlightRequirments: FlattenFlightRequirment[]): void {
   sortedFlattenFlightRequirments.forEach(n => {
-    n.duration = `FM ${n.startDate.format('d')} TILL ${n.endDate.format('d')}`;
+    n.duration = n.startDate === n.endDate ? `Flight Date ${n.startDate.format('d')}` : `FM ${n.startDate.format('d')} TILL ${n.endDate.format('d')}`;
     n.excelNote = `${n.duration}\r\n${n.hasTimeChange ? 'TIM\r\n' : ''}${n.cancelationNotes.filter(Boolean).join('\r\n')}`;
     n.excelDestinationPermissions = n.destinationPermissions.filter(Boolean).join('\r\n');
     n.excelOriginPermissions = n.originPermissions.filter(Boolean).join('\r\n');
@@ -2191,8 +2191,8 @@ function createFlattenFlightRequirment(leg: FlightLegPackView): FlattenFlightReq
     originPermissionsWeekDay: [] as number[],
     originPermissions: [],
     label: leg.label,
-    startDate: leg.flightPackView.flightPackStartDate,
-    endDate: leg.flightPackView.flightPackEndDate,
+    startDate: leg.possibleStartDate,
+    endDate: leg.possibleEndDate,
     category: leg.category,
     realFrequency: 0,
     extraFrequency: 0,
@@ -2230,7 +2230,8 @@ function updateFlattenFlightRequirment(flattenFlight: FlattenFlightRequirment, l
 
   // flattenFlight.utcDays.indexOf(leg.day) === -1 && flattenFlight.utcDays.push(leg.day);
   // flattenFlight.notes.indexOf(leg.notes) === -1 && flattenFlight.notes.push(leg.notes);
-  const canclationNote = leg.flightPackView.canclationNote;
+  const canclationNote = leg.flightPackView.canclationNote?.[leg.index]?.note;
+
   !!canclationNote && flattenFlight.cancelationNotes.indexOf(canclationNote) === -1 && flattenFlight.cancelationNotes.push(canclationNote);
 
   (flattenFlight as any)['weekDay' + weekDay.toString()] = calculateDayCharacter();
@@ -2285,8 +2286,8 @@ function updateFlattenFlightRequirment(flattenFlight: FlattenFlightRequirment, l
   flattenFlight.destinationPermissions.push(...destinationPermissions);
   flattenFlight.originPermissions.push(...originPermissions);
 
-  flattenFlight.startDate > leg.flightPackView.flightPackStartDate && (flattenFlight.startDate = leg.flightPackView.flightPackStartDate);
-  flattenFlight.endDate < leg.flightPackView.flightPackEndDate && (flattenFlight.endDate = leg.flightPackView.flightPackEndDate);
+  flattenFlight.startDate > leg.possibleStartDate && (flattenFlight.startDate = leg.possibleStartDate);
+  flattenFlight.endDate < leg.possibleEndDate && (flattenFlight.endDate = leg.possibleEndDate);
 
   return flattenFlight;
 

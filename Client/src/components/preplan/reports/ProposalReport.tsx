@@ -112,8 +112,8 @@ const useStyles = makeStyles((theme: Theme) => {
       fontSize: 20
     },
     diffContainer: {
-      position: 'relative',
-      bottom: 3
+      position: 'relative'
+      // bottom: 3
     },
     transform180: {
       transform: 'rotate(180deg)'
@@ -168,7 +168,7 @@ const useStyles = makeStyles((theme: Theme) => {
       fontWeight: 'bold',
       color: grey[500],
       width: '100%',
-      right: 6,
+      right: 12,
       bottom: '-70%'
     },
     tableRow: {
@@ -2160,9 +2160,9 @@ function createFlattenFlightRequirment(leg: FlightLegPackView): FlattenFlightReq
     flightNumber: normalizeFlightNumber(leg.flightNumber),
     fullFlightNumber: leg.flightNumber.toString(),
     departureAirport: leg.departureAirport,
-    departureAirportUtcOffset: String(departureAirportUtcOffsetHours) + String(departureAirportUtcOffsetMinutes).padStart(2, '0'),
+    departureAirportUtcOffset: String(departureAirportUtcOffsetHours).padStart(2, '0') + String(departureAirportUtcOffsetMinutes).padStart(2, '0'),
     arrivalAirport: leg.arrivalAirport,
-    arrivalAirportUtcOffset: String(arrivalAirportUtcOffsetHours) + String(arrivalAirportUtcOffsetMinutes).padStart(2, '0'),
+    arrivalAirportUtcOffset: String(arrivalAirportUtcOffsetHours).padStart(2, '0') + String(arrivalAirportUtcOffsetMinutes).padStart(2, '0'),
     blocktime: leg.blockTime.minutes,
     formatedBlockTime: dataTypes.daytime.convertBusinessToView(leg.blockTime),
     days: [] as number[],

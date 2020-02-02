@@ -52,55 +52,61 @@ const AppBar: FC<AppBarProps> = ({ loading }) => {
   const classes = useStyles();
 
   return (
-    <MaterialUiAppBar position="relative" className={classes.appBarStyle}>
-      <Toolbar variant="dense">
-        <Box display="block" displayPrint="none">
+    <Box display="block" displayPrint="none">
+      <MaterialUiAppBar position="relative" className={classes.appBarStyle}>
+        <Toolbar variant="dense">
           <IconButton onClick={() => (window.location.href = 'http://apps.mahan.aero/')} color="inherit" title="Back To Other Module">
             <ArrowBackIcon classes={{ root: classes.backIcon }} />
           </IconButton>
           <IconButton color="inherit" onClick={() => window.location.reload()} title={loading ? 'Loading...' : 'Refresh Page'}>
             <SyncIcon classes={{ root: classNames({ 'animate-spin-reverse': loading }) }} />
           </IconButton>
-        </Box>
-        <Typography classes={{ root: classNames(classes.textMargin, classes.notSelectable) }} variant="h5" color="inherit" title={config.version}>
-          RPA
-        </Typography>
 
-        {!!persistant.user && (
-          <ButtonBase>
-            <Typography classes={{ root: classes.textMargin }} variant="h6" color="inherit" ref={userDisplayNameRef} onClick={() => setUserDisplayNameMenuModel({ open: true })}>
-              {persistant.user!.displayName}
-            </Typography>
-          </ButtonBase>
-        )}
-        <Menu id="user-display-name-menu" anchorEl={userDisplayNameRef.current} open={!!userDisplayNameMenuModel.open} onClose={() => setUserDisplayNameMenuModel({ open: false })}>
-          <MenuItem
-            onClick={() => {
-              setUserDisplayNameMenuModel({ open: false });
-              delete persistant.oauthCode;
-              delete persistant.refreshToken;
-              delete persistant.user;
-              delete persistant.userSettings;
-              delete persistant.encodedAuthenticationHeader;
-              window.location.reload(); //TODO: Call logout API instead.
-            }}
+          <Typography classes={{ root: classNames(classes.textMargin, classes.notSelectable) }} variant="h5" color="inherit" title={config.version}>
+            RPA
+          </Typography>
+
+          {!!persistant.user && (
+            <ButtonBase>
+              <Typography classes={{ root: classes.textMargin }} variant="h6" color="inherit" ref={userDisplayNameRef} onClick={() => setUserDisplayNameMenuModel({ open: true })}>
+                {persistant.user!.displayName}
+              </Typography>
+            </ButtonBase>
+          )}
+          <Menu
+            id="user-display-name-menu"
+            anchorEl={userDisplayNameRef.current}
+            open={!!userDisplayNameMenuModel.open}
+            onClose={() => setUserDisplayNameMenuModel({ open: false })}
           >
-            Logout
-          </MenuItem>
-        </Menu>
+            <MenuItem
+              onClick={() => {
+                setUserDisplayNameMenuModel({ open: false });
+                delete persistant.oauthCode;
+                delete persistant.refreshToken;
+                delete persistant.user;
+                delete persistant.userSettings;
+                delete persistant.encodedAuthenticationHeader;
+                window.location.reload(); //TODO: Call logout API instead.
+              }}
+            >
+              Logout
+            </MenuItem>
+          </Menu>
 
-        <div className={classes.grow} />
-        <Box display="block" displayPrint="none">
+          <div className={classes.grow} />
+
           <IconButton color="inherit" title="Select Module">
             <ViewModuleIcon />
           </IconButton>
           <IconButton color="inherit" title={fullScreen ? 'Exit Full Screen' : 'Full Screen'} onClick={() => toggleFullScreen()}>
             {fullScreen ? <ExitFullScreenIcon /> : <FullScreenIcon />}
           </IconButton>
-        </Box>
-        <i className={classNames('rpa-icon-mahan-air-logo', classes.iconSize)} title="Mahan Air" />
-      </Toolbar>
-    </MaterialUiAppBar>
+
+          <i className={classNames('rpa-icon-mahan-air-logo', classes.iconSize)} title="Mahan Air" />
+        </Toolbar>
+      </MaterialUiAppBar>
+    </Box>
   );
 
   function toggleFullScreen() {

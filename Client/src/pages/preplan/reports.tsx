@@ -6,6 +6,7 @@ import { NavBarToolsContainerContext, PreplanContext } from 'src/pages/preplan';
 import ProposalReport from 'src/components/preplan/reports/ProposalReport';
 import ConnectionsReport from 'src/components/preplan/reports/ConnectionsReport';
 import { useRouteMatch, useHistory } from 'react-router-dom';
+import TimelineReport from 'src/components/preplan/reports/TimelineReport';
 
 const useStyles = makeStyles((theme: Theme) => ({}));
 
@@ -17,12 +18,18 @@ const proposalPreplanReport: PreplanReport = {
   description: 'The list of all flights',
   path: 'proposal'
 };
-const connectionsPpreplanReport: PreplanReport = {
+const connectionsPreplanReport: PreplanReport = {
   title: 'Connections',
   description: 'All existing connections between flights',
   path: 'connections'
 };
-const preplanReports = [proposalPreplanReport, connectionsPpreplanReport];
+const timelineReport: PreplanReport = {
+  title: 'Timeline',
+  description: 'Timeline',
+  path: 'timeline'
+};
+
+const preplanReports = [proposalPreplanReport, connectionsPreplanReport, timelineReport];
 
 export interface ReportsPageProps {}
 
@@ -53,7 +60,8 @@ const ReportsPage: FC<ReportsPageProps> = ({}) => {
         onSectionSelect={selectedSection => history.push(`/preplan/${routeMatch.params.id}/reports/${(selectedSection as PreplanReport).path}`)}
       >
         {preplanReport === proposalPreplanReport && <ProposalReport preplanName={preplan.name} fromDate={preplan.startDate} toDate={preplan.endDate} />}
-        {preplanReport === connectionsPpreplanReport && <ConnectionsReport preplanName={preplan.name} fromDate={preplan.startDate} toDate={preplan.endDate} />}
+        {preplanReport === connectionsPreplanReport && <ConnectionsReport preplanName={preplan.name} fromDate={preplan.startDate} toDate={preplan.endDate} />}
+        {preplanReport === timelineReport && <TimelineReport />}
       </SectionList>
     </Fragment>
   );

@@ -127,7 +127,6 @@ interface ViewState {
   eastAirportsAirline: Airline;
   eastAirports: Airport[];
   westAirports: Airport[];
-  baseDate: string;
   maxConnectionTime: string;
   minConnectionTime: string;
   autoCommit: boolean;
@@ -154,27 +153,17 @@ class ConnectionReportValidation extends Validation<
   | 'EAST_AIRLINE_EXISTS'
   | 'WEST_AIRLINE_EXISTS'
 > {
-  constructor({ eastAirportsAirline, westAirportsAirline, baseDate, eastAirports, westAirports }: ViewState, { startDate, endDate }: ReportDateRangeState) {
+  constructor({ eastAirportsAirline, westAirportsAirline, eastAirports, westAirports }: ViewState, { startDate, endDate }: ReportDateRangeState) {
     super(
       validator => {
         validator.check('EAST_AIRPORT_EXISTS', eastAirports.length > 0);
         validator.check('WEST_AIRPORT_EXISTS', westAirports.length > 0);
         validator.check('START_DATE_EXISTS', !!startDate).check('START_DATE_IS_VALID', () => dataTypes.utcDate.checkView(startDate));
         validator.check('END_DATE_EXISTS', !!endDate).check('END_DATE_IS_VALID', () => dataTypes.utcDate.checkView(endDate));
-        validator.check('BASE_DATE_EXISTS', !!baseDate).check('BASE_DATE_IS_VALID', () => dataTypes.utcDate.checkView(baseDate));
         validator.when('START_DATE_IS_VALID', 'END_DATE_IS_VALID').then(() => {
           const ok = dataTypes.utcDate.convertViewToModel(startDate) <= dataTypes.utcDate.convertViewToModel(endDate);
           validator.check('START_DATE_IS_NOT_AFTER_END_DATE', ok, 'Can not be after end date.');
           validator.check('END_DATE_IS_NOT_BEFORE_START_DATE', ok, 'Can not be before start date.');
-          validator
-            .when('START_DATE_IS_NOT_AFTER_END_DATE', 'END_DATE_IS_NOT_BEFORE_START_DATE', 'BASE_DATE_IS_VALID')
-            .check(
-              'BASE_DATE_BETWEEN_START_DATE_AND_END_DATE',
-              () =>
-                dataTypes.utcDate.convertViewToModel(baseDate) <= dataTypes.utcDate.convertViewToModel(endDate) &&
-                dataTypes.utcDate.convertViewToModel(startDate) <= dataTypes.utcDate.convertViewToModel(baseDate),
-              'Between start date and end date.'
-            );
           validator.check('EAST_AIRLINE_EXISTS', !!eastAirportsAirline);
           validator.check('WEST_AIRLINE_EXISTS', !!westAirportsAirline);
         });
@@ -286,7 +275,6 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ preplanName, fromDate, 
     westAirports: allAirports.filter(a => defaultWestAirport.indexOf(a.name) !== -1).orderBy('name'),
     startDate: dataTypes.utcDate.convertBusinessToView(fromDate),
     endDate: dataTypes.utcDate.convertBusinessToView(toDate),
-    baseDate: dataTypes.utcDate.convertBusinessToView(fromDate),
     maxConnectionTime: dataTypes.daytime.convertModelToView(300),
     minConnectionTime: dataTypes.daytime.convertModelToView(70),
     autoCommit: false,
@@ -303,7 +291,6 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ preplanName, fromDate, 
   useEffect(() => {
     if (validation.ok) {
       const flightLegInfoModels: FlightLegInfoModel[] = [];
-      const reportBaseDate = new Date(dataTypes.utcDate.convertViewToModel(viewState.baseDate));
 
       const eastFlight = flightLegViews.filter(
         f =>
@@ -337,8 +324,9 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ preplanName, fromDate, 
         const isDepartureFromIKA = flight.departureAirport.name === 'IKA';
         const isArrivalToIKA = flight.arrivalAirport.name === 'IKA';
 
+        const baseDate = dataTypes.utcDate.convertViewToBusiness(reportDateRange.startDate);
         if (isDepartureFromIKA) {
-          const utcStd = flight.actualStd.toDate(reportBaseDate);
+          const utcStd = flight.actualStd.toDate(baseDate);
           const localStd = flight.departureAirport.convertUtcToLocal(utcStd);
 
           let diffLocalStdandUtcStd = localStd.getUTCDay() - utcStd.getUTCDay();
@@ -361,9 +349,9 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ preplanName, fromDate, 
             }
           }
         } else if (isArrivalToIKA) {
-          const utcStd = flight.actualStd.toDate(reportBaseDate);
+          const utcStd = flight.actualStd.toDate(baseDate);
           const localStd = flight.departureAirport.convertUtcToLocal(utcStd);
-          const utcSta = flight.actualSta.toDate(reportBaseDate);
+          const utcSta = flight.actualSta.toDate(baseDate);
           const localSta = flight.arrivalAirport.convertUtcToLocal(utcSta);
 
           let diffLocalStdandUtcStd = localStd.getUTCDay() - utcStd.getUTCDay();
@@ -407,7 +395,6 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ preplanName, fromDate, 
     westAirports: validation.message('WEST_AIRPORT_*'),
     startDate: validation.message('START_DATE_*'),
     endDate: validation.message('END_DATE_*'),
-    baseDate: validation.message('BASE_DATE_*'),
     eastAirline: validation.message('EAST_AIRLINE_*'),
     westAirline: validation.message('WEST_AIRLINE_*'),
     maxConnectionTime: numberOfConnectionValidation.message('MAX_CONNECTION_*'),
@@ -945,8 +932,10 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ preplanName, fromDate, 
               setWeekSelection(weekSelection);
               const weekStart = preplan.weeks.all[weekSelection.startIndex];
               const weekEnd = preplan.weeks.all[weekSelection.endIndex - 1];
-              setReportDateRange({ startDate: dataTypes.utcDate.convertBusinessToView(weekStart.startDate), endDate: dataTypes.utcDate.convertBusinessToView(weekEnd.endDate) });
-              setViewState({ ...viewState, baseDate: dataTypes.utcDate.convertBusinessToView(weekStart.startDate) });
+              setReportDateRange({
+                startDate: dataTypes.utcDate.convertBusinessToView(weekStart.startDate < fromDate ? fromDate : weekStart.startDate),
+                endDate: dataTypes.utcDate.convertBusinessToView(weekEnd.endDate > toDate ? toDate : weekEnd.endDate)
+              });
             }}
           />
         </div>
@@ -1031,15 +1020,6 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ preplanName, fromDate, 
           error={errors.endDate !== undefined}
           helperText={errors.endDate}
           disabled
-        />
-
-        <RefiningTextField
-          label="Base Date"
-          dataType={dataTypes.utcDate}
-          value={viewState.baseDate}
-          onChange={({ target: { value: baseDate } }) => setViewState({ ...viewState, baseDate })}
-          error={errors.baseDate !== undefined}
-          helperText={errors.baseDate}
         />
 
         <FormControlLabel

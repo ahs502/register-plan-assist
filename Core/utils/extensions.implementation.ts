@@ -224,7 +224,7 @@ import { ShortMonthNames, MonthNames } from '@core/types/MonthName';
           return `${String(this.getUTCHours()).padStart(2, '0')}:${String(this.getUTCMinutes()).padStart(2, '0')}`;
 
         case 't#':
-          throw new Error('Not implemented!');
+          return `${String(this.getUTCHours()).padStart(2, '0')}${String(this.getUTCMinutes()).padStart(2, '0')}`;
 
         case 'DT':
           throw new Error('Not implemented!');

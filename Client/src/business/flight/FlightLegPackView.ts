@@ -61,8 +61,11 @@ export default class FlightLegPackView {
   readonly staDateTime: Date;
   readonly hasDstInDeparture: boolean;
   readonly hasDstInArrival: boolean;
+  readonly diffWithFirstLeg: number;
+  possibleStartDate: Date;
+  possibleEndDate: Date;
 
-  constructor(flightLeg: FlightLeg, flightPackView: FlightPackView, week: Week) {
+  constructor(flightLeg: FlightLeg, flightPackView: FlightPackView, week: Week, sourceFlight: Flight, allDaysBaseOfFirstLeg: Date[]) {
     this.std = flightLeg.std;
 
     this.label = flightLeg.label;
@@ -106,6 +109,20 @@ export default class FlightLegPackView {
     this.hasDstInArrival = flightLeg.arrivalAirport.utcOffsets.some(
       u => u.dst && u.startDateTimeUtc.getTime() <= flightLeg.utcSta.getTime() && flightLeg.utcSta.getTime() <= u.endDateTimeUtc.getTime()
     );
+
+    this.possibleStartDate = allDaysBaseOfFirstLeg[0];
+    this.possibleEndDate = allDaysBaseOfFirstLeg.last()!;
+
+    this.diffWithFirstLeg = this.localStd.getUTCDay() - sourceFlight.legs[0].localStd.getUTCDay();
+    if (this.diffWithFirstLeg !== 0) {
+      if (this.diffWithFirstLeg < 0) {
+        this.diffWithFirstLeg = this.diffWithFirstLeg + 7;
+      }
+
+      this.possibleStartDate = new Date(this.possibleStartDate).addDays(this.diffWithFirstLeg);
+      this.possibleEndDate = new Date(this.possibleEndDate).addDays(this.diffWithFirstLeg);
+    }
+
     // Fields which should be calculated for view:
     this.notes = flightLeg.notes;
     this.stdDateTime = new Date(week.startDate.getTime() + this.weekStd * 60 * 1000);

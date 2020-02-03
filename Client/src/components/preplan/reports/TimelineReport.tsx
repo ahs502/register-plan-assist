@@ -103,7 +103,7 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
   preplanName: {
     minWidth: 41,
-    maxWidth: 167,
+    maxWidth: 90,
     maxHeight: 25,
     overflow: 'hidden',
     textOverflow: 'ellipsis',

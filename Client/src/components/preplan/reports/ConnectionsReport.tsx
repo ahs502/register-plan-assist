@@ -1,5 +1,21 @@
 import React, { FC, useState, Fragment, useEffect, useMemo, useContext } from 'react';
-import { Theme, InputLabel, TextField, TableHead, TableCell, Table, TableRow, TableBody, Button, Paper, Typography, Grid } from '@material-ui/core';
+import {
+  Theme,
+  InputLabel,
+  TextField,
+  TableHead,
+  TableCell,
+  Table,
+  TableRow,
+  TableBody,
+  Button,
+  Paper,
+  Typography,
+  Grid,
+  FormControlLabel,
+  Checkbox,
+  Box
+} from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import MasterData, { Airport } from 'src/business/master-data';
 import Weekday from '@core/types/Weekday';
@@ -16,6 +32,8 @@ import AutoComplete from 'src/components/AutoComplete';
 import { PreplanContext } from 'src/pages/preplan';
 import Week from 'src/business/Week';
 import SelectWeeks, { WeekSelection } from 'src/components/preplan/SelectWeeks';
+import PreplanService from 'src/services/PreplanService';
+import { useSnackbar } from 'notistack';
 
 const errorPaperSize = 250;
 const character = {
@@ -109,9 +127,10 @@ interface ViewState {
   eastAirportsAirline: Airline;
   eastAirports: Airport[];
   westAirports: Airport[];
-  baseDate: string;
   maxConnectionTime: string;
   minConnectionTime: string;
+  autoCommit: boolean;
+  commitMessage: string;
 }
 
 interface ReportDateRangeState {
@@ -134,27 +153,17 @@ class ConnectionReportValidation extends Validation<
   | 'EAST_AIRLINE_EXISTS'
   | 'WEST_AIRLINE_EXISTS'
 > {
-  constructor({ eastAirportsAirline, westAirportsAirline, baseDate, eastAirports, westAirports }: ViewState, { startDate, endDate }: ReportDateRangeState) {
+  constructor({ eastAirportsAirline, westAirportsAirline, eastAirports, westAirports }: ViewState, { startDate, endDate }: ReportDateRangeState) {
     super(
       validator => {
         validator.check('EAST_AIRPORT_EXISTS', eastAirports.length > 0);
         validator.check('WEST_AIRPORT_EXISTS', westAirports.length > 0);
         validator.check('START_DATE_EXISTS', !!startDate).check('START_DATE_IS_VALID', () => dataTypes.utcDate.checkView(startDate));
         validator.check('END_DATE_EXISTS', !!endDate).check('END_DATE_IS_VALID', () => dataTypes.utcDate.checkView(endDate));
-        validator.check('BASE_DATE_EXISTS', !!baseDate).check('BASE_DATE_IS_VALID', () => dataTypes.utcDate.checkView(baseDate));
         validator.when('START_DATE_IS_VALID', 'END_DATE_IS_VALID').then(() => {
           const ok = dataTypes.utcDate.convertViewToModel(startDate) <= dataTypes.utcDate.convertViewToModel(endDate);
           validator.check('START_DATE_IS_NOT_AFTER_END_DATE', ok, 'Can not be after end date.');
           validator.check('END_DATE_IS_NOT_BEFORE_START_DATE', ok, 'Can not be before start date.');
-          validator
-            .when('START_DATE_IS_NOT_AFTER_END_DATE', 'END_DATE_IS_NOT_BEFORE_START_DATE', 'BASE_DATE_IS_VALID')
-            .check(
-              'BASE_DATE_BETWEEN_START_DATE_AND_END_DATE',
-              () =>
-                dataTypes.utcDate.convertViewToModel(baseDate) <= dataTypes.utcDate.convertViewToModel(endDate) &&
-                dataTypes.utcDate.convertViewToModel(startDate) <= dataTypes.utcDate.convertViewToModel(baseDate),
-              'Between start date and end date.'
-            );
           validator.check('EAST_AIRLINE_EXISTS', !!eastAirportsAirline);
           validator.check('WEST_AIRLINE_EXISTS', !!westAirportsAirline);
         });
@@ -227,6 +236,7 @@ interface Airline extends AutoCompleteOption {}
 
 const ConnectionsReport: FC<ConnectionsReportProps> = ({ preplanName, fromDate, toDate }) => {
   const preplan = useContext(PreplanContext);
+  const { enqueueSnackbar } = useSnackbar();
 
   const [reportDateRange, setReportDateRange] = useState<ReportDateRangeState>({
     startDate: dataTypes.utcDate.convertBusinessToView(fromDate),
@@ -265,9 +275,10 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ preplanName, fromDate, 
     westAirports: allAirports.filter(a => defaultWestAirport.indexOf(a.name) !== -1).orderBy('name'),
     startDate: dataTypes.utcDate.convertBusinessToView(fromDate),
     endDate: dataTypes.utcDate.convertBusinessToView(toDate),
-    baseDate: dataTypes.utcDate.convertBusinessToView(fromDate),
     maxConnectionTime: dataTypes.daytime.convertModelToView(300),
-    minConnectionTime: dataTypes.daytime.convertModelToView(70)
+    minConnectionTime: dataTypes.daytime.convertModelToView(70),
+    autoCommit: false,
+    commitMessage: ''
   }));
 
   const [connectionTableDataModel, setConnectionTableDataModel] = useState<{ [index: string]: any }[]>([]);
@@ -280,7 +291,6 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ preplanName, fromDate, 
   useEffect(() => {
     if (validation.ok) {
       const flightLegInfoModels: FlightLegInfoModel[] = [];
-      const reportBaseDate = new Date(dataTypes.utcDate.convertViewToModel(viewState.baseDate));
 
       const eastFlight = flightLegViews.filter(
         f =>
@@ -314,8 +324,9 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ preplanName, fromDate, 
         const isDepartureFromIKA = flight.departureAirport.name === 'IKA';
         const isArrivalToIKA = flight.arrivalAirport.name === 'IKA';
 
+        const baseDate = dataTypes.utcDate.convertViewToBusiness(reportDateRange.startDate);
         if (isDepartureFromIKA) {
-          const utcStd = flight.actualStd.toDate(reportBaseDate);
+          const utcStd = flight.actualStd.toDate(baseDate);
           const localStd = flight.departureAirport.convertUtcToLocal(utcStd);
 
           let diffLocalStdandUtcStd = localStd.getUTCDay() - utcStd.getUTCDay();
@@ -338,9 +349,9 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ preplanName, fromDate, 
             }
           }
         } else if (isArrivalToIKA) {
-          const utcStd = flight.actualStd.toDate(reportBaseDate);
+          const utcStd = flight.actualStd.toDate(baseDate);
           const localStd = flight.departureAirport.convertUtcToLocal(utcStd);
-          const utcSta = flight.actualSta.toDate(reportBaseDate);
+          const utcSta = flight.actualSta.toDate(baseDate);
           const localSta = flight.arrivalAirport.convertUtcToLocal(utcSta);
 
           let diffLocalStdandUtcStd = localStd.getUTCDay() - utcStd.getUTCDay();
@@ -384,7 +395,6 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ preplanName, fromDate, 
     westAirports: validation.message('WEST_AIRPORT_*'),
     startDate: validation.message('START_DATE_*'),
     endDate: validation.message('END_DATE_*'),
-    baseDate: validation.message('BASE_DATE_*'),
     eastAirline: validation.message('EAST_AIRLINE_*'),
     westAirline: validation.message('WEST_AIRLINE_*'),
     maxConnectionTime: numberOfConnectionValidation.message('MAX_CONNECTION_*'),
@@ -606,7 +616,7 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ preplanName, fromDate, 
       <Button
         variant="outlined"
         color="primary"
-        onClick={() => {
+        onClick={async () => {
           if (connectionTableExporter) {
             const options = connectionTableExporter.workbookOptions();
             const rows = options && options.sheets && options.sheets[0] && options.sheets[0].rows;
@@ -620,6 +630,14 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ preplanName, fromDate, 
             }
 
             connectionTableExporter.save(options);
+
+            if (viewState.autoCommit) {
+              try {
+                await PreplanService.commit(preplan.versions.find(v => v.current)!.id, viewState.commitMessage);
+              } catch (error) {
+                enqueueSnackbar(String(error), { variant: 'error' });
+              }
+            }
           }
         }}
         disabled={!validation.ok}
@@ -745,7 +763,7 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ preplanName, fromDate, 
       <Button
         variant="outlined"
         color="primary"
-        onClick={() => {
+        onClick={async () => {
           if (connectionNumberExporter) {
             const options = connectionNumberExporter.workbookOptions();
             const rows = options && options.sheets && options.sheets[0] && options.sheets[0].rows;
@@ -767,6 +785,14 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ preplanName, fromDate, 
               }
             }
             connectionNumberExporter.save(options);
+
+            if (viewState.autoCommit) {
+              try {
+                await PreplanService.commit(preplan.versions.find(v => v.current)!.id, viewState.commitMessage);
+              } catch (error) {
+                enqueueSnackbar(String(error), { variant: 'error' });
+              }
+            }
           }
         }}
         disabled={!numberOfConnectionValidation.ok}
@@ -897,115 +923,123 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ preplanName, fromDate, 
 
   return (
     <Fragment>
-      <div className={classes.selectWeekWrapper}>
-        <SelectWeeks
-          includeSides={false}
-          weekSelection={weekSelection}
-          onSelectWeeks={weekSelection => {
-            setWeekSelection(weekSelection);
-            const weekStart = preplan.weeks.all[weekSelection.startIndex];
-            const weekEnd = preplan.weeks.all[weekSelection.endIndex - 1];
-            setReportDateRange({ startDate: dataTypes.utcDate.convertBusinessToView(weekStart.startDate), endDate: dataTypes.utcDate.convertBusinessToView(weekEnd.endDate) });
-            setViewState({ ...viewState, baseDate: dataTypes.utcDate.convertBusinessToView(weekStart.startDate) });
-          }}
+      <Box display="block" displayPrint="none">
+        <div className={classes.selectWeekWrapper}>
+          <SelectWeeks
+            includeSides={false}
+            weekSelection={weekSelection}
+            onSelectWeeks={weekSelection => {
+              setWeekSelection(weekSelection);
+              const weekStart = preplan.weeks.all[weekSelection.startIndex];
+              const weekEnd = preplan.weeks.all[weekSelection.endIndex - 1];
+              setReportDateRange({
+                startDate: dataTypes.utcDate.convertBusinessToView(weekStart.startDate < fromDate ? fromDate : weekStart.startDate),
+                endDate: dataTypes.utcDate.convertBusinessToView(weekEnd.endDate > toDate ? toDate : weekEnd.endDate)
+              });
+            }}
+          />
+        </div>
+
+        <Grid container spacing={2}>
+          <Grid item xs={12}>
+            East Flight
+          </Grid>
+          <Grid item xs={1}>
+            <AutoComplete
+              id="airline"
+              options={allAirline}
+              value={viewState.eastAirportsAirline}
+              onSelect={eastAirportsAirline => {
+                setViewState({ ...viewState, eastAirportsAirline });
+              }}
+              error={errors.eastAirline !== undefined}
+              helperText={errors.eastAirline}
+            />
+          </Grid>
+          <Grid item xs={11}>
+            <MultiSelect
+              id="east-airport"
+              value={viewState.eastAirports}
+              options={allAirports}
+              getOptionLabel={r => r.name}
+              getOptionValue={r => r.id}
+              onSelect={value => {
+                setViewState({ ...viewState, eastAirports: value ? value.orderBy('name') : [] });
+              }}
+              className={classes.marginBottom1}
+              error={errors.eastAirports !== undefined}
+              helperText={errors.eastAirports}
+            />
+          </Grid>
+          <Grid item xs={12}>
+            West Flight
+          </Grid>
+          <Grid item xs={1}>
+            <AutoComplete
+              id="airline"
+              options={allAirline}
+              value={viewState.westAirportsAirline}
+              onSelect={westAirportsAirline => {
+                setViewState({ ...viewState, westAirportsAirline });
+              }}
+              error={errors.westAirline !== undefined}
+              helperText={errors.westAirline}
+            />
+          </Grid>
+          <Grid item xs={11}>
+            <MultiSelect
+              id="west-airport"
+              value={viewState.westAirports}
+              options={allAirports}
+              getOptionLabel={r => r.name}
+              getOptionValue={r => r.id}
+              onSelect={value => {
+                setViewState({ ...viewState, westAirports: value ? value.orderBy('name') : [] });
+              }}
+              error={errors.westAirports !== undefined}
+              helperText={errors.westAirports}
+            />
+          </Grid>
+        </Grid>
+        <br />
+        <RefiningTextField
+          label="Start Date"
+          dataType={dataTypes.utcDate}
+          value={reportDateRange.startDate}
+          onChange={({ target: { value: startDate } }) => setReportDateRange({ ...reportDateRange, startDate })}
+          error={errors.startDate !== undefined}
+          helperText={errors.startDate}
+          disabled
         />
-      </div>
 
-      <Grid container spacing={2}>
-        <Grid item xs={12}>
-          East Flight
-        </Grid>
-        <Grid item xs={1}>
-          <AutoComplete
-            id="airline"
-            options={allAirline}
-            value={viewState.eastAirportsAirline}
-            onSelect={eastAirportsAirline => {
-              setViewState({ ...viewState, eastAirportsAirline });
-            }}
-            error={errors.eastAirline !== undefined}
-            helperText={errors.eastAirline}
-          />
-        </Grid>
-        <Grid item xs={11}>
-          <MultiSelect
-            id="east-airport"
-            value={viewState.eastAirports}
-            options={allAirports}
-            getOptionLabel={r => r.name}
-            getOptionValue={r => r.id}
-            onSelect={value => {
-              setViewState({ ...viewState, eastAirports: value ? value.orderBy('name') : [] });
-            }}
-            className={classes.marginBottom1}
-            error={errors.eastAirports !== undefined}
-            helperText={errors.eastAirports}
-          />
-        </Grid>
-        <Grid item xs={12}>
-          West Flight
-        </Grid>
-        <Grid item xs={1}>
-          <AutoComplete
-            id="airline"
-            options={allAirline}
-            value={viewState.westAirportsAirline}
-            onSelect={westAirportsAirline => {
-              setViewState({ ...viewState, westAirportsAirline });
-            }}
-            error={errors.westAirline !== undefined}
-            helperText={errors.westAirline}
-          />
-        </Grid>
-        <Grid item xs={11}>
-          <MultiSelect
-            id="west-airport"
-            value={viewState.westAirports}
-            options={allAirports}
-            getOptionLabel={r => r.name}
-            getOptionValue={r => r.id}
-            onSelect={value => {
-              setViewState({ ...viewState, westAirports: value ? value.orderBy('name') : [] });
-            }}
-            error={errors.westAirports !== undefined}
-            helperText={errors.westAirports}
-          />
-        </Grid>
-      </Grid>
-      <br />
-      <RefiningTextField
-        label="Start Date"
-        dataType={dataTypes.utcDate}
-        value={reportDateRange.startDate}
-        onChange={({ target: { value: startDate } }) => setReportDateRange({ ...reportDateRange, startDate })}
-        error={errors.startDate !== undefined}
-        helperText={errors.startDate}
-        disabled
-      />
+        <RefiningTextField
+          label="End Date"
+          dataType={dataTypes.utcDate}
+          value={reportDateRange.endDate}
+          onChange={({ target: { value: endDate } }) => setReportDateRange({ ...reportDateRange, endDate })}
+          error={errors.endDate !== undefined}
+          helperText={errors.endDate}
+          disabled
+        />
 
-      <RefiningTextField
-        label="End Date"
-        dataType={dataTypes.utcDate}
-        value={reportDateRange.endDate}
-        onChange={({ target: { value: endDate } }) => setReportDateRange({ ...reportDateRange, endDate })}
-        error={errors.endDate !== undefined}
-        helperText={errors.endDate}
-        disabled
-      />
+        <FormControlLabel
+          control={<Checkbox checked={viewState.autoCommit} onChange={({ target: { checked: autoCommit } }) => setViewState({ ...viewState, autoCommit })} color="primary" />}
+          label={
+            <TextField
+              label="Auto-commit message"
+              onChange={({ target: { value: commitMessage } }) => setViewState({ ...viewState, commitMessage })}
+              disabled={!viewState.autoCommit}
+            ></TextField>
+          }
+          labelPlacement="end"
+          disabled={preplan.readonly}
+        />
 
-      <RefiningTextField
-        label="Base Date"
-        dataType={dataTypes.utcDate}
-        value={viewState.baseDate}
-        onChange={({ target: { value: baseDate } }) => setViewState({ ...viewState, baseDate })}
-        error={errors.baseDate !== undefined}
-        helperText={errors.baseDate}
-      />
+        <br />
+        <br />
 
-      <br />
-      <br />
-
-      {<div className={classNames(classes.export, classes.marginBottom1)}>{exportConnectionTable}</div>}
+        {<div className={classNames(classes.export, classes.marginBottom1)}>{exportConnectionTable}</div>}
+      </Box>
       {validation.ok ? (
         <div className={classes.tableContainer}>{connectionTable}</div>
       ) : (
@@ -1019,28 +1053,30 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ preplanName, fromDate, 
       <br />
       <br />
 
-      <RefiningTextField
-        label="Minimum Connection Time"
-        dataType={dataTypes.daytime}
-        value={viewState.minConnectionTime}
-        onChange={({ target: { value: minConnectionTime } }) => setViewState({ ...viewState, minConnectionTime })}
-        error={errors.minConnectionTime !== undefined}
-        helperText={errors.minConnectionTime}
-      />
+      <Box display="block" displayPrint="none">
+        <RefiningTextField
+          label="Minimum Connection Time"
+          dataType={dataTypes.daytime}
+          value={viewState.minConnectionTime}
+          onChange={({ target: { value: minConnectionTime } }) => setViewState({ ...viewState, minConnectionTime })}
+          error={errors.minConnectionTime !== undefined}
+          helperText={errors.minConnectionTime}
+        />
 
-      <RefiningTextField
-        label="Maximum Connection Time"
-        dataType={dataTypes.daytime}
-        value={viewState.maxConnectionTime}
-        onChange={({ target: { value: maxConnectionTime } }) => setViewState({ ...viewState, maxConnectionTime })}
-        error={errors.maxConnectionTime !== undefined}
-        helperText={errors.maxConnectionTime}
-      />
+        <RefiningTextField
+          label="Maximum Connection Time"
+          dataType={dataTypes.daytime}
+          value={viewState.maxConnectionTime}
+          onChange={({ target: { value: maxConnectionTime } }) => setViewState({ ...viewState, maxConnectionTime })}
+          error={errors.maxConnectionTime !== undefined}
+          helperText={errors.maxConnectionTime}
+        />
 
-      <br />
-      <br />
+        <br />
+        <br />
 
-      {<div className={classNames(classes.export, classes.marginBottom1)}>{exportConnectionNumber}</div>}
+        {<div className={classNames(classes.export, classes.marginBottom1)}>{exportConnectionNumber}</div>}
+      </Box>
       {numberOfConnectionValidation.ok ? (
         <div className={classes.tableContainer}>{connectionNumber}</div>
       ) : (

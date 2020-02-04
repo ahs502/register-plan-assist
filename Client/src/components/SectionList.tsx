@@ -1,5 +1,5 @@
-import React, { FC } from 'react';
-import { Theme, Card, CardContent, Typography, CardActionArea, MenuList, MenuItem, List, ListItem, ListItemText } from '@material-ui/core';
+import React, { FC, Fragment } from 'react';
+import { Theme, Card, CardContent, Typography, CardActionArea, MenuList, MenuItem, List, ListItem, ListItemText, Box } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import classNames from 'classnames';
 
@@ -33,10 +33,16 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
   contents: {
     flexGrow: 1,
-    marginTop: theme.spacing(5),
-    marginLeft: theme.spacing(3),
     padding: 0,
     width: 'calc(100vh - 105px)'
+  },
+  displayContents: {
+    marginTop: theme.spacing(5),
+    marginLeft: theme.spacing(3)
+  },
+  printContents: {
+    marginTop: theme.spacing(1),
+    marginLeft: theme.spacing(0)
   },
   card: {
     display: 'inline-block',
@@ -75,20 +81,30 @@ const SectionList: FC<SectionListProps> = ({ children, sections, selectedSection
 
   return (
     <div className={classes.root}>
-      <div className={classes.list}>
-        <List>
-          {sections.map(section => (
-            <ListItem key={section.title} button selected={selectedSection === section} onClick={() => onSectionSelect && onSectionSelect(section)}>
-              <ListItemText primary={<Typography variant="subtitle2">{section.title}</Typography>} />
-            </ListItem>
-          ))}
-        </List>
-      </div>
+      <Box display="block" displayPrint="none">
+        <div className={classes.list}>
+          <List>
+            {sections.map(section => (
+              <ListItem key={section.title} button selected={selectedSection === section} onClick={() => onSectionSelect && onSectionSelect(section)}>
+                <ListItemText primary={<Typography variant="subtitle2">{section.title}</Typography>} />
+              </ListItem>
+            ))}
+          </List>
+        </div>
+      </Box>
+
       <div className={classes.contents}>
         {selectedSection ? (
-          children
+          <Fragment>
+            <Box display="block" displayPrint="none">
+              <div className={classes.displayContents}> {children}</div>
+            </Box>
+            <Box display="none" displayPrint="block">
+              <div className={classes.printContents}> {children}</div>
+            </Box>
+          </Fragment>
         ) : (
-          <div className={classes.cardHolder}>
+          <div className={classNames(classes.contents, classes.cardHolder)}>
             {sections.map(section => (
               <Card key={section.title} className={classes.card} onClick={() => onSectionSelect && onSectionSelect(section)}>
                 <CardActionArea>

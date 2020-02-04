@@ -1,5 +1,5 @@
 import React, { Fragment, FC } from 'react';
-import { Theme, Toolbar, Typography, IconButton } from '@material-ui/core';
+import { Theme, Toolbar, Typography, IconButton, Box } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import { NavigateNext as NavigateNextIcon, KeyboardBackspace as BackIcon } from '@material-ui/icons';
 import LinkTypography from './LinkTypography';
@@ -49,34 +49,36 @@ const NavBar: FC<NavBarProps> = ({ children, backLink, navBarLinks, backTitle })
   const classes = useStyles();
 
   return (
-    <Toolbar className={classes.root} variant="dense">
-      {backLink && (
-        <LinkIconButton to={backLink} color="inherit" title={backTitle}>
-          <BackIcon />
-        </LinkIconButton>
-        // <IconButton color="inherit" title={backTitle} onClick={() => history.goBack() /* history.push(backLink) */}>
-        //   <BackIcon />
-        // </IconButton>
-      )}
-      <div className={classes.navigation}>
-        {(navBarLinks.filter(Boolean) as NavBarLink[]).map((navBarLink, index) => (
-          <Fragment key={index}>
-            {index > 0 && <NavigateNextIcon classes={{ root: classes.navigationNextIcon }} />}
-            {navBarLink.link ? (
-              <LinkTypography variant="h6" display="inline" to={navBarLink.link as string}>
-                {navBarLink.title}
-              </LinkTypography>
-            ) : (
-              <Typography variant="h6" display="inline">
-                {navBarLink.title}
-              </Typography>
-            )}
-          </Fragment>
-        ))}
-      </div>
-      <div className={classes.grow} />
-      {children}
-    </Toolbar>
+    <Box display="block" displayPrint="none">
+      <Toolbar className={classes.root} variant="dense">
+        {backLink && (
+          <LinkIconButton to={backLink} color="inherit" title={backTitle}>
+            <BackIcon />
+          </LinkIconButton>
+          // <IconButton color="inherit" title={backTitle} onClick={() => history.goBack() /* history.push(backLink) */}>
+          //   <BackIcon />
+          // </IconButton>
+        )}
+        <div className={classes.navigation}>
+          {(navBarLinks.filter(Boolean) as NavBarLink[]).map((navBarLink, index) => (
+            <Fragment key={index}>
+              {index > 0 && <NavigateNextIcon classes={{ root: classes.navigationNextIcon }} />}
+              {navBarLink.link ? (
+                <LinkTypography variant="h6" display="inline" to={navBarLink.link as string}>
+                  {navBarLink.title}
+                </LinkTypography>
+              ) : (
+                <Typography variant="h6" display="inline">
+                  {navBarLink.title}
+                </Typography>
+              )}
+            </Fragment>
+          ))}
+        </div>
+        <div className={classes.grow} />
+        {children}
+      </Toolbar>
+    </Box>
   );
 };
 

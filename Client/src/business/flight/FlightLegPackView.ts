@@ -42,6 +42,10 @@ export default class FlightLegPackView {
   readonly blockTime: Daytime;
   readonly originPermission: boolean;
   readonly destinationPermission: boolean;
+  readonly utcStd: Date;
+  readonly localStd: Date;
+  readonly utcSta: Date;
+  readonly localSta: Date;
 
   // Computational:
   readonly derivedId: Id;
@@ -55,8 +59,13 @@ export default class FlightLegPackView {
   readonly weekSta: number;
   readonly stdDateTime: Date;
   readonly staDateTime: Date;
+  readonly hasDstInDeparture: boolean;
+  readonly hasDstInArrival: boolean;
+  readonly diffWithFirstLeg: number;
+  possibleStartDate: Date;
+  possibleEndDate: Date;
 
-  constructor(flightLeg: FlightLeg, flightPackView: FlightPackView, startWeek: Week, endWeek: Week, week: Week) {
+  constructor(flightLeg: FlightLeg, flightPackView: FlightPackView, week: Week, sourceFlight: Flight, allDaysBaseOfFirstLeg: Date[]) {
     this.std = flightLeg.std;
 
     this.label = flightLeg.label;
@@ -72,6 +81,10 @@ export default class FlightLegPackView {
     this.blockTime = flightLeg.blockTime;
     this.originPermission = flightLeg.originPermission;
     this.destinationPermission = flightLeg.destinationPermission;
+    this.utcStd = flightLeg.utcStd;
+    this.localStd = flightLeg.localStd;
+    this.utcSta = flightLeg.utcSta;
+    this.localSta = flightLeg.localSta;
 
     this.flightPackView = flightPackView;
     this.flightRequirement = flightLeg.flightRequirement;
@@ -90,6 +103,25 @@ export default class FlightLegPackView {
     this.actualSta = flightLeg.actualSta;
     this.weekStd = flightLeg.weekStd;
     this.weekSta = flightLeg.weekSta;
+    this.hasDstInDeparture = flightLeg.departureAirport.utcOffsets.some(
+      u => u.dst && u.startDateTimeUtc.getTime() <= flightLeg.utcStd.getTime() && flightLeg.utcStd.getTime() <= u.endDateTimeUtc.getTime()
+    );
+    this.hasDstInArrival = flightLeg.arrivalAirport.utcOffsets.some(
+      u => u.dst && u.startDateTimeUtc.getTime() <= flightLeg.utcSta.getTime() && flightLeg.utcSta.getTime() <= u.endDateTimeUtc.getTime()
+    );
+
+    this.possibleStartDate = allDaysBaseOfFirstLeg[0];
+    this.possibleEndDate = allDaysBaseOfFirstLeg.last()!;
+
+    this.diffWithFirstLeg = this.localStd.getUTCDay() - sourceFlight.legs[0].localStd.getUTCDay();
+    if (this.diffWithFirstLeg !== 0) {
+      if (this.diffWithFirstLeg < 0) {
+        this.diffWithFirstLeg = this.diffWithFirstLeg + 7;
+      }
+
+      this.possibleStartDate = new Date(this.possibleStartDate).addDays(this.diffWithFirstLeg);
+      this.possibleEndDate = new Date(this.possibleEndDate).addDays(this.diffWithFirstLeg);
+    }
 
     // Fields which should be calculated for view:
     this.notes = flightLeg.notes;

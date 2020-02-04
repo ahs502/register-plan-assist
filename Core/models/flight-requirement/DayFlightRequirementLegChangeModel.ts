@@ -6,12 +6,14 @@ export default interface DayFlightRequirementLegChangeModel {
   readonly stdUpperBound?: number;
   readonly originPermission: boolean;
   readonly destinationPermission: boolean;
+  readonly originPermissionNote: string;
+  readonly destinationPermissionNote: string;
 }
 
 export class DayFlightRequirementLegChangeModelValidation extends Validation {
   constructor(data: DayFlightRequirementLegChangeModel) {
     super(validator =>
-      validator.object(data).then(({ blockTime, stdLowerBound, stdUpperBound, originPermission, destinationPermission }) => {
+      validator.object(data).then(({ blockTime, stdLowerBound, stdUpperBound, originPermission, destinationPermission, originPermissionNote, destinationPermissionNote }) => {
         validator.must(typeof blockTime === 'number', !isNaN(blockTime)).must(() => blockTime > 0 && blockTime <= 16 * 60);
         validator.must(typeof stdLowerBound === 'number', !isNaN(stdLowerBound)).then(() => stdUpperBound! >= 0);
         validator
@@ -21,7 +23,12 @@ export class DayFlightRequirementLegChangeModelValidation extends Validation {
             () => !isNaN(stdUpperBound!)
           )
           .must(() => stdUpperBound! > 0);
-        validator.must(typeof originPermission === 'boolean', typeof destinationPermission === 'boolean');
+        validator.must(
+          typeof originPermission === 'boolean',
+          typeof destinationPermission === 'boolean',
+          typeof originPermissionNote === 'string',
+          typeof destinationPermissionNote === 'string'
+        );
       })
     );
   }

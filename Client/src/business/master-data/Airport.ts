@@ -35,6 +35,14 @@ export default class Airport extends MasterDataItem {
     const offset = this.utcOffsets.filter(o => o.startDateTimeLocal <= localDateTime && o.endDateTimeLocal > localDateTime).reduce((a, o) => a + o.offset, 0);
     return new Date(localDateTime).addMinutes(-offset);
   }
+
+  getUtcOffsetFromLocalTime(localDateTime: Date): number {
+    return this.utcOffsets.filter(o => o.startDateTimeLocal <= localDateTime && o.endDateTimeLocal > localDateTime).reduce((a, o) => a + o.offset, 0);
+  }
+
+  getUtcOffsetFromUtcTime(utcDateTime: Date): number {
+    return this.utcOffsets.filter(o => o.startDateTimeUtc <= utcDateTime && o.endDateTimeUtc > utcDateTime).reduce((a, o) => a + o.offset, 0);
+  }
 }
 
 export class Airports extends MasterDataItems<Airport> {

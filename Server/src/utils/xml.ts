@@ -33,6 +33,23 @@ export function xmlEscape(value: string): string {
   );
 }
 
+const xmlNormalizeMap = {
+  '&gt;': '>',
+  '&lt;': '<',
+  '&apos;': "'",
+  '&quot;': '"',
+  '&amp;': '&'
+};
+export function normalizeXml(value: string): string {
+  return (
+    value &&
+    Object.keys(xmlNormalizeMap).reduce((acc, cur) => {
+      acc = acc.replace(cur, xmlNormalizeMap[cur]);
+      return acc;
+    }, value)
+  );
+}
+
 const xmlTrue = 'true';
 const xmlFalse = 'false';
 export type XmlBoolean = typeof xmlTrue | typeof xmlFalse;

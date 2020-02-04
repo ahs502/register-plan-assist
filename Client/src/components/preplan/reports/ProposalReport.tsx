@@ -1,15 +1,34 @@
-import React, { FC, Fragment, useState, useEffect, useMemo, useContext } from 'react';
-import { Theme, InputLabel, TableHead, TableCell, Table, TableRow, TableBody, Button, Grid, FormControlLabel, Checkbox, Paper, Typography, TextField } from '@material-ui/core';
+import React, { FC, Fragment, useState, useEffect, useMemo, useContext, lazy } from 'react';
+import {
+  Theme,
+  InputLabel,
+  TableHead,
+  TableCell,
+  Table,
+  TableRow,
+  TableBody,
+  Button,
+  Grid,
+  FormControlLabel,
+  Checkbox,
+  Paper,
+  Typography,
+  TextField,
+  Box,
+  RadioGroup,
+  Radio,
+  FormControl
+} from '@material-ui/core';
 import { red, grey } from '@material-ui/core/colors';
 import { makeStyles } from '@material-ui/styles';
 import MasterData, { Airport } from 'src/business/master-data';
 import Daytime from '@core/types/Daytime';
-import { Publish as ExportToExcelIcon } from '@material-ui/icons';
+import { Publish as ExportToExcelIcon, Update as DstIcon } from '@material-ui/icons';
 import { ExcelExport, ExcelExportColumn, ExcelExportColumnGroup } from '@progress/kendo-react-excel-export';
 import { CellOptions } from '@progress/kendo-react-excel-export/dist/npm/ooxml/CellOptionsInterface';
 import classNames from 'classnames';
 import AutoComplete from 'src/components/AutoComplete';
-import Weekday from '@core/types/Weekday';
+import Weekday, { Weekdays } from '@core/types/Weekday';
 import { WorkbookSheetRow } from '@progress/kendo-ooxml';
 import Rsx from '@core/types/Rsx';
 import PreplanHeader from 'src/business/preplan/PreplanHeader';
@@ -26,8 +45,9 @@ import FlightLegPackView from 'src/business/flight/FlightLegPackView';
 import { PreplanContext } from 'src/pages/preplan';
 import Preplan from 'src/business/preplan/Preplan';
 import SelectWeeks, { WeekSelection } from 'src/components/preplan/SelectWeeks';
-import FlightPackView, { FlightLegPermission } from 'src/business/flight/FlightPackView';
+import FlightPackView from 'src/business/flight/FlightPackView';
 import { useSnackbar } from 'notistack';
+import { ShortMonthNames } from '@core/types/MonthName';
 
 const errorPaperSize = 250;
 const notAvailable = 'N/A';
@@ -92,8 +112,8 @@ const useStyles = makeStyles((theme: Theme) => {
       fontSize: 20
     },
     diffContainer: {
-      position: 'relative',
-      bottom: 3
+      position: 'relative'
+      // bottom: 3
     },
     transform180: {
       transform: 'rotate(180deg)'
@@ -114,6 +134,10 @@ const useStyles = makeStyles((theme: Theme) => {
       top: 2,
       fontSize: 26
     },
+    permissionNote: {
+      fontFamily: '"Roboto", "Helvetica", "Arial", "sans-serif"',
+      margin: theme.spacing(0)
+    },
     changeStatus: {
       backgroundColor: color.changeStatus.background
     },
@@ -131,6 +155,27 @@ const useStyles = makeStyles((theme: Theme) => {
     },
     reportRendering: {
       opacity: 0.2
+    },
+    localTimeContianer: {
+      position: 'relative',
+      textAlign: 'center',
+      minHeight: 32,
+      minWidth: 43
+    },
+    dst: {
+      position: 'absolute',
+      fontSize: 10,
+      fontWeight: 'bold',
+      color: grey[500],
+      width: '100%',
+      right: 12,
+      bottom: '-70%'
+    },
+    tableRow: {
+      height: 45
+    },
+    lcoalTimeCell: {
+      width: 60
     }
   };
 });
@@ -171,7 +216,9 @@ interface FlattenFlightRequirment {
   flightNumber: string;
   fullFlightNumber: string;
   departureAirport: Airport;
+  departureAirportUtcOffset: string;
   arrivalAirport: Airport;
+  arrivalAirportUtcOffset: string;
   std: Daytime;
   sta: Daytime;
   blocktime: number;
@@ -180,17 +227,21 @@ interface FlattenFlightRequirment {
   utcDays: number[];
   notes: string[];
   cancelationNotes: string[];
-  note: string;
   localStd: string;
   localSta: string;
   utcStd: string;
   utcSta: string;
+  hasDstInDeparture: boolean;
+  hasDstInArrival: boolean;
   diffLocalStdandUtcStd: number;
   diffLocalStdandLocalSta: number;
   diffLocalStdandUtcSta: number;
   route: string;
   parentRoute: string;
   label: string;
+  startDate: Date;
+  endDate: Date;
+  duration?: string;
   weekDay0?: string;
   weekDay1?: string;
   weekDay2?: string;
@@ -205,24 +256,23 @@ interface FlattenFlightRequirment {
   rsxWeekDay4?: Rsx;
   rsxWeekDay5?: Rsx;
   rsxWeekDay6?: Rsx;
-  change: boolean;
+  hasTimeChange: boolean;
   aircraftType: string;
   frequency: string;
   realFrequency: number;
   standbyFrequency: number;
   extraFrequency: number;
-  destinationNoPermissionsWeekDay: number[];
-  excelDestinationNoPermissions: string;
-  destinationNoPermissions: string[];
-  destinationPermissionAndPermissionNotesChanges: FlightLegPermission[];
-  originNoPermissionsWeekDay: number[];
-  excelOriginNoPermissions: string;
-  originNoPermissions: string[];
-  originPermissionAndPermissionNotesChanges: FlightLegPermission[];
+  destinationPermissions: string[];
+  originPermissions: string[];
   category?: string;
   nextFlights: FlattenFlightRequirment[];
   previousFlights: FlattenFlightRequirment[];
   status: FlattenFlightRequirmentStatus;
+  destinationPermissionsWeekDay: number[];
+  originPermissionsWeekDay: number[];
+  excelDestinationPermissions: string;
+  excelOriginPermissions: string;
+  excelNote: string;
 }
 
 interface FlattenFlightRequirmentStatus {
@@ -271,11 +321,16 @@ interface DataProvider {
   countOfRealFlight: number;
 }
 
+enum Dst {
+  all,
+  withDst,
+  withOutDst
+}
+
 interface ViewState {
   airline: Airline;
   baseAirports: Airport[];
   categories: string[];
-  baseDate: string;
   flightType: FlightType;
   showType: boolean;
   showSlot: boolean;
@@ -289,6 +344,8 @@ interface ViewState {
   preplanVersion?: Preplan['versions'][number];
   autoCommit: boolean;
   commitMessage: string;
+  showDst: boolean;
+  dst: Dst;
 }
 
 interface ReportDateRangeState {
@@ -310,25 +367,15 @@ class ViewStateValidation extends Validation<
   | 'CATEGORY_EXISTS'
   | 'AIRLINE_EXISTS'
 > {
-  constructor({ airline, baseAirports, categories, baseDate }: ViewState, startDate: string, endDate: string) {
+  constructor({ airline, baseAirports, categories }: ViewState, startDate: string, endDate: string) {
     super(
       validator => {
         validator.check('START_DATE_EXISTS', !!startDate).check('START_DATE_IS_VALID', () => dataTypes.utcDate.checkView(startDate));
         validator.check('END_DATE_EXISTS', !!endDate).check('END_DATE_IS_VALID', () => dataTypes.utcDate.checkView(endDate));
-        validator.check('BASE_DATE_EXISTS', !!baseDate).check('BASE_DATE_IS_VALID', () => dataTypes.utcDate.checkView(baseDate));
         validator.when('START_DATE_IS_VALID', 'END_DATE_IS_VALID').then(() => {
           const ok = dataTypes.utcDate.convertViewToModel(startDate) <= dataTypes.utcDate.convertViewToModel(endDate);
           validator.check('START_DATE_IS_NOT_AFTER_END_DATE', ok, 'Can not be after end date.');
           validator.check('END_DATE_IS_NOT_BEFORE_START_DATE', ok, 'Can not be before start date.');
-          validator
-            .when('START_DATE_IS_NOT_AFTER_END_DATE', 'END_DATE_IS_NOT_BEFORE_START_DATE', 'BASE_DATE_IS_VALID')
-            .check(
-              'BASE_DATE_BETWEEN_START_DATE_AND_END_DATE',
-              () =>
-                dataTypes.utcDate.convertViewToModel(baseDate) <= dataTypes.utcDate.convertViewToModel(endDate) &&
-                dataTypes.utcDate.convertViewToModel(startDate) <= dataTypes.utcDate.convertViewToModel(baseDate),
-              'Between start date and end date.'
-            );
         });
         validator.check('BASE_AIRPORT_EXISTS', !!baseAirports && baseAirports.length > 0);
         validator.check('CATEGORY_EXISTS', !!categories && categories.length > 0);
@@ -405,7 +452,6 @@ const ProposalReport: FC<ProposalReportProps> = ({ preplanName, fromDate, toDate
     categories: allCategory,
     startDate: dataTypes.utcDate.convertBusinessToView(fromDate),
     endDate: dataTypes.utcDate.convertBusinessToView(toDate),
-    baseDate: dataTypes.utcDate.convertBusinessToView(fromDate),
     flightType: flightTypes.find(f => f.label === 'All')!,
     showType: false,
     showSlot: true,
@@ -416,7 +462,9 @@ const ProposalReport: FC<ProposalReportProps> = ({ preplanName, fromDate, toDate
     showSTB2: true,
     showExtra: true,
     autoCommit: false,
-    commitMessage: ''
+    commitMessage: '',
+    showDst: true,
+    dst: Dst.all
   }));
 
   const [dataProvider, setDataProvider] = useState<DataProvider[]>([]);
@@ -483,17 +531,15 @@ const ProposalReport: FC<ProposalReportProps> = ({ preplanName, fromDate, toDate
     bold: true
   };
 
-  const generateReportDataModel = ({ baseDate }: ViewState, filterdFlightView: readonly FlightPackView[]): FlattenFlightRequirment[] => {
+  const generateReportDataModel = (filterdFlightView: readonly FlightPackView[], dst: Dst): FlattenFlightRequirment[] => {
     const result: FlattenFlightRequirment[] = [];
-
-    const reportBaseDate = new Date(dataTypes.utcDate.convertViewToModel(baseDate));
 
     const flightViewByflightRequirmentId = filterdFlightView.groupBy(f => f.flightRequirement.id);
 
     for (const key in flightViewByflightRequirmentId) {
       if (flightViewByflightRequirmentId.hasOwnProperty(key)) {
-        const sortedFlattenFlightRequirments = createFlattenFlightRequirmentsFromDailyFlightView(flightViewByflightRequirmentId[key], reportBaseDate);
-        generateMassage(sortedFlattenFlightRequirments);
+        const sortedFlattenFlightRequirments = createFlattenFlightRequirmentsFromDailyFlightView(flightViewByflightRequirmentId[key], dst);
+        generateCumulativeMessage(sortedFlattenFlightRequirments);
 
         calculateFrequency(sortedFlattenFlightRequirments);
         result.push(...sortedFlattenFlightRequirments);
@@ -504,7 +550,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ preplanName, fromDate, toDate
   };
 
   const filterFlight = (
-    { airline, baseAirports, categories, flightType, showReal, showSTB1, showSTB2, showExtra }: ViewState,
+    { airline, baseAirports, categories, flightType, showReal, showSTB1, showSTB2, showExtra, dst }: ViewState,
     flightPackViews: readonly FlightPackView[],
     generateRealFlight: boolean
   ): FlightPackView[] => {
@@ -536,8 +582,8 @@ const ProposalReport: FC<ProposalReportProps> = ({ preplanName, fromDate, toDate
     async function generateReport() {
       if (!validation.ok) return;
 
-      const realFlatModel = generateReportDataModel(viewState, filterFlight(viewState, flightPackViews, true));
-      const reserveFlatModel = generateReportDataModel(viewState, filterFlight(viewState, flightPackViews, false));
+      const realFlatModel = generateReportDataModel(filterFlight(viewState, flightPackViews, true), viewState.dst);
+      const reserveFlatModel = generateReportDataModel(filterFlight(viewState, flightPackViews, false), viewState.dst);
       setFlattenFlightRequirmentsStatus(realFlatModel);
       setFlattenFlightRequirmentsStatus(reserveFlatModel);
 
@@ -545,8 +591,8 @@ const ProposalReport: FC<ProposalReportProps> = ({ preplanName, fromDate, toDate
         const targetPreplan = viewState.preplanVersion;
         const targetPreplanFlights = await getPreplanFlightRequirments(targetPreplan.id);
 
-        const targetRealFlatModel = generateReportDataModel(viewState, filterFlight(viewState, targetPreplanFlights, true));
-        const targetReserveFlatModel = generateReportDataModel(viewState, filterFlight(viewState, targetPreplanFlights, false));
+        const targetRealFlatModel = generateReportDataModel(filterFlight(viewState, targetPreplanFlights, true), viewState.dst);
+        const targetReserveFlatModel = generateReportDataModel(filterFlight(viewState, targetPreplanFlights, false), viewState.dst);
 
         compareFlattenFlightRequirment(realFlatModel, targetRealFlatModel);
         compareFlattenFlightRequirment(reserveFlatModel, targetReserveFlatModel);
@@ -613,7 +659,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ preplanName, fromDate, toDate
       if (row.type === 'data') {
         const id = r.cells![idColumnNumber].value;
         const model = flattenFlightRequirments.find(f => f.id === id)!;
-        const weekdayWithoutPermission = model.originNoPermissionsWeekDay.concat(model.destinationNoPermissionsWeekDay).distinct();
+        const weekdayWithoutPermission = model.originPermissionsWeekDay.concat(model.destinationPermissionsWeekDay).distinct();
 
         weekdayWithoutPermission.forEach(c => {
           r!.cells![weekDaySaturdayCellNumber + c].color = color.noPermission.color;
@@ -638,7 +684,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ preplanName, fromDate, toDate
     rows && proposalExporter.props.data && insertDividerBetweenRealFlightAndStantbyFlight(proposalExporter.props.data, rows);
 
     proposalExporter.save(options);
-    console.log('exit exportToExcel');
+
     function setFontSizeForDayColumns(model: FlattenFlightRequirment, workbookSheetRow: WorkbookSheetRow) {
       Array.range(0, 6).forEach(d => {
         const weekDayStatus = (model.status as any)['weekDay' + d.toString()] as WeekDayStatus;
@@ -803,7 +849,6 @@ const ProposalReport: FC<ProposalReportProps> = ({ preplanName, fromDate, toDate
   const errors = {
     startDate: validation.message('START_DATE_*'),
     endDate: validation.message('END_DATE_*'),
-    baseDate: validation.message('BASE_DATE_*'),
     baseAirport: validation.message('BASE_AIRPORT_*'),
     categories: validation.message('CATEGORY_*'),
     airline: validation.message('AIRLINE_*')
@@ -814,151 +859,151 @@ const ProposalReport: FC<ProposalReportProps> = ({ preplanName, fromDate, toDate
 
   return (
     <Fragment>
-      <div className={classes.selectWeekWrapper}>
-        <SelectWeeks
-          includeSides={false}
-          weekSelection={weekSelection}
-          onSelectWeeks={weekSelection => {
-            setWeekSelection(weekSelection);
-            const weekStart = preplan.weeks.all[weekSelection.startIndex];
-            const weekEnd = preplan.weeks.all[weekSelection.endIndex - 1];
-            setReportDateRange({ startDate: dataTypes.utcDate.convertBusinessToView(weekStart.startDate), endDate: dataTypes.utcDate.convertBusinessToView(weekEnd.endDate) });
-            setViewState({ ...viewState, baseDate: dataTypes.utcDate.convertBusinessToView(weekStart.startDate) });
-          }}
-        />
-      </div>
+      <Box display="block" displayPrint="none">
+        <div className={classes.selectWeekWrapper}>
+          <SelectWeeks
+            includeSides={false}
+            weekSelection={weekSelection}
+            onSelectWeeks={weekSelection => {
+              setWeekSelection(weekSelection);
+              const weekStart = preplan.weeks.all[weekSelection.startIndex];
+              const weekEnd = preplan.weeks.all[weekSelection.endIndex - 1];
+              setReportDateRange({ startDate: dataTypes.utcDate.convertBusinessToView(weekStart.startDate), endDate: dataTypes.utcDate.convertBusinessToView(weekEnd.endDate) });
+            }}
+          />
+        </div>
 
-      <Grid container spacing={2}>
-        <Grid item xs={12}>
-          <Grid container spacing={2}>
-            <Grid item xs={1}>
-              <InputLabel htmlFor="flight-type" className={classes.marginBottom1}>
-                Airline
-              </InputLabel>
+        <Grid container spacing={2}>
+          <Grid item xs={12}>
+            <Grid container spacing={2}>
+              <Grid item xs={1}>
+                <InputLabel htmlFor="flight-type" className={classes.marginBottom1}>
+                  Airline
+                </InputLabel>
 
-              <AutoComplete
-                id="airline"
-                options={allAirline}
-                value={viewState.airline}
-                onSelect={s => {
-                  setViewState({ ...viewState, airline: s });
-                }}
-                error={errors.airline !== undefined}
-                helperText={errors.airline}
-                isDisabled={renderReport}
-              />
-            </Grid>
-            <Grid item xs={3}>
-              <InputLabel htmlFor="base-airport" className={classes.marginBottom1}>
-                Base Airport
-              </InputLabel>
-              <MultiSelect
-                id="compare-preplan-base-airport"
-                value={viewState.baseAirports}
-                options={allBaseAirport}
-                getOptionLabel={l => l.name}
-                getOptionValue={l => l.id}
-                onSelect={s => {
-                  setViewState({ ...viewState, baseAirports: s ? [...s] : [] });
-                }}
-                error={errors.baseAirport !== undefined}
-                helperText={errors.baseAirport}
-                isDisabled={renderReport}
-              />
-            </Grid>
-            <Grid item xs={2}>
-              <InputLabel htmlFor="flight-type" className={classes.marginBottom1}>
-                Flight Type
-              </InputLabel>
+                <AutoComplete
+                  id="airline"
+                  options={allAirline}
+                  value={viewState.airline}
+                  onSelect={s => {
+                    setViewState({ ...viewState, airline: s });
+                  }}
+                  error={errors.airline !== undefined}
+                  helperText={errors.airline}
+                  isDisabled={renderReport}
+                />
+              </Grid>
+              <Grid item xs={3}>
+                <InputLabel htmlFor="base-airport" className={classes.marginBottom1}>
+                  Base Airport
+                </InputLabel>
+                <MultiSelect
+                  id="compare-preplan-base-airport"
+                  value={viewState.baseAirports}
+                  options={allBaseAirport}
+                  getOptionLabel={l => l.name}
+                  getOptionValue={l => l.id}
+                  onSelect={s => {
+                    setViewState({ ...viewState, baseAirports: s ? [...s] : [] });
+                  }}
+                  error={errors.baseAirport !== undefined}
+                  helperText={errors.baseAirport}
+                  isDisabled={renderReport}
+                />
+              </Grid>
+              <Grid item xs={2}>
+                <InputLabel htmlFor="flight-type" className={classes.marginBottom1}>
+                  Flight Type
+                </InputLabel>
 
-              <AutoComplete
-                id="compare-preplan-flightType"
-                options={flightTypes}
-                value={viewState.flightType}
-                onSelect={s => {
-                  viewState.flightType = s;
-                  viewState.showSlot = s.value !== 'Domestic';
-                  viewState.showNote = s.value !== 'Domestic';
-                  viewState.showType = s.value === 'Domestic';
-                  viewState.showFrequency = s.value === 'Domestic';
-                  setViewState({ ...viewState });
-                }}
-                isDisabled={renderReport}
-              />
-            </Grid>
+                <AutoComplete
+                  id="compare-preplan-flightType"
+                  options={flightTypes}
+                  value={viewState.flightType}
+                  onSelect={s => {
+                    viewState.flightType = s;
+                    viewState.showSlot = s.value !== 'Domestic';
+                    viewState.showNote = s.value !== 'Domestic';
+                    viewState.showType = s.value === 'Domestic';
+                    viewState.showFrequency = s.value === 'Domestic';
+                    setViewState({ ...viewState });
+                  }}
+                  isDisabled={renderReport}
+                />
+              </Grid>
 
-            <Grid item xs={5}>
-              <InputLabel htmlFor="base-airport" className={classes.marginBottom1}>
-                Category
-              </InputLabel>
-              <MultiSelect
-                id="category"
-                value={viewState.categories}
-                options={allCategory}
-                getOptionLabel={l => l}
-                getOptionValue={l => l}
-                onSelect={s => {
-                  setViewState({ ...viewState, categories: s ? [...s] : [] });
-                }}
-                error={errors.categories !== undefined}
-                helperText={errors.categories}
-                isDisabled={renderReport}
-              />
+              <Grid item xs={5}>
+                <InputLabel htmlFor="base-airport" className={classes.marginBottom1}>
+                  Category
+                </InputLabel>
+                <MultiSelect
+                  id="category"
+                  value={viewState.categories}
+                  options={allCategory}
+                  getOptionLabel={l => l}
+                  getOptionValue={l => l}
+                  onSelect={s => {
+                    setViewState({ ...viewState, categories: s ? [...s] : [] });
+                  }}
+                  error={errors.categories !== undefined}
+                  helperText={errors.categories}
+                  isDisabled={renderReport}
+                />
+              </Grid>
             </Grid>
-          </Grid>
-          <Grid container spacing={2}>
-            <Grid item xs={3}>
-              <InputLabel htmlFor="compare-preplan" className={classes.marginBottom1}>
-                Compare with Preplan (optional)
-              </InputLabel>
-              <AutoComplete
-                id="compare-preplan"
-                options={preplanHeaderOptions}
-                value={viewState.preplanHeader ? preplanHeaderOptions.find(p => p.header === viewState.preplanHeader) : undefined}
-                getOptionLabel={l => l.label}
-                getOptionValue={l => l.id}
-                onSelect={({ header: preplanHeader }) => setViewState({ ...viewState, preplanHeader })}
-                isDisabled={renderReport}
-              />
-            </Grid>
-            <Grid item xs={3}>
-              <InputLabel htmlFor="compare-preplan" className={classes.marginBottom1}>
-                Version (optional)
-              </InputLabel>
-              <AutoComplete
-                id="compare-preplan"
-                options={preplanVersions}
-                value={viewState.preplanVersion ? preplanVersions.find(p => p.header === viewState.preplanVersion) : undefined}
-                getOptionLabel={l => l.label}
-                getOptionValue={l => l.id}
-                onSelect={({ header: preplanVersion }) => setViewState({ ...viewState, preplanVersion })}
-                isDisabled={renderReport}
-              />
-            </Grid>
-            <Grid item xs={1} className={classes.datePosition}>
-              <RefiningTextField
-                label="Start Date"
-                className={classNames(classes.marginRight1, classes.marginBottom2)}
-                dataType={dataTypes.utcDate}
-                value={reportDateRange.startDate}
-                onChange={({ target: { value: startDate } }) => setReportDateRange({ ...reportDateRange, startDate })}
-                error={errors.startDate !== undefined}
-                helperText={errors.startDate}
-                disabled
-              />
-            </Grid>
-            <Grid item xs={1} className={classes.datePosition}>
-              <RefiningTextField
-                label="End Date"
-                dataType={dataTypes.utcDate}
-                value={reportDateRange.endDate}
-                onChange={({ target: { value: endDate } }) => setReportDateRange({ ...reportDateRange, endDate })}
-                error={errors.endDate !== undefined}
-                helperText={errors.endDate}
-                disabled
-              />
-            </Grid>
-            <Grid item xs={1} className={classes.datePosition}>
+            <Grid container spacing={2}>
+              <Grid item xs={3}>
+                <InputLabel htmlFor="compare-preplan" className={classes.marginBottom1}>
+                  Compare with Preplan (optional)
+                </InputLabel>
+                <AutoComplete
+                  id="compare-preplan"
+                  options={preplanHeaderOptions}
+                  value={viewState.preplanHeader ? preplanHeaderOptions.find(p => p.header === viewState.preplanHeader) : undefined}
+                  getOptionLabel={l => l.label}
+                  getOptionValue={l => l.id}
+                  onSelect={({ header: preplanHeader }) => setViewState({ ...viewState, preplanHeader })}
+                  isDisabled={renderReport}
+                />
+              </Grid>
+              <Grid item xs={3}>
+                <InputLabel htmlFor="compare-preplan" className={classes.marginBottom1}>
+                  Version (optional)
+                </InputLabel>
+                <AutoComplete
+                  id="compare-preplan"
+                  options={preplanVersions}
+                  value={viewState.preplanVersion ? preplanVersions.find(p => p.header === viewState.preplanVersion) : undefined}
+                  getOptionLabel={l => l.label}
+                  getOptionValue={l => l.id}
+                  onSelect={({ header: preplanVersion }) => setViewState({ ...viewState, preplanVersion })}
+                  isDisabled={renderReport}
+                />
+              </Grid>
+              <Grid item xs={1} className={classes.datePosition}>
+                <RefiningTextField
+                  label="Start Date"
+                  className={classNames(classes.marginRight1, classes.marginBottom2)}
+                  dataType={dataTypes.utcDate}
+                  value={reportDateRange.startDate}
+                  onChange={({ target: { value: startDate } }) => setReportDateRange({ ...reportDateRange, startDate })}
+                  error={errors.startDate !== undefined}
+                  helperText={errors.startDate}
+                  disabled
+                />
+              </Grid>
+              <Grid item xs={1} className={classes.datePosition}>
+                <RefiningTextField
+                  label="End Date"
+                  dataType={dataTypes.utcDate}
+                  value={reportDateRange.endDate}
+                  onChange={({ target: { value: endDate } }) => setReportDateRange({ ...reportDateRange, endDate })}
+                  error={errors.endDate !== undefined}
+                  helperText={errors.endDate}
+                  disabled
+                />
+              </Grid>
+              {/* <Grid item xs={1} className={classes.datePosition}>
               <RefiningTextField
                 label="Base Date"
                 dataType={dataTypes.utcDate}
@@ -968,367 +1013,374 @@ const ProposalReport: FC<ProposalReportProps> = ({ preplanName, fromDate, toDate
                 helperText={errors.baseDate}
                 disabled={renderReport}
               />
+            </Grid> */}
+              <Grid item xs={4} />
             </Grid>
-            <Grid item xs={4} />
+          </Grid>
+
+          <Grid item xs={12}>
+            <Grid container spacing={1}>
+              <Grid item xs={1}>
+                Columns:
+              </Grid>
+              <Grid item xs={2}>
+                <FormControlLabel
+                  value="start"
+                  control={<Checkbox checked={viewState.showSlot} onChange={e => setViewState({ ...viewState, showSlot: e.target.checked })} color="primary" />}
+                  label="Show Slot"
+                  labelPlacement="end"
+                />
+              </Grid>
+
+              <Grid item xs={2}>
+                <FormControlLabel
+                  value="start"
+                  control={<Checkbox checked={viewState.showNote} onChange={e => setViewState({ ...viewState, showNote: e.target.checked })} color="primary" />}
+                  label="Show Note"
+                  labelPlacement="end"
+                />
+              </Grid>
+
+              <Grid item xs={2}>
+                <FormControlLabel
+                  value="start"
+                  control={<Checkbox checked={viewState.showType} onChange={e => setViewState({ ...viewState, showType: e.target.checked })} color="primary" />}
+                  label="Show Type"
+                  labelPlacement="end"
+                />
+              </Grid>
+
+              <Grid item xs={3}>
+                <FormControlLabel
+                  value="start"
+                  control={<Checkbox checked={viewState.showFrequency} onChange={e => setViewState({ ...viewState, showFrequency: e.target.checked })} color="primary" />}
+                  label="Show Frequency"
+                  labelPlacement="end"
+                />
+              </Grid>
+            </Grid>
+          </Grid>
+
+          <Grid item xs={12}>
+            <Grid container spacing={1}>
+              <Grid item xs={1}>
+                Filter:
+              </Grid>
+              <Grid item xs={2}>
+                <FormControlLabel
+                  value="start"
+                  control={<Checkbox checked={viewState.showReal} onChange={e => setViewState({ ...viewState, showReal: e.target.checked })} color="primary" />}
+                  label="Show Real"
+                  labelPlacement="end"
+                />
+              </Grid>
+
+              <Grid item xs={2}>
+                <FormControlLabel
+                  value="start"
+                  control={<Checkbox checked={viewState.showSTB1} onChange={e => setViewState({ ...viewState, showSTB1: e.target.checked })} color="primary" />}
+                  label="Show STB1"
+                  labelPlacement="end"
+                />
+              </Grid>
+
+              <Grid item xs={2}>
+                <FormControlLabel
+                  value="start"
+                  control={<Checkbox checked={viewState.showSTB2} onChange={e => setViewState({ ...viewState, showSTB2: e.target.checked })} color="primary" />}
+                  label="Show STB2"
+                  labelPlacement="end"
+                />
+              </Grid>
+
+              <Grid item xs={5}>
+                <FormControlLabel
+                  value="start"
+                  control={<Checkbox checked={viewState.showExtra} onChange={e => setViewState({ ...viewState, showExtra: e.target.checked })} color="primary" />}
+                  label="Show EXT"
+                  labelPlacement="end"
+                />
+              </Grid>
+              <Grid item xs={1}></Grid>
+              <Grid item xs={2}>
+                <FormControlLabel
+                  value="start"
+                  control={<Checkbox checked={viewState.showDst} onChange={({ target: { checked: showDst } }) => setViewState({ ...viewState, showDst })} color="primary" />}
+                  label="Show Dst"
+                  labelPlacement="end"
+                />
+              </Grid>
+            </Grid>
+          </Grid>
+          <Grid item xs={12}>
+            <Grid container spacing={1}>
+              <Grid item xs={1}>
+                DST:
+              </Grid>
+              <Grid item xs={6}>
+                <FormControl component="fieldset">
+                  <RadioGroup
+                    row
+                    value={viewState.dst}
+                    onChange={({ target: { value } }) => {
+                      setViewState({ ...viewState, dst: +value });
+                    }}
+                  >
+                    <FormControlLabel value={Dst.all} control={<Radio color="primary" />} label="All" labelPlacement="end" />
+                    <FormControlLabel value={Dst.withDst} control={<Radio color="primary" />} label="Iran (UTC 04:30)" labelPlacement="end" />
+                    <FormControlLabel value={Dst.withOutDst} control={<Radio color="primary" />} label="Iran (UTC 03:30)" labelPlacement="end" />
+                  </RadioGroup>
+                </FormControl>
+              </Grid>
+            </Grid>
           </Grid>
         </Grid>
 
-        <Grid item xs={12}>
-          <Grid container spacing={1}>
-            <Grid item xs={1}>
-              Columns:
-            </Grid>
-            <Grid item xs={2}>
-              <FormControlLabel
-                value="start"
-                control={<Checkbox checked={viewState.showSlot} onChange={e => setViewState({ ...viewState, showSlot: e.target.checked })} color="primary" />}
-                label="Show Slot"
-                labelPlacement="end"
-              />
-            </Grid>
-
-            <Grid item xs={2}>
-              <FormControlLabel
-                value="start"
-                control={<Checkbox checked={viewState.showNote} onChange={e => setViewState({ ...viewState, showNote: e.target.checked })} color="primary" />}
-                label="Show Note"
-                labelPlacement="end"
-              />
-            </Grid>
-
-            <Grid item xs={2}>
-              <FormControlLabel
-                value="start"
-                control={<Checkbox checked={viewState.showType} onChange={e => setViewState({ ...viewState, showType: e.target.checked })} color="primary" />}
-                label="Show Type"
-                labelPlacement="end"
-              />
-            </Grid>
-
-            <Grid item xs={3}>
-              <FormControlLabel
-                value="start"
-                control={<Checkbox checked={viewState.showFrequency} onChange={e => setViewState({ ...viewState, showFrequency: e.target.checked })} color="primary" />}
-                label="Show Frequency"
-                labelPlacement="end"
-              />
-            </Grid>
-          </Grid>
-        </Grid>
-
-        <Grid item xs={12}>
-          <Grid container spacing={1}>
-            <Grid item xs={1}>
-              Filter:
-            </Grid>
-            <Grid item xs={2}>
-              <FormControlLabel
-                value="start"
-                control={<Checkbox checked={viewState.showReal} onChange={e => setViewState({ ...viewState, showReal: e.target.checked })} color="primary" />}
-                label="Show Real"
-                labelPlacement="end"
-              />
-            </Grid>
-
-            <Grid item xs={2}>
-              <FormControlLabel
-                value="start"
-                control={<Checkbox checked={viewState.showSTB1} onChange={e => setViewState({ ...viewState, showSTB1: e.target.checked })} color="primary" />}
-                label="Show STB1"
-                labelPlacement="end"
-              />
-            </Grid>
-
-            <Grid item xs={2}>
-              <FormControlLabel
-                value="start"
-                control={<Checkbox checked={viewState.showSTB2} onChange={e => setViewState({ ...viewState, showSTB2: e.target.checked })} color="primary" />}
-                label="Show STB2"
-                labelPlacement="end"
-              />
-            </Grid>
-
-            <Grid item xs={3}>
-              <FormControlLabel
-                value="start"
-                control={<Checkbox checked={viewState.showExtra} onChange={e => setViewState({ ...viewState, showExtra: e.target.checked })} color="primary" />}
-                label="Show EXT"
-                labelPlacement="end"
-              />
-            </Grid>
-          </Grid>
-        </Grid>
-      </Grid>
-
-      <br />
-      <Grid container spacing={2}>
-        <Grid item>
-          <Button
-            disabled={!validation.ok}
-            className={classes.marginBottom2}
-            variant="outlined"
-            color="primary"
-            onClick={async () => {
-              exportToExcel();
-              if (viewState.autoCommit) {
-                try {
-                  const result = await PreplanService.commit(preplan.versions.find(v => v.current)!.id, viewState.commitMessage);
-                } catch (error) {
-                  enqueueSnackbar(String(error), { variant: 'error' });
+        <br />
+        <Grid container spacing={2}>
+          <Grid item>
+            <Button
+              disabled={!validation.ok}
+              className={classes.marginBottom2}
+              variant="outlined"
+              color="primary"
+              onClick={async () => {
+                exportToExcel();
+                if (viewState.autoCommit) {
+                  try {
+                    const result = await PreplanService.commit(preplan.versions.find(v => v.current)!.id, viewState.commitMessage);
+                  } catch (error) {
+                    enqueueSnackbar(String(error), { variant: 'error' });
+                  }
                 }
+              }}
+            >
+              Export to Excel
+              <ExportToExcelIcon className={classes.transform180} />
+            </Button>
+          </Grid>
+          <Grid item>
+            <FormControlLabel
+              control={<Checkbox checked={viewState.autoCommit} onChange={({ target: { checked: autoCommit } }) => setViewState({ ...viewState, autoCommit })} color="primary" />}
+              label={
+                <TextField
+                  label="Auto-commit message"
+                  onChange={({ target: { value: commitMessage } }) => setViewState({ ...viewState, commitMessage })}
+                  disabled={!viewState.autoCommit}
+                ></TextField>
               }
+              labelPlacement="end"
+              disabled={preplan.readonly}
+            />
+          </Grid>
+        </Grid>
+        {validation.ok && (
+          <ExcelExport
+            data={dataProvider}
+            group={group}
+            fileName={
+              "Proposal  '" + preplanName + "'-" + viewState.baseAirports.map(a => a.name).join(',') + '-' + viewState.flightType.label + '-' + new Date().format('~D$') + '.xlsx'
+            }
+            ref={exporter => {
+              proposalExporter = exporter;
             }}
           >
-            Export to Excel
-            <ExportToExcelIcon className={classes.transform180} />
-          </Button>
-        </Grid>
-        <Grid item>
-          <FormControlLabel
-            control={<Checkbox checked={viewState.autoCommit} onChange={({ target: { checked: autoCommit } }) => setViewState({ ...viewState, autoCommit })} color="primary" />}
-            label={
-              <TextField
-                label="Auto-commit message"
-                onChange={({ target: { value: commitMessage } }) => setViewState({ ...viewState, commitMessage })}
-                disabled={!viewState.autoCommit}
-              ></TextField>
-            }
-            labelPlacement="end"
-            disabled={preplan.readonly}
-          />
-        </Grid>
-      </Grid>
-      {validation.ok && (
-        <ExcelExport
-          data={dataProvider}
-          group={group}
-          fileName={
-            "Proposal  '" + preplanName + "'-" + viewState.baseAirports.map(a => a.name).join(',') + '-' + viewState.flightType.label + '-' + new Date().format('~D$') + '.xlsx'
-          }
-          ref={exporter => {
-            proposalExporter = exporter;
-          }}
-        >
-          <ExcelExportColumnGroup
-            title={
-              'Proposal Schedule from ' +
-              dataTypes.utcDate.refineView(reportDateRange.startDate) +
-              ' till ' +
-              dataTypes.utcDate.refineView(reportDateRange.endDate) +
-              ' (Based on ' +
-              dataTypes.utcDate.refineView(viewState.baseDate) +
-              ')'
-            }
-            headerCellOptions={{ ...headerCellOptions, background: '#FFFFFF' }}
-          >
             <ExcelExportColumnGroup
-              title={'Base ' + viewState.baseAirports.map(a => a.name).join(',')}
-              headerCellOptions={{ ...headerCellOptions, background: color.excelHeader.backgroundColor }}
+              title={'Proposal Schedule from ' + dataTypes.utcDate.refineView(reportDateRange.startDate) + ' till ' + dataTypes.utcDate.refineView(reportDateRange.endDate)}
+              headerCellOptions={{ ...headerCellOptions, background: '#FFFFFF' }}
             >
-              <ExcelExportColumn
-                title={'F/N'}
-                field="flightNumber"
-                width={31}
-                cellOptions={{ ...detailCellOption, borderLeft: { color: '#000000', size: 3 } }}
-                headerCellOptions={{
-                  ...headerCellOptions,
-                  background: color.excelHeader.backgroundColor,
-                  borderLeft: { color: '#000000', size: 3 },
-                  borderTop: { color: '#000000', size: 3 },
-                  borderBottom: { color: '#000000', size: 3 }
-                }}
-              />
-              <ExcelExportColumn
-                title="ROUTE"
-                field="route"
-                width={55}
-                cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 } }}
-                headerCellOptions={{
-                  ...headerCellOptions,
-                  background: color.excelHeader.backgroundColor,
-                  borderRight: { color: '#000000', size: 3 },
-                  borderTop: { color: '#000000', size: 3 },
-                  borderBottom: { color: '#000000', size: 3 }
-                }}
-              />
-
-              <ExcelExportColumn
-                title="LCL"
-                field="localStd"
-                width={30}
-                cellOptions={{ ...detailCellOption }}
-                headerCellOptions={{
-                  ...headerCellOptions,
-                  background: color.excelHeader.backgroundColor,
-                  borderLeft: { color: '#000000', size: 3 },
-                  borderTop: { color: '#000000', size: 3 },
-                  borderBottom: { color: '#000000', size: 3 }
-                }}
-              />
-              <ExcelExportColumn
-                title="LCL"
-                field="localSta"
-                width={30}
-                cellOptions={{ ...detailCellOption }}
-                headerCellOptions={{
-                  ...headerCellOptions,
-                  background: color.excelHeader.backgroundColor,
-                  borderTop: { color: '#000000', size: 3 },
-                  borderBottom: { color: '#000000', size: 3 }
-                }}
-              />
-
-              <ExcelExportColumn
-                title="UTC"
-                field="utcStd"
-                width={30}
-                cellOptions={{ ...detailCellOption, color: '#F44336' }}
-                headerCellOptions={{
-                  ...headerCellOptions,
-                  background: color.excelHeader.backgroundColor,
-                  color: '#F44336',
-                  borderTop: { color: '#000000', size: 3 },
-                  borderBottom: { color: '#000000', size: 3 }
-                }}
-              />
-              <ExcelExportColumn
-                title="UTC"
-                field="utcSta"
-                width={30}
-                cellOptions={{ ...detailCellOption, color: '#F44336', borderRight: { color: '#000000', size: 3 } }}
-                headerCellOptions={{
-                  ...headerCellOptions,
-                  background: color.excelHeader.backgroundColor,
-                  color: '#F44336',
-                  borderRight: { color: '#000000', size: 3 },
-                  borderTop: { color: '#000000', size: 3 },
-                  borderBottom: { color: '#000000', size: 3 }
-                }}
-              />
-
-              <ExcelExportColumn
-                title={['Sat', '6'].join('\r\n')}
-                field="weekDay0"
-                width={26}
-                cellOptions={{ ...detailCellOption, borderLeft: { color: '#000000', size: 3 } }}
-                headerCellOptions={{
-                  ...headerCellOptions,
-                  wrap: true,
-                  background: color.excelHeader.backgroundColor,
-                  borderLeft: { color: '#000000', size: 3 },
-                  borderTop: { color: '#000000', size: 3 },
-                  borderBottom: { color: '#000000', size: 3 }
-                }}
-              />
-
-              <ExcelExportColumn
-                title={['Sun', '7'].join('\r\n')}
-                field="weekDay1"
-                width={26}
-                cellOptions={{ ...detailCellOption }}
-                headerCellOptions={{
-                  ...headerCellOptions,
-                  wrap: true,
-                  background: color.excelHeader.backgroundColor,
-                  borderTop: { color: '#000000', size: 3 },
-                  borderBottom: { color: '#000000', size: 3 }
-                }}
-              />
-
-              <ExcelExportColumn
-                title={['Mon', '1'].join('\r\n')}
-                field="weekDay2"
-                width={26}
-                cellOptions={{ ...detailCellOption }}
-                headerCellOptions={{
-                  ...headerCellOptions,
-                  wrap: true,
-                  background: color.excelHeader.backgroundColor,
-                  borderTop: { color: '#000000', size: 3 },
-                  borderBottom: { color: '#000000', size: 3 }
-                }}
-              />
-
-              <ExcelExportColumn
-                title={['Tue', '2'].join('\r\n')}
-                field="weekDay3"
-                width={26}
-                cellOptions={{ ...detailCellOption }}
-                headerCellOptions={{
-                  ...headerCellOptions,
-                  wrap: true,
-                  background: color.excelHeader.backgroundColor,
-                  borderTop: { color: '#000000', size: 3 },
-                  borderBottom: { color: '#000000', size: 3 }
-                }}
-              />
-
-              <ExcelExportColumn
-                title={['Wed', '3'].join('\r\n')}
-                field="weekDay4"
-                width={26}
-                cellOptions={{ ...detailCellOption }}
-                headerCellOptions={{
-                  ...headerCellOptions,
-                  wrap: true,
-                  background: color.excelHeader.backgroundColor,
-                  borderTop: { color: '#000000', size: 3 },
-                  borderBottom: { color: '#000000', size: 3 }
-                }}
-              />
-
-              <ExcelExportColumn
-                title={['Thu', '4'].join('\r\n')}
-                field="weekDay5"
-                width={26}
-                cellOptions={{ ...detailCellOption }}
-                headerCellOptions={{
-                  ...headerCellOptions,
-                  wrap: true,
-                  background: color.excelHeader.backgroundColor,
-                  borderTop: { color: '#000000', size: 3 },
-                  borderBottom: { color: '#000000', size: 3 }
-                }}
-              />
-
-              <ExcelExportColumn
-                title={['Fri', '5'].join('\r\n')}
-                field="weekDay6"
-                width={26}
-                cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 } }}
-                headerCellOptions={{
-                  ...headerCellOptions,
-                  wrap: true,
-                  background: color.excelHeader.backgroundColor,
-                  borderRight: { color: '#000000', size: 3 },
-                  borderTop: { color: '#000000', size: 3 },
-                  borderBottom: { color: '#000000', size: 3 }
-                }}
-              />
-
-              <ExcelExportColumn
-                title="DUR."
-                field="formatedBlockTime"
-                width={30}
-                cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 }, borderLeft: { color: '#000000', size: 3 } }}
-                headerCellOptions={{
-                  ...headerCellOptions,
-                  background: color.excelHeader.backgroundColor,
-                  borderRight: { color: '#000000', size: 3 },
-                  borderLeft: { color: '#000000', size: 3 },
-                  borderTop: { color: '#000000', size: 3 },
-                  borderBottom: { color: '#000000', size: 3 }
-                }}
-              />
-              {viewState.showNote && (
+              <ExcelExportColumnGroup
+                title={'Base ' + viewState.baseAirports.map(a => a.name).join(',')}
+                headerCellOptions={{ ...headerCellOptions, background: color.excelHeader.backgroundColor }}
+              >
                 <ExcelExportColumn
-                  title={['NOTE', '(base on domestic/lcl)'].join('\r\n')}
-                  field="note"
-                  width={100}
-                  cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 }, borderLeft: { color: '#000000', size: 3 } }}
+                  title={'F/N'}
+                  field="flightNumber"
+                  width={31}
+                  cellOptions={{ ...detailCellOption, borderLeft: { color: '#000000', size: 3 } }}
+                  headerCellOptions={{
+                    ...headerCellOptions,
+                    background: color.excelHeader.backgroundColor,
+                    borderLeft: { color: '#000000', size: 3 },
+                    borderTop: { color: '#000000', size: 3 },
+                    borderBottom: { color: '#000000', size: 3 }
+                  }}
+                />
+                <ExcelExportColumn
+                  title="ROUTE"
+                  field="route"
+                  width={55}
+                  cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 } }}
+                  headerCellOptions={{
+                    ...headerCellOptions,
+                    background: color.excelHeader.backgroundColor,
+                    borderRight: { color: '#000000', size: 3 },
+                    borderTop: { color: '#000000', size: 3 },
+                    borderBottom: { color: '#000000', size: 3 }
+                  }}
+                />
+
+                <ExcelExportColumn
+                  title="LCL"
+                  field="localStd"
+                  width={30}
+                  cellOptions={{ ...detailCellOption }}
+                  headerCellOptions={{
+                    ...headerCellOptions,
+                    background: color.excelHeader.backgroundColor,
+                    borderLeft: { color: '#000000', size: 3 },
+                    borderTop: { color: '#000000', size: 3 },
+                    borderBottom: { color: '#000000', size: 3 }
+                  }}
+                />
+                <ExcelExportColumn
+                  title="LCL"
+                  field="localSta"
+                  width={30}
+                  cellOptions={{ ...detailCellOption }}
+                  headerCellOptions={{
+                    ...headerCellOptions,
+                    background: color.excelHeader.backgroundColor,
+                    borderTop: { color: '#000000', size: 3 },
+                    borderBottom: { color: '#000000', size: 3 }
+                  }}
+                />
+
+                <ExcelExportColumn
+                  title="UTC"
+                  field="utcStd"
+                  width={30}
+                  cellOptions={{ ...detailCellOption, color: '#F44336' }}
+                  headerCellOptions={{
+                    ...headerCellOptions,
+                    background: color.excelHeader.backgroundColor,
+                    color: '#F44336',
+                    borderTop: { color: '#000000', size: 3 },
+                    borderBottom: { color: '#000000', size: 3 }
+                  }}
+                />
+                <ExcelExportColumn
+                  title="UTC"
+                  field="utcSta"
+                  width={30}
+                  cellOptions={{ ...detailCellOption, color: '#F44336', borderRight: { color: '#000000', size: 3 } }}
+                  headerCellOptions={{
+                    ...headerCellOptions,
+                    background: color.excelHeader.backgroundColor,
+                    color: '#F44336',
+                    borderRight: { color: '#000000', size: 3 },
+                    borderTop: { color: '#000000', size: 3 },
+                    borderBottom: { color: '#000000', size: 3 }
+                  }}
+                />
+
+                <ExcelExportColumn
+                  title={['Sat', '6'].join('\r\n')}
+                  field="weekDay0"
+                  width={26}
+                  cellOptions={{ ...detailCellOption, borderLeft: { color: '#000000', size: 3 } }}
                   headerCellOptions={{
                     ...headerCellOptions,
                     wrap: true,
+                    background: color.excelHeader.backgroundColor,
+                    borderLeft: { color: '#000000', size: 3 },
+                    borderTop: { color: '#000000', size: 3 },
+                    borderBottom: { color: '#000000', size: 3 }
+                  }}
+                />
+
+                <ExcelExportColumn
+                  title={['Sun', '7'].join('\r\n')}
+                  field="weekDay1"
+                  width={26}
+                  cellOptions={{ ...detailCellOption }}
+                  headerCellOptions={{
+                    ...headerCellOptions,
+                    wrap: true,
+                    background: color.excelHeader.backgroundColor,
+                    borderTop: { color: '#000000', size: 3 },
+                    borderBottom: { color: '#000000', size: 3 }
+                  }}
+                />
+
+                <ExcelExportColumn
+                  title={['Mon', '1'].join('\r\n')}
+                  field="weekDay2"
+                  width={26}
+                  cellOptions={{ ...detailCellOption }}
+                  headerCellOptions={{
+                    ...headerCellOptions,
+                    wrap: true,
+                    background: color.excelHeader.backgroundColor,
+                    borderTop: { color: '#000000', size: 3 },
+                    borderBottom: { color: '#000000', size: 3 }
+                  }}
+                />
+
+                <ExcelExportColumn
+                  title={['Tue', '2'].join('\r\n')}
+                  field="weekDay3"
+                  width={26}
+                  cellOptions={{ ...detailCellOption }}
+                  headerCellOptions={{
+                    ...headerCellOptions,
+                    wrap: true,
+                    background: color.excelHeader.backgroundColor,
+                    borderTop: { color: '#000000', size: 3 },
+                    borderBottom: { color: '#000000', size: 3 }
+                  }}
+                />
+
+                <ExcelExportColumn
+                  title={['Wed', '3'].join('\r\n')}
+                  field="weekDay4"
+                  width={26}
+                  cellOptions={{ ...detailCellOption }}
+                  headerCellOptions={{
+                    ...headerCellOptions,
+                    wrap: true,
+                    background: color.excelHeader.backgroundColor,
+                    borderTop: { color: '#000000', size: 3 },
+                    borderBottom: { color: '#000000', size: 3 }
+                  }}
+                />
+
+                <ExcelExportColumn
+                  title={['Thu', '4'].join('\r\n')}
+                  field="weekDay5"
+                  width={26}
+                  cellOptions={{ ...detailCellOption }}
+                  headerCellOptions={{
+                    ...headerCellOptions,
+                    wrap: true,
+                    background: color.excelHeader.backgroundColor,
+                    borderTop: { color: '#000000', size: 3 },
+                    borderBottom: { color: '#000000', size: 3 }
+                  }}
+                />
+
+                <ExcelExportColumn
+                  title={['Fri', '5'].join('\r\n')}
+                  field="weekDay6"
+                  width={26}
+                  cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 } }}
+                  headerCellOptions={{
+                    ...headerCellOptions,
+                    wrap: true,
+                    background: color.excelHeader.backgroundColor,
+                    borderRight: { color: '#000000', size: 3 },
+                    borderTop: { color: '#000000', size: 3 },
+                    borderBottom: { color: '#000000', size: 3 }
+                  }}
+                />
+
+                <ExcelExportColumn
+                  title="DUR."
+                  field="formatedBlockTime"
+                  width={30}
+                  cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 }, borderLeft: { color: '#000000', size: 3 } }}
+                  headerCellOptions={{
+                    ...headerCellOptions,
                     background: color.excelHeader.backgroundColor,
                     borderRight: { color: '#000000', size: 3 },
                     borderLeft: { color: '#000000', size: 3 },
@@ -1336,87 +1388,105 @@ const ProposalReport: FC<ProposalReportProps> = ({ preplanName, fromDate, toDate
                     borderBottom: { color: '#000000', size: 3 }
                   }}
                 />
-              )}
+                {viewState.showNote && (
+                  <ExcelExportColumn
+                    title={['NOTE', '(base on domestic/lcl)'].join('\r\n')}
+                    field="excelNote"
+                    width={100}
+                    cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 }, borderLeft: { color: '#000000', size: 3 } }}
+                    headerCellOptions={{
+                      ...headerCellOptions,
+                      wrap: true,
+                      background: color.excelHeader.backgroundColor,
+                      borderRight: { color: '#000000', size: 3 },
+                      borderLeft: { color: '#000000', size: 3 },
+                      borderTop: { color: '#000000', size: 3 },
+                      borderBottom: { color: '#000000', size: 3 }
+                    }}
+                  />
+                )}
 
-              {viewState.showSlot && (
-                <ExcelExportColumn
-                  title={['DESTINATION', 'SLOT (LCL)'].join('\r\n')}
-                  field="excelDestinationNoPermissions"
-                  width={70}
-                  cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 }, borderLeft: { color: '#000000', size: 3 } }}
-                  headerCellOptions={{
-                    ...headerCellOptions,
-                    wrap: true,
-                    background: color.excelHeader.backgroundColor,
-                    borderRight: { color: '#000000', size: 3 },
-                    borderLeft: { color: '#000000', size: 3 },
-                    borderTop: { color: '#000000', size: 3 },
-                    borderBottom: { color: '#000000', size: 3 }
-                  }}
-                />
-              )}
+                {viewState.showSlot && (
+                  <ExcelExportColumn
+                    title={['DESTINATION', 'SLOT (LCL)'].join('\r\n')}
+                    field="excelDestinationPermissions"
+                    width={70}
+                    cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 }, borderLeft: { color: '#000000', size: 3 } }}
+                    headerCellOptions={{
+                      ...headerCellOptions,
+                      wrap: true,
+                      background: color.excelHeader.backgroundColor,
+                      borderRight: { color: '#000000', size: 3 },
+                      borderLeft: { color: '#000000', size: 3 },
+                      borderTop: { color: '#000000', size: 3 },
+                      borderBottom: { color: '#000000', size: 3 }
+                    }}
+                  />
+                )}
 
-              {viewState.showSlot && (
-                <ExcelExportColumn
-                  title={['ORIGIN', 'SLOT (UTC)'].join('\r\n')}
-                  field="excelOriginNoPermissions"
-                  width={85}
-                  cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 }, borderLeft: { color: '#000000', size: 3 } }}
-                  headerCellOptions={{
-                    ...headerCellOptions,
-                    wrap: true,
-                    background: color.excelHeader.backgroundColor,
-                    borderRight: { color: '#000000', size: 3 },
-                    borderLeft: { color: '#000000', size: 3 },
-                    borderTop: { color: '#000000', size: 3 },
-                    borderBottom: { color: '#000000', size: 3 }
-                  }}
-                />
-              )}
+                {viewState.showSlot && (
+                  <ExcelExportColumn
+                    title={['ORIGIN', 'SLOT (UTC)'].join('\r\n')}
+                    field="excelOriginPermissions"
+                    width={85}
+                    cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 }, borderLeft: { color: '#000000', size: 3 } }}
+                    headerCellOptions={{
+                      ...headerCellOptions,
+                      wrap: true,
+                      background: color.excelHeader.backgroundColor,
+                      borderRight: { color: '#000000', size: 3 },
+                      borderLeft: { color: '#000000', size: 3 },
+                      borderTop: { color: '#000000', size: 3 },
+                      borderBottom: { color: '#000000', size: 3 }
+                    }}
+                  />
+                )}
 
-              {viewState.showType && (
-                <ExcelExportColumn
-                  title="Type"
-                  field="aircraftType"
-                  width={40}
-                  cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 }, borderLeft: { color: '#000000', size: 3 } }}
-                  headerCellOptions={{
-                    ...headerCellOptions,
-                    wrap: true,
-                    background: color.excelHeader.backgroundColor,
-                    borderRight: { color: '#000000', size: 3 },
-                    borderLeft: { color: '#000000', size: 3 },
-                    borderTop: { color: '#000000', size: 3 },
-                    borderBottom: { color: '#000000', size: 3 }
-                  }}
-                />
-              )}
+                {viewState.showType && (
+                  <ExcelExportColumn
+                    title="Type"
+                    field="aircraftType"
+                    width={40}
+                    cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 }, borderLeft: { color: '#000000', size: 3 } }}
+                    headerCellOptions={{
+                      ...headerCellOptions,
+                      wrap: true,
+                      background: color.excelHeader.backgroundColor,
+                      borderRight: { color: '#000000', size: 3 },
+                      borderLeft: { color: '#000000', size: 3 },
+                      borderTop: { color: '#000000', size: 3 },
+                      borderBottom: { color: '#000000', size: 3 }
+                    }}
+                  />
+                )}
 
-              {viewState.showFrequency && (
-                <ExcelExportColumn
-                  title="Fre"
-                  field="frequency"
-                  width={40}
-                  cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 }, borderLeft: { color: '#000000', size: 3 } }}
-                  headerCellOptions={{
-                    ...headerCellOptions,
-                    wrap: true,
-                    background: color.excelHeader.backgroundColor,
-                    borderRight: { color: '#000000', size: 3 },
-                    borderLeft: { color: '#000000', size: 3 },
-                    borderTop: { color: '#000000', size: 3 },
-                    borderBottom: { color: '#000000', size: 3 }
-                  }}
-                />
-              )}
+                {viewState.showFrequency && (
+                  <ExcelExportColumn
+                    title="Fre"
+                    field="frequency"
+                    width={40}
+                    cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 }, borderLeft: { color: '#000000', size: 3 } }}
+                    headerCellOptions={{
+                      ...headerCellOptions,
+                      wrap: true,
+                      background: color.excelHeader.backgroundColor,
+                      borderRight: { color: '#000000', size: 3 },
+                      borderLeft: { color: '#000000', size: 3 },
+                      borderTop: { color: '#000000', size: 3 },
+                      borderBottom: { color: '#000000', size: 3 }
+                    }}
+                  />
+                )}
+              </ExcelExportColumnGroup>
             </ExcelExportColumnGroup>
-          </ExcelExportColumnGroup>
-          <ExcelExportColumn title="Category" field="category" hidden={true} />
-          <ExcelExportColumn title="id" field="id" />
-          <ExcelExportColumn title="parentRoute" field="parentRoute" />
-          <ExcelExportColumn title="label" field="label" />
-        </ExcelExport>
-      )}
+            <ExcelExportColumn title="Category" field="category" hidden={true} />
+            <ExcelExportColumn title="id" field="id" />
+            <ExcelExportColumn title="parentRoute" field="parentRoute" />
+            <ExcelExportColumn title="label" field="label" />
+          </ExcelExport>
+        )}
+      </Box>
+
       {validation.ok ? (
         <Table className={classNames(classes.marginBottom1, classes.marginRight1, { [classes.reportRendering]: renderReport })}>
           <TableHead>
@@ -1530,6 +1600,7 @@ const ProposalReport: FC<ProposalReportProps> = ({ preplanName, fromDate, toDate
                     <TableRow
                       key={index.toString() + f.label + f.flightNumber}
                       className={classNames(
+                        classes.tableRow,
                         index > 0 && self[index - 1].label !== f.label
                           ? self[index - 1].parentRoute !== f.parentRoute
                             ? classes.borderTopThick
@@ -1540,13 +1611,25 @@ const ProposalReport: FC<ProposalReportProps> = ({ preplanName, fromDate, toDate
                     >
                       <TableCell className={classes.border}>{f.flightNumber}</TableCell>
                       <TableCell className={classNames(classes.border, f.status.routeChange ? classes.changeStatus : '')}>{f.route}</TableCell>
-                      <TableCell className={classNames(classes.border, f.status.localStd && f.status.localStd.isChange ? classes.changeStatus : '')} align="center">
-                        {f.localStd}
+                      <TableCell
+                        className={classNames(classes.border, classes.lcoalTimeCell, f.status.localStd && f.status.localStd.isChange ? classes.changeStatus : '')}
+                        align="center"
+                      >
+                        <span className={classes.localTimeContianer}>
+                          <span>{f.localStd}</span>
+                          {viewState.showDst ? <span className={classes.dst}>(UTC+{f.departureAirportUtcOffset})</span> : <Fragment></Fragment>}
+                        </span>
                       </TableCell>
-                      <TableCell className={classNames(classes.border, f.status.localSta && f.status.localSta.isChange ? classes.changeStatus : '')} align="center">
-                        <div className={f.diffLocalStdandLocalSta !== 0 ? classes.diffContainer : ''}>
-                          <span>{f.localSta}</span>
-                        </div>
+                      <TableCell
+                        className={classNames(classes.border, classes.lcoalTimeCell, f.status.localSta && f.status.localSta.isChange ? classes.changeStatus : '')}
+                        align="center"
+                      >
+                        <span className={classes.localTimeContianer}>
+                          <span className={f.diffLocalStdandLocalSta !== 0 ? classes.diffContainer : ''}>
+                            <span>{f.localSta}</span>
+                            {viewState.showDst ? <span className={classes.dst}>(UTC+{f.arrivalAirportUtcOffset})</span> : <Fragment></Fragment>}
+                          </span>
+                        </span>
                       </TableCell>
                       <TableCell className={classNames(classes.border, classes.utc, f.status.utcStd && f.status.utcStd.isChange ? classes.changeStatus : '')} align="center">
                         <div className={f.diffLocalStdandUtcStd !== 0 ? classes.diffContainer : ''}>
@@ -1640,9 +1723,11 @@ const ProposalReport: FC<ProposalReportProps> = ({ preplanName, fromDate, toDate
                       </TableCell>
                       {viewState.showNote && (
                         <TableCell align="center" className={classes.border}>
-                          {f.notes.map((n, index) => (
+                          {f.hasTimeChange ? <div>TIM</div> : <Fragment></Fragment>}
+                          <div>{f.duration}</div>
+                          {/* {f.notes.map((n, index) => (
                             <div key={index}>{n}</div>
-                          ))}
+                          ))} */}
                           {f.cancelationNotes.map((n, index) => (
                             <div key={index}>{n}</div>
                           ))}
@@ -1652,14 +1737,18 @@ const ProposalReport: FC<ProposalReportProps> = ({ preplanName, fromDate, toDate
                       {viewState.showSlot && (
                         <Fragment>
                           <TableCell className={classes.border} align="center">
-                            {f.destinationNoPermissions.map((n, index) => (
-                              <div key={index}>{n}</div>
+                            {f.destinationPermissions.map((n, index) => (
+                              <pre key={index} className={classes.permissionNote}>
+                                {n}
+                              </pre>
                             ))}
                           </TableCell>
 
                           <TableCell className={classes.border} align="center">
-                            {f.originNoPermissions.map((n, index) => (
-                              <div key={index}>{n}</div>
+                            {f.originPermissions.map((n, index) => (
+                              <pre key={index} className={classes.permissionNote}>
+                                {n}
+                              </pre>
                             ))}
                           </TableCell>
                         </Fragment>
@@ -1960,41 +2049,12 @@ function calculateFrequency(flattenFlightRequirments: FlattenFlightRequirment[])
   });
 }
 
-function generateMassage(sortedFlattenFlightRequirments: FlattenFlightRequirment[]): void {
+function generateCumulativeMessage(sortedFlattenFlightRequirments: FlattenFlightRequirment[]): void {
   sortedFlattenFlightRequirments.forEach(n => {
-    n.note = n.notes
-      .filter(Boolean)
-      .concat(n.cancelationNotes)
-      .join('\r\n');
-
-    const destinationNoPermission = n.destinationNoPermissionsWeekDay
-      .filter(f => !n.destinationPermissionAndPermissionNotesChanges.some(y => f === y.day))
-      .map(w => Weekday[w].substring(0, 3))
-      .join(',');
-
-    n.destinationNoPermissions = n.destinationPermissionAndPermissionNotesChanges
-      .map(n => n.note)
-      .concat(
-        n.destinationNoPermissionsWeekDay.length === 0 && n.destinationPermissionAndPermissionNotesChanges.length === 0
-          ? 'OK'
-          : destinationNoPermission
-          ? 'NOT OK for: ' + destinationNoPermission
-          : ''
-      );
-    n.excelDestinationNoPermissions = n.destinationNoPermissions.filter(Boolean).join('\r\n');
-
-    const originNoPermission = n.originNoPermissionsWeekDay
-      .filter(f => !n.originPermissionAndPermissionNotesChanges.some(y => f === y.day))
-      .map(w => Weekday[w].substring(0, 3))
-      .join(',');
-
-    n.originNoPermissions = n.originPermissionAndPermissionNotesChanges
-      .map(n => n.note)
-      .concat(
-        n.originNoPermissionsWeekDay.length === 0 && n.originPermissionAndPermissionNotesChanges.length === 0 ? 'OK' : originNoPermission ? 'NOT OK for: ' + originNoPermission : ''
-      );
-
-    n.excelOriginNoPermissions = n.originNoPermissions.filter(Boolean).join('\r\n');
+    n.duration = n.startDate === n.endDate ? `Flight Date ${n.startDate.format('d')}` : `FM ${n.startDate.format('d')} TILL ${n.endDate.format('d')}`;
+    n.excelNote = `${n.duration}\r\n${n.hasTimeChange ? 'TIM\r\n' : ''}${n.cancelationNotes.filter(Boolean).join('\r\n')}`;
+    n.excelDestinationPermissions = n.destinationPermissions.filter(Boolean).join('\r\n');
+    n.excelOriginPermissions = n.originPermissions.filter(Boolean).join('\r\n');
   });
 }
 
@@ -2028,7 +2088,7 @@ function sortFlattenFlightRequirment(flattenFlightRequirmentList: FlattenFlightR
   return result;
 }
 
-function createFlattenFlightRequirmentsFromDailyFlightView(flightViews: FlightPackView[], baseDate: Date): FlattenFlightRequirment[] {
+function createFlattenFlightRequirmentsFromDailyFlightView(flightViews: FlightPackView[], dst: Dst): FlattenFlightRequirment[] {
   const result: FlattenFlightRequirment[] = [];
   let existFlightId: string = '';
   flightViews.sortBy(f => f.legs[0]?.actualStd);
@@ -2041,7 +2101,13 @@ function createFlattenFlightRequirmentsFromDailyFlightView(flightViews: FlightPa
 
         const existFlight = prevFlight.legs.every((l, index) => {
           const leg = flight.legs[index];
-          return leg.actualStd.minutes === l.actualStd.minutes && leg.blockTime.minutes === l.blockTime.minutes && leg.rsx === l.rsx;
+          //return leg.actualStd.minutes === l.actualStd.minutes && leg.blockTime.minutes === l.blockTime.minutes && leg.rsx === l.rsx;
+          return (
+            leg.localStd.getUTCMinutes() === l.localStd.getUTCMinutes() &&
+            leg.localStd.getUTCHours() === l.localStd.getUTCHours() &&
+            leg.blockTime.minutes === l.blockTime.minutes &&
+            leg.rsx === l.rsx
+          );
         });
 
         if (existFlight) {
@@ -2054,7 +2120,7 @@ function createFlattenFlightRequirmentsFromDailyFlightView(flightViews: FlightPa
     const legs = flight.legs;
     for (let legIndex = 0; legIndex < legs.length; legIndex++) {
       const leg = legs[legIndex];
-
+      if ((dst === Dst.withDst && !leg.flightPackView.inIranDst) || (dst === Dst.withOutDst && leg.flightPackView.inIranDst)) continue;
       if (!!existFlightId) {
         const existFlatten = result.find(
           f =>
@@ -2065,7 +2131,7 @@ function createFlattenFlightRequirmentsFromDailyFlightView(flightViews: FlightPa
         )!;
         updateFlattenFlightRequirment(existFlatten, leg);
       } else {
-        const flattentFlightRequirment = createFlattenFlightRequirment(leg, baseDate);
+        const flattentFlightRequirment = createFlattenFlightRequirment(leg);
         result.push(flattentFlightRequirment);
       }
     }
@@ -2074,19 +2140,13 @@ function createFlattenFlightRequirmentsFromDailyFlightView(flightViews: FlightPa
   return result;
 }
 
-function createFlattenFlightRequirment(leg: FlightLegPackView, date: Date): FlattenFlightRequirment {
+function createFlattenFlightRequirment(leg: FlightLegPackView): FlattenFlightRequirment {
   const flightRequirement = leg.flightRequirement;
   const parentRoute = flightRequirement.route[0].departureAirport.name + '-' + flightRequirement.route.map(r => r.arrivalAirport.name).join('-');
-  const utcStd = leg.actualStd.toDate(date);
-  const localStd = leg.departureAirport.convertUtcToLocal(utcStd);
-  //const utcSta = leg.std.toDate(date);
-  //utcSta.addMinutes(leg.blockTime);
-  const utcSta = leg.actualSta.toDate(date);
-  const localSta = leg.arrivalAirport.convertUtcToLocal(utcSta);
 
-  let diffLocalStdandUtcStd = localStd.getUTCDay() - utcStd.getUTCDay();
-  let diffLocalStdandUtcSta = localStd.getUTCDay() - utcSta.getUTCDay();
-  let diffLocalStdandLocalSta = localStd.getUTCDay() - localSta.getUTCDay();
+  let diffLocalStdandUtcStd = leg.localStd.getUTCDay() - leg.utcStd.getUTCDay();
+  let diffLocalStdandUtcSta = leg.localStd.getUTCDay() - leg.utcSta.getUTCDay();
+  let diffLocalStdandLocalSta = leg.localStd.getUTCDay() - leg.localSta.getUTCDay();
 
   if (diffLocalStdandUtcStd > 1) diffLocalStdandUtcStd = -1;
   if (diffLocalStdandUtcStd < -1) diffLocalStdandUtcStd = 1;
@@ -2097,6 +2157,14 @@ function createFlattenFlightRequirment(leg: FlightLegPackView, date: Date): Flat
   if (diffLocalStdandLocalSta > 1) diffLocalStdandLocalSta = -1;
   if (diffLocalStdandLocalSta < -1) diffLocalStdandLocalSta = 1;
 
+  const departureAirportUtcOffset = leg.departureAirport.getUtcOffsetFromLocalTime(leg.localStd);
+  const departureAirportUtcOffsetMinutes = departureAirportUtcOffset % 60;
+  const departureAirportUtcOffsetHours = (departureAirportUtcOffset - departureAirportUtcOffsetMinutes) / 60;
+
+  const arrivalAirportUtcOffset = leg.arrivalAirport.getUtcOffsetFromLocalTime(leg.localSta);
+  const arrivalAirportUtcOffsetMinutes = arrivalAirportUtcOffset % 60;
+  const arrivalAirportUtcOffsetHours = (arrivalAirportUtcOffset - arrivalAirportUtcOffsetMinutes) / 60;
+
   const flatten: FlattenFlightRequirment = {
     id:
       Math.random()
@@ -2105,21 +2173,24 @@ function createFlattenFlightRequirment(leg: FlightLegPackView, date: Date): Flat
     baseFlightId: leg.flightPackView.derivedId,
     flightNumber: normalizeFlightNumber(leg.flightNumber),
     fullFlightNumber: leg.flightNumber.toString(),
-    arrivalAirport: leg.arrivalAirport,
     departureAirport: leg.departureAirport,
+    departureAirportUtcOffset: String(departureAirportUtcOffsetHours).padStart(2, '0') + String(departureAirportUtcOffsetMinutes).padStart(2, '0'),
+    arrivalAirport: leg.arrivalAirport,
+    arrivalAirportUtcOffset: String(arrivalAirportUtcOffsetHours).padStart(2, '0') + String(arrivalAirportUtcOffsetMinutes).padStart(2, '0'),
     blocktime: leg.blockTime.minutes,
     formatedBlockTime: dataTypes.daytime.convertBusinessToView(leg.blockTime),
     days: [] as number[],
     utcDays: [] as number[],
     std: leg.std,
-    sta: new Daytime(utcSta),
+    sta: new Daytime(leg.utcSta),
     notes: [] as string[],
     cancelationNotes: [] as string[],
-
-    localStd: formatDateToHHMM(localStd),
-    localSta: formatDateToHHMM(localSta) + (diffLocalStdandLocalSta < 0 ? '*' : ''),
-    utcStd: formatDateToHHMM(utcStd) + (diffLocalStdandUtcStd < 0 ? '*' : diffLocalStdandUtcStd > 0 ? '#' : ''),
-    utcSta: formatDateToHHMM(utcSta) + (diffLocalStdandUtcSta < 0 ? '*' : diffLocalStdandUtcSta > 0 ? '#' : ''),
+    localStd: formatDateToHHMM(leg.localStd),
+    localSta: formatDateToHHMM(leg.localSta) + (diffLocalStdandLocalSta < 0 ? '*' : ''),
+    utcStd: formatDateToHHMM(leg.utcStd) + (diffLocalStdandUtcStd < 0 ? '*' : diffLocalStdandUtcStd > 0 ? '#' : ''),
+    utcSta: formatDateToHHMM(leg.utcSta) + (diffLocalStdandUtcSta < 0 ? '*' : diffLocalStdandUtcSta > 0 ? '#' : ''),
+    hasDstInDeparture: leg.hasDstInDeparture,
+    hasDstInArrival: leg.hasDstInArrival,
     diffLocalStdandUtcStd: diffLocalStdandUtcStd,
     diffLocalStdandLocalSta: diffLocalStdandLocalSta,
     diffLocalStdandUtcSta: diffLocalStdandUtcSta,
@@ -2129,26 +2200,26 @@ function createFlattenFlightRequirment(leg: FlightLegPackView, date: Date): Flat
       .map(t => t.entity.name)
       .join('/'),
 
-    destinationNoPermissionsWeekDay: [] as number[],
-    destinationPermissionAndPermissionNotesChanges: [] as FlightLegPermission[],
-    destinationNoPermissions: [] as string[],
-    originNoPermissionsWeekDay: [] as number[],
-    originPermissionAndPermissionNotesChanges: [] as FlightLegPermission[],
-    originNoPermissions: [] as string[],
+    destinationPermissionsWeekDay: [] as number[],
+    destinationPermissions: [],
+    originPermissionsWeekDay: [] as number[],
+    originPermissions: [],
     label: leg.label,
+    startDate: leg.possibleStartDate,
+    endDate: leg.possibleEndDate,
     category: leg.category,
     realFrequency: 0,
     extraFrequency: 0,
     standbyFrequency: 0,
-    note: '',
-    change: false,
-    excelDestinationNoPermissions: '',
+    hasTimeChange: leg.flightPackView.hasTimeChange,
     frequency: '',
     nextFlights: [],
-    excelOriginNoPermissions: '',
     parentRoute: parentRoute,
     previousFlights: [],
-    status: {} as FlattenFlightRequirmentStatus
+    status: {} as FlattenFlightRequirmentStatus,
+    excelDestinationPermissions: '',
+    excelOriginPermissions: '',
+    excelNote: ''
   };
 
   updateFlattenFlightRequirment(flatten, leg);
@@ -2162,29 +2233,21 @@ function updateFlattenFlightRequirment(flattenFlight: FlattenFlightRequirment, l
     flattenFlight.days.push(weekDay);
 
     if (!leg.originPermission) {
-      flattenFlight.originNoPermissionsWeekDay.push(weekDay);
+      flattenFlight.originPermissionsWeekDay.push(weekDay);
     }
 
     if (!leg.destinationPermission) {
       const arrivalWeekDay = flattenFlight.diffLocalStdandLocalSta > 0 ? (weekDay + 1) % 7 : weekDay;
-      flattenFlight.destinationNoPermissionsWeekDay.push(arrivalWeekDay);
+      flattenFlight.destinationPermissionsWeekDay.push(arrivalWeekDay);
     }
   }
 
-  flattenFlight.utcDays.indexOf(leg.day) === -1 && flattenFlight.utcDays.push(leg.day);
-  flattenFlight.notes.indexOf(leg.notes) === -1 && flattenFlight.notes.push(leg.notes);
-  const canclationNote = leg.flightPackView.canclationNote;
+  // flattenFlight.utcDays.indexOf(leg.day) === -1 && flattenFlight.utcDays.push(leg.day);
+  // flattenFlight.notes.indexOf(leg.notes) === -1 && flattenFlight.notes.push(leg.notes);
+  const canclationNote = leg.flightPackView.canclationNote?.[leg.index]?.note;
+
   !!canclationNote && flattenFlight.cancelationNotes.indexOf(canclationNote) === -1 && flattenFlight.cancelationNotes.push(canclationNote);
-  const originPermissionAndPermissionNotesChange = leg.flightPackView.originPermissionAndPermissionNotesChange.find(p => p?.legIndex === leg.index);
 
-  !!originPermissionAndPermissionNotesChange &&
-    flattenFlight.originPermissionAndPermissionNotesChanges.indexOf(originPermissionAndPermissionNotesChange) === -1 &&
-    flattenFlight.originPermissionAndPermissionNotesChanges.push(originPermissionAndPermissionNotesChange);
-
-  const destinationPermissionAndPermissionNotesChange = leg.flightPackView.destinationPermissionAndPermissionNotesChange.find(p => p?.legIndex === leg.index);
-  !!destinationPermissionAndPermissionNotesChange &&
-    flattenFlight.destinationPermissionAndPermissionNotesChanges.indexOf(destinationPermissionAndPermissionNotesChange) === -1 &&
-    flattenFlight.destinationPermissionAndPermissionNotesChanges.push(destinationPermissionAndPermissionNotesChange);
   (flattenFlight as any)['weekDay' + weekDay.toString()] = calculateDayCharacter();
   (flattenFlight as any)['rsxWeekDay' + weekDay.toString()] = leg.rsx;
   switch (leg.rsx) {
@@ -2199,6 +2262,46 @@ function updateFlattenFlightRequirment(flattenFlight: FlattenFlightRequirment, l
       flattenFlight.standbyFrequency++;
       break;
   }
+
+  const destinationPermissions = Object.keys(leg.flightPackView.permissions[leg.index])
+    .map(d =>
+      leg.flightPackView.permissions[leg.index][+d].destinationPermissions.map((p, index) => {
+        const result: string[] = [];
+        let prefix = '';
+        if (index === 0) prefix = `${Weekday[+d].substr(0, 3)}: `;
+        result.push(
+          `${prefix}${p.hasPermission ? 'OK' : 'NOT OK'} ${p.fromDate.getUTCDate()}${ShortMonthNames[p.fromDate.getMonth()]} TILL ${p.toDate.getUTCDate()}${
+            ShortMonthNames[p.toDate.getMonth()]
+          }`
+        );
+        p.userNote && result.push(p.userNote);
+        return result;
+      })
+    )
+    .flat(2);
+
+  const originPermissions = Object.keys(leg.flightPackView.permissions[leg.index])
+    .map(d =>
+      leg.flightPackView.permissions[leg.index][+d].originPermissions.map((p, index) => {
+        const result: string[] = [];
+        let prefix = '';
+        if (index === 0) prefix = `${Weekday[+d].substr(0, 3)}: `;
+        result.push(
+          `${prefix}${p.hasPermission ? 'OK' : 'NOT OK'} ${p.fromDate.getUTCDate()}${ShortMonthNames[p.fromDate.getMonth()]} TILL ${p.toDate.getUTCDate()}${
+            ShortMonthNames[p.toDate.getMonth()]
+          }`
+        );
+        p.userNote && result.push(p.userNote);
+        return result;
+      })
+    )
+    .flat(2);
+
+  flattenFlight.destinationPermissions.push(...destinationPermissions);
+  flattenFlight.originPermissions.push(...originPermissions);
+
+  flattenFlight.startDate > leg.possibleStartDate && (flattenFlight.startDate = leg.possibleStartDate);
+  flattenFlight.endDate < leg.possibleEndDate && (flattenFlight.endDate = leg.possibleEndDate);
 
   return flattenFlight;
 
@@ -2237,14 +2340,14 @@ function formatDateToHHMM(date: Date) {
 }
 
 function hasPermission(flattenFlightRequirment: FlattenFlightRequirment, day: number) {
-  const destinationPermission = flattenFlightRequirment.destinationNoPermissionsWeekDay.includes(day);
-  const domesticPermission = flattenFlightRequirment.originNoPermissionsWeekDay.includes(day);
+  const destinationPermission = flattenFlightRequirment.destinationPermissionsWeekDay.includes(day);
+  const domesticPermission = flattenFlightRequirment.originPermissionsWeekDay.includes(day);
   return !(destinationPermission || domesticPermission);
 }
 
 function halfPermission(flattenFlightRequirment: FlattenFlightRequirment, day: number) {
-  const destinationPermission = flattenFlightRequirment.destinationNoPermissionsWeekDay.includes(day);
-  const domesticPermission = flattenFlightRequirment.originNoPermissionsWeekDay.includes(day);
+  const destinationPermission = flattenFlightRequirment.destinationPermissionsWeekDay.includes(day);
+  const domesticPermission = flattenFlightRequirment.originPermissionsWeekDay.includes(day);
   return (destinationPermission && !domesticPermission) || (!destinationPermission && domesticPermission);
 }
 

@@ -17,18 +17,8 @@ const useStyles = makeStyles((theme: Theme) => ({
     padding: 0
   },
   registerColumnHeader: {
-    width: 30,
-    borderTopColor: theme.palette.grey[400],
-    borderTopStyle: 'solid',
-    borderTopWidth: 1,
-    borderLeftColor: theme.palette.grey[400],
-    borderLeftStyle: 'solid',
-    borderLeftWidth: 1,
-    borderBottomColor: theme.palette.grey[400],
-    borderBottomStyle: 'solid',
-    borderBottomWidth: 1,
-    padding: 4,
-    textAlign: 'center'
+    textAlign: 'center',
+    display: 'flex'
   },
   registerColumnBody: {
     width: 40,
@@ -43,12 +33,9 @@ const useStyles = makeStyles((theme: Theme) => ({
     padding: 0
   },
   saturDayColumnHeader: {
-    borderTopStyle: 'solid',
-    borderTopWidth: 1,
-    borderTopColor: theme.palette.grey[400],
-    borderBottomStyle: 'solid',
-    borderBottomWidth: 1,
-    borderBottomColor: theme.palette.grey[400]
+    flexGrow: 1,
+    textAlign: 'left',
+    paddingLeft: 2
   },
   borderTopThick: {
     borderTopColor: theme.palette.common.black,
@@ -101,16 +88,16 @@ const useStyles = makeStyles((theme: Theme) => ({
   plusSeperator: {
     flexGrow: 1
   },
+  preplanNameContainer: {
+    display: 'flex'
+  },
   preplanName: {
-    minWidth: 41,
-    maxWidth: 90,
-    maxHeight: 25,
+    flexGrow: 1,
+    paddingLeft: 2,
+    textAlign: 'left',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
-    fontWeight: 'bold',
-    position: 'absolute',
-    padding: 3,
     borderRightStyle: 'solid',
     borderRightWidth: 1,
     borderRightColor: theme.palette.grey[400]
@@ -264,13 +251,16 @@ const TimelineReport: FC<PreplanReportProps> = () => {
       </Box>
 
       <Box display="block" displayPrint="block">
-        <div className={classes.preplanName}>{preplan.name}</div>
-
         <Table size="small">
           <TableHead>
             <TableRow>
-              <TableCell className={classes.registerColumnHeader}></TableCell>
-              <TableCell className={classNames(classes.weekDayColumnHeader, classes.saturDayColumnHeader)}>SAT</TableCell>
+              <TableCell colSpan={2} className={classNames(classes.border, classes.weekDayColumnHeader)}>
+                <div className={classes.preplanNameContainer}>
+                  <span className={classes.preplanName}>{preplan.name}</span>
+                  <div className={classes.saturDayColumnHeader}>SAT</div>
+                </div>
+              </TableCell>
+              {/* <TableCell className={classNames(classes.weekDayColumnHeader, classes.saturDayColumnHeader)}>SAT</TableCell> */}
               <TableCell className={classNames(classes.border, classes.weekDayColumnHeader)}>SAN</TableCell>
               <TableCell className={classNames(classes.border, classes.weekDayColumnHeader)}>MON</TableCell>
               <TableCell className={classNames(classes.border, classes.weekDayColumnHeader)}>TUE</TableCell>

@@ -34,11 +34,12 @@ const useStyles = makeStyles((theme: Theme) => ({
   contents: {
     flexGrow: 1,
     padding: 0,
-    width: 'calc(100vh - 105px)'
+    width: 'calc(100vw - 305px)'
   },
   displayContents: {
     marginTop: theme.spacing(5),
-    marginLeft: theme.spacing(3)
+    marginLeft: theme.spacing(3),
+    width: 'calc(100vw - 305px)'
   },
   printContents: {
     marginTop: theme.spacing(1),
@@ -93,7 +94,7 @@ const SectionList: FC<SectionListProps> = ({ children, sections, selectedSection
         </div>
       </Box>
 
-      <div className={classes.contents}>
+      <div>
         {selectedSection ? (
           <Fragment>
             <Box display="block" displayPrint="none">

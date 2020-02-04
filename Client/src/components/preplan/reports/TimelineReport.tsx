@@ -10,6 +10,7 @@ import Weekday, { Weekdays } from '@core/types/Weekday';
 import chroma from 'chroma-js';
 import { Stc } from 'src/business/master-data';
 import persistant from 'src/utils/persistant';
+import Daytime from '@core/types/Daytime';
 
 const useStyles = makeStyles((theme: Theme) => ({
   selectWeekWrapper: {
@@ -32,10 +33,13 @@ const useStyles = makeStyles((theme: Theme) => ({
     textAlign: 'center',
     padding: 0
   },
-  saturDayColumnHeader: {
+  saturdayColumnHeader: {
     flexGrow: 1,
     textAlign: 'left',
     paddingLeft: 2
+  },
+  fridayColumn: {
+    paddingRight: '1px !important'
   },
   borderTopThick: {
     borderTopColor: theme.palette.common.black,
@@ -101,6 +105,12 @@ const useStyles = makeStyles((theme: Theme) => ({
     borderRightStyle: 'solid',
     borderRightWidth: 1,
     borderRightColor: theme.palette.grey[400]
+  },
+  beforeNoonFlight: {
+    paddingRight: '50%'
+  },
+  afterNoonFlight: {
+    paddingLeft: '50%'
   }
 }));
 
@@ -119,7 +129,7 @@ interface ReportState {
 
 interface FlightState {
   label: string;
-  flightEnd: number;
+  flightDurationPerDay: number;
   departuerFromIka: string;
   arrivalToIka: string;
   note: string | undefined;
@@ -178,18 +188,28 @@ const TimelineReport: FC<PreplanReportProps> = () => {
         f => f.aircraftRegister?.id ?? '???',
         n => {
           const groupByDay = n.groupBy<FlightState[]>(
-            y => y.day.toString(),
-            m =>
-              m.sortBy('start').map<FlightState>(h => {
-                return {
-                  label: h.label,
-                  flightEnd: h.end.minutes,
-                  departuerFromIka: h.startDateTime.format('t#'),
-                  arrivalToIka: h.endDateTime.format('t#'),
-                  note: h.notes,
-                  stc: h.stc.name
-                };
-              })
+            y => ((y.legs[0].departureAirport.convertUtcToLocal(y.startDateTime).getUTCDay() + 1) % 7).toString(),
+            m => {
+              return m
+                .map<FlightState>(h => {
+                  const firstLegDeparture = h.legs[0].departureAirport.convertUtcToLocal(h.startDateTime);
+                  const lastLegArrival = h.legs[h.legs.length - 1].arrivalAirport.convertUtcToLocal(h.endDateTime);
+                  const firstLegDepartureDate = new Date(firstLegDeparture);
+                  const lastLegArrivalDate = new Date(lastLegArrival);
+                  firstLegDepartureDate.setUTCHours(0, 0, 0);
+                  lastLegArrivalDate.setUTCHours(0, 0, 0);
+
+                  return {
+                    label: h.label,
+                    flightDurationPerDay: (lastLegArrivalDate.getTime() - firstLegDepartureDate.getTime()) / (1000 * 60 * 60 * 24) + 1,
+                    departuerFromIka: firstLegDeparture.format('t#'),
+                    arrivalToIka: lastLegArrival.format('t#'),
+                    note: h.notes,
+                    stc: h.stc.name
+                  };
+                })
+                .sortBy('departuerFromIka');
+            }
           );
 
           for (let dayIndex = 0; dayIndex < 7; dayIndex++) {
@@ -197,14 +217,14 @@ const TimelineReport: FC<PreplanReportProps> = () => {
             if (flightStates) {
               for (let flightStatesIndex = 0; flightStatesIndex < flightStates.length; flightStatesIndex++) {
                 const flightState = flightStates[flightStatesIndex];
-                const flightDuration = Math.ceil(flightState.flightEnd / (24 * 60));
+                const flightDuration = flightState.flightDurationPerDay;
                 if (flightDuration > 1) {
                   for (let index = 1; index < flightDuration; index++) {
                     let additionalDay = dayIndex + index;
                     additionalDay > 6 && (additionalDay = additionalDay % 7);
                     const extraFlightState: FlightState = {
                       ...flightState,
-                      flightEnd: 0,
+                      flightDurationPerDay: 0,
                       departuerFromIka: '',
                       arrivalToIka: index + 1 === flightDuration ? flightState.arrivalToIka : '',
                       note: index === 1 && flightDuration > 2 ? flightState.note : undefined
@@ -257,16 +277,16 @@ const TimelineReport: FC<PreplanReportProps> = () => {
               <TableCell colSpan={2} className={classNames(classes.border, classes.weekDayColumnHeader)}>
                 <div className={classes.preplanNameContainer}>
                   <span className={classes.preplanName}>{preplan.name}</span>
-                  <div className={classes.saturDayColumnHeader}>SAT</div>
+                  <div className={classes.saturdayColumnHeader}>SAT</div>
                 </div>
               </TableCell>
-              {/* <TableCell className={classNames(classes.weekDayColumnHeader, classes.saturDayColumnHeader)}>SAT</TableCell> */}
+              {/* <TableCell className={classNames(classes.weekDayColumnHeader, classes.saturdayColumnHeader)}>SAT</TableCell> */}
               <TableCell className={classNames(classes.border, classes.weekDayColumnHeader)}>SAN</TableCell>
               <TableCell className={classNames(classes.border, classes.weekDayColumnHeader)}>MON</TableCell>
               <TableCell className={classNames(classes.border, classes.weekDayColumnHeader)}>TUE</TableCell>
               <TableCell className={classNames(classes.border, classes.weekDayColumnHeader)}>WED</TableCell>
               <TableCell className={classNames(classes.border, classes.weekDayColumnHeader)}>THU</TableCell>
-              <TableCell className={classNames(classes.border, classes.weekDayColumnHeader)}>FRI</TableCell>
+              <TableCell className={classNames(classes.border, classes.weekDayColumnHeader, classes.fridayColumn)}>FRI</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -274,14 +294,22 @@ const TimelineReport: FC<PreplanReportProps> = () => {
               <TableRow key={rIndex} className={classNames({ [classes.borderTopThick]: rIndex > 0 && r.aircraftType !== self[rIndex - 1].aircraftType })}>
                 <TableCell className={classes.registerColumnBody}>{r.name}</TableCell>
                 {Weekdays.map(d => (
-                  <TableCell className={classNames(classes.border, classes.weekDayColumnBody)}>
+                  <TableCell className={classNames(classes.border, classes.weekDayColumnBody, { [classes.fridayColumn]: d === 6 })}>
                     <div className={classes.dayContainer}>
                       {reportState?.[r.id]?.[d.toString()]?.map((n, index, self) => {
                         const stcColor = chroma(persistant.userSettings!.stcColors[n.stc] || '#000000');
                         const backgroundColor = n.stc === 'J' ? undefined : chroma.mix(stcColor.saturate(0.4).brighten(1.5), '#fff', 0.5);
                         return (
                           <Fragment key={index}>
-                            <div className={classes.flightContainer}>
+                            <div
+                              className={classNames(classes.flightContainer, {
+                                [classes.afterNoonFlight]:
+                                  self.length === 1 &&
+                                  ((n.departuerFromIka && n.departuerFromIka >= '1200') || (!n.departuerFromIka && n.arrivalToIka && n.arrivalToIka >= '1200')),
+                                [classes.beforeNoonFlight]:
+                                  self.length === 1 && ((n.arrivalToIka && n.arrivalToIka <= '1200') || (!n.arrivalToIka && n.departuerFromIka && n.departuerFromIka <= '1200'))
+                              })}
+                            >
                               <div className={classes.timeContainer}>
                                 <div className={classNames(classes.time, classes.timeDeparture)}>{n.departuerFromIka}</div>
                                 <div className={classNames(classes.time, classes.timeArrival)}>{n.arrivalToIka}</div>

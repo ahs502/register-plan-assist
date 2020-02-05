@@ -427,18 +427,32 @@ const ProposalReport: FC<ProposalReportProps> = ({ preplanName, fromDate, toDate
     .filter(n => !!n)
     .distinct();
   allCategory.unshift(notAvailable);
-  const allAirline = allFlightLegView
-    .flatMap(f => f.flightNumber.airlineCode)
-    .distinct()
-    .map<Airline>(a => ({ label: a, value: a }));
+  const allAirline = useMemo(
+    () =>
+      allFlightLegView
+        .flatMap(f => f.flightNumber.airlineCode)
+        .distinct()
+        .map<Airline>(a => ({ label: a, value: a })),
+    [flightPackViews]
+  );
+
+  const baseAirports = useMemo(() => {
+    const result: Airport[] = [];
+    var allAirport = allFlightLegView.flatMap(a => [a.departureAirport, a.arrivalAirport]).distinct();
+    allAirport.some(a => a === ika) && result.push(ika);
+    allAirport.some(a => a === thr) && result.push(thr);
+    allAirport.some(a => a === mhd) && result.push(mhd);
+    allAirport.some(a => a === ker) && result.push(ker);
+    return result;
+  }, [flightPackViews]);
 
   const [viewState, setViewState] = useState<ViewState>(() => ({
     airline: allAirline.find(z => z.value === 'W5') ?? allAirline[0],
-    baseAirports: [ika],
+    baseAirports: baseAirports,
     categories: allCategory,
     startDate: dataTypes.utcDate.convertBusinessToView(fromDate),
     endDate: dataTypes.utcDate.convertBusinessToView(toDate),
-    flightType: flightTypes.find(f => f.label === 'International')!,
+    flightType: flightTypes.find(f => f.label === 'All')!,
     showType: false,
     showSlot: true,
     showNote: true,

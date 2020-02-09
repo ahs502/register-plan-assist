@@ -22,6 +22,7 @@ export default class FlightRequirement implements ModelConvertable<FlightRequire
   readonly rsx: Rsx;
   readonly notes: string;
   readonly ignored: boolean;
+  readonly localTime: boolean;
   readonly route: readonly FlightRequirementLeg[];
   readonly days: readonly DayFlightRequirement[];
   readonly changes: readonly FlightRequirementChange[];
@@ -37,6 +38,7 @@ export default class FlightRequirement implements ModelConvertable<FlightRequire
     this.rsx = raw.rsx;
     this.notes = dataTypes.label.convertModelToBusiness(raw.notes);
     this.ignored = raw.ignored;
+    this.localTime = raw.localTime;
     this.route = raw.route.map((l, index) => new FlightRequirementLeg(l, index, this));
     this.days = raw.days.map(d => new DayFlightRequirement(d, aircraftRegisters, this));
     this.changes = raw.changes.map(c => new FlightRequirementChange(c, aircraftRegisters, this));
@@ -54,6 +56,7 @@ export default class FlightRequirement implements ModelConvertable<FlightRequire
       rsx: this.rsx,
       notes: dataTypes.label.convertBusinessToModel(this.notes),
       ignored: this.ignored,
+      localTime: this.localTime,
       route: this.route.map(l => l.extractModel()),
       days: this.days.map(d => d.extractModel()),
       changes: this.changes.map(c => c.extractModel())

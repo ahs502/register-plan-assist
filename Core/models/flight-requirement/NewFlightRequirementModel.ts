@@ -20,6 +20,7 @@ export default interface NewFlightRequirementModel {
   readonly rsx: Rsx;
   readonly notes: string;
   readonly ignored: boolean;
+  readonly localTime: boolean;
   readonly route: readonly FlightRequirementLegModel[];
   readonly days: readonly DayFlightRequirementModel[];
   readonly changes: readonly FlightRequirementChangeModel[];

@@ -7,7 +7,7 @@ import FlightRequirement from 'src/business/flight-requirement/FlightRequirement
 import Weekday, { Weekdays } from '@core/types/Weekday';
 import AutoComplete from 'src/components/AutoComplete';
 import MultiSelect from 'src/components/MultiSelect';
-import MasterData from 'src/business/master-data';
+import MasterData, { Airport } from 'src/business/master-data';
 import { Rsxes } from '@core/types/Rsx';
 import AircraftIdentityType from '@core/types/AircraftIdentityType';
 import { PreplanContext, ReloadPreplanContext } from 'src/pages/preplan';
@@ -338,7 +338,7 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
         function generalFields() {
           return (
             <Fragment>
-              <Grid item xs={5}>
+              <Grid item xs={4}>
                 <RefiningTextField
                   fullWidth
                   autoFocus
@@ -352,7 +352,7 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                   disabled={preplan.readonly}
                 />
               </Grid>
-              <Grid item xs={5}>
+              <Grid item xs={4}>
                 {viewState.addingNewCategory ? (
                   <RefiningTextField
                     fullWidth
@@ -411,6 +411,13 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                   value={viewState.stc}
                   onSelect={stc => setViewState({ ...viewState, stc })}
                   isDisabled={preplan.readonly}
+                />
+              </Grid>
+              <Grid item xs={2}>
+                <FormControlLabel
+                  control={<Checkbox color="primary" checked={viewState.localTime} onChange={({ target: { checked: localTime } }) => setViewState({ ...viewState, localTime })} />}
+                  label="Local Time"
+                  labelPlacement="end"
                 />
               </Grid>
             </Fragment>
@@ -970,11 +977,11 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                   helperText={errors.blockTime}
                 />
               </Grid>
-              <Grid item xs={3}>
+              <Grid item xs={2}>
                 <RefiningTextField
                   fullWidth
-                  label="STD / STD Lower Bound"
                   dataType={dataTypes.daytime}
+                  label="STD"
                   value={legViewState?.stdLowerBound ?? ''}
                   onChange={({ target: { value: stdLowerBound } }) =>
                     legViewState && updateLeg(leg => ({ ...leg, stdLowerBound, staLowerBound: calculateSta(stdLowerBound, legViewState?.blockTime) }))
@@ -985,14 +992,14 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                   helperText={errors.stdLowerBound}
                 />
               </Grid>
-              <Grid item xs={1}>
-                <RefiningTextField fullWidth label="STA" dataType={dataTypes.daytime} value={legViewState?.staLowerBound ?? ''} disabled={true} />
+              <Grid item xs={2}>
+                <TextField label="STA" value={legViewState?.staLowerBound ?? ''} disabled={true} />
               </Grid>
-              <Grid item xs={3}>
+              <Grid item xs={2}>
                 <RefiningTextField
                   fullWidth
-                  label="STD Upper Bound"
                   dataType={dataTypes.daytime}
+                  label="STD Upper Bound"
                   value={legViewState?.stdUpperBound ?? ''}
                   onChange={({ target: { value: stdUpperBound } }) =>
                     legViewState && updateLeg(leg => ({ ...leg, stdUpperBound, staUpperBound: calculateSta(stdUpperBound, legViewState?.blockTime) }))
@@ -1003,8 +1010,8 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                   helperText={errors.stdUpperBound}
                 />
               </Grid>
-              <Grid item xs={1}>
-                <RefiningTextField fullWidth label="STA" dataType={dataTypes.daytime} value={legViewState?.staUpperBound ?? ''} disabled={true} />
+              <Grid item xs={2}>
+                <TextField label="STA" value={legViewState?.staUpperBound ?? ''} disabled={true} />
               </Grid>
               <Grid item xs={6}>
                 <FormControlLabel
@@ -1155,14 +1162,6 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
         function updateLeg(update: (leg: LegViewState) => LegViewState): void {
           updateDay(day => ({ ...day, legs: splice(day.legs, legIndex, 1, ([l]) => update(l)) }));
         }
-
-        function calculateSta(std: string | undefined, blockTime: string | undefined): string {
-          if (!std || !blockTime) return '';
-          const _std = dataTypes.daytime.convertViewToBusiness(std);
-          const _block = dataTypes.daytime.convertViewToBusiness(blockTime);
-          if (!_std.isValid() || !_block.isValid()) return '';
-          return dataTypes.daytime.convertModelToView(_std.minutes + _block.minutes);
-        }
       }}
     />
   );
@@ -1284,7 +1283,8 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
             ]
           }))
         },
-        changeScopes: []
+        changeScopes: [],
+        localTime: false
       };
 
     const baseDefaultAircraftRegisters = extractDefaultAircraftRegisters();
@@ -1306,9 +1306,9 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
           legs: c.route.map<LegViewState>(l => ({
             blockTime: dataTypes.daytime.convertBusinessToView(l.blockTime),
             stdLowerBound: dataTypes.daytime.convertBusinessToView(l.stdLowerBound),
-            staLowerBound: l.stdLowerBound.isValid() && l.blockTime.isValid ? dataTypes.daytime.convertModelToView(l.stdLowerBound.minutes + l.blockTime.minutes) : '',
+            staLowerBound: l.stdLowerBound.isValid() && l.blockTime.isValid ? calculateSta(l.stdLowerBound.minutes, l.blockTime.minutes) : '',
             stdUpperBound: dataTypes.daytime.convertBusinessToViewOptional(l.stdUpperBound),
-            staUpperBound: l.stdUpperBound?.isValid() && l.blockTime.isValid ? dataTypes.daytime.convertModelToView(l.stdUpperBound.minutes + l.blockTime.minutes) : '',
+            staUpperBound: l.stdUpperBound?.isValid() && l.blockTime.isValid ? calculateSta(l.stdUpperBound.minutes, l.blockTime.minutes) : '',
             originPermission: l.originPermission,
             destinationPermission: l.destinationPermission,
             originPermissionNote: l.originPermissionNote ? dataTypes.label.convertBusinessToView(l.originPermissionNote) : '',
@@ -1333,9 +1333,9 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
               ? sourceDayFlightRequirementChange.route.map<LegViewState>(l => ({
                   blockTime: dataTypes.daytime.convertBusinessToView(l.blockTime),
                   stdLowerBound: dataTypes.daytime.convertBusinessToView(l.stdLowerBound),
-                  staLowerBound: l.stdLowerBound.isValid() && l.blockTime.isValid ? dataTypes.daytime.convertModelToView(l.stdLowerBound.minutes + l.blockTime.minutes) : '',
+                  staLowerBound: l.stdLowerBound.isValid() && l.blockTime.isValid ? calculateSta(l.stdLowerBound.minutes, l.blockTime.minutes) : '',
                   stdUpperBound: dataTypes.daytime.convertBusinessToViewOptional(l.stdUpperBound),
-                  staUpperBound: l.stdUpperBound?.isValid() && l.blockTime.isValid ? dataTypes.daytime.convertModelToView(l.stdUpperBound.minutes + l.blockTime.minutes) : '',
+                  staUpperBound: l.stdUpperBound?.isValid() && l.blockTime.isValid ? calculateSta(l.stdUpperBound.minutes, l.blockTime.minutes) : '',
                   originPermission: l.originPermission,
                   destinationPermission: l.destinationPermission,
                   originPermissionNote: l.originPermissionNote ? dataTypes.label.convertBusinessToView(l.originPermissionNote) : '',
@@ -1344,9 +1344,9 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
               : c.route.map<LegViewState>(l => ({
                   blockTime: dataTypes.daytime.convertBusinessToView(l.blockTime),
                   stdLowerBound: dataTypes.daytime.convertBusinessToView(l.stdLowerBound),
-                  staLowerBound: l.stdLowerBound.isValid() && l.blockTime.isValid ? dataTypes.daytime.convertModelToView(l.stdLowerBound.minutes + l.blockTime.minutes) : '',
+                  staLowerBound: l.stdLowerBound.isValid() && l.blockTime.isValid ? calculateSta(l.stdLowerBound.minutes, l.blockTime.minutes) : '',
                   stdUpperBound: dataTypes.daytime.convertBusinessToViewOptional(l.stdUpperBound),
-                  staUpperBound: l.stdUpperBound?.isValid() && l.blockTime.isValid ? dataTypes.daytime.convertModelToView(l.stdUpperBound.minutes + l.blockTime.minutes) : '',
+                  staUpperBound: l.stdUpperBound?.isValid() && l.blockTime.isValid ? calculateSta(l.stdUpperBound.minutes, l.blockTime.minutes) : '',
                   originPermission: l.originPermission,
                   destinationPermission: l.destinationPermission,
                   originPermissionNote: l.originPermissionNote ? dataTypes.label.convertBusinessToView(l.originPermissionNote) : '',
@@ -1390,9 +1390,9 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
             legs: flightRequirement.route.map<LegViewState>(l => ({
               blockTime: dataTypes.daytime.convertBusinessToView(l.blockTime),
               stdLowerBound: dataTypes.daytime.convertBusinessToView(l.stdLowerBound),
-              staLowerBound: l.stdLowerBound.isValid() && l.blockTime.isValid ? dataTypes.daytime.convertModelToView(l.stdLowerBound.minutes + l.blockTime.minutes) : '',
+              staLowerBound: l.stdLowerBound.isValid() && l.blockTime.isValid ? calculateSta(l.stdLowerBound.minutes, l.blockTime.minutes) : '',
               stdUpperBound: dataTypes.daytime.convertBusinessToViewOptional(l.stdUpperBound),
-              staUpperBound: l.stdUpperBound?.isValid() && l.blockTime.isValid ? dataTypes.daytime.convertModelToView(l.stdUpperBound.minutes + l.blockTime.minutes) : '',
+              staUpperBound: l.stdUpperBound?.isValid() && l.blockTime.isValid ? calculateSta(l.stdUpperBound.minutes, l.blockTime.minutes) : '',
               originPermission: l.originPermission,
               destinationPermission: l.destinationPermission,
               originPermissionNote: l.originPermissionNote ? dataTypes.label.convertBusinessToView(l.originPermissionNote) : '',
@@ -1417,9 +1417,9 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                 ? sourceDayFlightRequirement.route.map<LegViewState>(l => ({
                     blockTime: dataTypes.daytime.convertBusinessToView(l.blockTime),
                     stdLowerBound: dataTypes.daytime.convertBusinessToView(l.stdLowerBound),
-                    staLowerBound: l.stdLowerBound.isValid() && l.blockTime.isValid ? dataTypes.daytime.convertModelToView(l.stdLowerBound.minutes + l.blockTime.minutes) : '',
+                    staLowerBound: l.stdLowerBound.isValid() && l.blockTime.isValid ? calculateSta(l.stdLowerBound.minutes, l.blockTime.minutes) : '',
                     stdUpperBound: dataTypes.daytime.convertBusinessToViewOptional(l.stdUpperBound),
-                    staUpperBound: l.stdUpperBound?.isValid() && l.blockTime.isValid ? dataTypes.daytime.convertModelToView(l.stdUpperBound.minutes + l.blockTime.minutes) : '',
+                    staUpperBound: l.stdUpperBound?.isValid() && l.blockTime.isValid ? calculateSta(l.stdUpperBound.minutes, l.blockTime.minutes) : '',
                     originPermission: l.originPermission,
                     destinationPermission: l.destinationPermission,
                     originPermissionNote: l.originPermissionNote ? dataTypes.label.convertBusinessToView(l.originPermissionNote) : '',
@@ -1428,9 +1428,9 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                 : flightRequirement.route.map<LegViewState>(l => ({
                     blockTime: dataTypes.daytime.convertBusinessToView(l.blockTime),
                     stdLowerBound: dataTypes.daytime.convertBusinessToView(l.stdLowerBound),
-                    staLowerBound: l.stdLowerBound.isValid() && l.blockTime.isValid ? dataTypes.daytime.convertModelToView(l.stdLowerBound.minutes + l.blockTime.minutes) : '',
+                    staLowerBound: l.stdLowerBound.isValid() && l.blockTime.isValid ? calculateSta(l.stdLowerBound.minutes, l.blockTime.minutes) : '',
                     stdUpperBound: dataTypes.daytime.convertBusinessToViewOptional(l.stdUpperBound),
-                    staUpperBound: l.stdUpperBound?.isValid() && l.blockTime.isValid ? dataTypes.daytime.convertModelToView(l.stdUpperBound.minutes + l.blockTime.minutes) : '',
+                    staUpperBound: l.stdUpperBound?.isValid() && l.blockTime.isValid ? calculateSta(l.stdUpperBound.minutes, l.blockTime.minutes) : '',
                     originPermission: l.originPermission,
                     destinationPermission: l.destinationPermission,
                     originPermissionNote: l.originPermissionNote ? dataTypes.label.convertBusinessToView(l.originPermissionNote) : '',
@@ -1439,7 +1439,8 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
             };
           })
         },
-        changeScopes
+        changeScopes,
+        localTime: flightRequirement.localTime
       },
       true
     );
@@ -1622,7 +1623,8 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
             .filter(x => x.selected)
             .map(x => x.model)
         };
-      })
+      }),
+      localTime: viewState.localTime
     };
 
     const flightsByWeekIndexAndDay = flights.groupBy(
@@ -1643,28 +1645,42 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
               std: dataTypes.daytime.convertViewToModel(stdLowerBound)
             }));
             const oldFlight: Flight | undefined = weekFlightsByDay?.[day];
-            return oldFlight
-              ? oldFlight.extractModel(flightModel => ({
-                  ...flightModel,
-                  aircraftRegisterId: aircraftRegisterId ?? flightModel.aircraftRegisterId,
-                  legs: legs.map<FlightLegModel>(({ originalIndex, std }, index) =>
-                    originalIndex === undefined
-                      ? {
-                          ...flightModel.legs[index],
-                          std
-                        }
-                      : {
-                          std
-                        }
-                  )
+
+            if (oldFlight) {
+              return oldFlight.extractModel(flightModel => ({
+                ...flightModel,
+                aircraftRegisterId: aircraftRegisterId ?? flightModel.aircraftRegisterId,
+                legs: legs.map<FlightLegModel>(({ originalIndex, std }, index) => {
+                  return originalIndex === undefined
+                    ? {
+                        ...flightModel.legs[index],
+                        std: calculateStd(
+                          std,
+                          viewState.localTime,
+                          dataTypes.utcDate.convertModelToBusiness(flightModel.date),
+                          dataTypes.airport.convertViewToBusiness(refinedViewState.route[index].departureAirport)
+                        )
+                      }
+                    : {
+                        std: calculateStd(
+                          std,
+                          viewState.localTime,
+                          dataTypes.utcDate.convertModelToBusiness(flightModel.date),
+                          dataTypes.airport.convertViewToBusiness(refinedViewState.route[index].departureAirport)
+                        )
+                      };
+                })
+              }));
+            } else {
+              const flightDate = week.startDate.clone().addDays(day);
+              return {
+                date: dataTypes.utcDate.convertBusinessToModel(flightDate),
+                aircraftRegisterId,
+                legs: legs.map<FlightLegModel>(({ std }, index) => ({
+                  std: calculateStd(std, viewState.localTime, flightDate, dataTypes.airport.convertViewToBusiness(refinedViewState.route[index].departureAirport))
                 }))
-              : {
-                  date: dataTypes.utcDate.convertBusinessToModel(week.startDate.clone().addDays(day)),
-                  aircraftRegisterId,
-                  legs: legs.map<FlightLegModel>(({ std }) => ({
-                    std
-                  }))
-                };
+              };
+            }
           })
           .filter(Boolean);
       })
@@ -1675,6 +1691,14 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
       : await FlightRequirementService.add(preplan.id, newFlightRequirementModel, flightModels);
     await reloadPreplan(newPreplanModel);
     return others.onClose();
+
+    function calculateStd(std: number, isLocalTime: boolean, date: Date, airport: Airport): number {
+      if (!isLocalTime) return std;
+      const localDate = new Date(date);
+      localDate.addMinutes(std);
+      const utcDate = airport.convertLocalToUtc(localDate);
+      return (utcDate.getTime() - date.getTime()) / (1000 * 60);
+    }
   }
 
   function refineViewState(viewState: ViewState, forced?: boolean): ViewState {
@@ -1814,4 +1838,18 @@ export default FlightRequirementModal;
 
 export function useFlightRequirementModalState() {
   return useModalState<FlightRequirementModalState>();
+}
+
+function calculateSta(std: string | number | undefined, blockTime: string | number | undefined): string {
+  if (!std || !blockTime) return '';
+  const _std = typeof std === 'number' ? std : dataTypes.daytime.convertViewToBusiness(std);
+  const _block = typeof blockTime === 'number' ? blockTime : dataTypes.daytime.convertViewToBusiness(blockTime);
+  const stdValue = typeof _std === 'number' ? _std : _std.isValid() ? _std.minutes : 0;
+  const blockTimeValue = typeof _block === 'number' ? _block : _block.isValid() ? _block.minutes : 0;
+
+  if (stdValue === 0 || blockTimeValue === 0) return '';
+  const totalMin = stdValue + blockTimeValue;
+  const additionalDay = Math.floor(totalMin / (24 * 60));
+
+  return dataTypes.daytime.convertModelToView(totalMin % (24 * 60)) + (additionalDay > 0 ? `(+${additionalDay})` : '');
 }

@@ -319,7 +319,7 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
   const weekDayViewState = dayIndex === 'ALL' ? undefined : scopeViewState?.weekDays[dayIndex];
   const legViewState = dayViewState?.legs[legIndex];
 
-  const validation = new ViewStateValidation(viewState, preplan.aircraftRegisters);
+  const validation = new ViewStateValidation(viewState, preplan.aircraftRegisters, state.flightRequirement);
   const errors = makeValidationErrors();
 
   const classes = useStyles();
@@ -407,6 +407,7 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                 }
                 label="Local Time"
                 labelPlacement="end"
+                disabled={!!state.flightRequirement}
               />
             </div>
           </Fragment>
@@ -1551,7 +1552,8 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
       arrivalAirport: bypassValidation ? undefined : routeLegValidation.message('ARRIVAL_AIRPORT_*'),
       stdLowerBound: bypassValidation || !legValidation ? undefined : legValidation.message('STD_LOWER_BOUND_*'),
       stdUpperBound: bypassValidation || !legValidation ? undefined : legValidation.message('STD_UPPER_BOUND_*'),
-      blockTime: bypassValidation || !legValidation ? undefined : legValidation.message('BLOCKTIME_*')
+      blockTime: bypassValidation || !legValidation ? undefined : legValidation.message('BLOCKTIME_*'),
+      localTime: bypassValidation ? undefined : validation.message('LOCAL_TIME_*')
     };
   }
 

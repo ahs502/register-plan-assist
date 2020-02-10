@@ -60,12 +60,55 @@ const useStyles = makeStyles((theme: Theme) => ({
     paddingBottom: 13,
     paddingLeft: 6
   },
+  scopeBase: {
+    position: 'relative',
+    width: 217,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderRightWidth: 0,
+    borderStyle: 'solid',
+    borderRadius: 0,
+    color: theme.palette.grey[600],
+    borderColor: theme.palette.grey[400],
+    borderTopLeftRadius: 5,
+    borderBottomLeftRadius: 5,
+    fontSize: '16px',
+    lineHeight: '15px',
+    cursor: 'pointer',
+    '&:hover $scopeBaseHover': {
+      display: 'block'
+    }
+  },
+  scopeBaseHover: {
+    display: 'none',
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    backgroundColor: '#0002',
+    userSelect: 'none',
+    pointerEvents: 'none'
+  },
+  scopeBaseSelected: {
+    color: theme.palette.common.black,
+    borderWidth: 2,
+    fontWeight: 'bold',
+    backgroundColor: chroma(theme.palette.secondary.main)
+      .alpha(0.4)
+      .hex(),
+    borderColor: theme.palette.secondary.main
+  },
   scopeChangeWeeks: {
+    position: 'relative',
     width: '100%',
     display: 'flex',
     marginBottom: 2
   },
   scopeChangeWeek: {
+    display: 'flex',
     width: 10,
     flexGrow: 1,
     position: 'relative',
@@ -82,10 +125,6 @@ const useStyles = makeStyles((theme: Theme) => ({
     lineHeight: '15px',
     userSelect: 'none',
     cursor: 'pointer',
-    '&:first-child': {
-      borderTopLeftRadius: 5,
-      borderBottomLeftRadius: 5
-    },
     '&:last-child': {
       borderRightWidth: 1,
       borderTopRightRadius: 5,
@@ -93,7 +132,11 @@ const useStyles = makeStyles((theme: Theme) => ({
     },
     '&:hover $scopeChangeWeekHover': {
       display: 'block'
-    }
+    },
+    alignItems: 'center',
+    justifyContent: 'center',
+    textAlign: 'center',
+    fontWeight: 500
   },
   scopeChangeWeekHover: {
     display: 'none',
@@ -107,7 +150,7 @@ const useStyles = makeStyles((theme: Theme) => ({
     pointerEvents: 'none'
   },
   selectedWeek: {
-    display: 'black',
+    display: 'block',
     position: 'absolute',
     top: 0,
     right: 0,
@@ -120,14 +163,16 @@ const useStyles = makeStyles((theme: Theme) => ({
   scopeChangeChunk: {
     color: theme.palette.common.black,
     backgroundColor: chroma(theme.palette.secondary.light)
-      .alpha(0.25)
+      .alpha(0.125)
       .hex(),
-    borderColor: theme.palette.secondary.light,
+    borderColor: chroma(theme.palette.secondary.light)
+      .alpha(0.35)
+      .hex(),
     borderTopWidth: 2,
     borderBottomWidth: 2,
     '&:not($scopeChangeChunkStart)': {
       borderLeftColor: chroma(theme.palette.secondary.light)
-        .alpha(0.5)
+        .alpha(0.25)
         .hex(),
       '&$scopeChangeChunkSelected': {
         borderLeftColor: chroma(theme.palette.secondary.main)
@@ -169,7 +214,10 @@ const useStyles = makeStyles((theme: Theme) => ({
     }
   },
   scopeChangeSliderRoot: {
-    height: 6
+    height: 6,
+    width: 'calc(100% - 217px)',
+    position: 'relative',
+    left: 217
   },
   scopeChangeSliderThumb: {
     height: 20,
@@ -238,6 +286,10 @@ const useStyles = makeStyles((theme: Theme) => ({
     borderRadius: 0,
     borderTopLeftRadius: 5,
     borderBottomLeftRadius: 5
+  },
+  localTime: {
+    position: 'absolute',
+    top: 'initial'
   }
 }));
 
@@ -293,54 +345,71 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
       ]}
       body={({ handleKeyboardEvent }) => {
         return (
-          <Grid container spacing={0}>
-            <Grid item xs={12} container spacing={2}>
-              {generalFields()}
+          <Fragment>
+            <Grid container spacing={0}>
+              <Grid item xs={12} container spacing={2}>
+                {generalFields()}
 
-              {/* A little extra space */}
-              <Grid item xs={12}></Grid>
-            </Grid>
+                {/* A little extra space */}
+                <Grid item xs={12}></Grid>
+              </Grid>
 
-            <Grid item xs={12}>
-              {scopeTabs()}
-            </Grid>
+              <Grid item xs={12}>
+                {scopeTabs()}
+              </Grid>
 
-            {/* Scope contents */}
-            <Grid item xs={12}>
-              <Paper classes={{ root: classes.panelPaper }}>
-                <Grid container spacing={2}>
-                  <Grid item xs={12} container spacing={0}>
-                    <Grid item xs={1}>
-                      {daySelection()}
-                    </Grid>
-                    <Grid item xs={1}>
-                      {dayTabs()}
-                    </Grid>
+              {/* Scope contents */}
+              <Grid item xs={12}>
+                <Paper classes={{ root: classes.panelPaper }}>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} container spacing={0}>
+                      <Grid item xs={1}>
+                        {daySelection()}
+                      </Grid>
+                      <Grid item xs={1}>
+                        {dayTabs()}
+                      </Grid>
 
-                    {/* Day contents */}
-                    <Grid item xs={10}>
-                      <Paper classes={{ root: classNames(classes.panelPaper, classes.dayPanelPaper) }}>
-                        <Grid container spacing={2}>
-                          {dayGeneralFields()}
+                      {/* Day contents */}
+                      <Grid item xs={10}>
+                        <Paper classes={{ root: classNames(classes.panelPaper, classes.dayPanelPaper) }}>
+                          <Grid container spacing={2}>
+                            {dayGeneralFields()}
 
-                          <Grid item xs={12}>
-                            {legTabs()}
+                            <Grid item xs={12}>
+                              {legTabs()}
 
-                            {/* Leg contents */}
-                            <Paper classes={{ root: classes.panelPaper }}>
-                              <Grid container spacing={2}>
-                                {legFields()}{' '}
-                              </Grid>
-                            </Paper>
+                              {/* Leg contents */}
+                              <Paper classes={{ root: classes.panelPaper }}>
+                                <Grid container spacing={2}>
+                                  {legFields()}{' '}
+                                </Grid>
+                              </Paper>
+                            </Grid>
                           </Grid>
-                        </Grid>
-                      </Paper>
+                        </Paper>
+                      </Grid>
                     </Grid>
                   </Grid>
-                </Grid>
-              </Paper>
+                </Paper>
+              </Grid>
             </Grid>
-          </Grid>
+
+            <div className={classes.localTime}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    color="primary"
+                    disabled={scopeIndex !== 'BASE'}
+                    checked={viewState.localTime}
+                    onChange={({ target: { checked: localTime } }) => setViewState({ ...viewState, localTime })}
+                  />
+                }
+                label="Local Time"
+                labelPlacement="end"
+              />
+            </div>
+          </Fragment>
         );
 
         function generalFields() {
@@ -426,207 +495,161 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
         }
         function scopeTabs() {
           return (
-            <Tabs
-              value={scopeIndex === 'BASE' ? 'BASE' : 'CHANGE'}
-              onChange={(e, value) => {
-                const newScopeIndex: ViewState['scopeIndex'] = value === 'BASE' ? 'BASE' : scopeIndex;
-                if (newScopeIndex === scopeIndex) return;
-                setViewState(viewState => {
-                  return refineViewState(
-                    {
-                      ...viewState,
-                      scopeIndex: newScopeIndex,
-                      dayIndex: newScopeIndex !== -1 ? dayIndex : 'ALL',
-                      legIndex: newScopeIndex !== -1 ? legIndex : 0
-                    },
-                    true
-                  );
-                });
-              }}
-              variant="fullWidth"
-            >
-              <Tab
-                classes={{ root: classNames(classes.scopeTabBase, { [classes.error]: errors.baseScope }) }}
-                value="BASE"
-                label={
-                  <div>
-                    <div>
-                      <FormControlLabel control={<Checkbox color="primary" checked={scopeIndex === 'BASE'} />} label="Base" labelPlacement="end" />
-                    </div>
-                    <div>
-                      <FormControlLabel
-                        control={
-                          <Checkbox
-                            color="primary"
-                            disabled={scopeIndex !== 'BASE'}
-                            checked={viewState.localTime}
-                            onChange={({ target: { checked: localTime } }) => setViewState({ ...viewState, localTime })}
-                          />
-                        }
-                        label="Local Time"
-                        labelPlacement="end"
-                      />
-                    </div>
-                  </div>
-                }
-              />
-              <Tab
-                classes={{ root: classes.scopeTabChange }}
-                value="CHANGE"
-                disableRipple
-                label={
-                  <div className={classes.scopeChangeRoot}>
-                    <div className={classes.scopeChangeSelection}>
-                      <div className={classes.scopeChangeWeeks}>
-                        {preplan.weeks.all.map((week, weekIndex) => {
-                          const changeScopeIndex = viewState.changeScopes.findIndex(({ startWeekIndex, endWeekIndex }) => startWeekIndex <= weekIndex && weekIndex <= endWeekIndex);
-                          const changeScope = changeScopeIndex < 0 ? undefined : viewState.changeScopes[changeScopeIndex];
-
-                          return (
-                            <div
-                              key={weekIndex}
-                              className={classNames(
-                                classes.scopeChangeWeek,
-                                changeScope && {
-                                  [classes.scopeChangeChunk]: true,
-                                  [classes.scopeChangeChunkStart]: weekIndex === changeScope.startWeekIndex,
-                                  [classes.scopeChangeChunkEnd]: weekIndex === changeScope.endWeekIndex,
-                                  [classes.scopeChangeChunkSelected]: changeScopeIndex === scopeIndex,
-                                  [classes.scopeChangeChunkError]: errors.changeScopes[changeScopeIndex]
-                                },
-                                {
-                                  [classes.scopeChangeAfterChunkEnd]: weekIndex > 0 && viewState.changeScopes.some(({ endWeekIndex }) => endWeekIndex === weekIndex - 1)
-                                }
-                              )}
-                              title={`Week from ${week.startDate.format('d')} to ${week.endDate.format('d')}`}
-                              onClick={() => {
-                                //if (changeScopeIndex === -1)
-                                setViewState(viewState => {
-                                  return { ...viewState, selectedWeekIndex: weekIndex };
-                                });
-
-                                if (changeScopeIndex === scopeIndex) return;
-
-                                setViewState(viewState => {
-                                  return refineViewState(
-                                    {
-                                      ...viewState,
-                                      scopeIndex: changeScopeIndex,
-                                      sliderStartIndex: changeScopeIndex < 0 ? 0 : viewState.changeScopes[changeScopeIndex].startWeekIndex,
-                                      sliderEndIndex: changeScopeIndex < 0 ? 0 : viewState.changeScopes[changeScopeIndex].endWeekIndex - 1
-                                    },
-                                    true
-                                  );
-                                });
-                              }}
-                            >
-                              {formatDate(week.startDate, true)}
-                              <div className={classNames(viewState.selectedWeekIndex === weekIndex ? classes.selectedWeek : classes.scopeChangeWeekHover)} />
-                            </div>
-                          );
-                        })}
-                      </div>
-
-                      <Slider
-                        color="primary"
-                        classes={{
-                          root: classes.scopeChangeSliderRoot,
-                          thumb: classes.scopeChangeSliderThumb,
-                          valueLabel: classes.scopeChangeSliderValueLabel,
-                          track: classes.scopeChangeSliderTrack,
-                          rail: classes.scopeChangeSliderRail
-                        }}
-                        step={1}
-                        min={0}
-                        max={preplan.weeks.all.length}
-                        valueLabelDisplay="on"
-                        valueLabelFormat={index =>
-                          scopeIndex === 'BASE' || scopeIndex < 0 || viewState.sliderStartIndex === viewState.sliderEndIndex
-                            ? ''
-                            : formatDate(index === viewState.sliderStartIndex ? preplan.weeks.all[index].startDate : preplan.weeks.all[index - 1].endDate)
-                        }
-                        track={scopeIndex === 'BASE' || scopeIndex < 0 ? false : 'normal'}
-                        value={scopeIndex === 'BASE' || scopeIndex < 0 ? [] : [viewState.sliderStartIndex, viewState.sliderEndIndex]}
-                        onChange={(e, value) =>
-                          scopeIndex === 'BASE' ||
-                          scopeIndex < 0 ||
-                          setViewState({ ...viewState, sliderStartIndex: (value as number[])[0], sliderEndIndex: (value as number[])[1] })
-                        }
-                        onChangeCommitted={() =>
-                          scopeIndex === 'BASE' ||
-                          scopeIndex < 0 ||
-                          setViewState(
-                            refineViewState({
+            <Fragment>
+              <div className={classes.scopeChangeRoot}>
+                <div className={classes.scopeChangeSelection}>
+                  <div className={classes.scopeChangeWeeks}>
+                    <div
+                      className={classNames(classes.scopeBase, { [classes.scopeBaseSelected]: viewState.scopeIndex === 'BASE' })}
+                      onClick={e => {
+                        const newScopeIndex: ViewState['scopeIndex'] = 'BASE';
+                        if (newScopeIndex === scopeIndex) return;
+                        setViewState(viewState => {
+                          return refineViewState(
+                            {
                               ...viewState,
-                              changeScopes: splice(viewState.changeScopes, scopeIndex, 1, ([c]) => {
-                                return {
-                                  ...c,
-                                  startWeekIndex: viewState.sliderStartIndex,
-                                  endWeekIndex: viewState.sliderEndIndex - 1
-                                };
-                              })
-                            })
-                          )
-                        }
-                      />
+                              scopeIndex: newScopeIndex
+                            },
+                            true
+                          );
+                        });
+                      }}
+                    >
+                      Base
+                      <div className={classNames(classes.scopeBaseHover)} />
                     </div>
-                    <div>
-                      <IconButton
-                        classes={{ root: classes.rebaseScopeChange }}
-                        title={'Remove change'}
-                        onClick={() => {
-                          if (scopeIndex !== 'BASE' && scopeIndex >= 0) {
-                            setViewState(viewState => {
-                              return refineViewState({
-                                ...viewState,
-                                scopeIndex: -1,
-                                changeScopes: splice(viewState.changeScopes, scopeIndex, 1, ([c]) => ({
-                                  ...viewState.baseScope,
-                                  startWeekIndex: c.startWeekIndex,
-                                  endWeekIndex: c.endWeekIndex,
-                                  isNew: c.isNew,
-                                  isTemp: false
-                                }))
-                              });
-                            });
-                          }
-                        }}
-                      >
-                        <RemoveIcon />
-                      </IconButton>
 
-                      <IconButton
-                        classes={{ root: classes.scopeChangeAdd }}
-                        title={scopeIndex === 'BASE' || scopeIndex < 0 ? 'Add a new change' : 'Split the selected change'}
-                        onClick={() => {
-                          if (scopeIndex === 'BASE' || scopeIndex < 0)
-                            return setViewState(viewState => {
-                              return {
-                                ...viewState,
-                                scopeIndex: 0,
-                                sliderStartIndex: viewState.selectedWeekIndex ?? 0,
-                                sliderEndIndex: (viewState.selectedWeekIndex ?? 0) + 1,
-                                changeScopes: [
-                                  {
-                                    ...viewState.baseScope,
-                                    startWeekIndex: viewState.selectedWeekIndex ?? 0,
-                                    endWeekIndex: viewState.selectedWeekIndex ?? 0,
-                                    isTemp: true,
-                                    isNew: true
-                                  },
-                                  ...viewState.changeScopes
-                                ]
-                              };
+                    {preplan.weeks.all.map((week, weekIndex) => {
+                      const changeScopeIndex = viewState.changeScopes.findIndex(({ startWeekIndex, endWeekIndex }) => startWeekIndex <= weekIndex && weekIndex <= endWeekIndex);
+                      const changeScope = changeScopeIndex < 0 ? undefined : viewState.changeScopes[changeScopeIndex];
+
+                      return (
+                        <div
+                          key={weekIndex}
+                          className={classNames(
+                            classes.scopeChangeWeek,
+                            changeScope && {
+                              [classes.scopeChangeChunk]: true,
+                              [classes.scopeChangeChunkStart]: weekIndex === changeScope.startWeekIndex,
+                              [classes.scopeChangeChunkEnd]: weekIndex === changeScope.endWeekIndex,
+                              [classes.scopeChangeChunkSelected]: changeScopeIndex === scopeIndex,
+                              [classes.scopeChangeChunkError]: errors.changeScopes[changeScopeIndex]
+                            },
+                            {
+                              [classes.scopeChangeAfterChunkEnd]:
+                                (weekIndex > 0 && viewState.changeScopes.some(({ endWeekIndex }) => endWeekIndex === weekIndex - 1)) ||
+                                (weekIndex === 0 && viewState.scopeIndex === 'BASE')
+                            }
+                          )}
+                          title={`Week from ${week.startDate.format('d')} to ${week.endDate.format('d')}`}
+                          onClick={() => {
+                            //if (changeScopeIndex === -1)
+                            setViewState(viewState => {
+                              return { ...viewState, selectedWeekIndex: weekIndex };
                             });
-                          if (viewState.changeScopes[scopeIndex].startWeekIndex === viewState.changeScopes[scopeIndex].endWeekIndex) return;
-                          setViewState(viewState => ({
+
+                            if (changeScopeIndex === scopeIndex) return;
+
+                            setViewState(viewState => {
+                              return refineViewState(
+                                {
+                                  ...viewState,
+                                  scopeIndex: changeScopeIndex,
+                                  sliderStartIndex: changeScopeIndex < 0 ? 0 : viewState.changeScopes[changeScopeIndex].startWeekIndex,
+                                  sliderEndIndex: changeScopeIndex < 0 ? 0 : viewState.changeScopes[changeScopeIndex].endWeekIndex - 1
+                                },
+                                true
+                              );
+                            });
+                          }}
+                        >
+                          {formatDate(week.startDate, true)}
+                          <div className={classNames(viewState.selectedWeekIndex === weekIndex ? classes.selectedWeek : classes.scopeChangeWeekHover)} />
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <Slider
+                    color="primary"
+                    classes={{
+                      root: classes.scopeChangeSliderRoot,
+                      thumb: classes.scopeChangeSliderThumb,
+                      valueLabel: classes.scopeChangeSliderValueLabel,
+                      track: classes.scopeChangeSliderTrack,
+                      rail: classes.scopeChangeSliderRail
+                    }}
+                    step={1}
+                    min={0}
+                    max={preplan.weeks.all.length}
+                    valueLabelDisplay="on"
+                    valueLabelFormat={index =>
+                      scopeIndex === 'BASE' || scopeIndex < 0 || viewState.sliderStartIndex === viewState.sliderEndIndex
+                        ? ''
+                        : formatDate(index === viewState.sliderStartIndex ? preplan.weeks.all[index].startDate : preplan.weeks.all[index - 1].endDate)
+                    }
+                    track={scopeIndex === 'BASE' || scopeIndex < 0 ? false : 'normal'}
+                    value={scopeIndex === 'BASE' || scopeIndex < 0 ? [] : [viewState.sliderStartIndex, viewState.sliderEndIndex]}
+                    onChange={(e, value) =>
+                      scopeIndex === 'BASE' || scopeIndex < 0 || setViewState({ ...viewState, sliderStartIndex: (value as number[])[0], sliderEndIndex: (value as number[])[1] })
+                    }
+                    onChangeCommitted={() =>
+                      scopeIndex === 'BASE' ||
+                      scopeIndex < 0 ||
+                      setViewState(
+                        refineViewState({
+                          ...viewState,
+                          changeScopes: splice(viewState.changeScopes, scopeIndex, 1, ([c]) => {
+                            return {
+                              ...c,
+                              startWeekIndex: viewState.sliderStartIndex,
+                              endWeekIndex: viewState.sliderEndIndex - 1
+                            };
+                          })
+                        })
+                      )
+                    }
+                  />
+                </div>
+                <div>
+                  <IconButton
+                    classes={{ root: classes.rebaseScopeChange }}
+                    title={'Remove change'}
+                    onClick={() => {
+                      if (scopeIndex !== 'BASE' && scopeIndex >= 0) {
+                        setViewState(viewState => {
+                          return refineViewState({
+                            ...viewState,
+                            scopeIndex: -1,
+                            changeScopes: splice(viewState.changeScopes, scopeIndex, 1, ([c]) => ({
+                              ...viewState.baseScope,
+                              startWeekIndex: c.startWeekIndex,
+                              endWeekIndex: c.endWeekIndex,
+                              isNew: c.isNew,
+                              isTemp: false
+                            }))
+                          });
+                        });
+                      }
+                    }}
+                  >
+                    <RemoveIcon />
+                  </IconButton>
+
+                  <IconButton
+                    classes={{ root: classes.scopeChangeAdd }}
+                    title={scopeIndex === 'BASE' || scopeIndex < 0 ? 'Add a new change' : 'Split the selected change'}
+                    onClick={() => {
+                      if (scopeIndex === 'BASE' || scopeIndex < 0)
+                        return setViewState(viewState => {
+                          return {
                             ...viewState,
                             scopeIndex: 0,
                             sliderStartIndex: viewState.selectedWeekIndex ?? 0,
                             sliderEndIndex: (viewState.selectedWeekIndex ?? 0) + 1,
                             changeScopes: [
                               {
-                                ...viewState.changeScopes[scopeIndex],
+                                ...viewState.baseScope,
                                 startWeekIndex: viewState.selectedWeekIndex ?? 0,
                                 endWeekIndex: viewState.selectedWeekIndex ?? 0,
                                 isTemp: true,
@@ -634,16 +657,32 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                               },
                               ...viewState.changeScopes
                             ]
-                          }));
-                        }}
-                      >
-                        <AddIcon />
-                      </IconButton>
-                    </div>
-                  </div>
-                }
-              />
-            </Tabs>
+                          };
+                        });
+                      if (viewState.changeScopes[scopeIndex].startWeekIndex === viewState.changeScopes[scopeIndex].endWeekIndex) return;
+                      setViewState(viewState => ({
+                        ...viewState,
+                        scopeIndex: 0,
+                        sliderStartIndex: viewState.selectedWeekIndex ?? 0,
+                        sliderEndIndex: (viewState.selectedWeekIndex ?? 0) + 1,
+                        changeScopes: [
+                          {
+                            ...viewState.changeScopes[scopeIndex],
+                            startWeekIndex: viewState.selectedWeekIndex ?? 0,
+                            endWeekIndex: viewState.selectedWeekIndex ?? 0,
+                            isTemp: true,
+                            isNew: true
+                          },
+                          ...viewState.changeScopes
+                        ]
+                      }));
+                    }}
+                  >
+                    <AddIcon />
+                  </IconButton>
+                </div>
+              </div>
+            </Fragment>
           );
         }
         function daySelection() {
@@ -685,6 +724,7 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
             </Fragment>
           );
         }
+
         function dayTabs() {
           return (
             <Tabs value={dayIndex} onChange={(e, dayIndex) => setViewState({ ...viewState, dayIndex })} variant="fullWidth" orientation="vertical">

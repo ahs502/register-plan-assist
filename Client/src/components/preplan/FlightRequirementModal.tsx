@@ -230,6 +230,14 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
   error: {
     color: theme.palette.error.main
+  },
+  base: {
+    borderWidth: 1,
+    borderRightWidth: 0,
+    borderStyle: 'solid',
+    borderRadius: 0,
+    borderTopLeftRadius: 5,
+    borderBottomLeftRadius: 5
   }
 }));
 
@@ -338,7 +346,7 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
         function generalFields() {
           return (
             <Fragment>
-              <Grid item xs={4}>
+              <Grid item xs={5}>
                 <RefiningTextField
                   fullWidth
                   autoFocus
@@ -352,7 +360,7 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                   disabled={preplan.readonly}
                 />
               </Grid>
-              <Grid item xs={4}>
+              <Grid item xs={5}>
                 {viewState.addingNewCategory ? (
                   <RefiningTextField
                     fullWidth
@@ -413,13 +421,6 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                   isDisabled={preplan.readonly}
                 />
               </Grid>
-              <Grid item xs={2}>
-                <FormControlLabel
-                  control={<Checkbox color="primary" checked={viewState.localTime} onChange={({ target: { checked: localTime } }) => setViewState({ ...viewState, localTime })} />}
-                  label="Local Time"
-                  labelPlacement="end"
-                />
-              </Grid>
             </Fragment>
           );
         }
@@ -447,7 +448,27 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
               <Tab
                 classes={{ root: classNames(classes.scopeTabBase, { [classes.error]: errors.baseScope }) }}
                 value="BASE"
-                label={<FormControlLabel control={<Checkbox color="primary" checked={scopeIndex === 'BASE'} />} label="Base" labelPlacement="end" />}
+                label={
+                  <div>
+                    <div>
+                      <FormControlLabel control={<Checkbox color="primary" checked={scopeIndex === 'BASE'} />} label="Base" labelPlacement="end" />
+                    </div>
+                    <div>
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            color="primary"
+                            disabled={scopeIndex !== 'BASE'}
+                            checked={viewState.localTime}
+                            onChange={({ target: { checked: localTime } }) => setViewState({ ...viewState, localTime })}
+                          />
+                        }
+                        label="Local Time"
+                        labelPlacement="end"
+                      />
+                    </div>
+                  </div>
+                }
               />
               <Tab
                 classes={{ root: classes.scopeTabChange }}

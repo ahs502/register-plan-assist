@@ -407,7 +407,6 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                 }
                 label="Local Time"
                 labelPlacement="end"
-                disabled={!!state.flightRequirement}
               />
             </div>
           </Fragment>
@@ -1075,9 +1074,9 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
               <Grid item xs={2}>
                 <TextField label="STA" value={legViewState?.staUpperBound ?? ''} disabled={true} />
               </Grid>
-              <Grid item xs={6}>
+              <Grid item xs={3}>
                 <FormControlLabel
-                  label="Origin Permission"
+                  label="Origin perms."
                   control={
                     <Checkbox
                       color="primary"
@@ -1089,20 +1088,7 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                 />
               </Grid>
 
-              <Grid item xs={6}>
-                <FormControlLabel
-                  label="Destination Permission"
-                  control={
-                    <Checkbox
-                      color="primary"
-                      checked={legViewState?.destinationPermission ?? false}
-                      onChange={(e, destinationPermission) => legViewState && updateLeg(leg => ({ ...leg, destinationPermission }))}
-                    />
-                  }
-                  disabled={legDisabled}
-                />
-              </Grid>
-              <Grid item xs={6}>
+              <Grid item xs={9}>
                 <RefiningTextField
                   fullWidth
                   multiline
@@ -1114,7 +1100,20 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                   disabled={legDisabled}
                 />
               </Grid>
-              <Grid item xs={6}>
+              <Grid item xs={3}>
+                <FormControlLabel
+                  label="Destination perms."
+                  control={
+                    <Checkbox
+                      color="primary"
+                      checked={legViewState?.destinationPermission ?? false}
+                      onChange={(e, destinationPermission) => legViewState && updateLeg(leg => ({ ...leg, destinationPermission }))}
+                    />
+                  }
+                  disabled={legDisabled}
+                />
+              </Grid>
+              <Grid item xs={9}>
                 <RefiningTextField
                   fullWidth
                   multiline

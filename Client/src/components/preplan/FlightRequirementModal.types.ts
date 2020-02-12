@@ -89,14 +89,14 @@ const defaultBadgeFailureMessage = {
 };
 
 export class ViewStateValidation extends Validation<
-  'LABEL_EXISTS' | 'LABEL_FORMAT_IS_VALID' | 'LABEL_IS_NOT_TOO_LONG' | 'CATEGORY_FORMAT_IS_VALID' | 'CATEGORY_IS_NOT_TOO_LONG' | 'LOCAL_TIME_NOT_CHANGE',
+  'LABEL_EXISTS' | 'LABEL_FORMAT_IS_VALID' | 'LABEL_IS_NOT_TOO_LONG' | 'CATEGORY_FORMAT_IS_VALID' | 'CATEGORY_IS_NOT_TOO_LONG',
   {
     routeLegValidations: RouteLegViewStateValidation[];
     baseScopeValidation: ScopeViewStateValidation;
     changeScopeValidations: ScopeViewStateValidation[];
   }
 > {
-  constructor({ label, category, route, baseScope, changeScopes, localTime }: ViewState, aircraftRegisters: PreplanAircraftRegisters, oldFlightRequirement?: FlightRequirement) {
+  constructor({ label, category, route, baseScope, changeScopes }: ViewState, aircraftRegisters: PreplanAircraftRegisters, oldFlightRequirement?: FlightRequirement) {
     super(validator => {
       validator
         .check('LABEL_EXISTS', !!label)
@@ -113,7 +113,6 @@ export class ViewStateValidation extends Validation<
       validator
         .array(changeScopes)
         .each((changeScope, index) => validator.put(validator.$.changeScopeValidations[index], new ScopeViewStateValidation(changeScope, aircraftRegisters)));
-      validator.check('LOCAL_TIME_NOT_CHANGE', !oldFlightRequirement || oldFlightRequirement.localTime === localTime, 'Local time in fix');
     }, defaultBadgeFailureMessage);
   }
 }

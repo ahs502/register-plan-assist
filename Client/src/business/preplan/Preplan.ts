@@ -172,13 +172,13 @@ export default class Preplan {
     this.readonly = this.user.id !== persistant.user!.id || !this.current;
   }
 
-  getFlightViews(startWeek: Week, endWeek: Week, week?: Week): FlightView[] {
+  getFlightViews(startWeek: Week, endWeek: Week, localtime: boolean, week?: Week): FlightView[] {
     return Object.values(
       this.flights
-        .filter(f => startWeek.startDate <= f.date && f.date <= endWeek.endDate)
+        .filter(f => startWeek.startDate <= f.date && f.date <= endWeek.endDate && (f.rsx === 'REAL' || f.rsx === 'STB1'))
         .groupBy(
           f => f.flightRequirement.id,
-          g => Object.values(g.groupBy('day', h => new FlightView(h, startWeek, endWeek, week ?? startWeek, this.startDate, this.endDate)))
+          g => Object.values(g.groupBy('day', h => new FlightView(h, startWeek, endWeek, week ?? startWeek, this.startDate, this.endDate, localtime)))
         )
     ).flatten();
   }

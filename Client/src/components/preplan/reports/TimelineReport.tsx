@@ -158,7 +158,8 @@ const TimelineReport: FC<PreplanReportProps> = () => {
     () =>
       preplan.getFlightViews(
         new Week(dataTypes.utcDate.convertViewToBusiness(reportDateRange.startDate)),
-        new Week(dataTypes.utcDate.convertViewToBusiness(reportDateRange.endDate))
+        new Week(dataTypes.utcDate.convertViewToBusiness(reportDateRange.endDate)),
+        false
       ),
     [reportDateRange]
   );

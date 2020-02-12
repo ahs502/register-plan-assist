@@ -2,7 +2,7 @@ import DayFlightRequirement from 'src/business/flight-requirement/DayFlightRequi
 import FlightRequirement from 'src/business/flight-requirement/FlightRequirement';
 import Daytime from '@core/types/Daytime';
 import PreplanAircraftRegister, { PreplanAircraftRegisters } from 'src/business/preplan/PreplanAircraftRegister';
-import { Stc } from 'src/business/master-data';
+import MasterData, { Stc } from 'src/business/master-data';
 import Rsx from '@core/types/Rsx';
 import Weekday from '@core/types/Weekday';
 import Id from '@core/types/Id';
@@ -47,8 +47,30 @@ export default class FlightView {
   readonly endDateTime: Date;
   readonly icons: readonly string[]; //TODO: Check if it is really required.
 
-  constructor(flights: readonly Flight[], startWeek: Week, endWeek: Week, week: Week, preplanStartDate: Date, preplanEndDate: Date) {
-    const { sourceFlight, notes } = flights.map(sourceFlight => ({ sourceFlight, notes: createNotes(sourceFlight) })).sortBy(({ notes }) => notes.length)[0];
+  constructor(flights: readonly Flight[], startWeek: Week, endWeek: Week, week: Week, preplanStartDate: Date, preplanEndDate: Date, localtime: boolean) {
+    const utcOffset =
+      localtime &&
+      startWeek !== endWeek &&
+      MasterData.all.airports.name['IKA'].utcOffsets.find(u => u.dst && u.startDateTimeLocal <= endWeek.endDate && u.endDateTimeUtc >= startWeek.startDate);
+
+    let filterFlight = flights;
+    if (utcOffset && !(utcOffset.startDateTimeLocal <= startWeek.startDate && utcOffset.endDateTimeLocal >= endWeek.endDate)) {
+      if (startWeek.startDate <= utcOffset.startDateTimeLocal && endWeek.endDate >= utcOffset.endDateTimeLocal) {
+        filterFlight = flights.filter(f => f.date >= utcOffset.startDateTimeLocal && f.date <= utcOffset.endDateTimeLocal);
+      } else {
+        const borderDay =
+          utcOffset.startDateTimeLocal >= startWeek.startDate && utcOffset.startDateTimeLocal <= endWeek.endDate ? utcOffset.startDateTimeLocal : utcOffset.endDateTimeLocal;
+        if (borderDay.getTime() - startWeek.startDate.getTime() > endWeek.endDate.getTime() - borderDay.getTime()) {
+          filterFlight = flights.filter(f => f.date.getTime() <= borderDay.getTime());
+        } else {
+          filterFlight = flights.filter(f => f.date.getTime() >= borderDay.getTime());
+        }
+      }
+    }
+
+    filterFlight.length === 0 && (filterFlight = flights);
+
+    const { sourceFlight, notes } = filterFlight.map(sourceFlight => ({ sourceFlight, notes: createNotes(sourceFlight) })).sortBy(({ notes }) => notes.length)[0];
 
     this.sourceFlight = sourceFlight;
 
@@ -71,10 +93,10 @@ export default class FlightView {
     this.destinationPermission = this.sourceFlight.destinationPermission;
 
     this.derivedId = String((FlightView.idCounter = FlightView.idCounter === Number.MAX_SAFE_INTEGER ? 1 : FlightView.idCounter + 1));
-    this.start = this.sourceFlight.start;
-    this.end = this.sourceFlight.end;
-    this.weekStart = this.sourceFlight.weekStart;
-    this.weekEnd = this.sourceFlight.weekEnd;
+    this.start = localtime ? new Daytime(this.sourceFlight.legs[0].localStd, this.sourceFlight.date) : this.sourceFlight.start;
+    this.end = localtime ? new Daytime(this.sourceFlight.legs.last()!.localSta, this.sourceFlight.date) : this.sourceFlight.end;
+    this.weekStart = localtime ? this.sourceFlight.day * 24 * 60 + this.start.minutes : this.sourceFlight.weekStart;
+    this.weekEnd = localtime ? this.sourceFlight.day * 24 * 60 + this.end.minutes : this.sourceFlight.weekEnd;
     this.sections = this.sourceFlight.sections;
 
     // Fields which should be calculated for view:
@@ -319,7 +341,7 @@ export default class FlightView {
             changes
               .map(n =>
                 n.dates.length >= 2
-                  ? `RSX ${n.change} ${n.dates[0]
+                  ? `${n.change} ${n.dates[0]
                       .getUTCDate()
                       .toString()
                       .padStart(2, '0')}${ShortMonthNames[n.dates[0].getMonth()]} TILL ${n.dates[n.dates.length - 1]
@@ -327,7 +349,7 @@ export default class FlightView {
                       .toString()
                       .padStart(2, '0')}${ShortMonthNames[n.dates[n.dates.length - 1].getMonth()]}`
                   : n.dates.length === 1
-                  ? `RSX ${n.change} ${n.dates[0]
+                  ? `${n.change} ${n.dates[0]
                       .getUTCDate()
                       .toString()
                       .padStart(2, '0')}${ShortMonthNames[n.dates[0].getMonth()]}`

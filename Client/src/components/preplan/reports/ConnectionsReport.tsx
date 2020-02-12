@@ -34,6 +34,7 @@ import Week from 'src/business/Week';
 import SelectWeeks, { WeekSelection } from 'src/components/preplan/SelectWeeks';
 import PreplanService from 'src/services/PreplanService';
 import { useSnackbar } from 'notistack';
+import persistant from 'src/utils/persistant';
 
 const errorPaperSize = 250;
 const character = {
@@ -267,13 +268,15 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ preplanName, fromDate, 
     .distinct()
     .map<Airline>(a => ({ label: a, value: a }));
 
-  const defaultWestAirport = ['BCN', 'DXB', 'ESB', 'IST', 'VKO'];
-  const defaultEastAirpot = ['BKK', 'CAN', 'DEL', 'KUL', 'LHE', 'PEK', 'PVG'];
+  const defaultWestAirports = ['BCN', 'DXB', 'ESB', 'IST', 'VKO'];
+  const defaultEestAirports = ['BKK', 'CAN', 'DEL', 'KUL', 'LHE', 'PEK', 'PVG'];
+  const westAirports = persistant.rpaUserSetting?.ConnectionReport?.westAirports;
+  const eastAirpots = persistant.rpaUserSetting?.ConnectionReport?.eastAirports;
   const [viewState, setViewState] = useState<ViewState>(() => ({
     westAirportsAirline: allAirline.find(z => z.value === 'W5') ?? allAirline[0],
     eastAirportsAirline: allAirline.find(z => z.value === 'W5') ?? allAirline[0],
-    eastAirports: allAirports.filter(a => defaultEastAirpot.indexOf(a.name) !== -1).orderBy('name'),
-    westAirports: allAirports.filter(a => defaultWestAirport.indexOf(a.name) !== -1).orderBy('name'),
+    eastAirports: allAirports.filter(a => (!eastAirpots || eastAirpots.length === 0 ? defaultEestAirports : eastAirpots).indexOf(a.name) !== -1).orderBy('name'),
+    westAirports: allAirports.filter(a => (!westAirports || westAirports.length === 0 ? defaultWestAirports : westAirports).indexOf(a.name) !== -1).orderBy('name'),
     startDate: dataTypes.utcDate.convertBusinessToView(fromDate),
     endDate: dataTypes.utcDate.convertBusinessToView(toDate),
     maxConnectionTime: dataTypes.daytime.convertModelToView(300),

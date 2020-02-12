@@ -5,6 +5,8 @@ import SideBarContainer from 'src/components/preplan/timeline/SideBarContainer';
 import { ExpandMore as ExpandMoreIcon } from '@material-ui/icons';
 import persistant from 'src/utils/persistant';
 import RpaUserSettingModel from '@core/models/RpaUserSettingModel';
+import MasterData, { Airport } from 'src/business/master-data';
+import MultiSelect from 'src/components/MultiSelect';
 
 const useStyles = makeStyles((theme: Theme) => ({
   // formControl: {
@@ -20,8 +22,14 @@ const useStyles = makeStyles((theme: Theme) => ({
   root: {
     width: '100%'
   },
+  marginBottom: {
+    marginBottom: theme.spacing(1)
+  },
   column: {
     flexBasis: '10%'
+  },
+  secondColumn: {
+    flexBasis: '90%'
   }
 }));
 
@@ -34,6 +42,8 @@ const useStyles = makeStyles((theme: Theme) => ({
 interface ViewState {
   timeLineLocaltime: boolean;
   flightRequirementLocaltime: boolean;
+  eastAirports: Airport[];
+  westAirports: Airport[];
 }
 
 export interface SettingsSideBarProps {
@@ -50,15 +60,24 @@ const SettingsSideBar: FC<SettingsSideBarProps> = ({
 
   const [viewState, setViewState] = useState<ViewState>({
     timeLineLocaltime: persistant.rpaUserSetting?.timeline?.localtime ?? false,
-    flightRequirementLocaltime: persistant.rpaUserSetting?.flightRequirement?.localTime ?? false
+    flightRequirementLocaltime: persistant.rpaUserSetting?.flightRequirement?.localTime ?? false,
+    eastAirports: (persistant.rpaUserSetting?.ConnectionReport?.eastAirports ?? []).map(a => MasterData.all.airports.name[a]),
+    westAirports: (persistant.rpaUserSetting?.ConnectionReport?.westAirports ?? []).map(a => MasterData.all.airports.name[a])
   });
+
+  const allAirports = MasterData.all.airports.items;
+
   const classes = useStyles();
 
   return (
     <SideBarContainer
       label="Settings"
       onApply={() => {
-        onApply({ flightRequirement: { localTime: viewState.flightRequirementLocaltime }, timeline: { localtime: viewState.timeLineLocaltime } } as RpaUserSettingModel);
+        onApply({
+          flightRequirement: { localTime: viewState.flightRequirementLocaltime },
+          timeline: { localtime: viewState.timeLineLocaltime },
+          ConnectionReport: { eastAirports: viewState.eastAirports.map(a => a.name), westAirports: viewState.westAirports.map(a => a.name) }
+        } as RpaUserSettingModel);
       }}
     >
       {/* <Typography variant="body1">Minimum Ground Time</Typography>
@@ -126,6 +145,40 @@ const SettingsSideBar: FC<SettingsSideBarProps> = ({
               }
               label="Local time"
             />
+          </ExpansionPanelDetails>
+        </ExpansionPanel>
+        <ExpansionPanel defaultExpanded>
+          <ExpansionPanelSummary expandIcon={<ExpandMoreIcon />}>
+            <Typography variant="h6">Connections:</Typography>
+          </ExpansionPanelSummary>
+          <ExpansionPanelDetails>
+            <div className={classes.column} />
+            <div className={classes.secondColumn}>
+              <Typography>East airport:</Typography>
+
+              <MultiSelect
+                id="east-airport"
+                value={viewState.eastAirports}
+                options={allAirports}
+                getOptionLabel={r => r.name}
+                getOptionValue={r => r.id}
+                onSelect={value => {
+                  setViewState({ ...viewState, eastAirports: value ? [...value] : [] });
+                }}
+                className={classes.marginBottom}
+              />
+              <Typography>West airport:</Typography>
+              <MultiSelect
+                id="west-airport"
+                value={viewState.westAirports}
+                options={allAirports}
+                getOptionLabel={r => r.name}
+                getOptionValue={r => r.id}
+                onSelect={value => {
+                  setViewState({ ...viewState, westAirports: value ? [...value] : [] });
+                }}
+              />
+            </div>
           </ExpansionPanelDetails>
         </ExpansionPanel>
       </div>

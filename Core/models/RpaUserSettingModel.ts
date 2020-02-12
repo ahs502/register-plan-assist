@@ -5,4 +5,8 @@ export default interface RpaUserSettingModel {
   readonly flightRequirement?: {
     readonly localTime: boolean;
   };
+  readonly ConnectionReport?: {
+    readonly westAirports: string[];
+    readonly eastAirports: string[];
+  };
 }

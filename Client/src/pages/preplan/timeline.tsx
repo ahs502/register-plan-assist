@@ -31,6 +31,8 @@ import Week from 'src/business/Week';
 import Flight from 'src/business/flight/Flight';
 import Weekday from '@core/types/Weekday';
 import useProperty from 'src/utils/useProperty';
+import SettingsSideBar from 'src/components/preplan/timeline/SettingsSideBar';
+import persistant from 'src/utils/persistant';
 
 const useStyles = makeStyles((theme: Theme) => ({
   sideBarBackdrop: {
@@ -130,11 +132,11 @@ const TimelinePage: FC<TimelinePageProps> = ({ onObjectionTargetClick, onEditFli
     nextEndIndex: preplan.weeks.all.length
   });
   const [statusBarProps, setStatusBarProps] = useState<StatusBarProps>({});
-
+  const localTime = persistant.rpaUserSetting?.timeline?.localtime ?? false;
   const weekStart = preplan.weeks.all[weekSelection.startIndex];
   const weekEnd = preplan.weeks.all[weekSelection.endIndex - 1];
   const week = weekStart;
-  const flightViews = useMemo<readonly FlightView[]>(() => preplan.getFlightViews(weekStart, weekEnd).filter(f => settings.viewFilters.rsx.includes(f.rsx)), [
+  const flightViews = useMemo<readonly FlightView[]>(() => preplan.getFlightViews(weekStart, weekEnd, localTime).filter(f => settings.viewFilters.rsx.includes(f.rsx)), [
     preplan,
     weekSelection.startIndex,
     weekSelection.endIndex
@@ -143,14 +145,17 @@ const TimelinePage: FC<TimelinePageProps> = ({ onObjectionTargetClick, onEditFli
   const previousWeekEnd = preplan.weeks.all[weekSelection.previousStartIndex < weekSelection.startIndex ? weekSelection.startIndex - 1 : weekSelection.endIndex - 1];
   const previousWeek = new Week(week.startDate.clone().addDays(-7));
   const previousFlightViews = useMemo<readonly FlightView[]>(
-    () => (!settings.viewOptions.extraDays ? [] : preplan.getFlightViews(previousWeekStart, previousWeekEnd, previousWeek).filter(f => settings.viewFilters.rsx.includes(f.rsx))),
+    () =>
+      !settings.viewOptions.extraDays
+        ? []
+        : preplan.getFlightViews(previousWeekStart, previousWeekEnd, localTime, previousWeek).filter(f => settings.viewFilters.rsx.includes(f.rsx)),
     [preplan, ...Object.values(weekSelection), settings.viewOptions.extraDays]
   );
   const nextWeekStart = preplan.weeks.all[weekSelection.nextEndIndex > weekSelection.endIndex ? weekSelection.endIndex : weekSelection.startIndex];
   const nextWeekEnd = preplan.weeks.all[weekSelection.nextEndIndex - 1];
   const nextWeek = new Week(week.startDate.clone().addDays(7));
   const nextFlightViews = useMemo<readonly FlightView[]>(
-    () => (!settings.viewOptions.extraDays ? [] : preplan.getFlightViews(nextWeekStart, nextWeekEnd, nextWeek).filter(f => settings.viewFilters.rsx.includes(f.rsx))),
+    () => (!settings.viewOptions.extraDays ? [] : preplan.getFlightViews(nextWeekStart, nextWeekEnd, localTime, nextWeek).filter(f => settings.viewFilters.rsx.includes(f.rsx))),
     [preplan, ...Object.values(weekSelection), settings.viewOptions.extraDays]
   );
 
@@ -208,9 +213,9 @@ const TimelinePage: FC<TimelinePageProps> = ({ onObjectionTargetClick, onEditFli
           >
             <MahanIcon type={MahanIconType.Flights} />
           </IconButton>
-          {/* <IconButton disabled color="inherit" onClick={() => setSideBarState({ ...sideBarState, sideBar: 'SETTINGS', open: true })} title="Settings">
+          <IconButton color="inherit" onClick={() => setSideBarState({ ...sideBarState, sideBar: 'SETTINGS', open: true })} title="Settings">
             <SettingsIcon />
-          </IconButton> */}
+          </IconButton>
         </div>
       </Portal>
 
@@ -221,7 +226,19 @@ const TimelinePage: FC<TimelinePageProps> = ({ onObjectionTargetClick, onEditFli
         ModalProps={{ BackdropProps: { classes: { root: classes.sideBarBackdrop } } }}
         classes={{ paper: classes.sideBarPaper }}
       >
-        {/* {sideBarState.sideBar === 'SETTINGS' && <SettingsSideBar autoArrangerOptions={preplan.autoArrangerOptions} onApply={() => alert('TODO: Not implemented.')} />} */}
+        {sideBarState.sideBar === 'SETTINGS' && (
+          <SettingsSideBar
+            onApply={rpaUserSetting => {
+              try {
+                persistant.rpaUserSetting = rpaUserSetting;
+                setSideBarState(sideBarState => ({ ...sideBarState, open: false }));
+                reloadPreplan();
+              } catch (reason) {
+                setSideBarState(sideBarState => ({ ...sideBarState, loading: false, errorMessage: String(reason) }));
+              }
+            }}
+          />
+        )}
         {sideBarState.sideBar === 'SELECT_AIRCRAFT_REGISTERS' && (
           <SelectAircraftRegistersSideBar
             initialSearch={sideBarState.initialSearch}

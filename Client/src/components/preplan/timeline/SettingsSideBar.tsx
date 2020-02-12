@@ -1,7 +1,10 @@
-import React, { FC } from 'react';
-import { Theme } from '@material-ui/core';
+import React, { FC, useState, useContext } from 'react';
+import { Theme, FormControlLabel, Checkbox, Typography, ExpansionPanel, ExpansionPanelSummary, ExpansionPanelDetails } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import SideBarContainer from 'src/components/preplan/timeline/SideBarContainer';
+import { ExpandMore as ExpandMoreIcon } from '@material-ui/icons';
+import persistant from 'src/utils/persistant';
+import RpaUserSettingModel from '@core/models/RpaUserSettingModel';
 
 const useStyles = makeStyles((theme: Theme) => ({
   // formControl: {
@@ -14,6 +17,12 @@ const useStyles = makeStyles((theme: Theme) => ({
   // textFieldStyle: {
   //   paddingLeft: theme.spacing(1)
   // }
+  root: {
+    width: '100%'
+  },
+  column: {
+    flexBasis: '10%'
+  }
 }));
 
 // const minimumGroundTimeModes: readonly { value: MinimumGroundTimeMode; label: string }[] = [
@@ -22,29 +31,35 @@ const useStyles = makeStyles((theme: Theme) => ({
 //   { value: 'AVERAGE', label: 'Average' }
 // ];
 
-export interface SettingsSideBarProps {
-  // autoArrangerOptions: AutoArrangerOptions;
-  // onApply: (autoArrangerOptions: AutoArrangerOptionsModel) => void;
+interface ViewState {
+  timeLineLocaltime: boolean;
+  flightRequirementLocaltime: boolean;
 }
 
-const SettingsSideBar: FC<SettingsSideBarProps> = (
-  {
-    // autoArrangerOptions,
-    // onApply
-  }
-) => {
+export interface SettingsSideBarProps {
+  // autoArrangerOptions: AutoArrangerOptions;
+  onApply: (userSetting: RpaUserSettingModel) => void;
+}
+
+const SettingsSideBar: FC<SettingsSideBarProps> = ({
+  // autoArrangerOptions,
+  onApply
+}) => {
   // const [minimumGroundTimeMode, setMinimumGroundTimeMode] = useState(autoArrangerOptions.minimumGroundTimeMode);
   // const [minimumGroundTimeOffset, setMinimumGroundTimeOffset] = useState(autoArrangerOptions.minimumGroundTimeOffset);
 
+  const [viewState, setViewState] = useState<ViewState>({
+    timeLineLocaltime: persistant.rpaUserSetting?.timeline?.localtime ?? false,
+    flightRequirementLocaltime: persistant.rpaUserSetting?.flightRequirement?.localTime ?? false
+  });
   const classes = useStyles();
 
   return (
     <SideBarContainer
       label="Settings"
-      // onApply={() => {
-      //   const autoArrangerOptions: AutoArrangerOptionsModel = { minimumGroundTimeMode, minimumGroundTimeOffset };
-      //   onApply(autoArrangerOptions);
-      // }}
+      onApply={() => {
+        onApply({ flightRequirement: { localTime: viewState.flightRequirementLocaltime }, timeline: { localtime: viewState.timeLineLocaltime } } as RpaUserSettingModel);
+      }}
     >
       {/* <Typography variant="body1">Minimum Ground Time</Typography>
       <FormControl fullWidth className={classes.formControl}>
@@ -74,7 +89,46 @@ const SettingsSideBar: FC<SettingsSideBarProps> = (
           }}
         />
       </FormControl> */}
-      Nothing yet!
+
+      <div className={classes.root}>
+        <ExpansionPanel defaultExpanded>
+          <ExpansionPanelSummary expandIcon={<ExpandMoreIcon />}>
+            <Typography variant="h6">Timeline:</Typography>
+          </ExpansionPanelSummary>
+          <ExpansionPanelDetails>
+            <div className={classes.column} />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={viewState.timeLineLocaltime}
+                  onChange={({ target: { checked: timeLineLocaltime } }) => setViewState({ ...viewState, timeLineLocaltime })}
+                  color="primary"
+                />
+              }
+              label="Local time"
+            />
+          </ExpansionPanelDetails>
+        </ExpansionPanel>
+
+        <ExpansionPanel defaultExpanded>
+          <ExpansionPanelSummary expandIcon={<ExpandMoreIcon />}>
+            <Typography variant="h6">Flight requirement:</Typography>
+          </ExpansionPanelSummary>
+          <ExpansionPanelDetails>
+            <div className={classes.column} />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={viewState.flightRequirementLocaltime}
+                  onChange={({ target: { checked: flightRequirementLocaltime } }) => setViewState({ ...viewState, flightRequirementLocaltime })}
+                  color="primary"
+                />
+              }
+              label="Local time"
+            />
+          </ExpansionPanelDetails>
+        </ExpansionPanel>
+      </div>
     </SideBarContainer>
   );
 };

@@ -41,6 +41,7 @@ import FlightRequirementChangeModel from '@core/models/flight-requirement/Flight
 import FlightRequirementLegChangeModel from '@core/models/flight-requirement/FlightRequirementLegChangeModel';
 import DayFlightRequirementChangeModel from '@core/models/flight-requirement/DayFlightRequirementChangeModel';
 import DayFlightRequirementLegChangeModel from '@core/models/flight-requirement/DayFlightRequirementLegChangeModel';
+import persistant from 'src/utils/persistant';
 
 const useStyles = makeStyles((theme: Theme) => ({
   scopeTabBase: {
@@ -1345,7 +1346,7 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
           }))
         },
         changeScopes: [],
-        localTime: false
+        localTime: persistant.rpaUserSetting?.flightRequirement?.localTime ?? false
       };
 
     const baseDefaultAircraftRegisters = extractDefaultAircraftRegisters();

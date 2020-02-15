@@ -167,7 +167,7 @@ const useStyles = makeStyles((theme: Theme) => ({
       .alpha(0.125)
       .hex(),
     borderColor: chroma(theme.palette.secondary.light)
-      .alpha(0.35)
+      .alpha(0.65)
       .hex(),
     borderTopWidth: 2,
     borderBottomWidth: 2,

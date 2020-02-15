@@ -35,6 +35,7 @@ export default class FlightView {
 
   // Computational:
   readonly derivedId: Id;
+  readonly date: Date;
   readonly start: Daytime;
   readonly end: Daytime;
   readonly weekStart: number;
@@ -45,6 +46,7 @@ export default class FlightView {
   }[];
   readonly startDateTime: Date;
   readonly endDateTime: Date;
+
   readonly icons: readonly string[]; //TODO: Check if it is really required.
 
   constructor(flights: readonly Flight[], startWeek: Week, endWeek: Week, week: Week, preplanStartDate: Date, preplanEndDate: Date, localtime: boolean) {
@@ -81,7 +83,7 @@ export default class FlightView {
     this.dayFlightRequirement = this.sourceFlight.dayFlightRequirement;
     this.flights = flights;
 
-    this.legs = this.sourceFlight.legs.map(l => new FlightLegView(l, this, startWeek, endWeek, week));
+    this.legs = this.sourceFlight.legs.map(l => new FlightLegView(l, this, localtime));
 
     this.label = this.sourceFlight.label;
     this.category = this.sourceFlight.category;
@@ -93,10 +95,23 @@ export default class FlightView {
     this.destinationPermission = this.sourceFlight.destinationPermission;
 
     this.derivedId = String((FlightView.idCounter = FlightView.idCounter === Number.MAX_SAFE_INTEGER ? 1 : FlightView.idCounter + 1));
-    this.start = localtime ? new Daytime(this.sourceFlight.legs[0].localStd, this.sourceFlight.date) : this.sourceFlight.start;
-    this.end = localtime ? new Daytime(this.sourceFlight.legs.last()!.localSta, this.sourceFlight.date) : this.sourceFlight.end;
-    this.weekStart = localtime ? this.sourceFlight.day * 24 * 60 + this.start.minutes : this.sourceFlight.weekStart;
-    this.weekEnd = localtime ? this.sourceFlight.day * 24 * 60 + this.end.minutes : this.sourceFlight.weekEnd;
+    this.date = this.sourceFlight.date.clone();
+    this.start = localtime ? new Daytime(this.sourceFlight.legs[0].localStd, this.date) : this.sourceFlight.start;
+
+    while (this.start.minutes < 0) {
+      this.date.addDays(-1);
+      this.day -= 1;
+      this.start = new Daytime(this.start.minutes + 24 * 60);
+    }
+
+    this.end = localtime ? new Daytime(this.sourceFlight.legs.last()!.localSta, this.date) : this.sourceFlight.end;
+
+    while (this.end.minutes < 0) {
+      this.end = new Daytime(this.end.minutes + 24 * 60);
+    }
+
+    this.weekStart = localtime ? this.day * 24 * 60 + this.start.minutes : this.sourceFlight.weekStart;
+    this.weekEnd = localtime ? this.day * 24 * 60 + this.end.minutes : this.sourceFlight.weekEnd;
     this.sections = this.sourceFlight.sections;
 
     // Fields which should be calculated for view:
@@ -123,7 +138,6 @@ export default class FlightView {
       const stdChange: string | undefined = generateStdChangeNotes();
       const blockTimeChange: string | undefined = generateBlockTimeChangeNotes();
       const registerChange: string | undefined = generateRegisterChangeNotes();
-      //const permissionAndPermissionNotesChange: string | undefined = generatePermissionAndPermissionNotesChangeNotes();
       const notesChange: string | undefined = generateNotesChangeNotes(); //TODO implement
       const rsxChange: string | undefined = generateRsxChangeNotes();
 
@@ -200,7 +214,12 @@ export default class FlightView {
 
       function generateStdChangeNotes(): string | undefined {
         return generateChangeNotes(
-          (firstFlight, secondFlight) => firstFlight.legs.every((l, index) => l.std.compare(secondFlight.legs[index].std) === 0),
+          (firstFlight, secondFlight) =>
+            firstFlight.legs.every((l, index) =>
+              localtime
+                ? l.localStd.getUTCHours() === secondFlight.legs[index].localStd.getUTCHours() && l.localStd.getUTCMinutes() === secondFlight.legs[index].localStd.getUTCMinutes()
+                : l.actualStd.compare(secondFlight.legs[index].actualStd) === 0
+            ),
           'Time Change',
           changes =>
             changes

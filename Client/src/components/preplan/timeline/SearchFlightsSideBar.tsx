@@ -89,7 +89,7 @@ const SearchFlightsSideBar: FC<SearchFlightsSideBarProps> = ({ initialSearch, fl
                 <TableCell classes={{ root: classes.tableCell }}>
                   {f.arrivalAirport.name} &ndash; {f.departureAirport.name}
                 </TableCell>
-                <TableCell classes={{ root: classes.tableCell }}>{Weekday[f.day].slice(0, 3)}</TableCell>
+                <TableCell classes={{ root: classes.tableCell }}>{Weekday[f.actualDepartureDay].slice(0, 3)}</TableCell>
                 <TableCell classes={{ root: classes.tableCell }}>{f.aircraftRegister ? f.aircraftRegister.name : '???'}</TableCell>
                 <TableCell classes={{ root: classes.tableCell }}>{f.std.toString('HH:mm', true)}</TableCell>
               </TableRow>

@@ -159,7 +159,7 @@ const TimelineReport: FC<PreplanReportProps> = () => {
       preplan.getFlightViews(
         new Week(dataTypes.utcDate.convertViewToBusiness(reportDateRange.startDate)),
         new Week(dataTypes.utcDate.convertViewToBusiness(reportDateRange.endDate)),
-        false
+        true
       ),
     [reportDateRange]
   );
@@ -183,66 +183,64 @@ const TimelineReport: FC<PreplanReportProps> = () => {
   );
 
   useEffect(() => {
-    const result = flightViews
-      .filter(n => n.rsx === 'REAL' || n.rsx === 'STB1')
-      .groupBy(
-        f => f.aircraftRegister?.id ?? '???',
-        n => {
-          const groupByDay = n.groupBy<FlightState[]>(
-            y => ((y.legs[0].departureAirport.convertUtcToLocal(y.startDateTime).getUTCDay() + 1) % 7).toString(),
-            m => {
-              return m
-                .map<FlightState>(h => {
-                  const firstLegDeparture = h.legs[0].departureAirport.convertUtcToLocal(h.startDateTime);
-                  const lastLegArrival = h.legs[h.legs.length - 1].arrivalAirport.convertUtcToLocal(h.endDateTime);
-                  const firstLegDepartureDate = new Date(firstLegDeparture);
-                  const lastLegArrivalDate = new Date(lastLegArrival);
-                  firstLegDepartureDate.setUTCHours(0, 0, 0);
-                  lastLegArrivalDate.setUTCHours(0, 0, 0);
+    const result = flightViews.groupBy(
+      f => f.aircraftRegister?.id ?? '???',
+      n => {
+        const groupByDay = n.groupBy<FlightState[]>(
+          y => ((y.startDateTime.getUTCDay() + 1) % 7).toString(),
+          m => {
+            return m
+              .map<FlightState>(h => {
+                const firstLegDeparture = h.startDateTime;
+                const lastLegArrival = h.endDateTime;
+                const firstLegDepartureDate = new Date(firstLegDeparture);
+                const lastLegArrivalDate = new Date(lastLegArrival);
+                firstLegDepartureDate.setUTCHours(0, 0, 0);
+                lastLegArrivalDate.setUTCHours(0, 0, 0);
 
-                  return {
-                    label: h.label,
-                    flightDurationPerDay: (lastLegArrivalDate.getTime() - firstLegDepartureDate.getTime()) / (1000 * 60 * 60 * 24) + 1,
-                    departuerFromIka: firstLegDeparture.format('t#'),
-                    arrivalToIka: lastLegArrival.format('t#'),
-                    note: h.notes,
-                    stc: h.stc.name
+                return {
+                  label: h.label,
+                  flightDurationPerDay: (lastLegArrivalDate.getTime() - firstLegDepartureDate.getTime()) / (1000 * 60 * 60 * 24) + 1,
+                  departuerFromIka: firstLegDeparture.format('t#'),
+                  arrivalToIka: lastLegArrival.format('t#'),
+                  note: h.notes,
+                  stc: h.stc.name
+                };
+              })
+              .sortBy('departuerFromIka');
+          }
+        );
+
+        for (let dayIndex = 0; dayIndex < 7; dayIndex++) {
+          const flightStates = groupByDay[dayIndex.toString()];
+          if (flightStates) {
+            for (let flightStatesIndex = 0; flightStatesIndex < flightStates.length; flightStatesIndex++) {
+              const flightState = flightStates[flightStatesIndex];
+              const flightDuration = flightState.flightDurationPerDay;
+              if (flightDuration > 1) {
+                for (let index = 1; index < flightDuration; index++) {
+                  let additionalDay = dayIndex + index;
+                  additionalDay > 6 && (additionalDay = additionalDay % 7);
+                  const extraFlightState: FlightState = {
+                    ...flightState,
+                    flightDurationPerDay: 0,
+                    departuerFromIka: '',
+                    arrivalToIka: index + 1 === flightDuration ? flightState.arrivalToIka : '',
+                    note: index === 1 && flightDuration > 2 ? flightState.note : undefined
                   };
-                })
-                .sortBy('departuerFromIka');
-            }
-          );
-
-          for (let dayIndex = 0; dayIndex < 7; dayIndex++) {
-            const flightStates = groupByDay[dayIndex.toString()];
-            if (flightStates) {
-              for (let flightStatesIndex = 0; flightStatesIndex < flightStates.length; flightStatesIndex++) {
-                const flightState = flightStates[flightStatesIndex];
-                const flightDuration = flightState.flightDurationPerDay;
-                if (flightDuration > 1) {
-                  for (let index = 1; index < flightDuration; index++) {
-                    let additionalDay = dayIndex + index;
-                    additionalDay > 6 && (additionalDay = additionalDay % 7);
-                    const extraFlightState: FlightState = {
-                      ...flightState,
-                      flightDurationPerDay: 0,
-                      departuerFromIka: '',
-                      arrivalToIka: index + 1 === flightDuration ? flightState.arrivalToIka : '',
-                      note: index === 1 && flightDuration > 2 ? flightState.note : undefined
-                    };
-                    groupByDay[additionalDay] = groupByDay[additionalDay] || [];
-                    groupByDay[additionalDay].unshift(extraFlightState);
-                  }
-                  flightState.arrivalToIka = '';
-                  flightDuration > 2 && (flightState.note = undefined);
+                  groupByDay[additionalDay] = groupByDay[additionalDay] || [];
+                  groupByDay[additionalDay].unshift(extraFlightState);
                 }
+                flightState.arrivalToIka = '';
+                flightDuration > 2 && (flightState.note = undefined);
               }
             }
           }
-
-          return groupByDay;
         }
-      );
+
+        return groupByDay;
+      }
+    );
 
     setReportState(result);
   }, [flightViews]);

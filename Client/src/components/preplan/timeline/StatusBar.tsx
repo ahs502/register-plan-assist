@@ -5,10 +5,21 @@ import Weekday from '@core/types/Weekday';
 import Daytime from '@core/types/Daytime';
 import PreplanAircraftRegister from 'src/business/preplan/PreplanAircraftRegister';
 import FlightView from 'src/business/flight/FlightView';
+import { blue, grey, green } from '@material-ui/core/colors';
+import classNames from 'classnames';
 
 const useStyles = makeStyles((theme: Theme) => ({
   typograghyOverline: {
     lineHeight: 0
+  },
+  departure: {
+    color: blue[400]
+  },
+  arrival: {
+    color: green[400]
+  },
+  blockTime: {
+    color: grey[400]
   }
 }));
 
@@ -40,20 +51,20 @@ const StatusBar: FC<StatusBarProps> = ({ mode, flightView, aircraftRegister, pre
         {flightView.legs.map(l => (
           <Fragment key={l.derivedId}>
             &nbsp;
-            <Typography display="inline" variant="overline" classes={{ overline: classes.typograghyOverline }}>
-              {l.std.toString('H:mm', true)}
+            <Typography display="inline" variant="overline" className={classNames({ overline: classes.typograghyOverline }, classes.departure)}>
+              {l.actualStd.toString('H:mm', true)}
             </Typography>
             &nbsp; &#8599; &nbsp;
             <Typography display="inline" variant="caption">
               {l.flightNumber.standardFormat}
             </Typography>
             &nbsp;
-            <Typography display="inline" variant="overline" classes={{ overline: classes.typograghyOverline }}>
+            <Typography display="inline" variant="overline" className={classNames({ overline: classes.typograghyOverline }, classes.blockTime)}>
               {new Daytime(l.blockTime).toString('H:mm')}
             </Typography>
             &nbsp; &#8600; &nbsp;
-            <Typography display="inline" variant="overline" classes={{ overline: classes.typograghyOverline }}>
-              {l.sta.toString('H:mm', true)}
+            <Typography display="inline" variant="overline" className={classNames({ overline: classes.typograghyOverline }, classes.arrival)}>
+              {l.actualSta.toString('H:mm', true)}
             </Typography>
             &nbsp;
             <Typography display="inline" variant="button">
@@ -101,29 +112,34 @@ const StatusBar: FC<StatusBarProps> = ({ mode, flightView, aircraftRegister, pre
             {previousFlightView.day !== nextFlightView.day && (
               <Fragment>
                 <Typography display="inline" variant="caption">
-                  {Weekday[previousFlightView.legs[previousFlightView.legs.length - 1].day]}s
+                  {Weekday[previousFlightView.legs[previousFlightView.legs.length - 1].actualArrivalDay]}s
                 </Typography>
                 &nbsp;
               </Fragment>
             )}
             <Typography display="inline" variant="overline" classes={{ overline: classes.typograghyOverline }}>
-              {previousFlightView.legs[previousFlightView.legs.length - 1].sta.toString('H:mm', true)}
+              {previousFlightView.legs[previousFlightView.legs.length - 1].actualSta.toString('H:mm', true)}
             </Typography>
             &nbsp; &#8600; &nbsp;
             <Typography display="inline" variant="overline" classes={{ overline: classes.typograghyOverline }}>
               {new Daytime(
-                (nextFlightView.day * 24 * 60 + nextFlightView.start.minutes - previousFlightView.day * 24 * 60 - previousFlightView.end.minutes + 7 * 24 * 60) % (7 * 24 * 60)
+                (nextFlightView.day * 24 * 60 +
+                  nextFlightView.start.minutes -
+                  previousFlightView.legs[previousFlightView.legs.length - 1].day * 24 * 60 -
+                  previousFlightView.end.minutes +
+                  7 * 24 * 60) %
+                  (7 * 24 * 60)
               ).toString('H:mm')}
             </Typography>
             &nbsp; &#8599; &nbsp;
             <Typography display="inline" variant="overline" classes={{ overline: classes.typograghyOverline }}>
-              {nextFlightView.legs[0].std.toString('H:mm', true)}
+              {nextFlightView.legs[0].actualStd.toString('H:mm', true)}
             </Typography>
             &nbsp;
             {previousFlightView.day !== nextFlightView.day && (
               <Fragment>
                 <Typography display="inline" variant="caption">
-                  {Weekday[nextFlightView.legs[0].day]}s
+                  {Weekday[nextFlightView.legs[0].actualDepartureDay]}s
                 </Typography>
                 &nbsp;
               </Fragment>

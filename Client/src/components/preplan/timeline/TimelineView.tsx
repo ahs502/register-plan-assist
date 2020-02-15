@@ -629,7 +629,10 @@ const TimelineView: FC<TimelineViewProps> = ({
       const deltaStd = Math.round((new Date(itemData.start).getTime() - flightView.startDateTime.getTime()) / (5 * 60 * 1000)) * 5;
       const lastLeg = flightView.legs[flightView.legs.length - 1];
       return `
-      <div>From IKA (${new Date(itemData.start).format('t')}) &ndash; To IKA (${new Daytime(lastLeg.std.minutes + deltaStd + lastLeg.blockTime.minutes).toString('HH:mm', true)})
+      <div>From IKA (${new Date(itemData.start).format('t')}) &ndash; To IKA (${new Daytime(lastLeg.actualStd.minutes + deltaStd + lastLeg.blockTime.minutes).toString(
+        'HH:mm',
+        true
+      )})
       </div>    
       `;
     }
@@ -768,8 +771,8 @@ const TimelineView: FC<TimelineViewProps> = ({
                     <div>
                       &nbsp;&nbsp;&nbsp;&nbsp;
                       ${l.flightNumber}:
-                      ${l.departureAirport.name} (${l.std.toString('HH:mm', true)}) &dash;
-                      ${l.arrivalAirport.name} (${new Daytime(l.std.minutes + l.blockTime.minutes).toString('HH:mm', true)})
+                      ${l.departureAirport.name} (${l.actualStd.toString('HH:mm', true)}) &dash;
+                      ${l.arrivalAirport.name} (${l.actualSta.toString('HH:mm', true)})
                     </div>
                   `
                 )

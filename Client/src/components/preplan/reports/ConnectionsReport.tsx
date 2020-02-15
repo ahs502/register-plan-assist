@@ -24,7 +24,6 @@ import classNames from 'classnames';
 import { CallMade as ConnectionIcon, Publish as ExportToExcelIcon } from '@material-ui/icons';
 import { ExcelExport, ExcelExportColumn, ExcelExportColumnGroup } from '@progress/kendo-react-excel-export';
 import { CellOptions } from '@progress/kendo-react-excel-export/dist/npm/ooxml/CellOptionsInterface';
-import FlightLeg from 'src/business/flight/FlightLeg';
 import { dataTypes } from 'src/utils/DataType';
 import RefiningTextField from 'src/components/RefiningTextField';
 import Validation from '@core/node_modules/@ahs502/validation/dist/Validation';
@@ -337,7 +336,7 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ preplanName, fromDate, 
           if (diffLocalStdandUtcStd > 1) diffLocalStdandUtcStd = -1;
           if (diffLocalStdandUtcStd < -1) diffLocalStdandUtcStd = 1;
 
-          const departureWeekDay = (flight.day + Math.floor(flight.actualStd.minutes / 1440) + diffLocalStdandUtcStd + 7) % 7;
+          const departureWeekDay = (flight.actualDepartureDay + Math.floor(flight.actualStd.minutes / 1440) + diffLocalStdandUtcStd + 7) % 7;
 
           const flightLegInfoModel = flightLegInfoModels.find(f => f.airport.id === flight.arrivalAirport.id);
           if (flightLegInfoModel) {
@@ -366,7 +365,8 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ preplanName, fromDate, 
           if (diffLocalStdandLocalSta > 1) diffLocalStdandLocalSta = -1;
           if (diffLocalStdandLocalSta < -1) diffLocalStdandLocalSta = 1;
 
-          const arrivalWeekDay = (flight.day + Math.floor(flight.actualStd.minutes / 1440) + diffLocalStdandUtcStd + (diffLocalStdandLocalSta === -1 ? 1 : 0) + 7) % 7;
+          const arrivalWeekDay =
+            (flight.actualDepartureDay + Math.floor(flight.actualStd.minutes / 1440) + diffLocalStdandUtcStd + (diffLocalStdandLocalSta === -1 ? 1 : 0) + 7) % 7;
 
           const flightLegInfoModel = flightLegInfoModels.find(f => f.airport.id === flight.departureAirport.id);
           if (flightLegInfoModel) {

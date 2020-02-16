@@ -12,7 +12,6 @@ import ObjectionModal, { useObjectionModalState } from 'src/components/preplan/O
 import FlightRequirementModal, { useFlightRequirementModalState } from 'src/components/preplan/FlightRequirementModal';
 import RemoveFlightRequirementModal, { useRemoveFlightRequirementModalState } from 'src/components/preplan/RemoveFlightRequirementModal';
 import FlightModal, { useFlightModalState } from 'src/components/preplan/FlightModal';
-import PreplanModel from '@core/models/preplan/PreplanModel';
 import { useThrowApplicationError } from 'src/pages/error';
 import MasterData from 'src/business/master-data';
 import persistant from 'src/utils/persistant';

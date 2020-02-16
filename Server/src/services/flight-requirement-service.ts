@@ -73,6 +73,7 @@ router.post(
           db.varCharParam('rsx', newFlightRequirementEntity.rsx, 10),
           db.nVarCharParam('notes', newFlightRequirementEntity.notes, 1000),
           db.bitParam('ignored', newFlightRequirementEntity.ignored),
+          db.bitParam('localTime', newFlightRequirementEntity.localTime),
           db.xmlParam('routeXml', newFlightRequirementEntity.routeXml),
           db.xmlParam('daysXml', newFlightRequirementEntity.daysXml),
           db.xmlParam('changesXml', newFlightRequirementEntity.changesXml)
@@ -184,6 +185,7 @@ router.post(
           db.varCharParam('rsx', flightRequirementEntity.rsx, 10),
           db.nVarCharParam('notes', flightRequirementEntity.notes, 1000),
           db.bitParam('ignored', flightRequirementEntity.ignored),
+          db.bitParam('localTime', flightRequirementEntity.localTime),
           db.xmlParam('routeXml', flightRequirementEntity.routeXml),
           db.xmlParam('daysXml', flightRequirementEntity.daysXml),
           db.xmlParam('changesXml', flightRequirementEntity.changesXml)

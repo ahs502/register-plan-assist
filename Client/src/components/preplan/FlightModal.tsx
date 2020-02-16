@@ -17,6 +17,7 @@ import Daytime from '@core/types/Daytime';
 import Preplan from 'src/business/preplan/Preplan';
 import classNames from 'classnames';
 import chroma from 'chroma-js';
+import { Airport } from 'src/business/master-data';
 
 const useStyles = makeStyles((theme: Theme) => ({
   flightDates: {
@@ -220,7 +221,9 @@ const FlightModal = createModal<FlightModalState, FlightModalProps>(({ state, on
                   aircraftRegisterId: aircraftRegisterId,
                   legs: viewState.legs.map<FlightLegModel>((l, index) => ({
                     ...l,
-                    std: dataTypes.daytime.checkView(l.std) ? dataTypes.daytime.convertViewToModel(l.std) : flightModel.legs[index].std
+                    std: dataTypes.daytime.checkView(l.std)
+                      ? calculateStd(dataTypes.daytime.convertViewToModel(l.std), f.flightRequirement.localTime, f.date, f.legs[index].departureAirport)
+                      : flightModel.legs[index].std
                   }))
                 };
               })
@@ -233,6 +236,14 @@ const FlightModal = createModal<FlightModalState, FlightModalProps>(({ state, on
             const newPreplanDataModel = await FlightService.edit(preplan.id, ...flightModels, ...otherFlightModels);
             await others.onClose();
             await reloadPreplan(newPreplanDataModel);
+
+            function calculateStd(std: number, isLocalTime: boolean, date: Date, airport: Airport): number {
+              if (!isLocalTime) return std;
+              const localDate = new Date(date);
+              localDate.addMinutes(std);
+              const utcDate = airport.convertLocalToUtc(localDate);
+              return (utcDate.getTime() - date.getTime()) / (1000 * 60);
+            }
           }
         }
       ]}
@@ -251,24 +262,22 @@ const FlightModal = createModal<FlightModalState, FlightModalProps>(({ state, on
                       [classes.flightDateSelected]: date.selected
                     })}
                     title={`Flight at ${flightDate.format('d')}`}
-                    onClick={
-                      () => {
-                        if (date.disabled) return;
+                    onClick={() => {
+                      if (date.disabled) return;
 
-                        const selectedFlights = viewState.dates
-                          .map((d, dayIndex) => {
-                            if ((dayIndex === index && date.selected) || (dayIndex !== index && !d.selected)) return undefined;
-                            return flights.find(
-                              f =>
-                                dataTypes.utcDate.convertBusinessToView(f.date) ===
-                                dataTypes.utcDate.convertBusinessToView(new Date(preplan.weeks.all[dayIndex].startDate).addDays(state.day))
-                            );
-                          })
-                          .filter(Boolean) as Flight[];
+                      const selectedFlights = viewState.dates
+                        .map((d, dayIndex) => {
+                          if ((dayIndex === index && date.selected) || (dayIndex !== index && !d.selected)) return undefined;
+                          return flights.find(
+                            f =>
+                              dataTypes.utcDate.convertBusinessToView(f.date) ===
+                              dataTypes.utcDate.convertBusinessToView(new Date(preplan.weeks.all[dayIndex].startDate).addDays(state.day))
+                          );
+                        })
+                        .filter(Boolean) as Flight[];
 
-                        setViewState(calculateViewState(selectedFlights, preplan, flights, state));
-                      }
-                    }
+                      setViewState(calculateViewState(selectedFlights, preplan, flights, state));
+                    }}
                   >
                     {formatDate(flightDate, true)}
                     <div className={classes.flightDateHover} />
@@ -301,6 +310,7 @@ const FlightModal = createModal<FlightModalState, FlightModalProps>(({ state, on
                   <TableCell align="center">Arrival</TableCell>
                   <TableCell align="center">Block Time</TableCell>
                   <TableCell align="center">STD</TableCell>
+                  {state.flightRequirement.localTime ? <TableCell align="center"></TableCell> : <Fragment />}
                   <TableCell align="center">STA</TableCell>
                 </TableRow>
               </TableHead>
@@ -336,6 +346,7 @@ const FlightModal = createModal<FlightModalState, FlightModalProps>(({ state, on
                         disabled={viewState.legs.length === 0}
                       />
                     </TableCell>
+                    {state.flightRequirement.localTime ? <TableCell align="center">Local Time</TableCell> : <Fragment />}
                     <TableCell align="center">
                       {dataTypes.daytime.checkView(viewState.legs[index]?.std) ? (
                         new Daytime(dataTypes.daytime.convertViewToModel(viewState.legs[index].std) + l.blockTime.minutes).toString('HH:mm', true)
@@ -357,7 +368,7 @@ const FlightModal = createModal<FlightModalState, FlightModalProps>(({ state, on
     const selectedFlightsRegister = getAircraftRegister(selectedFlights);
     const selectedFlightStds = selectedFlights.reduce<string[][]>((acc, current) => {
       current.legs.forEach((l, index) => {
-        const std = dataTypes.daytime.convertBusinessToView(l.std);
+        const std = l.flightRequirement.localTime ? dataTypes.daytime.convertBusinessToView(new Daytime(l.localStd)) : dataTypes.daytime.convertBusinessToView(l.std);
         acc[index] = acc[index] ?? ([] as string[]);
         if (!acc[index].some(s => s === std)) acc[index].push(std);
       });
@@ -365,7 +376,7 @@ const FlightModal = createModal<FlightModalState, FlightModalProps>(({ state, on
     }, []);
     const selectedFlightStas = selectedFlights.reduce<string[][]>((acc, current) => {
       current.legs.forEach((l, index) => {
-        const sta = dataTypes.daytime.convertBusinessToView(l.sta);
+        const sta = l.flightRequirement.localTime ? dataTypes.daytime.convertBusinessToView(new Daytime(l.localSta)) : dataTypes.daytime.convertBusinessToView(l.sta);
         acc[index] = acc[index] ?? ([] as string[]);
         if (!acc[index].some(s => s === sta)) acc[index].push(sta);
       });

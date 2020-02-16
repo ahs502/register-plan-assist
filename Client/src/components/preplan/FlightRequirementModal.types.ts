@@ -6,6 +6,7 @@ import Weekday from '@core/types/Weekday';
 import Validation from '@ahs502/validation';
 import { dataTypes } from 'src/utils/DataType';
 import { PreplanAircraftRegisters } from 'src/business/preplan/PreplanAircraftRegister';
+import FlightRequirement from 'src/business/flight-requirement/FlightRequirement';
 
 export interface ViewState {
   bypassValidation: boolean;
@@ -23,6 +24,7 @@ export interface ViewState {
   baseScope: BaseScopeViewState;
   changeScopes: ChangeScopeViewState[];
   selectedWeekIndex?: number;
+  localTime: boolean;
 }
 
 export interface RouteLegViewState {
@@ -94,7 +96,7 @@ export class ViewStateValidation extends Validation<
     changeScopeValidations: ScopeViewStateValidation[];
   }
 > {
-  constructor({ label, category, route, baseScope, changeScopes }: ViewState, aircraftRegisters: PreplanAircraftRegisters) {
+  constructor({ label, category, route, baseScope, changeScopes }: ViewState, aircraftRegisters: PreplanAircraftRegisters, oldFlightRequirement?: FlightRequirement) {
     super(validator => {
       validator
         .check('LABEL_EXISTS', !!label)

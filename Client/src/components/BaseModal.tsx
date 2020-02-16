@@ -27,6 +27,9 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
   paperError: {
     boxShadow: '0px 1px 3px 0px rgba(255, 0, 0, 0.2), 0px 1px 1px 0px rgba(255, 0, 0, 0.14), 0px 2px 1px -1px rgba(255, 0, 0, 0.12)'
+  },
+  marginRight1: {
+    marginRight: theme.spacing(1)
   }
 }));
 
@@ -123,7 +126,7 @@ const BaseModal: FC<ActualBaseModalProps> = ({ cancelable, title, complexTitle, 
         )}
       </DialogContent>
       {actions && (
-        <DialogActions>
+        <DialogActions className={classes.marginRight1}>
           {actions
             .filter(action => !action.invisible)
             .map((action, index) => (

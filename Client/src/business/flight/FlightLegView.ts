@@ -51,12 +51,15 @@ export default class FlightLegView {
   readonly dayOffset: number;
   readonly actualStd: Daytime;
   readonly actualSta: Daytime;
-  readonly weekStd: number;
-  readonly weekSta: number;
-  readonly stdDateTime: Date;
-  readonly staDateTime: Date;
+  readonly actualDepartureDay: Weekday;
+  readonly actualArrivalDay: Weekday;
 
-  constructor(flightLeg: FlightLeg, flightView: FlightView, startWeek: Week, endWeek: Week, week: Week) {
+  // readonly weekStd: number;
+  // readonly weekSta: number;
+  // readonly stdDateTime: Date;
+  // readonly staDateTime: Date;
+
+  constructor(flightLeg: FlightLeg, flightView: FlightView, localtime: boolean) {
     this.std = flightLeg.std;
 
     this.label = flightLeg.label;
@@ -64,7 +67,7 @@ export default class FlightLegView {
     this.stc = flightLeg.stc;
     this.aircraftRegister = flightLeg.aircraftRegister;
     this.rsx = flightLeg.rsx;
-    this.day = flightLeg.day;
+    this.day = this.actualDepartureDay = this.actualArrivalDay = flightLeg.day;
     this.index = flightLeg.index;
     this.flightNumber = flightLeg.flightNumber;
     this.departureAirport = flightLeg.departureAirport;
@@ -79,7 +82,7 @@ export default class FlightLegView {
     this.dayFlightRequirement = flightLeg.dayFlightRequirement;
     this.dayFlightRequirementLeg = flightLeg.dayFlightRequirementLeg;
     this.flights = flightView.flights;
-    this.flightLegs = this.flights.map(f => f.legs.find(l => l.day === this.day)!).sortBy('weekStd');
+    this.flightLegs = this.flights.map(f => f.legs.find(l => l.day === this.actualDepartureDay)!).sortBy('weekStd');
 
     this.derivedId = `${flightView.derivedId}#${this.index}`;
     this.sta = flightLeg.sta;
@@ -87,13 +90,36 @@ export default class FlightLegView {
     this.international = flightLeg.international;
     this.dayOffset = flightLeg.dayOffset;
     this.actualStd = flightLeg.actualStd;
-    this.actualSta = flightLeg.actualSta;
-    this.weekStd = flightLeg.weekStd;
-    this.weekSta = flightLeg.weekSta;
+
+    this.actualStd = localtime ? new Daytime(flightLeg.localStd, flightLeg.flight.date) : flightLeg.actualStd;
+    while (this.actualStd.minutes < 0) {
+      this.actualDepartureDay -= 1;
+      this.actualStd = new Daytime(this.actualStd.minutes + 24 * 60);
+    }
+
+    if (this.actualDepartureDay < 0) {
+      this.actualDepartureDay += 7;
+    }
+
+    this.actualDepartureDay += Math.floor(this.actualStd.minutes / (24 * 60));
+    this.actualDepartureDay > 7 && (this.actualDepartureDay %= 7);
+    this.actualStd = new Daytime(this.actualStd.minutes % (24 * 60));
+
+    this.actualSta = localtime ? new Daytime(flightLeg.localSta, flightLeg.flight.date) : flightLeg.actualSta;
+    while (this.actualSta.minutes < 0) {
+      this.actualSta = new Daytime(this.actualSta.minutes + 24 * 60);
+    }
+
+    this.actualArrivalDay += Math.floor(this.actualSta.minutes / (24 * 60));
+    this.actualArrivalDay > 7 && (this.actualArrivalDay %= 7);
+    this.actualSta = new Daytime(this.actualSta.minutes % (24 * 60));
+
+    // this.weekStd = flightLeg.weekStd;
+    // this.weekSta = flightLeg.weekSta;
 
     // Fields which should be calculated for view:
     this.notes = flightLeg.notes;
-    this.stdDateTime = new Date(week.startDate.getTime() + this.weekStd * 60 * 1000);
-    this.staDateTime = new Date(week.startDate.getTime() + this.weekSta * 60 * 1000);
+    // this.stdDateTime = new Date(week.startDate.getTime() + this.weekStd * 60 * 1000);
+    // this.staDateTime = new Date(week.startDate.getTime() + this.weekSta * 60 * 1000);
   }
 }

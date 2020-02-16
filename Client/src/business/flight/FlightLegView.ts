@@ -103,6 +103,7 @@ export default class FlightLegView {
 
     this.actualDepartureDay += Math.floor(this.actualStd.minutes / (24 * 60));
     this.actualDepartureDay > 7 && (this.actualDepartureDay %= 7);
+    this.actualStd = new Daytime(this.actualStd.minutes % (24 * 60));
 
     this.actualSta = localtime ? new Daytime(flightLeg.localSta, flightLeg.flight.date) : flightLeg.actualSta;
     while (this.actualSta.minutes < 0) {
@@ -111,6 +112,7 @@ export default class FlightLegView {
 
     this.actualArrivalDay += Math.floor(this.actualSta.minutes / (24 * 60));
     this.actualArrivalDay > 7 && (this.actualArrivalDay %= 7);
+    this.actualSta = new Daytime(this.actualSta.minutes % (24 * 60));
 
     // this.weekStd = flightLeg.weekStd;
     // this.weekSta = flightLeg.weekSta;

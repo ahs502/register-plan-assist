@@ -96,22 +96,12 @@ export default class FlightView {
 
     this.derivedId = String((FlightView.idCounter = FlightView.idCounter === Number.MAX_SAFE_INTEGER ? 1 : FlightView.idCounter + 1));
     this.date = this.sourceFlight.date.clone();
-    this.start = localtime ? new Daytime(this.sourceFlight.legs[0].localStd, this.date) : this.sourceFlight.start;
+    this.start = new Daytime(this.legs[0].actualStd, this.date);
+    this.end = new Daytime(this.legs[this.legs.length - 1].actualSta, this.date);
 
-    while (this.start.minutes < 0) {
-      this.date.addDays(-1);
-      this.day -= 1;
-      this.start = new Daytime(this.start.minutes + 24 * 60);
-    }
+    this.weekStart = this.legs[0].actualDepartureDay * 24 * 60 + this.start.minutes;
+    this.weekEnd = this.legs[this.legs.length - 1].actualArrivalDay * 24 * 60 + this.end.minutes;
 
-    this.end = localtime ? new Daytime(this.sourceFlight.legs.last()!.localSta, this.date) : this.sourceFlight.end;
-
-    while (this.end.minutes < 0) {
-      this.end = new Daytime(this.end.minutes + 24 * 60);
-    }
-
-    this.weekStart = localtime ? this.day * 24 * 60 + this.start.minutes : this.sourceFlight.weekStart;
-    this.weekEnd = localtime ? this.day * 24 * 60 + this.end.minutes : this.sourceFlight.weekEnd;
     this.sections = this.sourceFlight.sections;
 
     // Fields which should be calculated for view:

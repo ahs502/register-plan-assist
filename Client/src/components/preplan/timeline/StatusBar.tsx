@@ -123,9 +123,9 @@ const StatusBar: FC<StatusBarProps> = ({ mode, flightView, aircraftRegister, pre
             &nbsp; &#8600; &nbsp;
             <Typography display="inline" variant="overline" classes={{ overline: classes.typograghyOverline }}>
               {new Daytime(
-                (nextFlightView.day * 24 * 60 +
+                (nextFlightView.legs[0].actualDepartureDay * 24 * 60 +
                   nextFlightView.start.minutes -
-                  previousFlightView.legs[previousFlightView.legs.length - 1].day * 24 * 60 -
+                  previousFlightView.legs[previousFlightView.legs.length - 1].actualArrivalDay * 24 * 60 -
                   previousFlightView.end.minutes +
                   7 * 24 * 60) %
                   (7 * 24 * 60)

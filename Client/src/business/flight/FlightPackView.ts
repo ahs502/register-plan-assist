@@ -8,9 +8,7 @@ import Weekday, { Weekdays } from '@core/types/Weekday';
 import Id from '@core/types/Id';
 import Week from 'src/business/Week';
 import Flight from 'src/business/flight/Flight';
-import { ShortMonthNames } from '@core/types/MonthName';
 import FlightLegPackView from 'src/business/flight/FlightLegPackView';
-import MasterDataService from 'src/services/MasterDataService';
 
 export default class FlightPackView {
   // Original:
@@ -156,7 +154,8 @@ export default class FlightPackView {
 
     this.hasTimeChange = sourceFlight.legs.some(
       (l, index) =>
-        l.std.compare(sourceFlight.dayFlightRequirement.route[index].stdLowerBound) !== 0 || l.blockTime.compare(sourceFlight.dayFlightRequirement.route[index].blockTime) !== 0
+        (l.flightRequirement.localTime ? new Daytime(l.localStd, l.date) : l.std).compare(sourceFlight.dayFlightRequirement.route[index].stdLowerBound) !== 0 ||
+        l.blockTime.compare(sourceFlight.dayFlightRequirement.route[index].blockTime) !== 0
     );
 
     this.canclationNote = !this.inDstChange ? generateCanalationNotes(this.legs) : undefined;
@@ -252,7 +251,16 @@ export default class FlightPackView {
 
   public static create(flights: readonly Flight[], startWeek: Week, endWeek: Week, week: Week, preplanStartDate: Date, preplanEndDate: Date): FlightPackView[] {
     const groupFlights = flights.groupBy(f =>
-      f.legs.map(t => t.localStd.getUTCHours().toString() + t.localStd.getUTCMinutes().toString() + t.blockTime.minutes.toString() + t.rsx).join()
+      f.legs
+        .map(
+          t =>
+            (f.flightRequirement.localTime
+              ? t.utcStd.getUTCHours().toString() + t.utcStd.getUTCMinutes()
+              : t.localStd.getUTCHours().toString() + t.localStd.getUTCMinutes().toString()) +
+            t.blockTime.minutes.toString() +
+            t.rsx
+        )
+        .join()
     );
     return Object.values(groupFlights).map(f => new FlightPackView(f, startWeek, endWeek, week, preplanStartDate, preplanEndDate));
   }

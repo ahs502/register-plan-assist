@@ -60,9 +60,7 @@ export interface WeekDayViewState extends BaseDayViewState {
 export interface LegViewState {
   blockTime: string;
   stdLowerBound: string;
-  staLowerBound: string;
   stdUpperBound: string;
-  staUpperBound: string;
   originPermission: boolean;
   destinationPermission: boolean;
   originPermissionNote: string;

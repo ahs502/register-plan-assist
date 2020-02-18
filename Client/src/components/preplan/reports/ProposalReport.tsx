@@ -1406,39 +1406,46 @@ const ProposalReport: FC<ProposalReportProps> = ({ preplanName, fromDate, toDate
                 )}
 
                 {viewState.showSlot && (
-                  <ExcelExportColumn
-                    title={['DESTINATION', 'SLOT (LCL)'].join('\r\n')}
-                    field="excelDestinationPermissions"
-                    width={70}
-                    cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 }, borderLeft: { color: '#000000', size: 3 } }}
+                  <ExcelExportColumnGroup
+                    title={'SLOT INTL.(UTC)/DOM.(LCL)'}
                     headerCellOptions={{
                       ...headerCellOptions,
-                      wrap: true,
                       background: color.excelHeader.backgroundColor,
                       borderRight: { color: '#000000', size: 3 },
-                      borderLeft: { color: '#000000', size: 3 },
-                      borderTop: { color: '#000000', size: 3 },
-                      borderBottom: { color: '#000000', size: 3 }
+                      borderTop: { color: '#000000', size: 3 }
                     }}
-                  />
-                )}
-
-                {viewState.showSlot && (
-                  <ExcelExportColumn
-                    title={['ORIGIN', 'SLOT (UTC)'].join('\r\n')}
-                    field="excelOriginPermissions"
-                    width={85}
-                    cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 }, borderLeft: { color: '#000000', size: 3 } }}
-                    headerCellOptions={{
-                      ...headerCellOptions,
-                      wrap: true,
-                      background: color.excelHeader.backgroundColor,
-                      borderRight: { color: '#000000', size: 3 },
-                      borderLeft: { color: '#000000', size: 3 },
-                      borderTop: { color: '#000000', size: 3 },
-                      borderBottom: { color: '#000000', size: 3 }
-                    }}
-                  />
+                  >
+                    <ExcelExportColumn
+                      title={['ARRIVAL'].join('\r\n')}
+                      field="excelDestinationPermissions"
+                      width={70}
+                      cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 }, borderLeft: { color: '#000000', size: 3 } }}
+                      headerCellOptions={{
+                        ...headerCellOptions,
+                        wrap: true,
+                        background: color.excelHeader.backgroundColor,
+                        borderRight: { color: '#000000', size: 3 },
+                        borderLeft: { color: '#000000', size: 3 },
+                        borderTop: { color: '#000000', size: 3 },
+                        borderBottom: { color: '#000000', size: 3 }
+                      }}
+                    />
+                    <ExcelExportColumn
+                      title={['DEPARTURE'].join('\r\n')}
+                      field="excelOriginPermissions"
+                      width={85}
+                      cellOptions={{ ...detailCellOption, borderRight: { color: '#000000', size: 3 }, borderLeft: { color: '#000000', size: 3 } }}
+                      headerCellOptions={{
+                        ...headerCellOptions,
+                        wrap: true,
+                        background: color.excelHeader.backgroundColor,
+                        borderRight: { color: '#000000', size: 3 },
+                        borderLeft: { color: '#000000', size: 3 },
+                        borderTop: { color: '#000000', size: 3 },
+                        borderBottom: { color: '#000000', size: 3 }
+                      }}
+                    />
+                  </ExcelExportColumnGroup>
                 )}
 
                 {viewState.showType && (
@@ -1547,13 +1554,13 @@ const ProposalReport: FC<ProposalReportProps> = ({ preplanName, fromDate, toDate
               {viewState.showSlot && (
                 <Fragment>
                   <TableCell className={classes.border} align="center">
-                    <div>DESTINATION</div>
-                    <div>SLOT (LCL)</div>
+                    <div>ARRIVAL SLOT</div>
+                    <div>INTL.(UTC)/DOM.(LCL)</div>
                   </TableCell>
 
                   <TableCell className={classes.border} align="center">
-                    <div>ORIGIN </div>
-                    <div>SLOT (UTC)</div>
+                    <div>DEPARTURE SLOT</div>
+                    <div>INTL.(UTC)/DOM.(LCL)</div>
                   </TableCell>
                 </Fragment>
               )}
@@ -2060,7 +2067,7 @@ function generateCumulativeMessage(sortedFlattenFlightRequirments: FlattenFlight
 function createFlattenFlightRequirmentsFromDailyFlightView(flightViews: FlightPackView[], dst: Dst): FlattenFlightRequirment[] {
   const result: FlattenFlightRequirment[] = [];
   let existFlightId: string = '';
-  flightViews.sortBy(f => f.legs[0]?.actualStd);
+  flightViews.sortBy(f => f.legs[0]?.utcStd);
 
   for (let flightIndex = 0; flightIndex < flightViews.length; flightIndex++) {
     const flight = flightViews[flightIndex];
@@ -2197,7 +2204,7 @@ function createFlattenFlightRequirment(leg: FlightLegPackView): FlattenFlightReq
 }
 
 function updateFlattenFlightRequirment(flattenFlight: FlattenFlightRequirment, leg: FlightLegPackView) {
-  const weekDay = (leg.day + Math.floor(leg.actualStd.minutes / 1440) + flattenFlight.diffLocalStdandUtcStd + 7) % 7;
+  const weekDay = leg.actualDepartureDay;
 
   if (flattenFlight.days.indexOf(weekDay) === -1) {
     flattenFlight.days.push(weekDay);
@@ -2214,9 +2221,12 @@ function updateFlattenFlightRequirment(flattenFlight: FlattenFlightRequirment, l
 
   // flattenFlight.utcDays.indexOf(leg.day) === -1 && flattenFlight.utcDays.push(leg.day);
   // flattenFlight.notes.indexOf(leg.notes) === -1 && flattenFlight.notes.push(leg.notes);
-  const canclationNote = leg.flightPackView.canclationNote?.[leg.index]?.note;
+  const canclationNote = leg.flightPackView.canclationNote?.[leg.index];
 
-  !!canclationNote && flattenFlight.cancelationNotes.indexOf(canclationNote) === -1 && flattenFlight.cancelationNotes.push(canclationNote);
+  !!canclationNote &&
+    !!canclationNote.note &&
+    flattenFlight.cancelationNotes.indexOf(canclationNote.note) === -1 &&
+    flattenFlight.cancelationNotes.splice(leg.actualDepartureDay, 0, canclationNote.note);
 
   (flattenFlight as any)['weekDay' + weekDay.toString()] = calculateDayCharacter();
   (flattenFlight as any)['rsxWeekDay' + weekDay.toString()] = leg.rsx;
@@ -2238,7 +2248,7 @@ function updateFlattenFlightRequirment(flattenFlight: FlattenFlightRequirment, l
       leg.flightPackView.permissions[leg.index][+d].destinationPermissions.map((p, index) => {
         const result: string[] = [];
         let prefix = '';
-        if (index === 0) prefix = `${Weekday[+d].substr(0, 3)}: `;
+        if (index === 0) prefix = `${Weekday[leg.actualArrivalDay].substr(0, 3)}: `;
         result.push(
           `${prefix}${p.hasPermission ? 'OK' : 'NOT OK'} ${p.fromDate.getUTCDate()}${ShortMonthNames[p.fromDate.getMonth()]} TILL ${p.toDate.getUTCDate()}${
             ShortMonthNames[p.toDate.getMonth()]
@@ -2255,7 +2265,7 @@ function updateFlattenFlightRequirment(flattenFlight: FlattenFlightRequirment, l
       leg.flightPackView.permissions[leg.index][+d].originPermissions.map((p, index) => {
         const result: string[] = [];
         let prefix = '';
-        if (index === 0) prefix = `${Weekday[+d].substr(0, 3)}: `;
+        if (index === 0) prefix = `${Weekday[leg.actualDepartureDay].substr(0, 3)}: `;
         result.push(
           `${prefix}${p.hasPermission ? 'OK' : 'NOT OK'} ${p.fromDate.getUTCDate()}${ShortMonthNames[p.fromDate.getMonth()]} TILL ${p.toDate.getUTCDate()}${
             ShortMonthNames[p.toDate.getMonth()]
@@ -2266,8 +2276,8 @@ function updateFlattenFlightRequirment(flattenFlight: FlattenFlightRequirment, l
       })
     )
     .flat(2);
-  flattenFlight.destinationPermissionsNote.push(...destinationPermissions);
-  flattenFlight.originPermissionsNote.push(...originPermissions);
+  flattenFlight.destinationPermissionsNote.splice(leg.actualDepartureDay, 0, ...destinationPermissions);
+  flattenFlight.originPermissionsNote.splice(leg.actualDepartureDay, 0, ...originPermissions);
 
   return flattenFlight;
 

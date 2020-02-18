@@ -1077,7 +1077,7 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
               </Grid>
               <Grid item xs={3}>
                 <FormControlLabel
-                  label="Origin perms."
+                  label="Departure perms."
                   control={
                     <Checkbox
                       color="primary"
@@ -1094,7 +1094,7 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                   fullWidth
                   multiline
                   rowsMax="3"
-                  label="Origin Permission Note"
+                  label="Departure Permission Note"
                   dataType={dataTypes.label}
                   value={legViewState?.originPermissionNote ?? ''}
                   onChange={({ target: { value: originPermissionNote } }) => legViewState && updateLeg(leg => ({ ...leg, originPermissionNote }))}
@@ -1103,7 +1103,7 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
               </Grid>
               <Grid item xs={3}>
                 <FormControlLabel
-                  label="Destination perms."
+                  label="Arrival perms."
                   control={
                     <Checkbox
                       color="primary"
@@ -1119,7 +1119,7 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
                   fullWidth
                   multiline
                   rowsMax="3"
-                  label="Destination Permission Note"
+                  label="Arrival Permission Note"
                   dataType={dataTypes.label}
                   value={legViewState?.destinationPermissionNote ?? ''}
                   onChange={({ target: { value: destinationPermissionNote } }) => legViewState && updateLeg(leg => ({ ...leg, destinationPermissionNote }))}

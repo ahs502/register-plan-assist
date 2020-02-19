@@ -1353,7 +1353,7 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
           }))
         },
         changeScopes: [],
-        localTime: persistant.rpaUserSetting?.flightRequirement?.localTime ?? false
+        localTime: persistant.rpaUserSetting?.[preplan.id]?.flightRequirement?.localTime ?? false
       };
 
     const baseDefaultAircraftRegisters = extractDefaultAircraftRegisters();

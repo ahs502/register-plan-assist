@@ -269,8 +269,8 @@ const ConnectionsReport: FC<ConnectionsReportProps> = ({ preplanName, fromDate, 
 
   const defaultWestAirports = ['BCN', 'DXB', 'ESB', 'IST', 'VKO'];
   const defaultEestAirports = ['BKK', 'CAN', 'DEL', 'KUL', 'LHE', 'PEK', 'PVG'];
-  const westAirports = persistant.rpaUserSetting?.ConnectionReport?.westAirports;
-  const eastAirpots = persistant.rpaUserSetting?.ConnectionReport?.eastAirports;
+  const westAirports = persistant.rpaUserSetting?.[preplan.id]?.ConnectionReport?.westAirports;
+  const eastAirpots = persistant.rpaUserSetting?.[preplan.id]?.ConnectionReport?.eastAirports;
   const [viewState, setViewState] = useState<ViewState>(() => ({
     westAirportsAirline: allAirline.find(z => z.value === 'W5') ?? allAirline[0],
     eastAirportsAirline: allAirline.find(z => z.value === 'W5') ?? allAirline[0],

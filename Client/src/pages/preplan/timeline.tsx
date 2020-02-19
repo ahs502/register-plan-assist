@@ -132,7 +132,7 @@ const TimelinePage: FC<TimelinePageProps> = ({ onObjectionTargetClick, onEditFli
     nextEndIndex: preplan.weeks.all.length
   });
   const [statusBarProps, setStatusBarProps] = useState<StatusBarProps>({});
-  const localTime = persistant.rpaUserSetting?.timeline?.localtime ?? false;
+  const localTime = persistant.rpaUserSetting?.[preplan.id]?.timeline?.localtime ?? false;
   const weekStart = preplan.weeks.all[weekSelection.startIndex];
   const weekEnd = preplan.weeks.all[weekSelection.endIndex - 1];
   const week = weekStart;
@@ -230,7 +230,9 @@ const TimelinePage: FC<TimelinePageProps> = ({ onObjectionTargetClick, onEditFli
           <SettingsSideBar
             onApply={rpaUserSetting => {
               try {
-                persistant.rpaUserSetting = rpaUserSetting;
+                const tempRpaUserSetting = { ...persistant.rpaUserSetting } || {};
+                tempRpaUserSetting[preplan.id] = rpaUserSetting;
+                persistant.rpaUserSetting = tempRpaUserSetting;
                 setSideBarState(sideBarState => ({ ...sideBarState, open: false }));
                 reloadPreplan();
               } catch (reason) {

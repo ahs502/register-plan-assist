@@ -1353,7 +1353,7 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
           }))
         },
         changeScopes: [],
-        localTime: persistant.rpaUserSetting?.flightRequirement?.localTime ?? false
+        localTime: persistant.rpaUserSetting?.[preplan.id]?.flightRequirement?.localTime ?? false
       };
 
     const baseDefaultAircraftRegisters = extractDefaultAircraftRegisters();
@@ -1618,70 +1618,72 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
         }))
         .filter(x => x.selected)
         .map(x => x.model),
-      changes: refinedViewState.changeScopes.map<FlightRequirementChangeModel>(c => {
-        const startDate = dataTypes.utcDate.convertBusinessToModel(preplan.weeks.all[c.startWeekIndex].startDate);
-        const endDate = dataTypes.utcDate.convertBusinessToModel(preplan.weeks.all[c.endWeekIndex].endDate);
-        const preplanStartDate = dataTypes.utcDate.convertBusinessToModel(preplan.startDate);
-        const preplanEndDate = dataTypes.utcDate.convertBusinessToModel(preplan.endDate);
-        return {
-          startDate: preplanStartDate > startDate ? preplanStartDate : startDate,
-          endDate: preplanEndDate < endDate ? preplanEndDate : endDate,
-          aircraftSelection: {
-            includedIdentities: c.baseDay.allowedAircraftIdentities.map<AircraftIdentityModel>(i => ({
-              type: i.type,
-              entityId: i.entityId
+      changes: refinedViewState.changeScopes
+        .map<FlightRequirementChangeModel>(c => {
+          const startDate = dataTypes.utcDate.convertBusinessToModel(preplan.weeks.all[c.startWeekIndex].startDate);
+          const endDate = dataTypes.utcDate.convertBusinessToModel(preplan.weeks.all[c.endWeekIndex].endDate);
+          const preplanStartDate = dataTypes.utcDate.convertBusinessToModel(preplan.startDate);
+          const preplanEndDate = dataTypes.utcDate.convertBusinessToModel(preplan.endDate);
+          return {
+            startDate: preplanStartDate > startDate ? preplanStartDate : startDate,
+            endDate: preplanEndDate < endDate ? preplanEndDate : endDate,
+            aircraftSelection: {
+              includedIdentities: c.baseDay.allowedAircraftIdentities.map<AircraftIdentityModel>(i => ({
+                type: i.type,
+                entityId: i.entityId
+              })),
+              excludedIdentities: c.baseDay.forbiddenAircraftIdentities.map<AircraftIdentityModel>(i => ({
+                type: i.type,
+                entityId: i.entityId
+              }))
+            },
+            rsx: c.baseDay.rsx,
+            notes: dataTypes.label.convertViewToModel(c.baseDay.notes),
+            route: c.baseDay.legs.map<FlightRequirementLegChangeModel>((l, index) => ({
+              flightNumber: dataTypes.flightNumber.convertViewToModel(refinedViewState.route[index].flightNumber),
+              departureAirportId: dataTypes.airport.convertViewToModel(refinedViewState.route[index].departureAirport),
+              arrivalAirportId: dataTypes.airport.convertViewToModel(refinedViewState.route[index].arrivalAirport),
+              blockTime: dataTypes.daytime.convertViewToModel(l.blockTime),
+              stdLowerBound: dataTypes.daytime.convertViewToModel(l.stdLowerBound),
+              stdUpperBound: dataTypes.daytime.convertViewToModelOptional(l.stdUpperBound),
+              originPermission: l.originPermission,
+              destinationPermission: l.destinationPermission,
+              originPermissionNote: dataTypes.label.convertViewToModel(l.originPermissionNote),
+              destinationPermissionNote: dataTypes.label.convertViewToModel(l.destinationPermissionNote)
             })),
-            excludedIdentities: c.baseDay.forbiddenAircraftIdentities.map<AircraftIdentityModel>(i => ({
-              type: i.type,
-              entityId: i.entityId
-            }))
-          },
-          rsx: c.baseDay.rsx,
-          notes: dataTypes.label.convertViewToModel(c.baseDay.notes),
-          route: c.baseDay.legs.map<FlightRequirementLegChangeModel>((l, index) => ({
-            flightNumber: dataTypes.flightNumber.convertViewToModel(refinedViewState.route[index].flightNumber),
-            departureAirportId: dataTypes.airport.convertViewToModel(refinedViewState.route[index].departureAirport),
-            arrivalAirportId: dataTypes.airport.convertViewToModel(refinedViewState.route[index].arrivalAirport),
-            blockTime: dataTypes.daytime.convertViewToModel(l.blockTime),
-            stdLowerBound: dataTypes.daytime.convertViewToModel(l.stdLowerBound),
-            stdUpperBound: dataTypes.daytime.convertViewToModelOptional(l.stdUpperBound),
-            originPermission: l.originPermission,
-            destinationPermission: l.destinationPermission,
-            originPermissionNote: dataTypes.label.convertViewToModel(l.originPermissionNote),
-            destinationPermissionNote: dataTypes.label.convertViewToModel(l.destinationPermissionNote)
-          })),
-          days: c.weekDays
-            .map<{ selected: boolean; model: DayFlightRequirementChangeModel }>((d, index) => ({
-              selected: d.selected,
-              model: {
-                aircraftSelection: {
-                  includedIdentities: d.allowedAircraftIdentities.map(i => ({
-                    type: i.type,
-                    entityId: i.entityId
-                  })),
-                  excludedIdentities: d.forbiddenAircraftIdentities.map(i => ({
-                    type: i.type,
-                    entityId: i.entityId
+            days: c.weekDays
+              .map<{ selected: boolean; model: DayFlightRequirementChangeModel }>((d, index) => ({
+                selected: d.selected && refinedViewState.baseScope.weekDays[index].selected,
+                model: {
+                  aircraftSelection: {
+                    includedIdentities: d.allowedAircraftIdentities.map(i => ({
+                      type: i.type,
+                      entityId: i.entityId
+                    })),
+                    excludedIdentities: d.forbiddenAircraftIdentities.map(i => ({
+                      type: i.type,
+                      entityId: i.entityId
+                    }))
+                  },
+                  rsx: d.rsx,
+                  day: index,
+                  notes: dataTypes.label.convertViewToModel(d.notes),
+                  route: d.legs.map<DayFlightRequirementLegChangeModel>(l => ({
+                    blockTime: dataTypes.daytime.convertViewToModel(l.blockTime),
+                    stdLowerBound: dataTypes.daytime.convertViewToModel(l.stdLowerBound),
+                    stdUpperBound: dataTypes.daytime.convertViewToModelOptional(l.stdUpperBound),
+                    originPermission: l.originPermission,
+                    destinationPermission: l.destinationPermission,
+                    originPermissionNote: dataTypes.label.convertViewToModel(l.originPermissionNote),
+                    destinationPermissionNote: dataTypes.label.convertViewToModel(l.destinationPermissionNote)
                   }))
-                },
-                rsx: d.rsx,
-                day: index,
-                notes: dataTypes.label.convertViewToModel(d.notes),
-                route: d.legs.map<DayFlightRequirementLegChangeModel>(l => ({
-                  blockTime: dataTypes.daytime.convertViewToModel(l.blockTime),
-                  stdLowerBound: dataTypes.daytime.convertViewToModel(l.stdLowerBound),
-                  stdUpperBound: dataTypes.daytime.convertViewToModelOptional(l.stdUpperBound),
-                  originPermission: l.originPermission,
-                  destinationPermission: l.destinationPermission,
-                  originPermissionNote: dataTypes.label.convertViewToModel(l.originPermissionNote),
-                  destinationPermissionNote: dataTypes.label.convertViewToModel(l.destinationPermissionNote)
-                }))
-              }
-            }))
-            .filter(x => x.selected)
-            .map(x => x.model)
-        };
-      }),
+                }
+              }))
+              .filter(x => x.selected)
+              .map(x => x.model)
+          };
+        })
+        .filter(y => y.days.length > 0),
       localTime: viewState.localTime
     };
 
@@ -1696,7 +1698,7 @@ const FlightRequirementModal = createModal<FlightRequirementModalState, FlightRe
         const weekFlightsByDay = flightsByWeekIndexAndDay[weekIndex];
         return weekDays
           .map<EditFlightModel>((weekDay, day) => {
-            if (!weekDay.selected) return undefined as any;
+            if (!weekDay.selected || !refinedViewState.baseScope.weekDays[day].selected) return undefined as any;
             const aircraftRegisterId = dataTypes.preplanAircraftRegister(preplan.aircraftRegisters).convertViewToModelOptional(weekDay.aircraftRegister);
             const legs = weekDay.legs.map(({ stdLowerBound, stdUpperBound }, index) => ({
               originalIndex: refinedViewState.route[index].originalIndex,

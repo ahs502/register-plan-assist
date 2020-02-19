@@ -1,4 +1,8 @@
 export default interface RpaUserSettingModel {
+  [preplanId: string]: PreplanSettingModel;
+}
+
+export interface PreplanSettingModel {
   readonly timeline?: {
     readonly localtime: boolean;
   };

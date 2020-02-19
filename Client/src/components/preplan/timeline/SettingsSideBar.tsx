@@ -4,9 +4,10 @@ import { makeStyles } from '@material-ui/styles';
 import SideBarContainer from 'src/components/preplan/timeline/SideBarContainer';
 import { ExpandMore as ExpandMoreIcon } from '@material-ui/icons';
 import persistant from 'src/utils/persistant';
-import RpaUserSettingModel from '@core/models/RpaUserSettingModel';
+import { PreplanSettingModel } from '@core/models/RpaUserSettingModel';
 import MasterData, { Airport } from 'src/business/master-data';
 import MultiSelect from 'src/components/MultiSelect';
+import { PreplanContext } from 'src/pages/preplan';
 
 const useStyles = makeStyles((theme: Theme) => ({
   // formControl: {
@@ -48,7 +49,7 @@ interface ViewState {
 
 export interface SettingsSideBarProps {
   // autoArrangerOptions: AutoArrangerOptions;
-  onApply: (userSetting: RpaUserSettingModel) => void;
+  onApply: (userSetting: PreplanSettingModel) => void;
 }
 
 const SettingsSideBar: FC<SettingsSideBarProps> = ({
@@ -57,12 +58,13 @@ const SettingsSideBar: FC<SettingsSideBarProps> = ({
 }) => {
   // const [minimumGroundTimeMode, setMinimumGroundTimeMode] = useState(autoArrangerOptions.minimumGroundTimeMode);
   // const [minimumGroundTimeOffset, setMinimumGroundTimeOffset] = useState(autoArrangerOptions.minimumGroundTimeOffset);
+  const preplan = useContext(PreplanContext);
 
   const [viewState, setViewState] = useState<ViewState>({
-    timeLineLocaltime: persistant.rpaUserSetting?.timeline?.localtime ?? false,
-    flightRequirementLocaltime: persistant.rpaUserSetting?.flightRequirement?.localTime ?? false,
-    eastAirports: (persistant.rpaUserSetting?.ConnectionReport?.eastAirports ?? []).map(a => MasterData.all.airports.name[a]),
-    westAirports: (persistant.rpaUserSetting?.ConnectionReport?.westAirports ?? []).map(a => MasterData.all.airports.name[a])
+    timeLineLocaltime: persistant.rpaUserSetting?.[preplan.id]?.timeline?.localtime ?? false,
+    flightRequirementLocaltime: persistant.rpaUserSetting?.[preplan.id]?.flightRequirement?.localTime ?? false,
+    eastAirports: (persistant.rpaUserSetting?.[preplan.id]?.ConnectionReport?.eastAirports ?? []).map(a => MasterData.all.airports.name[a]),
+    westAirports: (persistant.rpaUserSetting?.[preplan.id]?.ConnectionReport?.westAirports ?? []).map(a => MasterData.all.airports.name[a])
   });
 
   const allAirports = MasterData.all.airports.items;
@@ -74,10 +76,10 @@ const SettingsSideBar: FC<SettingsSideBarProps> = ({
       label="Settings"
       onApply={() => {
         onApply({
-          flightRequirement: { localTime: viewState.flightRequirementLocaltime },
           timeline: { localtime: viewState.timeLineLocaltime },
+          flightRequirement: { localTime: viewState.flightRequirementLocaltime },
           ConnectionReport: { eastAirports: viewState.eastAirports.map(a => a.name), westAirports: viewState.westAirports.map(a => a.name) }
-        } as RpaUserSettingModel);
+        } as PreplanSettingModel);
       }}
     >
       {/* <Typography variant="body1">Minimum Ground Time</Typography>

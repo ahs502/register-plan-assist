@@ -1,5 +1,6 @@
 import UserModel from '@core/models/UserModel';
 import UserSettingsModel from '@core/models/authentication/UserSettingsModel';
+import RpaUserSettingModel from '@core/models/RpaUserSettingModel';
 
 export interface Persistant {
   /** The provided code from ADFS server when redirecting from the login page. */
@@ -13,6 +14,9 @@ export interface Persistant {
 
   /** The current user settings. */
   userSettings?: UserSettingsModel;
+
+  /** The current user setting in rpa */
+  rpaUserSetting?: RpaUserSettingModel;
 
   /** The content of Authentication header for restricted requests to /api provided by the server. */
   encodedAuthenticationHeader?: string;

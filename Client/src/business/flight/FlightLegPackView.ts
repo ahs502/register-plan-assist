@@ -24,8 +24,8 @@ export default class FlightLegPackView {
   readonly flightRequirementLeg: FlightRequirementLeg;
   readonly dayFlightRequirement: DayFlightRequirement;
   readonly dayFlightRequirementLeg: DayFlightRequirementLeg;
-  readonly flights: readonly Flight[];
-  readonly flightLegs: readonly FlightLeg[];
+  // readonly flights: readonly Flight[];
+  // readonly flightLegs: readonly FlightLeg[];
 
   // Duplicates:
   readonly label: string;
@@ -46,26 +46,19 @@ export default class FlightLegPackView {
   readonly localStd: Date;
   readonly utcSta: Date;
   readonly localSta: Date;
+  readonly actualDepartureDay: Weekday;
+  readonly actualArrivalDay: Weekday;
 
   // Computational:
   readonly derivedId: Id;
-  readonly sta: Daytime;
-  readonly transit: boolean;
   readonly international: boolean;
-  readonly dayOffset: number;
-  readonly actualStd: Daytime;
-  readonly actualSta: Daytime;
-  readonly weekStd: number;
-  readonly weekSta: number;
-  readonly stdDateTime: Date;
-  readonly staDateTime: Date;
   readonly hasDstInDeparture: boolean;
   readonly hasDstInArrival: boolean;
   readonly diffWithFirstLeg: number;
   possibleStartDate: Date;
   possibleEndDate: Date;
 
-  constructor(flightLeg: FlightLeg, flightPackView: FlightPackView, week: Week, sourceFlight: Flight, allDaysBaseOfFirstLeg: Date[]) {
+  constructor(flightLeg: FlightLeg, flightPackView: FlightPackView, sourceFlight: Flight, allDaysBaseOfFirstLeg: Date[]) {
     this.std = flightLeg.std;
 
     this.label = flightLeg.label;
@@ -73,7 +66,7 @@ export default class FlightLegPackView {
     this.stc = flightLeg.stc;
     this.aircraftRegister = flightLeg.aircraftRegister;
     this.rsx = flightLeg.rsx;
-    this.day = flightLeg.day;
+    this.day = this.actualDepartureDay = this.actualArrivalDay = flightLeg.day;
     this.index = flightLeg.index;
     this.flightNumber = flightLeg.flightNumber;
     this.departureAirport = flightLeg.departureAirport;
@@ -91,18 +84,45 @@ export default class FlightLegPackView {
     this.flightRequirementLeg = flightLeg.flightRequirementLeg;
     this.dayFlightRequirement = flightLeg.dayFlightRequirement;
     this.dayFlightRequirementLeg = flightLeg.dayFlightRequirementLeg;
-    this.flights = flightPackView.flights;
-    this.flightLegs = this.flights.map(f => f.legs.find(l => l.day === this.day)!).sortBy('weekStd');
+    // this.flights = flightPackView.flights;
+    // this.flightLegs = this.flights.map(f => f.legs.find(l => l.day === this.day)!).sortBy('weekStd');
 
     this.derivedId = `${flightPackView.derivedId}#${this.index}`;
-    this.sta = flightLeg.sta;
-    this.transit = flightLeg.transit;
     this.international = flightLeg.international;
-    this.dayOffset = flightLeg.dayOffset;
-    this.actualStd = flightLeg.actualStd;
-    this.actualSta = flightLeg.actualSta;
-    this.weekStd = flightLeg.weekStd;
-    this.weekSta = flightLeg.weekSta;
+
+    let actualStd = new Daytime(flightLeg.localStd, flightLeg.flight.date);
+
+    if (actualStd.minutes < 0) {
+      while (actualStd.minutes < 0) {
+        this.actualDepartureDay -= 1;
+        actualStd = new Daytime(actualStd.minutes + 24 * 60);
+      }
+
+      if (this.actualDepartureDay < 0) {
+        this.actualDepartureDay += 7;
+      }
+    } else {
+      this.actualDepartureDay += Math.floor(actualStd.minutes / (24 * 60));
+      this.actualDepartureDay > 7 && (this.actualDepartureDay %= 7);
+      //actualStd = new Daytime(actualStd.minutes % (24 * 60));
+    }
+
+    let actualSta = new Daytime(flightLeg.localSta, flightLeg.flight.date);
+    if (actualSta.minutes < 0) {
+      while (actualSta.minutes < 0) {
+        this.actualArrivalDay -= 1;
+        actualSta = new Daytime(actualSta.minutes + 24 * 60);
+      }
+
+      if (this.actualArrivalDay < 0) {
+        this.actualArrivalDay += 7;
+      }
+    } else {
+      this.actualArrivalDay += Math.floor(actualSta.minutes / (24 * 60));
+      this.actualArrivalDay > 7 && (this.actualArrivalDay %= 7);
+      //this.actualSta = new Daytime(this.actualSta.minutes % (24 * 60));
+    }
+
     this.hasDstInDeparture = flightLeg.departureAirport.utcOffsets.some(
       u => u.dst && u.startDateTimeUtc.getTime() <= flightLeg.utcStd.getTime() && flightLeg.utcStd.getTime() <= u.endDateTimeUtc.getTime()
     );
@@ -113,6 +133,9 @@ export default class FlightLegPackView {
     this.possibleStartDate = allDaysBaseOfFirstLeg[0];
     this.possibleEndDate = allDaysBaseOfFirstLeg.last()!;
 
+    // Fields which should be calculated for view:
+    this.notes = flightLeg.notes;
+
     this.diffWithFirstLeg = this.localStd.getUTCDay() - sourceFlight.legs[0].localStd.getUTCDay();
     if (this.diffWithFirstLeg !== 0) {
       if (this.diffWithFirstLeg < 0) {
@@ -122,10 +145,5 @@ export default class FlightLegPackView {
       this.possibleStartDate = new Date(this.possibleStartDate).addDays(this.diffWithFirstLeg);
       this.possibleEndDate = new Date(this.possibleEndDate).addDays(this.diffWithFirstLeg);
     }
-
-    // Fields which should be calculated for view:
-    this.notes = flightLeg.notes;
-    this.stdDateTime = new Date(week.startDate.getTime() + this.weekStd * 60 * 1000);
-    this.staDateTime = new Date(week.startDate.getTime() + this.weekSta * 60 * 1000);
   }
 }

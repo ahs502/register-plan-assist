@@ -8,9 +8,7 @@ import Weekday, { Weekdays } from '@core/types/Weekday';
 import Id from '@core/types/Id';
 import Week from 'src/business/Week';
 import Flight from 'src/business/flight/Flight';
-import { ShortMonthNames } from '@core/types/MonthName';
 import FlightLegPackView from 'src/business/flight/FlightLegPackView';
-import MasterDataService from 'src/services/MasterDataService';
 
 export default class FlightPackView {
   // Original:
@@ -30,38 +28,35 @@ export default class FlightPackView {
   readonly rsx: Rsx;
   readonly day: Weekday;
   readonly notes: string | undefined;
-  readonly originPermission: boolean | undefined;
-  readonly destinationPermission: boolean | undefined;
 
   // Computational:
   readonly derivedId: Id;
-  readonly start: Daytime;
-  readonly end: Daytime;
-  readonly weekStart: number;
-  readonly weekEnd: number;
-  readonly sections: readonly {
-    readonly start: number;
-    readonly end: number;
-  }[];
-  readonly startDateTime: Date;
-  readonly endDateTime: Date;
-  readonly flightDates: Date[];
   readonly canclationNote: FlightLegCancaltionNote | undefined;
   readonly hasTimeChange: boolean;
-  readonly inDstChange: boolean;
   readonly inIranDst: boolean;
   readonly permissions: FlightLegPermission;
-  readonly icons: readonly string[]; //TODO: Check if it is really required.
+  readonly diffActualDateWithRequirementDate: number;
 
   constructor(flights: readonly Flight[], startWeek: Week, endWeek: Week, week: Week, preplanStartDate: Date, preplanEndDate: Date) {
     const sourceFlight = flights[0];
+    this.diffActualDateWithRequirementDate = 0;
+
+    let actualStd = new Daytime(sourceFlight.legs[0].localStd, sourceFlight.date);
+
+    if (actualStd.minutes < 0) {
+      while (actualStd.minutes < 0) {
+        this.diffActualDateWithRequirementDate++;
+      }
+    } else {
+      this.diffActualDateWithRequirementDate = Math.floor(actualStd.minutes / (24 * 60));
+    }
 
     const diffInTime = endWeek.startDate.getTime() - startWeek.startDate.getTime();
     const diffInDays = diffInTime / (24 * 60 * 60 * 1000);
     const diffInWeek = diffInDays / 7 + 1;
 
     const flightDay = sourceFlight.day;
-    const startDate = new Date(startWeek.startDate).addDays(flightDay);
+    const startDate = new Date(startWeek.startDate).addDays(flightDay + this.diffActualDateWithRequirementDate);
 
     const allDaysBaseOfFirstLeg = Array.range(0, diffInWeek - 1).map(d => {
       return new Date(startDate).addDays(d * 7);
@@ -105,29 +100,7 @@ export default class FlightPackView {
     this.dayFlightRequirement = sourceFlight.dayFlightRequirement;
     this.flights = flights;
 
-    this.legs = sourceFlight.legs.map(l => new FlightLegPackView(l, this, week, sourceFlight, allDaysBaseOfFirstLeg));
-
-    const flightAirports = sourceFlight.legs
-      .map(l => l.departureAirport)
-      .concat(sourceFlight.legs.map(l => l.arrivalAirport))
-      .distinct();
-
-    this.inDstChange = false;
-    for (let index = 0; index < flightAirports.length; index++) {
-      const airport = flightAirports[index];
-      this.inDstChange =
-        this.legs
-          .map(n => (n.departureAirport === airport ? n.hasDstInDeparture : n.arrivalAirport == airport ? n.hasDstInArrival : undefined))
-          .filter(f => f !== undefined)
-          .distinct().length > 1;
-      if (this.inDstChange) break;
-    }
-
-    if (this.inDstChange) {
-      this.legs.forEach(l => {
-        l.possibleStartDate = l.possibleEndDate = l.utcStd;
-      });
-    }
+    this.legs = sourceFlight.legs.map(l => new FlightLegPackView(l, this, sourceFlight, allDaysBaseOfFirstLeg));
 
     this.label = sourceFlight.label;
     this.category = sourceFlight.category;
@@ -135,34 +108,20 @@ export default class FlightPackView {
     this.rsx = sourceFlight.rsx;
     this.day = sourceFlight.day;
 
-    this.originPermission = sourceFlight.originPermission;
-    this.destinationPermission = sourceFlight.destinationPermission;
-
     this.derivedId = String((FlightPackView.idCounter = FlightPackView.idCounter === Number.MAX_SAFE_INTEGER ? 1 : FlightPackView.idCounter + 1));
-    this.start = sourceFlight.start;
-    this.end = sourceFlight.end;
-    this.weekStart = sourceFlight.weekStart;
-    this.weekEnd = sourceFlight.weekEnd;
-    this.sections = sourceFlight.sections;
-
-    // Fields which should be calculated for view:
-    this.startDateTime = new Date(week.startDate.getTime() + this.weekStart * 60 * 1000);
-    this.endDateTime = new Date(week.startDate.getTime() + this.weekEnd * 60 * 1000);
-    this.icons = [];
-
-    this.flightDates = flights.map(f => f.date);
 
     const sortedFlights = flights.orderBy('date');
 
     this.hasTimeChange = sourceFlight.legs.some(
       (l, index) =>
-        l.std.compare(sourceFlight.dayFlightRequirement.route[index].stdLowerBound) !== 0 || l.blockTime.compare(sourceFlight.dayFlightRequirement.route[index].blockTime) !== 0
+        (l.flightRequirement.localTime ? new Daytime(l.localStd, l.date) : l.std).compare(sourceFlight.dayFlightRequirement.route[index].stdLowerBound) !== 0 ||
+        l.blockTime.compare(sourceFlight.dayFlightRequirement.route[index].blockTime) !== 0
     );
 
-    this.canclationNote = !this.inDstChange ? generateCanalationNotes(this.legs) : undefined;
+    this.canclationNote = generateCanalationNotes(this);
     this.permissions = generateFlightLegPermission();
 
-    function generateCanalationNotes(legs: readonly FlightLegPackView[]): FlightLegCancaltionNote | undefined {
+    function generateCanalationNotes({ legs, diffActualDateWithRequirementDate }: FlightPackView): FlightLegCancaltionNote | undefined {
       if (diffInWeek === sortedFlights.length) {
         return undefined;
       } else {
@@ -171,7 +130,15 @@ export default class FlightPackView {
           const leg = legs[index];
           const groupCancleDay = allDaysBaseOfFirstLeg.reduce<Date[][]>((acc, cur) => {
             const lastElement: Date[] = acc[acc.length - 1] || (acc.push([] as Date[]) && acc[acc.length - 1]);
-            if (flights.some(f => f.date.getDatePart().getTime() == cur.getTime())) {
+            if (
+              flights.some(
+                f =>
+                  f.date
+                    .getDatePart()
+                    .addDays(diffActualDateWithRequirementDate)
+                    .getTime() == cur.getTime()
+              )
+            ) {
               lastElement.length > 0 && acc.push([]);
             } else {
               lastElement.push(cur);
@@ -194,7 +161,7 @@ export default class FlightPackView {
             .join(', ');
 
           if (res) {
-            result[index] = { note: Weekday[sourceFlight.day].substr(0, 3) + ' CNL: ' + res };
+            result[index] = { note: Weekday[leg.actualDepartureDay].substr(0, 3) + ' CNL: ' + res };
           }
         }
         return result;
@@ -212,20 +179,33 @@ export default class FlightPackView {
           const firstLeg = dayLegs[0];
           result[legIndex][day] = {
             destinationPermissions: [
-              { fromDate: firstLeg.utcStd, toDate: firstLeg.utcStd, userNote: firstLeg.destinationPermissionNote, hasPermission: firstLeg.destinationPermission }
+              {
+                fromDate: firstLeg.international ? firstLeg.utcSta : firstLeg.localSta,
+                toDate: firstLeg.international ? firstLeg.utcSta : firstLeg.localSta,
+                userNote: firstLeg.destinationPermissionNote,
+                hasPermission: firstLeg.destinationPermission
+              }
             ],
-            originPermissions: [{ fromDate: firstLeg.utcStd, toDate: firstLeg.utcStd, userNote: firstLeg.originPermissionNote, hasPermission: firstLeg.originPermission }]
+            originPermissions: [
+              {
+                fromDate: firstLeg.international ? firstLeg.utcStd : firstLeg.localStd,
+                toDate: firstLeg.international ? firstLeg.utcStd : firstLeg.localStd,
+                userNote: firstLeg.originPermissionNote,
+                hasPermission: firstLeg.originPermission
+              }
+            ]
           };
+
           for (let index = 0; index < dayLegs.length; index++) {
             const leg = dayLegs[index];
 
             const lastDestinationPermission = result[legIndex][day].destinationPermissions.last()!;
             if (lastDestinationPermission.userNote === leg.destinationPermissionNote && lastDestinationPermission.hasPermission === leg.destinationPermission) {
-              lastDestinationPermission.toDate = leg.utcStd;
+              lastDestinationPermission.toDate = leg.international ? leg.utcSta : leg.localSta;
             } else {
               result[legIndex][day].destinationPermissions.push({
-                fromDate: leg.utcStd,
-                toDate: leg.utcStd,
+                fromDate: leg.international ? leg.utcSta : leg.localSta,
+                toDate: leg.international ? leg.utcSta : leg.localSta,
                 userNote: leg.destinationPermissionNote,
                 hasPermission: leg.destinationPermission
               });
@@ -233,11 +213,11 @@ export default class FlightPackView {
 
             const lastOriginPermission = result[legIndex][day].originPermissions.last()!;
             if (lastOriginPermission.userNote === leg.originPermissionNote && lastOriginPermission.hasPermission === leg.originPermission) {
-              lastOriginPermission.toDate = leg.utcStd;
+              lastOriginPermission.toDate = leg.international ? leg.utcStd : leg.localStd;
             } else {
               result[legIndex][day].originPermissions.push({
-                fromDate: leg.utcStd,
-                toDate: leg.utcStd,
+                fromDate: leg.international ? leg.utcStd : leg.localStd,
+                toDate: leg.international ? leg.utcStd : leg.localStd,
                 userNote: leg.originPermissionNote,
                 hasPermission: leg.originPermission
               });
@@ -252,7 +232,16 @@ export default class FlightPackView {
 
   public static create(flights: readonly Flight[], startWeek: Week, endWeek: Week, week: Week, preplanStartDate: Date, preplanEndDate: Date): FlightPackView[] {
     const groupFlights = flights.groupBy(f =>
-      f.legs.map(t => t.localStd.getUTCHours().toString() + t.localStd.getUTCMinutes().toString() + t.blockTime.minutes.toString() + t.rsx).join()
+      f.legs
+        .map(
+          t =>
+            (f.flightRequirement.localTime
+              ? t.utcStd.getUTCHours().toString() + t.utcStd.getUTCMinutes()
+              : t.localStd.getUTCHours().toString() + t.localStd.getUTCMinutes().toString()) +
+            t.blockTime.minutes.toString() +
+            t.rsx
+        )
+        .join()
     );
     return Object.values(groupFlights).map(f => new FlightPackView(f, startWeek, endWeek, week, preplanStartDate, preplanEndDate));
   }

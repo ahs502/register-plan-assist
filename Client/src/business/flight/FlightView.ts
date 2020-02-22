@@ -99,8 +99,10 @@ export default class FlightView {
     this.start = new Daytime(this.legs[0].actualStd, this.date);
     this.end = new Daytime(this.legs[this.legs.length - 1].actualSta, this.date);
 
-    this.weekStart = this.legs[0].actualDepartureDay * 24 * 60 + this.start.minutes;
-    this.weekEnd = this.legs[this.legs.length - 1].actualArrivalDay * 24 * 60 + this.end.minutes;
+    const actualDepartureDay = this.legs[0].actualDepartureDay;
+    const actualArrivalDay = this.legs[this.legs.length - 1].actualArrivalDay;
+    this.weekStart = actualDepartureDay * 24 * 60 + this.start.minutes;
+    this.weekEnd = (actualArrivalDay >= actualDepartureDay ? actualArrivalDay : 7 + actualArrivalDay) * 24 * 60 + this.end.minutes;
 
     this.sections = this.sourceFlight.sections;
 

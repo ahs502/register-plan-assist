@@ -107,7 +107,12 @@ export default class FlightLegView {
 
     this.actualSta = localtime ? new Daytime(flightLeg.localSta, flightLeg.flight.date) : flightLeg.actualSta;
     while (this.actualSta.minutes < 0) {
+      this.actualArrivalDay -= 1;
       this.actualSta = new Daytime(this.actualSta.minutes + 24 * 60);
+    }
+
+    if (this.actualArrivalDay < 0) {
+      this.actualArrivalDay += 7;
     }
 
     this.actualArrivalDay += Math.floor(this.actualSta.minutes / (24 * 60));

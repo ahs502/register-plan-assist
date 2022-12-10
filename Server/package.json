@@ -20,7 +20,7 @@
     "@ahs502/validation": "^4.0.1",
     "colors": "^1.4.0",
     "cryptr": "^6.0.1",
-    "express": "^4.17.1",
+    "express": "^4.17.3",
     "jsonwebtoken": "^8.5.1",
     "node-fetch": "^2.6.0",
     "tedious": "^6.6.2",
